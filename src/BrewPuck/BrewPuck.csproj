@@ -1,0 +1,47 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>a471e140-49cf-4214-96cc-d87252676d5b</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="ClientApp\src\models\teams.ts" />
+    <None Remove="ClientApp\src\services\NhlApiService.ts" />
+    <None Remove="ClientApp\src\store\modules\games.ts" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.SpaServices" Version="3.1.32" />
+    <PackageReference Include="Microsoft.AspNetCore.SpaServices.Extensions" Version="7.0.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="7.0.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="7.0.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.17.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="ClientApp\src\enums\" />
+    <Folder Include="Data\" />
+    <Folder Include="Infrastructure\" />
+    <Folder Include="Models\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <TypeScriptCompile Include="ClientApp\src\models\teams.ts" />
+    <TypeScriptCompile Include="ClientApp\src\services\NhlApiService.ts" />
+    <TypeScriptCompile Include="ClientApp\src\store\modules\games.ts" />
+  </ItemGroup>
+
+	<Target Name="ReleaseBuildWeb" BeforeTargets="BeforeBuild" Condition="'$(Configuration)' == 'Release'">
+		<Message Text="Running Webpack RC Build." />
+		<Exec Command="npm run build" WorkingDirectory="$(ProjectDir)ClientApp" />
+	</Target>
+
+</Project>

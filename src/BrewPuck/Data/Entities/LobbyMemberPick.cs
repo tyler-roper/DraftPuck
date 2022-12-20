@@ -1,0 +1,16 @@
+﻿namespace BrewPuck.Data;
+
+public partial class LobbyMemberPick
+{
+    public Guid Id { get; set; }
+
+    public Guid LobbyMemberId { get; set; }
+
+    public long PlayerId { get; set; }
+
+    public virtual ICollection<Drink> Drinks { get; } = new List<Drink>();
+
+    public virtual LobbyMember LobbyMember { get; set; } = null!;
+
+    public virtual Player Player { get; set; } = null!;
+}

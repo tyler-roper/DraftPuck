@@ -1,0 +1,5 @@
+﻿@import '../scss/variables.scss';
+
+.b-form-datepicker .btn {
+    color: map-get($theme-colors, "stone-900") !important;
+}

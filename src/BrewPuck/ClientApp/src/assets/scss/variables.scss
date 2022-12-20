@@ -1,0 +1,89 @@
+﻿$font-family-base: 'Rubik';
+$font-weight-medium: 500;
+$font-size-base: 0.8rem;
+$box-shadow: 0 0 10px rgba(0,0,0,0.6);
+
+$body-bg: #1c1917;
+$body-color: #fff;
+
+$theme-colors: ( 
+    "primary": #dc3545,
+    "secondary": #fff,
+    "stone-900": #1c1917, 
+    "stone-800": #292524, 
+    "stone-700": #44403c,
+    "stone-600": #57534E,
+    "stone-500": #78716c, 
+    "stone-400": #a8a29e, 
+    "stone-300": #d6d3d1, 
+    "stone-200": #e7e5e4, 
+    "stone-150": #ebebeb, 
+    "stone-100": #f5f5f4, 
+    "stone-50": #fafaf9,
+    "stone-0": #fff,
+    "amber-500": #f59e0b,
+    "amber-400": #FBBF24,
+    "amber-300": #FCD34D
+);
+
+$font-sizes: (
+    1: 2.5rem,
+    2: 2rem,
+    3: 1.75rem,
+    4: 1.5rem,
+    5: 1.25rem,
+    6: 1rem,
+    7: 0.8rem,
+    8: 0.7rem,
+    9: 0.6rem
+);
+
+@each $int, $rem in $font-sizes {
+    .fs-#{$int} {
+        font-size: #{$rem};
+    }
+}
+
+$line-heights: (
+    1: 1.5,
+    2: 1.75,
+    3: 2,
+    4: 2.25,
+    5: 2.5,
+    6: 2.75,
+    7: 3
+);
+
+@each $int, $lh in $line-heights {
+    .lh-#{$int} {
+        line-height: #{$lh};
+    }
+}
+
+$letter-spacing: ( 
+    1: 0.25px, 
+    2: 0.5px, 
+    3: 0.75px, 
+    4: 1px, 
+    5: 1.25px, 
+    6: 1.5px, 
+    7: 1.75px,
+    8: 2px
+);
+
+@each $int, $ls in $letter-spacing {
+    .ls-#{$int} {
+        letter-spacing: #{$ls};
+    }
+}
+
+@for $o from 0 to 100 {
+    .o-#{$o} {
+        opacity: #{$o/100};
+    }
+}
+
+$container-max-widths: ( sm: 540px, md: 720px, lg: 960px, xl: 1280px );
+
+$spacer: 1rem;
+$spacers: ( 6: $spacer * 5, 7: $spacer * 7.5, 8: $spacer * 10 );

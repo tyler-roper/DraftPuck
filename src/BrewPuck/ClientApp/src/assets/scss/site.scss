@@ -1,0 +1,347 @@
+﻿@import url('https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300;0,400;0,700;0,800;0,900;1,300;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Rubik+Mono+One&display=swap');
+@import "uicons-regular-rounded.css";
+@import "uicons-solid-rounded.css";
+@import 'overrides.scss';
+@import 'gameAnimations.scss';
+@import '../../../node_modules/bootstrap/scss/bootstrap.scss';
+@import '../../../node_modules/bootstrap-vue/src/index.scss';
+
+html, body {
+    height: 100%;
+    padding: 0;
+    margin: 0;
+}
+
+.team-abr { display: none; }
+
+.item-type-goal .event-text {
+    font-size: 0.9rem;
+}
+
+@keyframes down {
+    0% {
+        margin-top: -83px;
+    }
+
+    100% {
+        margin-top: 0;
+    }
+}
+
+.feed-item:not(.initial-load) {
+    animation-name: down;
+    animation-duration: 0.7s;
+}
+
+.team-icons img:nth-child(2) {
+    transform: translate(-35px, 10px);
+    width: 50px;
+    height: 50px;
+}
+
+.team-icons img:first-child {
+    transform: translateY(-10px);
+    width: 50px;
+    height: 50px;
+}
+
+.team-icons img:only-child {
+    transform: none;
+    width: 60px;
+    height: 60px;
+}
+
+.item-type-goal {
+    position: relative;
+    overflow: hidden;
+}
+
+.item-type-goal .team-icons img:only-child {
+    transform: none;
+    width: 150px;
+    height: 150px;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translate(-50px, -50%);
+}
+
+.feed-item {
+    min-height: 75px;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.item-type-goal {
+    box-shadow: 0 0 25px rgba(0,0,0,0.7) inset;
+}
+
+@media only screen and (max-width: 1880px) {
+    .score-table th:first-child {
+        width: 150px !important;
+    }
+
+    .score-table .team-name {
+        display: none;
+    }
+
+    .score-table .team-abr {
+        display: block;
+    }
+}
+
+@media only screen and (max-width: 1600px) {
+    .score-table td:last-child {
+        padding: 10px !important;
+    }
+
+    .score-table .first-letter {
+        display: none;
+    }
+}
+
+@media only screen and (max-width: 1400px) {
+    .score-table th:first-child {
+        width: 120px !important;
+    }
+
+    .score-table td,
+    .score-table th {
+        padding: 10px !important;
+    }
+
+    .score-table td:first-child img {
+        width: 30px !important;
+        height: 30px !important;
+    }
+
+    .score-table th:nth-child(n + 2):nth-child(-n + 5),
+    .score-table td:nth-child(n + 2):nth-child(-n + 5) {
+        width: auto !important;
+    }
+
+    .is-live.is-critical th:first-child::after {
+        display: none !important;
+    }
+}
+
+@media only screen and (max-width: 1200px) {
+    .game-scoreboard {
+        width: 100% !important;
+    }
+
+    .score-table th:first-child {
+        width: 150px !important;
+    }
+
+    .score-table td,
+    .score-table th {
+        padding: 10px 20px !important;
+    }
+
+    .score-table td:first-child img {
+        width: 50px !important;
+        height: 50px !important;
+    }
+
+    .score-table th:nth-child(n + 2):nth-child(-n + 5),
+    .score-table td:nth-child(n + 2):nth-child(-n + 5) {
+        width: 30px !important;
+    }
+}
+
+@media only screen and (max-width: 1000px) {
+    .feed-item,
+    .feed-item.item-type-goal .event-text {
+        font-size: 12px !important;
+        position: relative;
+    }
+
+    .feed-item .team-icons {
+        width: 53px !important;
+        margin: 0 !important;
+        padding: 5px !important;
+    }
+
+    .feed-item .team-icons img {
+        transform: translateY(-50%) !important;
+        position: absolute !important;
+        top: 50% !important;
+        left: 0px !important;
+        width: 60px !important;
+        height: 60px !important;
+    }
+
+    .feed-item .team-icons img:not(:only-child) {
+        width: 40px !important;
+        height: 40px !important;
+        left: 10px !important;
+    }
+
+    .feed-item .team-icons img:not(:only-child):first-child {
+        transform: translate(-10px, -65%) !important;
+    }
+
+    .feed-item .team-icons img:not(:only-child):nth-child(2) {
+        transform: translate(10px, -35%) !important;
+    }
+
+    .feed {
+        width: 300px !important;
+    }
+
+    .feed-item .header {
+        font-size: 10px !important;
+    }
+
+    .feed-item .divider {
+        margin: 0 5px !important;
+    }
+
+    .feed-item-content,
+    .feed-item .team-icons{
+        padding: 5px !important;
+    }
+}
+
+@media only screen and (max-width: 850px) {
+    .score-table th:first-child {
+        width: 120px !important;
+    }
+
+    .score-table td,
+    .score-table th {
+        padding: 10px !important;
+    }
+
+    .score-table td:first-child img {
+        width: 30px !important;
+        height: 30px !important;
+    }
+
+    .score-table th:nth-child(n + 2):nth-child(-n + 5),
+    .score-table td:nth-child(n + 2):nth-child(-n + 5) {
+        width: auto !important;
+    }
+}
+
+@media only screen and (max-width: 720px) {
+    .score-table th:nth-child(n + 2):nth-child(-n + 4),
+    .score-table td:nth-child(n + 2):nth-child(-n + 4) {
+        display: none !important;
+    }
+}
+
+@media only screen and (max-width: 650px) {
+    .score-table th:nth-child(n + 2):nth-child(-n + 4),
+    .score-table td:nth-child(n + 2):nth-child(-n + 4) {
+        display: table-cell !important;
+    }
+
+    .score-table th:last-child,
+    .score-table td:last-child {
+        display: none !important;
+    }
+
+        .full-scoreboard > div {
+        margin: 0 !important;
+        padding: 5px 0 !important;
+    }
+
+    .game-scoreboard {
+        margin: 5px 10px !important;
+    }
+}
+
+@media only screen and (max-width: 576px) {
+    .feed {
+        width: 100% !important;
+    }
+
+    .feed.hide-mobile {
+        display: none !important;
+    }
+
+    .full-scoreboard.hide-mobile {
+        display: none !important;
+    }
+
+    .score-table th:nth-child(n + 2):nth-child(-n + 5),
+    .score-table td:nth-child(n + 2):nth-child(-n + 5) {
+        text-align: center !important;
+        width: 30px !important;
+    }
+
+    .score-table th:last-child,
+    .score-table td:last-child {
+        display: table-cell !important;
+    }
+
+    .logo {
+        font-size: 20px !important;
+        letter-spacing: -3px !important;
+    }
+
+}
+
+@media only screen and (max-width: 500px) {
+    .score-table th:last-child,
+    .score-table td:last-child {
+        font-size: 10px !important;
+        padding: 3px !important;
+    }
+
+    .feed-item,
+    .feed-item.item-type-goal .event-text {
+        font-size: 14px !important;
+        position: relative;
+    }
+
+    .feed-item.item-type-goal .event-text {
+        font-size: 16px !important;
+    }
+
+    .feed-item .team-icons {
+        width: 53px !important;
+        margin: 0 !important;
+        padding: 5px !important;
+    }
+
+    .feed-item .team-icons img {
+        transform: translateY(-50%) !important;
+        position: absolute !important;
+        top: 50% !important;
+        left: 0px !important;
+        width: 60px !important;
+        height: 60px !important;
+    }
+
+    .feed-item .team-icons img:not(:only-child) {
+        width: 40px !important;
+        height: 40px !important;
+        left: 10px !important;
+    }
+
+    .feed-item .team-icons img:not(:only-child):first-child {
+        transform: translate(-10px, -65%) !important;
+    }
+
+    .feed-item .team-icons img:not(:only-child):nth-child(2) {
+        transform: translate(10px, -35%) !important;
+    }
+
+    .feed-item .header {
+        font-size: 13px !important;
+    }
+
+    .feed-item .divider {
+        margin: 0 5px !important;
+    }
+
+    .feed-item-content,
+    .feed-item .team-icons {
+        padding: 10px !important;
+    }
+
+
+}
