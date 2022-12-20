@@ -12,6 +12,19 @@ html, body {
     padding: 0;
     margin: 0;
 }
+table.score-table td {
+    padding: 5px 20px;
+}
+
+.logo {
+    font-family: 'Rubik Mono One';
+    letter-spacing: -4px;
+}
+
+.banner-logo {
+    padding-right: 5px;
+    margin-top: 4px;
+}
 
 .team-abr { display: none; }
 
@@ -277,7 +290,7 @@ html, body {
         display: table-cell !important;
     }
 
-    .logo {
+    .banner-logo {
         font-size: 20px !important;
         letter-spacing: -3px !important;
     }

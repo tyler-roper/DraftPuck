@@ -5,9 +5,15 @@ Vue.use(Router);
 
 const routes = [
     {
-        path: '*',
+        path: '/',
         name: 'Home',
         component: () => import('@/views/Home.vue')
+    },
+    {
+        path: '/lobby/:id',
+        name: 'Lobby',
+        props: true,
+        component: () => import('@/views/Lobby.vue')
     }
 ];
 

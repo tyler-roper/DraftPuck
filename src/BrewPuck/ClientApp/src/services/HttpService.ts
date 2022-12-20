@@ -10,17 +10,29 @@ export interface IHttpService {
     delete(endpoint: string): Promise<void>;
 }
 
-const apiBasePath = `https://statsapi.web.nhl.com/api/v1`;
+const apiBasePath = `/api/`;
 
 export default class HttpService implements IHttpService {
 
     private _axios: AxiosInstance;
     private _basePath: string;
 
-    constructor(controller: string) {
+    constructor(controller: string, addUserHeader = true, basePath?: string) {
         const axiosInstance = axios.create();
+        axiosInstance.interceptors.request.use(config => {
+            const userId = localStorage.getItem('userId');
+            config.headers['Accept'] = 'application/json';
+            config.headers['Content-Type'] = 'application/json';
+
+            if (userId && addUserHeader)
+                config.headers["user-id"] = userId;
+            return config;
+        }, error => {
+            Promise.reject(error);
+        });
+
         this._axios = axiosInstance;
-        this._basePath = `${apiBasePath}${controller}/`;
+        this._basePath = basePath ? `${basePath}${controller}` : `${apiBasePath}${controller}/`;
     }
 
     public async get<T>(endpoint: string, id?: string): Promise<T> {
@@ -32,7 +44,7 @@ export default class HttpService implements IHttpService {
 
     public async getWithParams<T>(endpoint: string, params: {}): Promise<T> {
         const queryString = new URLSearchParams(params).toString();
-        const response = await this._axios.get<T>(`${this._basePath}${endpoint}/?${queryString}`);
+        const response = await this._axios.get<T>(`${this._basePath}${endpoint}?${queryString}`);
         return response.data;
     }
 

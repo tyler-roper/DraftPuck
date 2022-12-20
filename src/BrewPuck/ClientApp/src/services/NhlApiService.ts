@@ -4,12 +4,13 @@ import { Players } from '@/models/players';
 import { Game } from '@/models/game';
 
 const controller = "";
+const basePath = "https://statsapi.web.nhl.com/api/v1/";
 
 class NhlApiService {
     private readonly _http: IHttpService;
 
     constructor() {
-        this._http = new HttpService(controller);
+        this._http = new HttpService(controller, false, basePath);
     }
 
     public async getSchedule(date?: string): Promise<Schedule> {

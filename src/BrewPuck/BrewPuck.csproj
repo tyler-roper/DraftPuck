@@ -9,12 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="ClientApp\src\models\teams.ts" />
-    <None Remove="ClientApp\src\services\NhlApiService.ts" />
-    <None Remove="ClientApp\src\store\modules\games.ts" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.SpaServices" Version="3.1.32" />
     <PackageReference Include="Microsoft.AspNetCore.SpaServices.Extensions" Version="7.0.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.1" />
@@ -27,16 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="ClientApp\src\enums\" />
-    <Folder Include="Data\" />
     <Folder Include="Infrastructure\" />
-    <Folder Include="Models\" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <TypeScriptCompile Include="ClientApp\src\models\teams.ts" />
-    <TypeScriptCompile Include="ClientApp\src\services\NhlApiService.ts" />
-    <TypeScriptCompile Include="ClientApp\src\store\modules\games.ts" />
   </ItemGroup>
 
 	<Target Name="ReleaseBuildWeb" BeforeTargets="BeforeBuild" Condition="'$(Configuration)' == 'Release'">

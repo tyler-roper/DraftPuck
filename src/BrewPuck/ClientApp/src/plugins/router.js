@@ -3,7 +3,7 @@ import Router from 'vue-router';
 Vue.use(Router);
 const routes = [
     {
-        path: '/',
+        path: '*',
         name: 'Home',
         component: () => import('@/views/Home.vue')
     }

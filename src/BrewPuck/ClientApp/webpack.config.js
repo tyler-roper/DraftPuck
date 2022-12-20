@@ -67,8 +67,8 @@ const configProvider = (env) => {
             filename: isDev ? "[name]-dev.js" : "[name].[hash].js",
             chunkFilename: isDev ? "[name]-dev.chunk.js" : "[name].[hash].chunk.js",
             path: buildPath,
-            publicPath: "" //UN-COMMENT FOR NPM RUN BUILD
-            //publicPath: "/dist/" //COMMENT FOR NPM RUN BUILD
+            //publicPath: "" //UN-COMMENT FOR NPM RUN BUILD
+            publicPath: "/dist/" //COMMENT FOR NPM RUN BUILD
         },
         plugins: [
             new webpack.ProgressPlugin(),
@@ -80,7 +80,7 @@ const configProvider = (env) => {
             }),
             new HtmlWebpackPlugin({
                 template: viewTemplatePath,
-                //filename: viewFilePath,  //COMMENT FOR NPM RUN BUILD
+                filename: viewFilePath,  //COMMENT FOR NPM RUN BUILD
                 minify: false,
                 title: "BREWPUCK"
             }),

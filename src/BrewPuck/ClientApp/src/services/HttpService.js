@@ -1,5 +1,5 @@
 import axios from 'axios';
-const apiBasePath = `/api/`;
+const apiBasePath = `https://statsapi.web.nhl.com/api/v1`;
 export default class HttpService {
     constructor(controller) {
         const axiosInstance = axios.create();

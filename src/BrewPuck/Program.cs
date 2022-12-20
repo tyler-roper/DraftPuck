@@ -1,3 +1,4 @@
+using BrewPuck.Middleware;
 using BrewPuck.Services.Hosted;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
@@ -37,6 +38,7 @@ var app = builder.Build();
 
 //this order matters!
 app
+    .UseMiddleware<UserMiddleware>()
     .UseRouting()
     .UseStaticFiles()
     .UseHsts()
