@@ -5,12 +5,14 @@
                 <span class="fs-1 banner-logo">BrewPuck</span>
                 <b-form-datepicker v-model="date" class="ml-5 d-none d-sm-flex" style="width: 300px;"></b-form-datepicker>
                 <b-form-datepicker v-model="date" size="sm" class="ml-3 d-flex d-sm-none position-relative" style="z-index: 10;" button-only></b-form-datepicker>
+
+                <a role="button" class="ml-auto text-stone-0 font-weight-bold p-2 bg-stone-700 rounded"><i class="fi fi-rr-users mr-2"></i>{{ lobbyMembers.length }}</a>
+
                 <a role="button" class="ml-auto badge badge-pill bg-stone-600 py-2 px-3 d-sm-none font-weight-bold text-uppercase text-stone-200" style="text-decoration: none !important;" @click="toggleDisplay">
                     <span class="mr-1">&gt;</span>
                     <span>{{ showFeed ? 'Scores' : 'Feed' }}</span>
                     <span v-if="!showFeed && unseenEvents > 0" class="ml-1 mr-n2 bg-primary text-white p-1 rounded">🚨 {{ unseenEvents }}</span>
                 </a>
-                <!--<a role="button" @click="enableNotifications">Enable Notifications</a>-->
             </div>
 
             <div class="d-flex flex-grow-1 overflow-hidden">
@@ -58,6 +60,8 @@
         lobby: Lobby | null = null;
         invalidLobby = false;
 
+        lobbyMembers = [];
+
         games: Array<Game> = [];
 
         date: string = (() => {
@@ -70,7 +74,27 @@
         showFeed = false;
         unseenEvents = 0;
 
-        events: Array<GamePlay> = [];
+        eventSource: EventSource | null = null;
+
+        lobbyEvents: Array<object> = [];
+        gameEvents: Array<GamePlay> = [];
+
+        get events() {
+            const result = [...this.gameEvents.map(g => ({ rootEventType: "GAME_EVENT", ...g })), ...this.lobbyEvents];
+            result.sort((a, b) => {
+                const aDate = a.rootEventType === "GAME_EVENT"
+                    ? new Date(a.about.dateTime)
+                    : a.date;
+
+                const bDate = b.rootEventType === "GAME_EVENT"
+                    ? new Date(b.about.dateTime)
+                    : b.date;
+
+                return aDate - bDate;
+            });
+
+            return result;
+        }
 
         eventTypeIds = ["goal", "penalty", "period_start", "period_end", "game_end", "challenge"];
 
@@ -126,7 +150,15 @@
                 try {
                     this.isLoading = true;
                     this.lobby = await LobbyService.getLobbyById(this.id);
-                } catch {
+                    this.lobbyMembers = this.lobby.lobbyMembers;
+                    this.eventSource = new EventSource(`/api/events/${this.id}`);
+
+                    this.eventSource.addEventListener("UserJoined", event => {
+                        const data = JSON.parse(event.data);
+                        this.handleUserJoined(data);
+                    });
+                } catch (e) {
+                    console.error(e);
                     this.invalidLobby = true;
                     return;
                 }
@@ -134,6 +166,11 @@
             } finally {
                 this.isLoading = false;
             }
+        }
+
+        handleUserJoined(data: object) {
+            this.lobbyEvents.push({ ...data, date: new Date(), rootEventType: "LOBBY_EVENT" });
+            this.lobbyMembers.push({ id: data.lobbyMemberId, userId: data.userId, name: data.name })
         }
 
         @Watch('date')
@@ -275,15 +312,15 @@
                 .filter(e => e?.about?.dateTime && this.eventTypeIds.some(eti => eti === (e?.result?.eventTypeId?.toLowerCase() ?? "")));
 
             if (isInitial) {
-                this.events = allEvents;
+                this.gameEvents = allEvents;
             } else {
                 //push new events
-                const existingEventCodes = this.events.map(e => e.result.eventCode);
+                const existingEventCodes = this.gameEvents.map(e => e.result.eventCode);
                 const newEvents = allEvents.filter(e => existingEventCodes.every(eec => eec != e.result.eventCode));
-                this.events.push(...newEvents);
+                this.gameEvents.push(...newEvents);
 
                 //handle animations
-                const previousGoalsAwaitingAnimation = this.events.filter(e => e.result.eventTypeId.toLowerCase() === "goal" && e.awaitingScorer === true);
+                const previousGoalsAwaitingAnimation = this.gameEvents.filter(e => e.result.eventTypeId.toLowerCase() === "goal" && e.awaitingScorer === true);
                 const goals = newEvents.filter(e => e.result.eventTypeId.toLowerCase() === "goal");
                 const playsToAnimate = [...previousGoalsAwaitingAnimation, ...goals];
 
@@ -313,8 +350,6 @@
                     });
                 })
             }
-
-            this.events.sort((a, b) => new Date(a.about.dateTime) - new Date(b.about.dateTime));
         }
 
         getPlayerById(game: Game, playerId: number): Player {
@@ -333,7 +368,3 @@
         }
     }
 </script>
-
-<style scoped>
-
-</style>

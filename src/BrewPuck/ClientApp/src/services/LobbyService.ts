@@ -9,8 +9,8 @@ class LobbyService {
         this._http = new HttpService(controller);
     }
 
-    public async createLobby(): Promise<Lobby> {
-        return this._http.post("",null);
+    public async createLobby(name: string): Promise<Lobby> {
+        return this._http.post(`?name=${name}`,null);
     }
 
     public async getLobbyById(id: string): Promise<Lobby> {

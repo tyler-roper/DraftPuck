@@ -1,8 +1,9 @@
 import HttpService from '@/services/HttpService';
 const controller = "";
+const basePath = "https://statsapi.web.nhl.com/api/v1/";
 class NhlApiService {
     constructor() {
-        this._http = new HttpService(controller);
+        this._http = new HttpService(controller, false, basePath);
     }
     async getSchedule(date) {
         if (date) {

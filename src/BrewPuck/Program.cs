@@ -26,9 +26,12 @@ builder.Logging.AddConsole();
 builder.Services
     .AddDbContext<BrewPuckContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")))
     .AddEndpointsApiExplorer()
-    .AddTransient<INotificationService, NotificationService>()
+    .AddTransient<ILobbyEventService, LobbyEventService>()
     .AddSingleton<IEventService, EventService>()
-    .AddHostedService<KeepAliveService>();
+    .AddSingleton<IGameService, GameService>()
+    .AddHostedService<KeepAliveService>()
+    .AddHostedService<GameCheckerService>()
+    .AddHttpClient();
 
 //kestrel
 builder.WebHost.UseKestrel();

@@ -81,6 +81,7 @@ public partial class BrewPuckContext : DbContext
         {
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.Name).HasMaxLength(50);
+            entity.Property(e => e.Joined).HasDefaultValueSql("(getutcdate())");
 
             entity.HasOne(d => d.Lobby).WithMany(p => p.LobbyMembers)
                 .HasForeignKey(d => d.LobbyId)

@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using BrewPuck.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace BrewPuck.Api
 {
@@ -6,10 +7,12 @@ namespace BrewPuck.Api
     {
         private static Random random = new Random();
         private readonly BrewPuckContext _dbContext;
+        private readonly IEventService _eventService;
 
-        public LobbyController(BrewPuckContext dbContext)
+        public LobbyController(BrewPuckContext dbContext, IEventService eventService)
         {
             _dbContext = dbContext;
+            _eventService = eventService;
         }
 
         [HttpPost]
@@ -42,7 +45,10 @@ namespace BrewPuck.Api
         [HttpGet("{id}")]
         public async Task<IActionResult> GetLobbyById(Guid id)
         {
-            var lobby = await _dbContext.Lobbies.FindAsync(id);
+            var lobby = await _dbContext.Lobbies
+                .Include(l => l.LobbyMembers)
+                    .ThenInclude(lm => lm.LobbyMemberPicks)
+                .FirstOrDefaultAsync(l => l.Id == id);
 
             return lobby == null
                 ? NotFound()
@@ -59,15 +65,43 @@ namespace BrewPuck.Api
                 .FirstOrDefaultAsync(l => l.JoinCode == code);
             if (lobby == null) return NotFound();
 
-            if (!lobby.LobbyMembers.Any(lm => lm.UserId == CurrentUser.Id))
+            var existingLobbyMember = lobby.LobbyMembers.FirstOrDefault(lm => lm.UserId == CurrentUser.Id);
+            if (existingLobbyMember == null)
             {
-                _dbContext.LobbyMembers.Add(new LobbyMember()
+                //JOINED LOBBY
+                var lobbyMember = new LobbyMember()
                 {
                     LobbyId = lobby.Id,
                     UserId = CurrentUser.Id,
                     Name = name
-                });
+                };
+                _dbContext.LobbyMembers.Add(lobbyMember);
                 await _dbContext.SaveChangesAsync();
+
+                _eventService.Notify(new LobbyEventModel()
+                {
+                    LobbyId = lobby.Id,
+                    Type = LobbyEventType.UserJoined,
+                    UserId = CurrentUser.Id,
+                    Name = name,
+                    LobbyMemberId = lobbyMember.Id
+                });
+
+            } else if (existingLobbyMember.Name != name)
+            {
+                //NAME CHANGE
+                var lobbyMemberEntity = await _dbContext.LobbyMembers.FindAsync(existingLobbyMember.Id);
+                lobbyMemberEntity.Name = name;
+                await _dbContext.SaveChangesAsync();
+
+                _eventService.Notify(new LobbyEventModel()
+                {
+                    LobbyId = lobby.Id,
+                    Type = LobbyEventType.UserNameChanged,
+                    UserId = CurrentUser.Id,
+                    Name = name,
+                    LobbyMemberId = existingLobbyMember.Id
+                });
             }
 
             return Ok(lobby);

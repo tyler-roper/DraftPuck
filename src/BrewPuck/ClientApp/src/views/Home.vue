@@ -11,7 +11,7 @@
                 <b-form-input v-model="name" placeholder="Name" class="px-3 py-4"></b-form-input>
             </div>
             <div class="mt-3 d-flex">
-                <button class="d-block btn btn-primary w-100 font-weight-bold py-3 text-uppercase">Join Lobby</button>
+                <button @click="joinLobby" class="d-block btn btn-primary w-100 font-weight-bold py-3 text-uppercase">Join Lobby</button>
             </div>
 
             <div class="d-flex align-items-center my-4">
@@ -21,7 +21,7 @@
             </div>
 
             <div class="text-center">
-                <button class="d-block btn bg-stone-700 w-100 font-weight-bold py-3 text-uppercase">Create Lobby</button>
+                <button @click="createLobby" class="d-block btn bg-stone-700 w-100 font-weight-bold py-3 text-uppercase">Create Lobby</button>
             </div>
         </div>
     </div>
@@ -29,9 +29,23 @@
 
 <script lang="ts">
     import { Component, Vue } from 'vue-property-decorator';
+    import LobbyService from '@/services/LobbyService';
 
     @Component
-    export default class Home extends Vue { }
+    export default class Home extends Vue {
+        name = "";
+        code = "";
+
+        async createLobby() {
+            const lobby = await LobbyService.createLobby("Test Person");
+            this.$router.push({ name: 'Lobby', params: { id: lobby.id } });
+        }
+
+        async joinLobby() {
+            const lobby = await LobbyService.joinLobbyByCode(this.code, this.name);
+            this.$router.push({ name: 'Lobby', params: { id: lobby.id } });
+        }
+    }
 </script>
 
 <style scoped>

@@ -1,26 +1,18 @@
 import HttpService from '@/services/HttpService';
-const controller = "";
-class NhlApiService {
+const controller = "lobby";
+class LobbyService {
     constructor() {
         this._http = new HttpService(controller);
     }
-    async getSchedule(date) {
-        if (date) {
-            return this._http.getWithParams("schedule", { startDate: date, endDate: date });
-        }
-        else {
-            return this._http.get("schedule");
-        }
+    async createLobby(name) {
+        return this._http.post(`?name=${name}`, null);
     }
-    async getPlayer(id) {
-        return this._http.get("people", id.toString());
+    async getLobbyById(id) {
+        return this._http.get("", id);
     }
-    async getGameData(gamePk) {
-        return this._http.get(`game/${gamePk}/feed/live?cb=${Date.now()}`);
-    }
-    async getGamePatch(gamePk, startTimecode) {
-        return this._http.get(`game/${gamePk}/feed/live/diffPatch?startTimecode=${startTimecode}&cb=${Date.now()}`);
+    async joinLobbyByCode(code, name) {
+        return this._http.post(`join/${code}?name=${name}`, null);
     }
 }
-export default new NhlApiService();
-//# sourceMappingURL=NhlApiService.js.map
+export default new LobbyService();
+//# sourceMappingURL=LobbyService.js.map

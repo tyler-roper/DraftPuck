@@ -1,10 +1,20 @@
 import axios from 'axios';
-const apiBasePath = `https://statsapi.web.nhl.com/api/v1`;
+const apiBasePath = `/api/`;
 export default class HttpService {
-    constructor(controller) {
+    constructor(controller, addUserHeader = true, basePath) {
         const axiosInstance = axios.create();
+        axiosInstance.interceptors.request.use(config => {
+            const userId = localStorage.getItem('userId');
+            config.headers['Accept'] = 'application/json';
+            config.headers['Content-Type'] = 'application/json';
+            if (userId && addUserHeader)
+                config.headers["user-id"] = userId;
+            return config;
+        }, error => {
+            Promise.reject(error);
+        });
         this._axios = axiosInstance;
-        this._basePath = `${apiBasePath}${controller}/`;
+        this._basePath = basePath ? `${basePath}${controller}` : `${apiBasePath}${controller}/`;
     }
     async get(endpoint, id) {
         if (endpoint && endpoint.length && !endpoint.includes("?"))
@@ -15,7 +25,7 @@ export default class HttpService {
     }
     async getWithParams(endpoint, params) {
         const queryString = new URLSearchParams(params).toString();
-        const response = await this._axios.get(`${this._basePath}${endpoint}/?${queryString}`);
+        const response = await this._axios.get(`${this._basePath}${endpoint}?${queryString}`);
         return response.data;
     }
     async post(endpoint, data) {

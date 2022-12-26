@@ -30,18 +30,33 @@
             </div>
 
             <template v-if="!showSettings">
-                <div v-for="item in filteredEvents" :key="item.result.eventCode" class="d-flex align-items-center bg-stone-100 feed-item" :class="{'initial-load': item.isInitial === true, [`item-type-${getEventType(item)}`]: true }" :style="getBackgroundForPlay(item)">
-                    <div class="flex-shrink-0" style="width: 5px; align-self: stretch"></div>
-                    <div class="team-icons p-3 mr-n5 ml-n2 flex-shrink-0" style="width: 140px;">
-                        <img v-for="team in getTeamsByPlay(item)" :key="team.id" :src="getEventType(item) == 'goal' ? team.logoLight : team.logo" />
-                    </div>
-                    <div class="flex-grow-1 px-4 py-3 feed-item-content">
-                        <div class="d-flex justify-content-between header">
-                            <span class="d-block font-weight-bold text-uppercase header-text" :class="{'text-danger': getEventType(item) === 'penalty'}" v-html="getHeaderTextForEvent(item)"></span>
-                            <span class="d-block timestamps" style="opacity: 0.7" v-html="getTimestampForEvent(item)"></span>
+                <div v-for="(item, idx) in filteredEvents" :key="idx" class="d-flex align-items-center bg-stone-100 feed-item" :class="{'initial-load': item.isInitial === true, [`item-type-${getEventType(item)}`]: true }" :style="getBackgroundForPlay(item)">
+                    <template v-if="item.rootEventType === 'GAME_EVENT'">
+                        <div class="team-icons p-3 mr-n5 ml-n2 flex-shrink-0" style="width: 140px;">
+                            <img v-for="team in getTeamsByPlay(item)" :key="team.id" :src="getEventType(item) == 'goal' ? team.logoLight : team.logo" />
                         </div>
-                        <span class="d-block event-text mt-1" v-html="getTextForEvent(item)"></span>
-                    </div>
+                        <div class="flex-grow-1 px-4 py-3 feed-item-content">
+                            <div class="d-flex justify-content-between header">
+                                <span class="d-block font-weight-bold text-uppercase header-text" :class="{'text-danger': getEventType(item) === 'penalty'}" v-html="getHeaderTextForEvent(item)"></span>
+                                <span class="d-block timestamps" style="opacity: 0.7" v-html="getTimestampForEvent(item)"></span>
+                            </div>
+                            <span class="d-block event-text mt-1" v-html="getTextForEvent(item)"></span>
+                        </div>
+                    </template>
+                    <template v-if="item.rootEventType === 'LOBBY_EVENT'">
+
+                        <div class="team-icons p-3 mr-n5 ml-n2 flex-shrink-0" style="width: 140px;">
+                            <i class="fi fi-rr-user-add"></i>
+                        </div>
+                        <div class="flex-grow-1 px-4 py-3 feed-item-content">
+                            <div class="d-flex justify-content-between header">
+                                <span class="d-block font-weight-bold text-uppercase header-text text-blue">Welcome!</span>
+                                <span class="d-block timestamps" style="opacity: 0.7" v-html="getTimestampForEvent(item)"></span>
+                            </div>
+                            <span class="d-block event-text mt-1"><strong>{{ item.name }}</strong> joined the lobby.</span>
+                        </div>
+
+                    </template>
                 </div>
 
                 <div v-if="events.length === 0" class="align-self-center flex-grow-1 d-flex align-items-center">
@@ -104,7 +119,7 @@
         getFilters() {
             const existingFilters = localStorage.getItem('feedFilters');
             if (existingFilters)
-                this.filters = {...this.filters, ...JSON.parse(existingFilters)};
+                this.filters = { ...this.filters, ...JSON.parse(existingFilters) };
         }
 
         setFilters() {
@@ -119,7 +134,10 @@
         }
 
         getEventType(play: GamePlay): string {
-            return play?.result?.eventTypeId?.toLowerCase() ?? "";
+            if (play.type === "LOBBY_EVENT")
+                return "lobby-event"
+            else
+                return play?.result?.eventTypeId?.toLowerCase() ?? "";
         }
 
         getHeaderTextForEvent(play: GamePlay): string {
@@ -158,9 +176,13 @@
         }
 
         getTimestampForEvent(play: GamePlay): string {
-            const e = this.getEventType(play);
-            const timeEst = new Date(play.about.dateTime).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: 'numeric', minute: '2-digit' });
+            if (play.rootEventType === "LOBBY_EVENT")
+                return `<span class='date-time'>${play.date.toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: 'numeric', minute: '2-digit' }) }</span>`;
 
+            const timeEst = new Date(play.about.dateTime).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: 'numeric', minute: '2-digit' });
+            
+
+            const e = this.getEventType(play);
             if (e === "goal" || e === "penalty" || e === "challenge") {
                 return `<span class='period'>${play.about?.periodTime} - ${play.about?.ordinalNum}<span> <span class='mx-2 divider'>|</span> <span class='datetime'>${timeEst}</span>`;
             } else {
@@ -173,6 +195,9 @@
         }
 
         getBackgroundForPlay(play: GamePlay): Record<string, string> {
+            const type = play.type;
+            if (type === "LOBBY_EVENT") return {};
+
             const e = this.getEventType(play);
             if (e !== "goal") return {};
 
@@ -196,13 +221,10 @@
         }
 
         get filteredEvents() {
-            return this.events.filter(e => this.eventTypesFiltered.includes(this.getEventType(e)));
+            return this.events.filter(e => e.rootEventType === "LOBBY_EVENT" || this.eventTypesFiltered.includes(this.getEventType(e)));
         }
     }
 </script>
 
 <style scoped>
-
-
-
 </style>

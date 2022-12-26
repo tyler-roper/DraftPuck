@@ -2,12 +2,12 @@
 {
     public class EventService : IEventService
     {
-        public event EventHandler<NotificationArgs>? NotificationEvent;
+        public event EventHandler<LobbyEventArgs>? LobbyEvent;
         public event EventHandler? KeepAlive;
 
-        public void Notify(NotificationModel notification)
+        public void Notify(LobbyEventModel lobbyEvent)
         {
-            NotificationEvent?.Invoke(this, new NotificationArgs(notification));
+            LobbyEvent?.Invoke(this, new LobbyEventArgs(lobbyEvent));
         }
 
         public void SendKeepAliveMessages()
@@ -16,18 +16,22 @@
         }
     }
 
-    public class NotificationArgs : EventArgs
+    public class LobbyEventArgs : EventArgs
     {
-        public NotificationModel Notification { get; }
+        public LobbyEventModel LobbyEvent { get; }
 
-        public NotificationArgs(NotificationModel notification)
+        public LobbyEventArgs(LobbyEventModel lobbyEvent)
         {
-            Notification = notification;
+            LobbyEvent = lobbyEvent;
         }
     }
 
-    public class NotificationModel
+    public class LobbyEventModel
     {
-        public string TestMessage { get; set; }
+        public LobbyEventType Type { get; set; }
+        public Guid LobbyId { get; set; }
+        public Guid UserId { get; set; }
+        public string Name { get; set; }
+        public Guid LobbyMemberId { get; set; }
     }
 }
