@@ -10,7 +10,7 @@ const routes = [
         component: () => import('@/views/Home.vue')
     },
     {
-        path: '/lobby/:id',
+        path: '/lobby/:code',
         name: 'Lobby',
         props: true,
         component: () => import('@/views/Lobby.vue')

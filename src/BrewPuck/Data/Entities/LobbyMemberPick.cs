@@ -13,6 +13,4 @@ public partial class LobbyMemberPick
     public virtual ICollection<Drink> Drinks { get; } = new List<Drink>();
 
     public virtual LobbyMember LobbyMember { get; set; } = null!;
-
-    public virtual Player Player { get; set; } = null!;
 }

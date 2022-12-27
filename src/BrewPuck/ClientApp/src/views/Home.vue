@@ -38,12 +38,12 @@
 
         async createLobby() {
             const lobby = await LobbyService.createLobby("Test Person");
-            this.$router.push({ name: 'Lobby', params: { id: lobby.id } });
+            this.$router.push({ name: 'Lobby', params: { code: lobby.joinCode } });
         }
 
         async joinLobby() {
             const lobby = await LobbyService.joinLobbyByCode(this.code, this.name);
-            this.$router.push({ name: 'Lobby', params: { id: lobby.id } });
+            this.$router.push({ name: 'Lobby', params: { code: lobby.joinCode } });
         }
     }
 </script>

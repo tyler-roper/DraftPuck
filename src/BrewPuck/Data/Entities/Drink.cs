@@ -8,6 +8,8 @@ public partial class Drink
 
     public Guid? RecipientLobbyMemberId { get; set; }
 
+    public int EventId { get; set; }
+
     public virtual LobbyMemberPick LobbyMemberPick { get; set; } = null!;
 
     public virtual LobbyMember? RecipientLobbyMember { get; set; }

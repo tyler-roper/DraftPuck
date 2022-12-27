@@ -5,9 +5,9 @@
         UserJoined,
         UserRejoined,
         UserLeft,
-        UserNewPick,
-        UserPickScored,
         UserNameChanged,
+        NewPick,
+        PickScored,
         GoalChanged
     }
 }

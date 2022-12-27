@@ -43,19 +43,8 @@
                             <span class="d-block event-text mt-1" v-html="getTextForEvent(item)"></span>
                         </div>
                     </template>
+
                     <template v-if="item.rootEventType === 'LOBBY_EVENT'">
-
-                        <div class="team-icons p-3 mr-n5 ml-n2 flex-shrink-0" style="width: 140px;">
-                            <i class="fi fi-rr-user-add"></i>
-                        </div>
-                        <div class="flex-grow-1 px-4 py-3 feed-item-content">
-                            <div class="d-flex justify-content-between header">
-                                <span class="d-block font-weight-bold text-uppercase header-text text-blue">Welcome!</span>
-                                <span class="d-block timestamps" style="opacity: 0.7" v-html="getTimestampForEvent(item)"></span>
-                            </div>
-                            <span class="d-block event-text mt-1"><strong>{{ item.name }}</strong> joined the lobby.</span>
-                        </div>
-
                     </template>
                 </div>
 

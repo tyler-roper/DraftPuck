@@ -89,11 +89,13 @@
                 const currentPeriod = game?.liveData?.linescore?.currentPeriod ?? 0;
                 const currentPeriodOrdinal = game?.liveData?.linescore?.currentPeriodOrdinal;
 
-                if (status >= 6) {
+                if (status >= 6 && status < 8) {
                     let string = `${currentPeriodTimeRemaining}`;
                     if (currentPeriod > 3) string += ` (${(currentPeriodOrdinal)})`
                     return string;
                 }
+
+                if (status == 9) return 'POSTPONED';
 
                 if (!currentPeriodTimeRemaining.includes(":")) return `${currentPeriodTimeRemaining} - ${currentPeriodOrdinal}`;
                 const timeParts = currentPeriodTimeRemaining.split(":");
@@ -124,7 +126,9 @@
         }
 
         getGameTimeStyling(game: Game) {
+            if (this.isPostponed(game)) return { 'text-danger': true }
             if (!this.hasStarted(game)) return {};
+
             const isExtraTime = game.liveData?.linescore?.currentPeriod > 3;
             const isThirdPeriod = game.liveData?.linescore?.currentPeriod == 3;
             const isCloseGame = Math.abs(game.liveData?.linescore.teams.away?.goals - game.liveData?.linescore.teams.home?.goals) <= 1;
@@ -188,8 +192,12 @@
             return this.game.gameData.players[`ID${playerId}`];
         }
 
+        isPostponed(game: Game) {
+            return Number(game?.gameData?.status?.statusCode) == 9;
+        }
+
         hasStarted(game: Game) {
-            return Number(game?.gameData?.status?.statusCode) >= 3;
+            return Number(game?.gameData?.status?.statusCode) >= 3 && Number(game?.gameData?.status?.statusCode) < 8;
         }
 
         isLive(game: Game) {
@@ -197,7 +205,7 @@
         }
 
         hasEnded(game: Game) {
-            return Number(game?.gameData?.status?.statusCode) >= 5;
+            return Number(game?.gameData?.status?.statusCode) >= 5 && Number(game?.gameData?.status?.statusCode) < 8;
         }
 
         isTeamLosing(game: Game, team: Team) {

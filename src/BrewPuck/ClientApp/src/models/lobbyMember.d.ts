@@ -3,4 +3,5 @@ interface LobbyMember {
     lobbyId: string;
     userId: string;
     name: string;
+    lobbyMemberPicks: Array<LobbyMemberPick>;
 }

@@ -25,7 +25,7 @@ namespace BrewPuck.Api
             var lobby = new Lobby()
             {
                 Id = newLobbyId,
-                JoinCode = RandomString(4),
+                JoinCode = await RandomString(4),
                 Status = 0,
                 CreatedBy = CurrentUser.Id
             };
@@ -42,13 +42,13 @@ namespace BrewPuck.Api
             return Created($"lobbies/{newLobbyId}", lobby);
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetLobbyById(Guid id)
+        [HttpGet("{code}")]
+        public async Task<IActionResult> GetLobbyByCode(string code)
         {
             var lobby = await _dbContext.Lobbies
                 .Include(l => l.LobbyMembers)
                     .ThenInclude(lm => lm.LobbyMemberPicks)
-                .FirstOrDefaultAsync(l => l.Id == id);
+                .FirstOrDefaultAsync(l => l.JoinCode == code);
 
             return lobby == null
                 ? NotFound()
@@ -78,14 +78,7 @@ namespace BrewPuck.Api
                 _dbContext.LobbyMembers.Add(lobbyMember);
                 await _dbContext.SaveChangesAsync();
 
-                _eventService.Notify(new LobbyEventModel()
-                {
-                    LobbyId = lobby.Id,
-                    Type = LobbyEventType.UserJoined,
-                    UserId = CurrentUser.Id,
-                    Name = name,
-                    LobbyMemberId = lobbyMember.Id
-                });
+                _eventService.Notify(new LobbyEventModel(LobbyEventType.UserJoined, lobby.Id, lobbyMember));
 
             } else if (existingLobbyMember.Name != name)
             {
@@ -94,24 +87,100 @@ namespace BrewPuck.Api
                 lobbyMemberEntity.Name = name;
                 await _dbContext.SaveChangesAsync();
 
-                _eventService.Notify(new LobbyEventModel()
-                {
-                    LobbyId = lobby.Id,
-                    Type = LobbyEventType.UserNameChanged,
-                    UserId = CurrentUser.Id,
-                    Name = name,
-                    LobbyMemberId = existingLobbyMember.Id
-                });
+                _eventService.Notify(new LobbyEventModel(LobbyEventType.UserNameChanged, lobby.Id, lobbyMemberEntity));
             }
 
             return Ok(lobby);
         }
 
-        private static string RandomString(int length)
+        [HttpPost("{code}/pick")]
+        public async Task<IActionResult> MakePick(string code, MakePickRequest request)
+        {
+            if (CurrentUser == null) return Unauthorized();
+            var lobby = await _dbContext.Lobbies
+                .Include(l => l.LobbyMembers)
+                .ThenInclude(lm => lm.LobbyMemberPicks)
+                .FirstOrDefaultAsync(l => l.JoinCode == code);
+
+            if (lobby == null) return NotFound();
+
+            var lobbyMember = lobby.LobbyMembers.FirstOrDefault(lm => lm.UserId == CurrentUser.Id);
+            if (lobbyMember == null) return Unauthorized();
+
+            var player = await _dbContext.Players.FindAsync(request.Player.Id);
+            if (player == null) {
+                player = new Player()
+                {
+                    Id = request.Player.Id,
+                    FirstName = request.Player.FirstName,
+                    LastName = request.Player.LastName,
+                    Position = request.Player.Position,
+                    Number = request.Player.Number,
+                    TeamId = request.Player.TeamId
+                };
+
+                _dbContext.Players.Add(player);
+                await _dbContext.SaveChangesAsync();
+            }
+            else
+            {
+                player.FirstName = request.Player.FirstName;
+                player.LastName = request.Player.LastName;
+                player.Position = request.Player.Position;
+                player.Number = request.Player.Number;
+                player.TeamId = request.Player.TeamId;
+                await _dbContext.SaveChangesAsync();
+            }
+
+            var pick = new LobbyMemberPick()
+            {
+                LobbyMemberId = lobbyMember.Id,
+                PlayerId = player.Id,
+                GamePk = request.GamePk
+            };
+
+            _dbContext.LobbyMemberPicks.Add(pick);
+            await _dbContext.SaveChangesAsync();
+
+            _eventService.Notify(new LobbyEventModel(LobbyEventType.NewPick, lobby.Id, lobbyMember));
+
+            return Ok(pick);
+        }
+
+        [HttpPost("pick/{pickId}/score")]
+        public async Task<IActionResult> PickScored(Guid pickId, [FromQuery] int eventId)
+        {
+
+        }
+
+        private async Task<string> RandomString(int length)
         {
             const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-            return new string(Enumerable.Repeat(chars, length)
-                .Select(s => s[random.Next(s.Length)]).ToArray());
+            var stillSearching = true;
+            var result = "";
+
+            while (stillSearching) {
+                result = new string(Enumerable.Repeat(chars, length).Select(s => s[random.Next(s.Length)]).ToArray());
+                stillSearching = await _dbContext.Lobbies.AnyAsync(l => l.JoinCode == result);
+            }
+
+            return result;
         }
+    }
+
+    public class MakePickRequest
+    {
+        public long GamePk { get; set; }
+        public PlayerRequest Player { get; set; } = null!;
+    }
+
+    public class PlayerRequest
+    {
+        public long Id { get; set; }
+        public string FirstName { get; set; } = null!;
+        public string LastName { get; set; } = null!;
+        public string Number { get; set; }
+        public int TeamId { get; set; }
+        public string Position { get; set; } = null!;
     }
 }

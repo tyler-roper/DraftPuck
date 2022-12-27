@@ -6,8 +6,6 @@
                 <b-form-datepicker v-model="date" class="ml-5 d-none d-sm-flex" style="width: 300px;"></b-form-datepicker>
                 <b-form-datepicker v-model="date" size="sm" class="ml-3 d-flex d-sm-none position-relative" style="z-index: 10;" button-only></b-form-datepicker>
 
-                <a role="button" class="ml-auto text-stone-0 font-weight-bold p-2 bg-stone-700 rounded"><i class="fi fi-rr-users mr-2"></i>{{ lobbyMembers.length }}</a>
-
                 <a role="button" class="ml-auto badge badge-pill bg-stone-600 py-2 px-3 d-sm-none font-weight-bold text-uppercase text-stone-200" style="text-decoration: none !important;" @click="toggleDisplay">
                     <span class="mr-1">&gt;</span>
                     <span>{{ showFeed ? 'Scores' : 'Feed' }}</span>
@@ -18,7 +16,29 @@
             <div class="d-flex flex-grow-1 overflow-hidden">
                 <template v-if="!isLoading">
                     <FullScoreboard class="full-scoreboard flex-grow-1" :class="{ 'hide-mobile': !showGames }" :games="games" :date="date" style="overflow: auto;"></FullScoreboard>
-                    <Feed class="feed flex-shrink-0" :class="{ 'hide-mobile': !showFeed }" :games="games" :events="events" style="width: 400px;"></Feed>
+                    <div class="feed flex-shrink-0 d-flex flex-column" :class="{ 'hide-mobile': !showFeed }" style="width: 400px;">
+                        <div class="bg-stone-300" style="overflow-y: scroll; max-height: 400px;">
+                            <div class="bg-stone-150 p-3 ls-2 shadow d-flex align-items-center" style="z-index: 2; position: sticky; top: 0;">
+                                <div>
+                                    <span class="fs-4 font-weight-bold d-block text-uppercase text-stone-700">Lobby</span>
+                                </div>
+                                <div class="ml-auto">
+                                    <a role="button" class="p-3 text-stone-400 d-block m-n3" style="text-decoration: none !important;"><i class="fs-3 fi fi-sr-settings mb-n2 d-block"></i></a>
+                                </div>
+                            </div>
+                            <div class="py-2 bg-stone-100">
+                                <div class="d-flex align-items-center px-3 py-1 text-stone-800" v-for="lm in lobby.lobbyMembers" :key="lm.id">
+                                    <div class="mr-2">
+                                        <i class="fi fi-sr-user fs-6"></i>
+                                    </div>
+                                    <div>
+                                        {{ lm.name }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <Feed class="flex-grow-1" :games="games" :events="events"></Feed>
+                    </div>
                 </template>
 
                 <div v-if="isLoading" style="width: 100%; height: 100%;" class="d-flex align-items-center">
@@ -55,12 +75,10 @@
     })
     export default class LobbyComponent extends Vue {
         @Prop()
-        id!: string;
+        code!: string;
 
         lobby: Lobby | null = null;
         invalidLobby = false;
-
-        lobbyMembers = [];
 
         games: Array<Game> = [];
 
@@ -73,6 +91,7 @@
         showGames = true;
         showFeed = false;
         unseenEvents = 0;
+        currentUserId = localStorage.getItem('userId');
 
         eventSource: EventSource | null = null;
 
@@ -149,14 +168,8 @@
 
                 try {
                     this.isLoading = true;
-                    this.lobby = await LobbyService.getLobbyById(this.id);
-                    this.lobbyMembers = this.lobby.lobbyMembers;
-                    this.eventSource = new EventSource(`/api/events/${this.id}`);
-
-                    this.eventSource.addEventListener("UserJoined", event => {
-                        const data = JSON.parse(event.data);
-                        this.handleUserJoined(data);
-                    });
+                    await this.getLobby();
+                    this.addEventSource();
                 } catch (e) {
                     console.error(e);
                     this.invalidLobby = true;
@@ -168,9 +181,33 @@
             }
         }
 
-        handleUserJoined(data: object) {
-            this.lobbyEvents.push({ ...data, date: new Date(), rootEventType: "LOBBY_EVENT" });
-            this.lobbyMembers.push({ id: data.lobbyMemberId, userId: data.userId, name: data.name })
+        addEventSource() {
+            this.eventSource = new EventSource(`/api/events/${this.lobby.joinCode}`);
+
+            const lobbyEventTypes = [
+                "UserJoined",
+                "UserRejoined",
+                "UserLeft",
+                "UserNewPick",
+                "UserPickScored",
+                "UserNameChanged",
+                "GoalChanged"
+            ];
+
+            lobbyEventTypes.forEach(t => {
+                this.eventSource.addEventListener(t, async event => {
+                    const data = JSON.parse(event.data);
+                    if (this[`on${t}`])
+                        this[`on${t}`](data);
+
+                    await this.getLobby();
+                })
+            });
+        }
+
+        async getLobby() {
+            this.lobby = await LobbyService.getLobbyByCode(this.code);
+            this.lobby?.lobbyMembers.sort((a, b) => new Date(a.joined) - new Date(b.joined));
         }
 
         @Watch('date')
@@ -188,6 +225,7 @@
             this.unseenEvents = 0;
             this.showFeed = !this.showFeed;
             this.showGames = !this.showGames;
+            this.events.forEach(e => e.isInitial = true);
         }
 
         enableNotifications() {
@@ -223,8 +261,6 @@
 
         async initialGetGames() {
             const schedule = await NHL.getSchedule(this.date);
-
-            if (!schedule?.dates?.length || !schedule.dates[0].games?.length) return;
             this.games = [];
 
             for (const scheduleGame of schedule.dates[0].games) {
@@ -320,35 +356,61 @@
                 this.gameEvents.push(...newEvents);
 
                 //handle animations
-                const previousGoalsAwaitingAnimation = this.gameEvents.filter(e => e.result.eventTypeId.toLowerCase() === "goal" && e.awaitingScorer === true);
-                const goals = newEvents.filter(e => e.result.eventTypeId.toLowerCase() === "goal");
-                const playsToAnimate = [...previousGoalsAwaitingAnimation, ...goals];
+                const previousGoalsAwaitingScorer = this.gameEvents.filter(e => e.result.eventTypeId.toLowerCase() === "goal" && e.awaitingScorer === true);
+                const newGoals = newEvents.filter(e => e.result.eventTypeId.toLowerCase() === "goal");
+                if (!this.showFeed) this.unseenEvents += newGoals.length;
 
-                if (!this.showFeed) this.unseenEvents += goals.length;
+                const unaddressedGoals = [...previousGoalsAwaitingScorer, ...newGoals];
+                unaddressedGoals.forEach(p => this.onGoalScored(p));
+            }
+        }
 
-                playsToAnimate.forEach(play => {
-                    play.awaitingScorer = true;
+        onGoalScored(play: GamePlay) {
+            play.awaitingScorer = true;
 
-                    const game = this.games.find(g => g.gamePk === play.gamePk);
-                    const teamId = play.team?.id;
-                    const team = game.gameData.teams.away.id === teamId
-                        ? game.gameData.teams.away
-                        : game.gameData.teams.home;
+            const game = this.games.find(g => g.gamePk === play.gamePk);
+            const teamId = play.team?.id;
+            const team = game.gameData.teams.away.id === teamId
+                ? game.gameData.teams.away
+                : game.gameData.teams.home;
 
-                    const scorer = play?.players?.find(p => p.playerType?.toLowerCase() === "scorer")?.player;
-                    if (!scorer) return;
+            const scorer = play?.players?.find(p => p.playerType?.toLowerCase() === "scorer")?.player;
+            if (!scorer) return;
 
-                    const player = this.getPlayerById(game, scorer.id);
-                    if (!player) return;
+            const player = this.getPlayerById(game, scorer.id);
+            if (!player) return;
 
-                    play.awaitingScorer = false;
+            play.awaitingScorer = false;
 
-                    game.animations.push({
-                        active: false,
-                        team,
-                        player
-                    });
-                })
+            this.checkGoalAgainstPicks(game, player, play)
+            this.handleGoalAnimation(game, team, player);
+        }
+
+        handleGoalAnimation(game: Game, team: Team, player: Player) {
+            game.animations.push({
+                active: false,
+                team,
+                player
+            });
+        }
+
+        checkGoalAgainstPicks(game: Game, player: Player, play: GamePlay) {
+            this.lobby.lobbyMembers.forEach(lm => {
+                const picks = lm.lobbyMemberPicks;
+                const matchingPick = picks.find(p => p.gamePk === game.gamePk && p.playerId === player.id);
+                if (!matchingPick) return;
+
+                this.onPickScored(matchingPick, player, play);
+            })
+        }
+
+        onPickScored(pick: LobbyMemberPick, player: Player, play: GamePlay) {
+            const lobbyMember = this.lobby.lobbyMembers.find(lm => lm.id === pick.lobbyMemberId);
+
+            if (lobbyMember.userId === this.currentUserId) {
+                this.$toast.success(`<strong>${player.firstName} ${player.lastName}</strong> scores! You get to assign a drink!`);
+            } else {
+                this.$toast.info(`<strong>${lobbyMember.name}</strong> gets to assign a drink for a goal by <strong>${player.firstName} ${player.lastName}</strong>!`);
             }
         }
 

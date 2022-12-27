@@ -28,10 +28,9 @@ builder.Services
     .AddEndpointsApiExplorer()
     .AddTransient<ILobbyEventService, LobbyEventService>()
     .AddSingleton<IEventService, EventService>()
-    .AddSingleton<IGameService, GameService>()
-    .AddHostedService<KeepAliveService>()
-    .AddHostedService<GameCheckerService>()
-    .AddHttpClient();
+    .AddHostedService<KeepAliveService>();
+    //.AddHostedService<GameCheckerService>()
+    //.AddHttpClient();
 
 //kestrel
 builder.WebHost.UseKestrel();

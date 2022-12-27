@@ -15,8 +15,6 @@ public partial class BrewPuckContext : DbContext
 
     public virtual DbSet<Drink> Drinks { get; set; }
 
-    public virtual DbSet<Game> Games { get; set; }
-
     public virtual DbSet<Lobby> Lobbies { get; set; }
 
     public virtual DbSet<LobbyMember> LobbyMembers { get; set; }
@@ -24,10 +22,6 @@ public partial class BrewPuckContext : DbContext
     public virtual DbSet<LobbyMemberPick> LobbyMemberPicks { get; set; }
 
     public virtual DbSet<User> Users { get; set; }
-
-    public virtual DbSet<Player> Players { get; set; }
-
-    public virtual DbSet<Team> Teams { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -43,25 +37,10 @@ public partial class BrewPuckContext : DbContext
             entity.HasOne(d => d.RecipientLobbyMember).WithMany(p => p.Drinks)
                 .HasForeignKey(d => d.RecipientLobbyMemberId)
                 .HasConstraintName("FK_Drinks_LobbyMembers");
-        });
 
-        modelBuilder.Entity<Game>(entity =>
-        {
-            entity.HasKey(e => e.GamePk);
-
-            entity.Property(e => e.GamePk).ValueGeneratedNever();
-            entity.Property(e => e.StatusCode).HasMaxLength(1);
-            entity.Property(e => e.Type).HasMaxLength(1);
-
-            entity.HasOne(d => d.AwayTeam).WithMany(p => p.GameAwayTeams)
-                .HasForeignKey(d => d.AwayTeamId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_Games_AwayTeam");
-
-            entity.HasOne(d => d.HomeTeam).WithMany(p => p.GameHomeTeams)
-                .HasForeignKey(d => d.HomeTeamId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_Games_HomeTeam");
+            entity.HasOne(d => d.Event).WithMany(p => p.Drinks)
+                .HasForeignKey(d => d.EventId)
+                .HasConstraintName("FK_Drinks_Events");
         });
 
         modelBuilder.Entity<Lobby>(entity =>
@@ -107,29 +86,6 @@ public partial class BrewPuckContext : DbContext
                 .HasForeignKey(d => d.PlayerId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_LobbyMemberPicks_Players");
-        });
-
-        modelBuilder.Entity<Player>(entity =>
-        {
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.FirstName).HasMaxLength(50);
-            entity.Property(e => e.LastName).HasMaxLength(100);
-            entity.Property(e => e.Number).HasMaxLength(2);
-            entity.Property(e => e.Position).HasMaxLength(2);
-
-            entity.HasOne(d => d.Team).WithMany(p => p.Players)
-                .HasForeignKey(d => d.TeamId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_Players_Teams");
-        });
-
-        modelBuilder.Entity<Team>(entity =>
-        {
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.Abbreviation).HasMaxLength(5);
-            entity.Property(e => e.LocationName).HasMaxLength(50);
-            entity.Property(e => e.ShortName).HasMaxLength(50);
-            entity.Property(e => e.TeamName).HasMaxLength(50);
         });
 
         modelBuilder.Entity<User>(entity =>
