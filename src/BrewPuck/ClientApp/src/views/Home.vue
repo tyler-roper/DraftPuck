@@ -162,9 +162,9 @@
 
         async initialGetGames() {
             const schedule = await NHL.getSchedule(this.date);
+            this.games = [];
 
             if (!schedule?.dates?.length || !schedule.dates[0].games?.length) return;
-            this.games = [];
 
             for (const scheduleGame of schedule.dates[0].games) {
                 if (!scheduleGame.gamePk) continue;

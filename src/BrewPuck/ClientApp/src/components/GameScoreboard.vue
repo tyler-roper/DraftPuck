@@ -82,6 +82,9 @@
                 const gameTime = new Date(game?.gameData?.datetime?.dateTime ?? "");
                 if (!gameTime) return;
 
+                if (status === 9)
+                    return "POSTPONED";
+
                 if (status < 3)
                     return `${gameTime.toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: 'numeric', minute: '2-digit' })} EST`;
 
@@ -124,6 +127,9 @@
         }
 
         getGameTimeStyling(game: Game) {
+            if (this.isPostponed(game)) return {
+                'is-postponed': true
+                };
             if (!this.hasStarted(game)) return {};
             const isExtraTime = game.liveData?.linescore?.currentPeriod > 3;
             const isThirdPeriod = game.liveData?.linescore?.currentPeriod == 3;
@@ -189,7 +195,7 @@
         }
 
         hasStarted(game: Game) {
-            return Number(game?.gameData?.status?.statusCode) >= 3;
+            return Number(game?.gameData?.status?.statusCode) >= 3 && Number(game?.gameData?.status?.statusCode) < 8;
         }
 
         isLive(game: Game) {
@@ -197,7 +203,11 @@
         }
 
         hasEnded(game: Game) {
-            return Number(game?.gameData?.status?.statusCode) >= 5;
+            return Number(game?.gameData?.status?.statusCode) >= 5  && Number(game?.gameData?.status?.statusCode) < 8;
+        }
+
+        isPostponed(game: Game) {
+            return Number(game?.gameData?.status?.statusCode) == 9;
         }
 
         isTeamLosing(game: Game, team: Team) {
@@ -267,6 +277,11 @@
         table.score-table tr th:not(:first-child) {
             border-left: 1px solid rgba(0,0,0,0.02);
         }
+
+    .is-postponed th {
+        color: white !important;
+        background-color: #777 !important;
+    }
 
     .is-live:not(.is-critical) th:first-child {
         color: #dc3545 !important;
