@@ -30,28 +30,16 @@
             </div>
 
             <template v-if="!showSettings">
-                <div v-for="item in filteredEvents" :key="item.result.eventCode" class="d-flex align-items-center bg-stone-100 feed-item" :class="{'initial-load': item.isInitial === true, [`item-type-${getEventType(item)}`]: true }" :style="getBackgroundForPlay(item)">
-                    <div class="flex-shrink-0" style="width: 5px; align-self: stretch"></div>
-                    <div class="team-icons p-3 mr-n5 ml-n2 flex-shrink-0" style="width: 140px;">
-                        <img v-for="team in getTeamsByPlay(item)" :key="team.id" :src="getEventType(item) == 'goal' ? team.logoLight : team.logo" />
-                    </div>
-                    <div class="flex-grow-1 px-4 py-3 feed-item-content">
-                        <div class="d-flex justify-content-between header">
-                            <span class="d-block font-weight-bold text-uppercase header-text" :class="{'text-danger': getEventType(item) === 'penalty'}" v-html="getHeaderTextForEvent(item)"></span>
-                            <span class="d-block timestamps" style="opacity: 0.7" v-html="getTimestampForEvent(item)"></span>
-                        </div>
-                        <span class="d-block event-text mt-1" v-html="getTextForEvent(item)"></span>
-                    </div>
-                </div>
+                <FeedItemComponent v-for="(item, idx) in filteredItems" :key="idx" :item="item "></FeedItemComponent>
 
-                <div v-if="events.length === 0" class="align-self-center flex-grow-1 d-flex align-items-center">
+                <!--<div v-if="items.length === 0" class="align-self-center flex-grow-1 d-flex align-items-center">
                     <div class="fs-4 text-stone-400 p-5 text-center" style="font-weight: 300;">
                         <span v-if="games.length">
                             <span class="d-block">The action starts at</span>
                             <span class="d-block mt-n2 fs-1 font-weight-bold">{{ new Date(games[0].gameData.datetime.dateTime).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: 'numeric', minute: '2-digit' }) }} EST</span>
                         </span>
                     </div>
-                </div>
+                </div>-->
             </template>
         </div>
     </div>
@@ -60,25 +48,37 @@
 
 <script lang="ts">
     import { Component, Vue, Prop } from 'vue-property-decorator';
-    import { GamePlay } from '@/models/game-play';
-    import { Game } from '@/models/game';
-    import { Team } from '@/models/team';
-    import { Player } from '@/models/player';
     import { mapActions } from 'vuex';
     import GameScoreboard from '@/components/GameScoreboard.vue';
+    import FeedItem from '@/models/feedItem';
+    import FeedItemComponent from '@/components/FeedItem.vue';
+    import FeedItemType from '@/enums/feedItemType';
+    import EventType from '@/models/nhlApi/enums/eventType';
 
     @Component({
-        components: { GameScoreboard },
+        components: { GameScoreboard, FeedItemComponent },
         methods: { ...mapActions('games', ['getGames']) }
     })
     export default class Feed extends Vue {
         @Prop()
-        games!: Array<Game>;
+        items!: Array<FeedItem>;
 
-        @Prop()
-        events!: Array<GamePlay>;
+        get filteredItems() {
+            return this.items.filter((item, idx, array) => {
+                const includedInFilters =
+                    (item.type === FeedItemType.LobbyEvent) ||
+                    (item.subType === EventType.Goal && this.filters.showGoals) ||
+                    (item.subType === EventType.Penalty && this.filters.showPenalties) ||
+                    (item.subType === EventType.PeriodStart && this.filters.showPeriodStarts) ||
+                    (item.subType === EventType.PeriodEnd && this.filters.showPeriodEnds) ||
+                    (item.subType === EventType.Challenge && this.filters.showChallenges) ||
+                    (item.subType === EventType.GameEnd && this.filters.showGameEnds);
 
-        teams = this.games.flatMap(g => g.gameData).flatMap(gd => gd.teams).flatMap(t => [t.home, t.away]);
+                const isDuplicate = array[idx+1] && (item.subType === EventType.PeriodEnd && array[idx + 1].subType === EventType.GameEnd && array[idx + 1].gamePk === item.gamePk);
+
+                return includedInFilters && !isDuplicate;
+            });
+        }
 
         showSettings = false;
 
@@ -96,113 +96,22 @@
         }
 
         toggleSettings() {
-            this.events.forEach(e => e.isInitial = true);
             this.showSettings = !this.showSettings;
             if (!this.showSettings) this.setFilters();
-        }
-
-        getFilters() {
-            const existingFilters = localStorage.getItem('feedFilters');
-            if (existingFilters)
-                this.filters = {...this.filters, ...JSON.parse(existingFilters)};
         }
 
         setFilters() {
             localStorage.setItem('feedFilters', JSON.stringify(this.filters));
         }
 
-        getTeamsByPlay(play: GamePlay): Array<Team> {
-            if (play.team) return [this.teams.find(t => t?.id === play.team?.id) as Team];
-
-            const teams = this.games.find(g => g.gamePk === play.gamePk)?.gameData?.teams;
-            return [teams?.home as Team, teams?.away as Team];
-        }
-
-        getEventType(play: GamePlay): string {
-            return play?.result?.eventTypeId?.toLowerCase() ?? "";
-        }
-
-        getHeaderTextForEvent(play: GamePlay): string {
-            const eventType = this.getEventType(play).toLowerCase();
-            if (eventType !== "goal") return eventType.replace("_", " ");
-
-            const homeTeam = this.games.find(g => g.gamePk === play.gamePk)?.gameData?.teams?.home;
-            const awayTeam = this.games.find(g => g.gamePk === play.gamePk)?.gameData?.teams?.away;
-
-            let output = [];
-            if (play.about?.goals?.home > play.about?.goals?.away) {
-                output = [play.about.goals.home, play.about.goals.away, homeTeam?.abbreviation];
-            } else if (play.about?.goals?.home < play.about?.goals?.away) {
-                output = [play.about.goals.away, play.about.goals.home, awayTeam?.abbreviation];
-            } else {
-                output = [play.about.goals.away, play.about.goals.home, "Tie"];
-            }
-
-            return `<span class='score'>${output[0]} - ${output[1]}</span> <span class='ml-2 team'>${output[2]}</span>`
-        }
-
-        getTextForEvent(play: GamePlay): string {
-            const e = this.getEventType(play);
-
-            if (e === "goal") {
-                const partialScorer = play?.players?.find(p => p?.playerType?.toLowerCase() === "scorer")?.player;
-                if (!partialScorer?.id) return "Waiting for details...";
-                const scorer = this.getPlayerById(partialScorer.id);
-                const text = play.randomGoalText;
-                return `<strong>${scorer.fullName}</strong> <span class='goal-flavor-text'>${text}!</span>`;
-            } else if (e === "period_start") {
-                return `Start of ${play.about?.ordinalNum} period`;
-            } else {
-                return play.result?.description ?? "";
-            }
-        }
-
-        getTimestampForEvent(play: GamePlay): string {
-            const e = this.getEventType(play);
-            const timeEst = new Date(play.about.dateTime).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: 'numeric', minute: '2-digit' });
-
-            if (e === "goal" || e === "penalty" || e === "challenge") {
-                return `<span class='period'>${play.about?.periodTime} - ${play.about?.ordinalNum}<span> <span class='mx-2 divider'>|</span> <span class='datetime'>${timeEst}</span>`;
-            } else {
-                return `<span class='date-time'>${timeEst}</span>`;
-            }
-        }
-
-        getPlayerById(playerId: number): Player {
-            return this.games.flatMap(g => g?.gameData?.players).reduce((acc, playerList) => ({ ...acc, ...playerList }), {})[`ID${playerId}`] ?? {};
-        }
-
-        getBackgroundForPlay(play: GamePlay): Record<string, string> {
-            const e = this.getEventType(play);
-            if (e !== "goal") return {};
-
-            const team = this.getTeamsByPlay(play)[0];
-            return {
-                'background-color': `${team.colors.primary} !important`,
-                'color': 'white !important'
-            }
-        }
-
-        get eventTypesFiltered() {
-            const result = [];
-            if (this.filters.showGoals) result.push("goal");
-            if (this.filters.showPenalties) result.push("penalty");
-            if (this.filters.showPeriodStarts) result.push("period_start");
-            if (this.filters.showPeriodEnds) result.push("period_end");
-            if (this.filters.showChallenges) result.push("challenge");
-            if (this.filters.showGameEnds) result.push("game_end");
-
-            return result;
-        }
-
-        get filteredEvents() {
-            return this.events.filter(e => this.eventTypesFiltered.includes(this.getEventType(e)));
+        getFilters() {
+            const existingFilters = localStorage.getItem('feedFilters');
+            if (existingFilters)
+                this.filters = { ...this.filters, ...JSON.parse(existingFilters) };
         }
     }
 </script>
 
 <style scoped>
-
-
-
 </style>
+ 

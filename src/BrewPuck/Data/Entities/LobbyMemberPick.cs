@@ -8,9 +8,11 @@ public partial class LobbyMemberPick
 
     public long PlayerId { get; set; }
 
+    public long GamePk { get; set; }
+
+    public DateTime Created { get; set; }
+
     public virtual ICollection<Drink> Drinks { get; } = new List<Drink>();
 
     public virtual LobbyMember LobbyMember { get; set; } = null!;
-
-    public virtual Player Player { get; set; } = null!;
 }

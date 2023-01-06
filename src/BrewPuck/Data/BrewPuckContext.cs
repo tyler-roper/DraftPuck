@@ -15,19 +15,13 @@ public partial class BrewPuckContext : DbContext
 
     public virtual DbSet<Drink> Drinks { get; set; }
 
-    public virtual DbSet<Game> Games { get; set; }
-
     public virtual DbSet<Lobby> Lobbies { get; set; }
 
     public virtual DbSet<LobbyMember> LobbyMembers { get; set; }
 
     public virtual DbSet<LobbyMemberPick> LobbyMemberPicks { get; set; }
 
-    public virtual DbSet<Person> People { get; set; }
-
-    public virtual DbSet<Player> Players { get; set; }
-
-    public virtual DbSet<Team> Teams { get; set; }
+    public virtual DbSet<User> Users { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -45,44 +39,34 @@ public partial class BrewPuckContext : DbContext
                 .HasConstraintName("FK_Drinks_LobbyMembers");
         });
 
-        modelBuilder.Entity<Game>(entity =>
-        {
-            entity.HasKey(e => e.GamePk);
-
-            entity.Property(e => e.GamePk).ValueGeneratedNever();
-            entity.Property(e => e.StatusCode).HasMaxLength(1);
-            entity.Property(e => e.Type).HasMaxLength(1);
-
-            entity.HasOne(d => d.AwayTeam).WithMany(p => p.GameAwayTeams)
-                .HasForeignKey(d => d.AwayTeamId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_Games_AwayTeam");
-
-            entity.HasOne(d => d.HomeTeam).WithMany(p => p.GameHomeTeams)
-                .HasForeignKey(d => d.HomeTeamId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_Games_HomeTeam");
-        });
-
         modelBuilder.Entity<Lobby>(entity =>
         {
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.Created).HasDefaultValueSql("(getutcdate())");
             entity.Property(e => e.CreatedBy).HasMaxLength(50);
             entity.Property(e => e.JoinCode).HasMaxLength(4);
+            entity.Property(e => e.PicksPerTeam).HasDefaultValueSql("((1))");
+
+            entity.HasOne(d => d.CreatedByUser).WithMany(p => p.CreatedLobbies)
+                .HasForeignKey(d => d.CreatedBy)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Lobbies_People");
         });
 
         modelBuilder.Entity<LobbyMember>(entity =>
         {
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
+            entity.Property(e => e.Name).HasMaxLength(50);
+            entity.Property(e => e.Joined).HasDefaultValueSql("(getutcdate())");
+            entity.Property(e => e.IsBot).HasDefaultValueSql("((0))");
 
             entity.HasOne(d => d.Lobby).WithMany(p => p.LobbyMembers)
                 .HasForeignKey(d => d.LobbyId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_LobbyMembers_Lobbies");
 
-            entity.HasOne(d => d.Person).WithMany(p => p.LobbyMembers)
-                .HasForeignKey(d => d.PersonId)
+            entity.HasOne(d => d.User).WithMany(p => p.LobbyMembers)
+                .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_LobbyMembers_People");
         });
@@ -91,45 +75,18 @@ public partial class BrewPuckContext : DbContext
         {
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
 
+            entity.Property(e => e.Created).HasDefaultValueSql("(getutcdate())");
+
             entity.HasOne(d => d.LobbyMember).WithMany(p => p.LobbyMemberPicks)
                 .HasForeignKey(d => d.LobbyMemberId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_LobbyMemberPicks_LobbyMembers");
-
-            entity.HasOne(d => d.Player).WithMany(p => p.LobbyMemberPicks)
-                .HasForeignKey(d => d.PlayerId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_LobbyMemberPicks_Players");
         });
 
-        modelBuilder.Entity<Person>(entity =>
+        modelBuilder.Entity<User>(entity =>
         {
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.Created).HasDefaultValueSql("(getutcdate())");
-            entity.Property(e => e.Name).HasMaxLength(50);
-        });
-
-        modelBuilder.Entity<Player>(entity =>
-        {
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.FirstName).HasMaxLength(50);
-            entity.Property(e => e.LastName).HasMaxLength(100);
-            entity.Property(e => e.Number).HasMaxLength(2);
-            entity.Property(e => e.Position).HasMaxLength(2);
-
-            entity.HasOne(d => d.Team).WithMany(p => p.Players)
-                .HasForeignKey(d => d.TeamId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_Players_Teams");
-        });
-
-        modelBuilder.Entity<Team>(entity =>
-        {
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.Abbreviation).HasMaxLength(5);
-            entity.Property(e => e.LocationName).HasMaxLength(50);
-            entity.Property(e => e.ShortName).HasMaxLength(50);
-            entity.Property(e => e.TeamName).HasMaxLength(50);
         });
 
         OnModelCreatingPartial(modelBuilder);

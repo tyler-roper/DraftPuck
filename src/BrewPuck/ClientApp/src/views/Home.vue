@@ -1,324 +1,241 @@
 ﻿<template>
-    <div class="d-flex overflow-hidden flex-column" style="height: 100%;">
-        <div class="bg-stone-800 px-sm-4 px-2 py-2 shadow position-relative d-flex align-items-center" style="z-index: 10;">
-            <span class="fs-1 logo">BrewPuck</span>
-            <b-form-datepicker v-model="date" class="ml-5 d-none d-sm-flex" style="width: 300px;"></b-form-datepicker>
-            <b-form-datepicker v-model="date" size="sm" class="ml-3 d-flex d-sm-none position-relative" style="z-index: 10;" button-only></b-form-datepicker>
-            <a role="button" class="ml-auto badge badge-pill bg-stone-600 py-2 px-3 d-sm-none font-weight-bold text-uppercase text-stone-200" style="text-decoration: none !important;" @click="toggleDisplay">
-                <span class="mr-1">&gt;</span> 
-                <span>{{ showFeed ? 'Scores' : 'Feed' }}</span>
-                <span v-if="!showFeed && unseenEvents > 0" class="ml-1 mr-n2 bg-primary text-white p-1 rounded">🚨 {{ unseenEvents }}</span> 
-            </a>
-            <!--<a role="button" @click="enableNotifications">Enable Notifications</a>-->
-        </div>
-
-        <div class="d-flex flex-grow-1 overflow-hidden">
-            <template v-if="!isLoading">
-                <FullScoreboard class="full-scoreboard flex-grow-1" :class="{ 'hide-mobile': !showGames }" :games="games" :date="date" style="overflow: auto;"></FullScoreboard>
-                <Feed class="feed flex-shrink-0" :class="{ 'hide-mobile': !showFeed }" :games="games" :events="events" style="width: 400px;"></Feed>
-            </template>
-
-            <div v-if="isLoading" style="width: 100%; height: 100%;" class="d-flex align-items-center">
-                <div class="mx-auto d-flex flex-column align-items-center">
-                    <b-spinner class="d-block mt-3" style="width: 150px; height: 150px;" color="white"></b-spinner>
-                    <span class="text-center d-block mx-auto mt-3 fs-2 text-uppercase font-weight-bold">{{loadingMessage}}...</span>
+    <div class="d-flex align-items-center justify-content-center bg-net" style="height: 100%; width: 100%;">
+        <div class="shadow overflow-hidden p-5" style="border-radius: 20px; background-color: rgba(0,0,0,0.5)">
+            <div style="width: 300px">
+                <div class="mb-3 mt-n2 text-center">
+                    <span class="fs-1 text-stone-100" style="font-family: 'Rubik Mono One';">BrewPuck</span>
                 </div>
+                <template v-if="!showLobbySettings">
+                    <div>
+                        <b-form-input v-model="code" placeholder="Code" class="font-weight-bold code-input px-3 py-4 text-stone-900" maxlength="4"></b-form-input>
+                    </div>
+                    <div class="mt-3">
+                        <b-form-input v-model="name" placeholder="Name" class="px-3 py-4" maxlength="20"></b-form-input>
+                    </div>
+                    <div class="mt-3 d-flex">
+                        <button @click="joinLobby" class="d-block btn btn-primary w-100 font-weight-bold py-3 text-uppercase">Join Lobby</button>
+                    </div>
+
+                    <div class="d-flex align-items-center my-4">
+                        <div class="bg-stone-600 flex-grow-1" style="height: 1px;"></div>
+                        <span class="d-block px-4 text-stone-100 font-weight-bold">OR</span>
+                        <div class="bg-stone-600  flex-grow-1" style="height: 1px;"></div>
+                    </div>
+
+                    <div class="text-center">
+                        <button @click="startCreateLobby" class="d-block btn bg-stone-700 w-100 font-weight-bold py-3 text-uppercase">Create Lobby</button>
+                    </div>
+                </template>
+
+                <template v-if="showLobbySettings">
+                    <span class="fs-4 text-stone-100 font-weight-bold">New Lobby</span>
+
+                    <div class="mt-3">
+                        <span class="text-uppercase font-weight-bold text-stone-300">Your Name</span>
+                        <b-form-input v-model="name" placeholder="Wayne Gretzky" class="px-3 py-4" maxlength="20"></b-form-input>
+                    </div>
+
+                    <div class="mt-3">
+                        <span class="text-uppercase font-weight-bold text-stone-300">Picks Per Team</span>
+                        <b-form-input type="number" v-model="settings.picksPerTeam" class="px-3 py-4"></b-form-input>
+                    </div>
+
+                    <div class="mt-3">
+                        <span class="text-uppercase font-weight-bold text-stone-300">Bots:</span>
+                        <span v-if="settings.bots.length === 0">(None)</span>
+                        <div class="mt-n2" v-if="settings.bots.length > 0">
+                            <div v-for="(bot, idx) in settings.bots" :key="idx" class="my-2 d-flex mx-n2 align-items-center">
+                                <div class="px-2" style="width: 45%;">
+                                    <b-form-input v-model="bot.name"></b-form-input>
+                                </div>
+                                <div class="px-2" style="width: 45%;">
+                                    <b-form-select v-model="bot.pickStyle" :options="botPickStyles"></b-form-select>
+                                </div>
+                                <div class="ml-auto pr-2">
+                                    <a role="button" @click="removeBot(bot)"><i class="fi fi-rr-x"></i></a>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <a role="button" class="d-block text-uppercase font-weight-bold" @click="addBot">Add</a>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-5">
+                        <button @click="createLobby" class="d-block btn bg-primary w-100 font-weight-bold py-3 text-uppercase">Create Lobby</button>
+                    </div>
+
+                    <div class="text-center mt-5">
+                        <a role="button" @click="showLobbySettings = false">Back</a>
+                    </div>
+                </template>
             </div>
         </div>
-
     </div>
 </template>
+
 <script lang="ts">
-    import { Component, Vue, Watch } from 'vue-property-decorator';
-    import FullScoreboard from '@/components/FullScoreboard.vue';
-    import Feed from '@/components/Feed.vue';
-    import NHL from '@/services/NhlApiService';
-    import { Game } from '@/models/game';
-    import { GamePlay } from '@/models/game-play';
-    import TeamColors from '@/models/teamColorLookup';
-    import * as jsonpatch from 'fast-json-patch';
+    import { Component, Vue } from 'vue-property-decorator';
+    import LobbyService from '@/services/LobbyService';
+    import BotNames from '@/models/botNames';
+    import BotPickStyle from '@/enums/botPickStyle';
+    import '@/extensions/arrayExtensions';
 
-    @Component({
-        components: { FullScoreboard, Feed }
-    })
+    interface Bot {
+        name: string;
+        pickStyle: BotPickStyle | null;
+    }
+
+    interface LobbySettings {
+        picksPerTeam: number | null;
+        bots: Array<Bot>;
+    }
+
+    @Component
     export default class Home extends Vue {
-        games: Array<Game> = [];
-
-        date: string = (() => {
-            const d = new Date();
-            d.setHours(d.getHours() - 10);
-            return d.toISOString().split("T")[0];
-        })();
-
-        showGames = true;
-        showFeed = false;
-        unseenEvents = 0;
-
-        events: Array<GamePlay> = [];
-
-        eventTypeIds = ["goal", "penalty", "period_start", "period_end", "game_end", "challenge"];
-
-        loadingMessages = [
-            "Fixing the zamboni",
-            "Grabbing another beer",
-            "Finding your seats",
-            "Please wait: Puck in play",
-            "Shoveling snow",
-            "Repairing the glass",
-            "Lacin' up the skates",
-            "Stacking pucks",
-            "Drawing up a play",
-            "Challenging something",
-            "Reviewing a goal",
-            "TV Timeout",
-            "Checking our stats",
-            "Serving a penalty",
-            "Looking for a bathroom",
-            "Tailgating",
-            "Filling the water bottles",
-            "Making a pump-up playlist",
-            "Hitting the showers"
+        name = "";
+        code = "";
+        showLobbySettings = false;
+        
+        botPickStyles = [
+            { text: "Pick Style", value: null },
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            ...Object.entries(BotPickStyle).filter(([value, text]: [string, string | number]) => isNaN(Number(text))).map(([value, text]) => ({ text, value }))
         ];
 
-        goalTexts = [
-            "lights the lamp",
-            "goes bar-down",
-            "puts the biscuit in the basket",
-            "pots a gino",
-            "tickles the twine",
-            "shoots and scores",
-            "nets one",
-            "sends it home",
-            "tucks it in",
-            "adds a tally",
-            "finds the loose change",
-            "goes top cheddar"
-        ];
+        settings: LobbySettings = {
+            picksPerTeam: 1,
+            bots: []
+        }
 
-        loadingMessage = this.loadingMessages[Math.floor(Math.random() * this.loadingMessages.length)];
+        addBot() {
+            this.settings.bots.push({ name: this.getRandomBotName(), pickStyle: null });
+        }
 
-        isLoading = true;
+        removeBot(bot: Bot) {
+            this.settings.bots = this.settings.bots.filter(b => b !== bot);
+        }
 
-        mediaQuery = window.matchMedia('(max-width: 500px)');
+        created() {
+            const latestLobby = localStorage.getItem('latestLobby');
+            if (latestLobby != null) {
+                const latestLobbyParsed: { joinCode: string; name: string } = JSON.parse(latestLobby);
+                this.name = latestLobbyParsed.name;
+                this.code = latestLobbyParsed.joinCode;
+            }
+        }
 
-        async created() {
+        startCreateLobby() {
+            this.showLobbySettings = true;
+        }
+
+        getRandomBotName(): string {
+            const unusedNames = BotNames.filter(botName => !this.settings.bots.map(bot => bot.name).includes(botName));
+            return unusedNames.length
+                ? unusedNames.random()
+                : `Bot ${this.settings.bots.length}`;
+        }
+
+        async createLobby() {
+            if (this.name.trim() === "") {
+                this.$toast.error("Your name cannot be blank.");
+                return;
+            }
+
+            if (this.settings.picksPerTeam === null) {
+                this.$toast.error("You must set the picks per game. For infinite, choose 0.");
+                return;
+            }
+            
+            if (this.settings.bots.some(b => b.name.trim() === "")) {
+                this.$toast.error("Bots must have a name.");
+                return;
+            }
+
+            if (this.settings.bots.some(b => b.name.trim() === this.name.trim())) {
+                this.$toast.error("Bot names cannot match your name.");
+                return;
+            }
+
+            if (this.settings.bots.filter((bot, index) => this.settings.bots.indexOf(bot) != index).length > 0) {
+                this.$toast.error("Bot names must be unique.");
+                return;
+            }
+
+            if (this.settings.bots.some(b => b.pickStyle === null)) {
+                this.$toast.error("Bots must have a pick style.");
+                return;
+            }
+
+            const lobby = await LobbyService.createLobby({ name: this.name, picksPerTeam: this.settings.picksPerTeam });
+
+            const botPromises = this.settings.bots.map(async b => await LobbyService.joinLobbyByCode(lobby.joinCode, b.name, true, Number(b.pickStyle)));
+            await Promise.all(botPromises);
+
+            this.$router.push({ name: 'Lobby', params: { joinCode: lobby.joinCode } });
+        }
+
+        async joinLobby() {
+            if (this.name.trim() === "") {
+                this.$toast.error("Your name cannot be blank.");
+                return;
+            }
+
+            if (this.code.length != 4) {
+                this.$toast.error("Invalid code.");
+                return;
+            }
+
             try {
-                this.mediaQuery.addListener(() => {
-                    this.unseenEvents = 0;
-                });
-                await this.initialGetGames();
-            } finally {
-                this.isLoading = false;
+                const lobby = await LobbyService.joinLobbyByCode(this.code, this.name);
+                this.$router.push({ name: 'Lobby', params: { joinCode: lobby.joinCode } });
+            } catch {
+                this.$toast.error("Lobby not found.");
+                return;
             }
-        }
-
-        @Watch('date')
-        async updateGames() {
-            try {
-                this.loadingMessage = this.loadingMessages[Math.floor(Math.random() * this.loadingMessages.length)];
-                this.isLoading = true;
-                await this.initialGetGames();
-            } finally {
-                this.isLoading = false;
-            }
-        }
-
-        toggleDisplay() {
-            this.unseenEvents = 0;
-            this.showFeed = !this.showFeed;
-            this.showGames = !this.showGames;
-        }
-
-        enableNotifications() {
-            function checkNotificationPromise() {
-                try {
-                    Notification.requestPermission().then();
-                } catch (e) {
-                    return false;
-                }
-
-                return true;
-            }
-
-            //function handlePermission(permission) {
-            // set the button to shown or hidden, depending on what the user answers
-            //    notificationBtn.style.display =
-            //Notification.permission === 'granted' ? 'none' : 'block';
-            //}
-
-            // Let's check if the browser supports notifications
-            if (!('Notification' in window)) {
-                console.log("This browser does not support notifications.");
-            } else if (checkNotificationPromise()) {
-                Notification.requestPermission().then((permission) => {
-                    console.log(permission);
-                });
-            } else {
-                Notification.requestPermission((permission) => {
-                    console.log(permission);
-                });
-            }
-        }
-
-        async initialGetGames() {
-            const schedule = await NHL.getSchedule(this.date);
-            this.games = [];
-
-            if (!schedule?.dates?.length || !schedule.dates[0].games?.length) return;
-
-            for (const scheduleGame of schedule.dates[0].games) {
-                if (!scheduleGame.gamePk) continue;
-                const game = await this.getGame(scheduleGame.gamePk)
-                this.games.push(game);
-            }
-
-            this.updateEvents(true);
-            this.games.forEach(g => {
-                if (Number(g.gameData.status.statusCode) < 5)
-                    this.setTimeoutForRefresh(g);
-            })
-        }
-
-        async getGame(gamePk: number) {
-            const game = await NHL.getGameData(gamePk);
-            game.animations = [];
-
-            //set colors
-            const awayTeam = game?.gameData?.teams?.away;
-            const homeTeam = game?.gameData?.teams?.home;
-
-            if (awayTeam?.id) {
-                awayTeam.colors = { primary: TeamColors[awayTeam.id] };
-                awayTeam.logo = require(`@/assets/img/logos/${awayTeam.abbreviation}.png`);
-                try {
-                    awayTeam.logoLight = require(`@/assets/img/logos/${awayTeam.abbreviation}_LIGHT.png`);
-                } catch {
-                    awayTeam.logoLight = require(`@/assets/img/logos/${awayTeam.abbreviation}.png`);
-                }
-            }
-
-            if (homeTeam?.id) {
-                homeTeam.colors = { primary: TeamColors[homeTeam.id] };
-                homeTeam.logo = require(`@/assets/img/logos/${homeTeam.abbreviation}.png`);
-                try {
-                    homeTeam.logoLight = require(`@/assets/img/logos/${homeTeam.abbreviation}_LIGHT.png`);
-                } catch {
-                    homeTeam.logoLight = require(`@/assets/img/logos/${homeTeam.abbreviation}.png`);
-                }
-            }
-
-            //set periods
-            const gamePeriods = game?.liveData?.linescore?.periods;
-            if (gamePeriods)
-                for (let i = gamePeriods.length + 1; i <= 3; i++)
-                    gamePeriods.push({ num: i });
-
-            return game;
-        }
-
-        async updateGame(game: Game) {
-            const gameIdx = this.games.findIndex(g => g.gamePk === game.gamePk);
-
-            if (Number(game.gameData?.status?.statusCode < 3)) {
-                //game hasn't started
-                this.$set(this.games, gameIdx, await this.getGame(game.gamePk));
-            } else {
-                //game in progress
-                const diffResults = await NHL.getGamePatch(game.gamePk, game.metaData?.timeStamp);
-
-                diffResults.forEach(diffResult => {
-                    const result = jsonpatch.applyPatch(this.games[gameIdx], diffResult.diff);
-                    this.$set(this.games, gameIdx, result.newDocument);
-                });
-
-                this.updateEvents();
-            }
-
-            this.setTimeoutForRefresh(this.games[gameIdx]);
-        }
-
-        async updateEvents(isInitial = false) {
-            const allEvents = this.games
-                .filter(g => g?.liveData?.plays?.allPlays?.length)
-                .flatMap(g => g.liveData.plays.allPlays.map(p => (
-                    {
-                        ...p,
-                        gamePk: g.gamePk,
-                        isInitial,
-                        randomGoalText: this.goalTexts[Math.floor(Math.random() * this.goalTexts.length)]
-                    }
-                )))
-                .filter(e => e?.about?.dateTime && this.eventTypeIds.some(eti => eti === (e?.result?.eventTypeId?.toLowerCase() ?? "")));
-
-            if (isInitial) {
-                this.events = allEvents;
-            } else {
-                //push new events
-                const existingEventCodes = this.events.map(e => e.result.eventCode);
-                const newEvents = allEvents.filter(e => existingEventCodes.every(eec => eec != e.result.eventCode));
-                this.events.push(...newEvents);
-
-                //handle animations
-                const previousGoalsAwaitingAnimation = this.events.filter(e => e.result.eventTypeId.toLowerCase() === "goal" && e.awaitingScorer === true);
-                const goals = newEvents.filter(e => e.result.eventTypeId.toLowerCase() === "goal");
-                const playsToAnimate = [...previousGoalsAwaitingAnimation, ...goals];
-
-                if (!this.showFeed) this.unseenEvents += goals.length;
-
-                playsToAnimate.forEach(play => {
-                    play.awaitingScorer = true;
-
-                    const game = this.games.find(g => g.gamePk === play.gamePk);
-                    const teamId = play.team?.id;
-                    const team = game.gameData.teams.away.id === teamId
-                        ? game.gameData.teams.away
-                        : game.gameData.teams.home;
-
-                    const scorer = play?.players?.find(p => p.playerType?.toLowerCase() === "scorer")?.player;
-                    if (!scorer) return;
-
-                    const player = this.getPlayerById(game, scorer.id);
-                    if (!player) return;
-
-                    play.awaitingScorer = false;
-
-                    game.animations.push({
-                        active: false,
-                        team,
-                        player
-                    });
-                })
-            }
-
-            this.events.sort((a, b) => new Date(a.about.dateTime) - new Date(b.about.dateTime));
-        }
-
-        getPlayerById(game: Game, playerId: number): Player {
-            return game.gameData.players[`ID${playerId}`];
-        }
-
-        setTimeoutForRefresh(game: Game) {
-            const gameStatus = Number(game.gameData.status?.statusCode);
-            if (gameStatus >= 5) return;
-
-            const refreshMs = gameStatus < 3
-                ? 60000
-                : 10000;
-
-            setTimeout(() => { if (game) this.updateGame(game) }, refreshMs);
         }
     }
 </script>
 
 <style scoped>
-    table.score-table td {
-        padding: 5px 20px;
+    .bg-net {
+        background-image: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url(~@/assets/img/net.jpg);
+        background-position: center, -600px -700px;
+        background-size: 3500px;
     }
 
-    .logo {
-        padding-right: 5px;
-        font-family: 'Rubik Mono One';
-        letter-spacing: -4px;
-        margin-top: 4px;
+    .code-input {
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    ::-webkit-input-placeholder { /* WebKit browsers */
+        text-transform: none;
+        font-weight: normal !important;
+        letter-spacing: normal !important;
+    }
+
+    :-moz-placeholder { /* Mozilla Firefox 4 to 18 */
+        text-transform: none;
+        font-weight: normal !important;
+        letter-spacing: normal !important;
+    }
+
+    ::-moz-placeholder { /* Mozilla Firefox 19+ */
+        text-transform: none;
+        font-weight: normal !important;
+        letter-spacing: normal !important;
+    }
+
+    :-ms-input-placeholder { /* Internet Explorer 10+ */
+        text-transform: none;
+        font-weight: normal !important;
+        letter-spacing: normal !important;
+    }
+
+    ::placeholder { /* Recent browsers */
+        text-transform: none;
+        font-weight: normal !important;
+        letter-spacing: normal !important;
     }
 </style>

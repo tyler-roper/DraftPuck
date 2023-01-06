@@ -13,7 +13,73 @@ html, body {
     margin: 0;
 }
 
-.team-abr { display: none; }
+table.score-table > tbody > tr > td,
+table.score-table > tbody > tr > th,
+table.score-table > thead > tr > td,
+table.score-table > thead > tr > th {
+    padding: 10px 20px;
+}
+
+table.score-table {
+    height: 100%;
+}
+
+table.score-table > tbody > tr > th,
+table.score-table > thead > tr > th {
+    background-color: rgba(0,0,0,0.02);
+}
+
+table.score-table > tbody > tr:nth-child(3) > td,
+table.score-table > thead > tr:nth-child(3) > td {
+    border-top: 1px solid rgba(0,0,0,0.02);
+}
+
+table.score-table > tbody > tr > td:not(:first-child),
+table.score-table > tbody > tr > th:not(:first-child),
+table.score-table > thead > tr > td:not(:first-child),
+table.score-table > thead > tr > th:not(:first-child) {
+    border-left: 1px solid rgba(0,0,0,0.02);
+}
+
+.is-live:not(.is-critical) .score-table > tbody > tr > th:first-child,
+.is-live:not(.is-critical) .score-table > thead > tr > th:first-child {
+    color: #dc3545 !important;
+}
+
+.is-live.is-critical .score-table > tbody > tr > th:first-child,
+.is-live.is-critical .score-table > thead > tr > th:first-child {
+    color: white !important;
+    background-color: #dc3545 !important;
+    position: relative;
+}
+
+.is-live.is-critical .score-table > tbody > tr > th:first-child::after,
+.is-live.is-critical .score-table > thead > tr > th:first-child::after {
+    content: 'Close game';
+    display: inline-block;
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    text-transform: uppercase;
+    font-size: 10px;
+}
+
+.logo {
+    font-family: 'Rubik Mono One';
+    letter-spacing: -4px;
+}
+
+.banner-logo {
+    font-family: 'Rubik Mono One';
+    padding-right: 5px;
+    margin-top: 4px;
+    letter-spacing: -4px;
+}
+
+.team-abr {
+    display: none;
+}
 
 .item-type-goal .event-text {
     font-size: 0.9rem;
@@ -29,7 +95,7 @@ html, body {
     }
 }
 
-.feed-item:not(.initial-load) {
+.feed-item:last-child {
     animation-name: down;
     animation-duration: 0.7s;
 }
@@ -77,46 +143,54 @@ html, body {
 }
 
 @media only screen and (max-width: 1880px) {
-    .score-table th:first-child {
+    .score-table > tbody > tr > th:first-child {
         width: 150px !important;
     }
 
-    .score-table .team-name {
+    .score-table > tbody > tr > .team-name {
         display: none;
     }
 
-    .score-table .team-abr {
+    .score-table > tbody > tr > .team-abr {
         display: block;
     }
 }
 
 @media only screen and (max-width: 1600px) {
-    .score-table td:last-child {
+    .score-table > tbody > tr > td:last-child,
+    .score-table > thead > tr > td:last-child {
         padding: 10px !important;
     }
 
-    .score-table .first-letter {
+    .score-table > tbody > tr > .first-letter,
+    .score-table > thead > tr > .first-letter {
         display: none;
     }
 }
 
 @media only screen and (max-width: 1400px) {
-    .score-table th:first-child {
+    .score-table > tbody > tr > th:first-child,
+    .score-table > thead > tr > th:first-child {
         width: 120px !important;
     }
 
-    .score-table td,
-    .score-table th {
+    .score-table > tbody > tr > td,
+    .score-table > tbody > tr > th,
+    .score-table > thead > tr > td,
+    .score-table > thead > tr > th {
         padding: 10px !important;
     }
 
-    .score-table td:first-child img {
+    .score-table > tbody > tr > td:first-child img,
+    .score-table > thead > tr > td:first-child img {
         width: 30px !important;
         height: 30px !important;
     }
 
-    .score-table th:nth-child(n + 2):nth-child(-n + 5),
-    .score-table td:nth-child(n + 2):nth-child(-n + 5) {
+    .score-table > tbody > tr > th:nth-child(n + 2):nth-child(-n + 5),
+    .score-table > tbody > tr > td:nth-child(n + 2):nth-child(-n + 5),
+    .score-table > thead > tr > th:nth-child(n + 2):nth-child(-n + 5),
+    .score-table > thead > tr > td:nth-child(n + 2):nth-child(-n + 5) {
         width: auto !important;
     }
 
@@ -130,22 +204,28 @@ html, body {
         width: 100% !important;
     }
 
-    .score-table th:first-child {
+    .score-table > tbody > tr > th:first-child,
+    .score-table > thead > tr > th:first-child {
         width: 150px !important;
     }
 
-    .score-table td,
-    .score-table th {
+    .score-table > tbody > tr > td,
+    .score-table > tbody > tr > th,
+    .score-table > thead > tr > td,
+    .score-table > thead > tr > th {
         padding: 10px 20px !important;
     }
 
-    .score-table td:first-child img {
+    .score-table > tbody > tr > td:first-child img,
+    .score-table > thead > tr > td:first-child img {
         width: 50px !important;
         height: 50px !important;
     }
 
-    .score-table th:nth-child(n + 2):nth-child(-n + 5),
-    .score-table td:nth-child(n + 2):nth-child(-n + 5) {
+    .score-table > tbody > tr > th:nth-child(n + 2):nth-child(-n + 5),
+    .score-table > tbody > tr > td:nth-child(n + 2):nth-child(-n + 5),
+    .score-table > thead > tr > th:nth-child(n + 2):nth-child(-n + 5),
+    .score-table > thead > tr > td:nth-child(n + 2):nth-child(-n + 5) {
         width: 30px !important;
     }
 }
@@ -158,7 +238,6 @@ html, body {
     }
 
     .feed-item .team-icons {
-        width: 53px !important;
         margin: 0 !important;
         padding: 5px !important;
     }
@@ -199,51 +278,63 @@ html, body {
     }
 
     .feed-item-content,
-    .feed-item .team-icons{
+    .feed-item .team-icons {
         padding: 5px !important;
     }
 }
 
 @media only screen and (max-width: 850px) {
-    .score-table th:first-child {
+    .score-table > tbody > tr > th:first-child,
+    .score-table > thead > tr > th:first-child {
         width: 120px !important;
     }
 
-    .score-table td,
-    .score-table th {
+    .score-table > tbody > tr > td,
+    .score-table > tbody > tr > th,
+    .score-table > thead > tr > td,
+    .score-table > thead > tr > th {
         padding: 10px !important;
     }
 
-    .score-table td:first-child img {
+    .score-table > tbody > tr > td:first-child img,
+    .score-table > thead > tr > td:first-child img {
         width: 30px !important;
         height: 30px !important;
     }
 
-    .score-table th:nth-child(n + 2):nth-child(-n + 5),
-    .score-table td:nth-child(n + 2):nth-child(-n + 5) {
+    .score-table > tbody > tr > th:nth-child(n + 2):nth-child(-n + 5),
+    .score-table > tbody > tr > td:nth-child(n + 2):nth-child(-n + 5),
+    .score-table > thead > tr > th:nth-child(n + 2):nth-child(-n + 5),
+    .score-table > thead > tr > td:nth-child(n + 2):nth-child(-n + 5) {
         width: auto !important;
     }
 }
 
 @media only screen and (max-width: 720px) {
-    .score-table th:nth-child(n + 2):nth-child(-n + 4),
-    .score-table td:nth-child(n + 2):nth-child(-n + 4) {
+    .score-table > tbody > tr > th:nth-child(n + 2):nth-child(-n + 4),
+    .score-table > tbody > tr > td:nth-child(n + 2):nth-child(-n + 4),
+    .score-table > thead > tr > th:nth-child(n + 2):nth-child(-n + 4),
+    .score-table > thead > tr > td:nth-child(n + 2):nth-child(-n + 4) {
         display: none !important;
     }
 }
 
 @media only screen and (max-width: 650px) {
-    .score-table th:nth-child(n + 2):nth-child(-n + 4),
-    .score-table td:nth-child(n + 2):nth-child(-n + 4) {
+    .score-table > tbody > tr > th:nth-child(n + 2):nth-child(-n + 4),
+    .score-table > tbody > tr > td:nth-child(n + 2):nth-child(-n + 4),
+    .score-table > thead > tr > th:nth-child(n + 2):nth-child(-n + 4),
+    .score-table > thead > tr > td:nth-child(n + 2):nth-child(-n + 4) {
         display: table-cell !important;
     }
 
-    .score-table th:last-child,
-    .score-table td:last-child {
+    .score-table > tbody > tr > th:last-child,
+    .score-table > tbody > tr > td:last-child,
+    .score-table > thead > tr > th:last-child,
+    .score-table > thead > tr > td:last-child {
         display: none !important;
     }
 
-        .full-scoreboard > div {
+    .full-scoreboard > div {
         margin: 0 !important;
         padding: 5px 0 !important;
     }
@@ -258,35 +349,40 @@ html, body {
         width: 100% !important;
     }
 
-    .feed.hide-mobile {
+    .hide-mobile {
         display: none !important;
     }
 
-    .full-scoreboard.hide-mobile {
-        display: none !important;
-    }
-
-    .score-table th:nth-child(n + 2):nth-child(-n + 5),
-    .score-table td:nth-child(n + 2):nth-child(-n + 5) {
+    .score-table > tbody > tr > th:nth-child(n + 2):nth-child(-n + 5),
+    .score-table > tbody > tr > td:nth-child(n + 2):nth-child(-n + 5),
+    .score-table > thead > tr > th:nth-child(n + 2):nth-child(-n + 5),
+    .score-table > thead > tr > td:nth-child(n + 2):nth-child(-n + 5) {
         text-align: center !important;
         width: 30px !important;
     }
 
-    .score-table th:last-child,
-    .score-table td:last-child {
+    .score-table > tbody > tr > th:last-child,
+    .score-table > tbody > tr > td:last-child,
+    .score-table > thead > tr > th:last-child,
+    .score-table > thead > tr > td:last-child {
         display: table-cell !important;
     }
 
-    .logo {
+    .banner-logo {
         font-size: 20px !important;
         letter-spacing: -3px !important;
     }
+}
 
+.text-shadow {
+    text-shadow: 0 1px 0 black;
 }
 
 @media only screen and (max-width: 500px) {
-    .score-table th:last-child,
-    .score-table td:last-child {
+    .score-table > tbody > tr > th:last-child,
+    .score-table > tbody > tr > td:last-child,
+    .score-table > thead > tr > th:last-child,
+    .score-table > thead > tr > td:last-child {
         font-size: 10px !important;
         padding: 3px !important;
     }
@@ -302,7 +398,6 @@ html, body {
     }
 
     .feed-item .team-icons {
-        width: 53px !important;
         margin: 0 !important;
         padding: 5px !important;
     }
@@ -342,6 +437,4 @@ html, body {
     .feed-item .team-icons {
         padding: 10px !important;
     }
-
-
 }

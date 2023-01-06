@@ -2,9 +2,9 @@
 {
     public interface IEventService
     {
-        event EventHandler<NotificationArgs>? NotificationEvent;
+        event EventHandler<LobbyEventArgs>? LobbyEvent;
         event EventHandler? KeepAlive;
-        void Notify(NotificationModel notification);
+        void Notify(LobbyEventModel lobbyEvent);
         void SendKeepAliveMessages();
     }
 }

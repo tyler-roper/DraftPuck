@@ -6,7 +6,15 @@ public partial class LobbyMember
 
     public Guid LobbyId { get; set; }
 
-    public Guid PersonId { get; set; }
+    public Guid UserId { get; set; }
+
+    public DateTime Joined { get; set; }
+
+    public string Name { get; set; } = null!;
+
+    public bool IsBot { get; set; } = false;
+
+    public BotPickStyle? BotPickStyle { get; set; }
 
     public virtual ICollection<Drink> Drinks { get; } = new List<Drink>();
 
@@ -14,5 +22,5 @@ public partial class LobbyMember
 
     public virtual ICollection<LobbyMemberPick> LobbyMemberPicks { get; } = new List<LobbyMemberPick>();
 
-    public virtual Person Person { get; set; } = null!;
+    public virtual User User { get; set; } = null!;
 }

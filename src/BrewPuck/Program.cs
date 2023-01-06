@@ -1,3 +1,4 @@
+using BrewPuck.Middleware;
 using BrewPuck.Services.Hosted;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
@@ -19,15 +20,17 @@ builder.Services.AddMvc(options =>
     options.EnableEndpointRouting = false;
 });
 
+
 builder.Logging.AddConsole();
 
 //services
 builder.Services
     .AddDbContext<BrewPuckContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")))
     .AddEndpointsApiExplorer()
-    .AddTransient<INotificationService, NotificationService>()
+    .AddTransient<ILobbyEventService, LobbyEventService>()
     .AddSingleton<IEventService, EventService>()
-    .AddHostedService<KeepAliveService>();
+    .AddHostedService<KeepAliveService>()
+    .AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 //kestrel
 builder.WebHost.UseKestrel();
@@ -37,6 +40,7 @@ var app = builder.Build();
 
 //this order matters!
 app
+    .UseMiddleware<UserMiddleware>()
     .UseRouting()
     .UseStaticFiles()
     .UseHsts()
