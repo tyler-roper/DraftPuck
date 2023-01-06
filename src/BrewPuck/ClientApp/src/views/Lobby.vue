@@ -6,15 +6,15 @@
                 <span class="fs-1 banner-logo">DraftPuck</span>
 
                 <div class="ml-auto mr-n2">
-                    <a role="button" class="mx-2 badge badge-pill bg-stone-600 py-2 px-3 d-sm-none font-weight-bold text-uppercase text-stone-200" style="text-decoration: none !important;" @click="setView('lobby')">
+                    <a v-if="!isLobbyView" role="button" class="mx-2 badge badge-pill bg-stone-600 py-2 px-3 d-sm-none font-weight-bold text-uppercase text-stone-200" style="text-decoration: none !important;" @click="setView('lobby')">
                         <span>Lobby</span>
                     </a>
 
-                    <a role="button" class="mx-2 badge badge-pill bg-stone-600 py-2 px-3 d-sm-none font-weight-bold text-uppercase text-stone-200" style="text-decoration: none !important;" @click="setView('feed')">
+                    <a v-if="!isFeedView" role="button" class="mx-2 badge badge-pill bg-stone-600 py-2 px-3 d-sm-none font-weight-bold text-uppercase text-stone-200" style="text-decoration: none !important;" @click="setView('feed')">
                         <span>Feed</span>
                     </a>
 
-                    <a role="button" class="mx-2 badge badge-pill bg-stone-600 py-2 px-3 d-sm-none font-weight-bold text-uppercase text-stone-200" style="text-decoration: none !important;" @click="setView('game')">
+                    <a v-if="!isGameView" role="button" class="mx-2 badge badge-pill bg-stone-600 py-2 px-3 d-sm-none font-weight-bold text-uppercase text-stone-200" style="text-decoration: none !important;" @click="setView('game')">
                         <span>Scores</span>
                     </a>
                 </div>
@@ -25,9 +25,7 @@
                     <FullScoreboard class="full-scoreboard flex-grow-1" :eventBus="eventBus" :class="{ 'hide-mobile': !isGameView }" :games="games" style="overflow: auto;"></FullScoreboard>
 
                     <div class="feed flex-shrink-0 d-flex flex-column" :class="{ 'hide-mobile': !isFeedView && !isLobbyView }" style="width: 400px;">
-                            <LobbyOverview ref="overview" style="min-height: 300px;"></LobbyOverview>
-
-                         
+                        <LobbyOverview ref="overview" style="min-height: 300px;" :class="{ 'hide-mobile': !isLobbyView }"></LobbyOverview>
                         <Feed class="flex-grow-1" :items="feedItems" :class="{ 'hide-mobile': !isFeedView }"></Feed>
                     </div>
                 </template>
