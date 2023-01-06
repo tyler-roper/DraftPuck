@@ -7,7 +7,7 @@ class NhlApiService {
     }
     async getSchedule(date) {
         if (date) {
-            return this._http.getWithParams("schedule", { startDate: date, endDate: date });
+            return this._http.getWithParams("schedule", { startDate: date, endDate: date, expand: "schedule.scoringplays" });
         }
         else {
             return this._http.get("schedule");

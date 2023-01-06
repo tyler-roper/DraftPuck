@@ -1,6 +1,36 @@
 interface Lobby {
     id: string;
     joinCode: string;
-    status: number | null;
-    lobbyMembers: Array<LobbyMember>;
+    status: number;
+    picksPerTeam: number;
+    created: Date;
+    createdBy: string;
+    members: Array<LobbyMember>;
+}
+
+interface LobbyMember {
+    id: string;
+    lobbyId: string;
+    userId: string;
+    name: string;
+    joined: Date;
+    picks: Array<LobbyMemberPick>
+    isBot: boolean;
+    botPickStyle: BotPickStyle;
+}
+
+interface LobbyMemberPick {
+    id: string;
+    lobbyMemberId: string;
+    playerId: number;
+    gamePk: number;
+    drinks: Array<Drink>;
+    created: Date;
+}
+
+interface Drink {
+    id: string;
+    lobbyMemberPickId: string;
+    recipientLobbyMemberId: string;
+    eventId: number;
 }

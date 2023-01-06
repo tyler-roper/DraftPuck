@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using BrewPuck.Data;
+using System.Text.Json.Serialization;
 
 namespace BrewPuck.Services
 {
@@ -36,42 +37,25 @@ namespace BrewPuck.Services
         {
             Type = type;
             LobbyId = lobbyId;
-            Data = new UserLobbyEventData(lobbyMember);
+            EntityId = lobbyMember.Id;
         }
 
         public LobbyEventModel(LobbyEventType type, Guid lobbyId, LobbyMemberPick lobbyMemberPick)
         {
             Type = type;
             LobbyId = lobbyId;
-            Data = new PickLobbyEventData(lobbyMemberPick);
+            EntityId = lobbyMemberPick.Id;
+        }
+
+        public LobbyEventModel(LobbyEventType type, Guid lobbyId, Drink drink)
+        {
+            Type = type;
+            LobbyId = lobbyId;
+            EntityId = drink.Id;
         }
 
         public LobbyEventType Type { get; set; }
         public Guid LobbyId { get; set; }
-
-        [JsonIgnore]
-        public ILobbyEventData Data { get; set; }
-
-        [JsonPropertyName("data")]
-        public object DataObject => Data;
-    }
-
-    public class UserLobbyEventData : ILobbyEventData
-    {
-        public UserLobbyEventData(LobbyMember lobbyMember)
-        {
-            LobbyMember = lobbyMember;
-        }
-
-        public LobbyMember LobbyMember { get; set; }
-    }
-
-    public class PickLobbyEventData : ILobbyEventData
-    {
-        public PickLobbyEventData(LobbyMemberPick lobbyMemberPick) {
-            LobbyMemberPick = lobbyMemberPick;
-        }
-
-        public LobbyMemberPick LobbyMemberPick { get; set; }
+        public Guid EntityId { get; set; }
     }
 }

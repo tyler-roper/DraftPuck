@@ -7,11 +7,14 @@ class LobbyService {
     async createLobby(name) {
         return this._http.post(`?name=${name}`, null);
     }
-    async getLobbyById(id) {
-        return this._http.get("", id);
+    async getLobbyByCode(code) {
+        return this._http.get("", code);
     }
     async joinLobbyByCode(code, name) {
         return this._http.post(`join/${code}?name=${name}`, null);
+    }
+    async pickScored(pick, eventId) {
+        return this._http.post(`pick/${pick.id}/score?eventId=${eventId}`, null);
     }
 }
 export default new LobbyService();

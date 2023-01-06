@@ -1,43 +1,34 @@
 ﻿<template>
     <div class="d-flex overflow-hidden flex-column" style="height: 100%;">
-        <template v-if="!invalidLobby">
+        <template v-if="!isInvalidLobby">
+
             <div class="bg-stone-800 px-sm-4 px-2 py-2 shadow position-relative d-flex align-items-center" style="z-index: 10;">
                 <span class="fs-1 banner-logo">BrewPuck</span>
-                <b-form-datepicker v-model="date" class="ml-5 d-none d-sm-flex" style="width: 300px;"></b-form-datepicker>
-                <b-form-datepicker v-model="date" size="sm" class="ml-3 d-flex d-sm-none position-relative" style="z-index: 10;" button-only></b-form-datepicker>
 
-                <a role="button" class="ml-auto badge badge-pill bg-stone-600 py-2 px-3 d-sm-none font-weight-bold text-uppercase text-stone-200" style="text-decoration: none !important;" @click="toggleDisplay">
-                    <span class="mr-1">&gt;</span>
-                    <span>{{ showFeed ? 'Scores' : 'Feed' }}</span>
-                    <span v-if="!showFeed && unseenEvents > 0" class="ml-1 mr-n2 bg-primary text-white p-1 rounded">🚨 {{ unseenEvents }}</span>
-                </a>
+                <div class="ml-auto mr-n2">
+                    <a role="button" class="mx-2 badge badge-pill bg-stone-600 py-2 px-3 d-sm-none font-weight-bold text-uppercase text-stone-200" style="text-decoration: none !important;" @click="setView('lobby')">
+                        <span>Lobby</span>
+                    </a>
+
+                    <a role="button" class="mx-2 badge badge-pill bg-stone-600 py-2 px-3 d-sm-none font-weight-bold text-uppercase text-stone-200" style="text-decoration: none !important;" @click="setView('feed')">
+                        <span>Feed</span>
+                    </a>
+
+                    <a role="button" class="mx-2 badge badge-pill bg-stone-600 py-2 px-3 d-sm-none font-weight-bold text-uppercase text-stone-200" style="text-decoration: none !important;" @click="setView('game')">
+                        <span>Scores</span>
+                    </a>
+                </div>
             </div>
 
             <div class="d-flex flex-grow-1 overflow-hidden">
                 <template v-if="!isLoading">
-                    <FullScoreboard class="full-scoreboard flex-grow-1" :class="{ 'hide-mobile': !showGames }" :games="games" :date="date" style="overflow: auto;"></FullScoreboard>
-                    <div class="feed flex-shrink-0 d-flex flex-column" :class="{ 'hide-mobile': !showFeed }" style="width: 400px;">
-                        <div class="bg-stone-300" style="overflow-y: scroll; max-height: 400px;">
-                            <div class="bg-stone-150 p-3 ls-2 shadow d-flex align-items-center" style="z-index: 2; position: sticky; top: 0;">
-                                <div>
-                                    <span class="fs-4 font-weight-bold d-block text-uppercase text-stone-700">Lobby</span>
-                                </div>
-                                <div class="ml-auto">
-                                    <a role="button" class="p-3 text-stone-400 d-block m-n3" style="text-decoration: none !important;"><i class="fs-3 fi fi-sr-settings mb-n2 d-block"></i></a>
-                                </div>
-                            </div>
-                            <div class="py-2 bg-stone-100">
-                                <div class="d-flex align-items-center px-3 py-1 text-stone-800" v-for="lm in lobby.lobbyMembers" :key="lm.id">
-                                    <div class="mr-2">
-                                        <i class="fi fi-sr-user fs-6"></i>
-                                    </div>
-                                    <div>
-                                        {{ lm.name }}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <Feed class="flex-grow-1" :games="games" :events="events"></Feed>
+                    <FullScoreboard class="full-scoreboard flex-grow-1" :eventBus="eventBus" :class="{ 'hide-mobile': !isGameView }" :games="games" style="overflow: auto;"></FullScoreboard>
+
+                    <div class="feed flex-shrink-0 d-flex flex-column" :class="{ 'hide-mobile': !isFeedView && !isLobbyView }" style="width: 400px;">
+                            <LobbyOverview ref="overview" style="min-height: 300px;"></LobbyOverview>
+
+                         
+                        <Feed class="flex-grow-1" :items="feedItems" :class="{ 'hide-mobile': !isFeedView }"></Feed>
                     </div>
                 </template>
 
@@ -48,385 +39,480 @@
                     </div>
                 </div>
             </div>
+
         </template>
 
-        <template v-if="invalidLobby">
+        <template v-if="isInvalidLobby">
             <div style="width: 100%; height: 100%;" class="d-flex align-items-center">
                 <div class="mx-auto d-flex flex-column align-items-center">
                     <span class="text-center d-block mx-auto mt-3 fs-2 text-uppercase font-weight-bold">Sorry, this lobby is invalid.</span>
                 </div>
             </div>
         </template>
+
+        <div v-if="currentDrink" class="drink-animation d-flex align-items-center justify-content-center">
+            <span class="text-white text-center">
+                <span class="text-uppercase font-weight-bold" style="font-size: 100px;">Drink!</span>
+                <span class="d-block fs-5" style="opacity: 0.5">
+                    Courtesy Of
+                </span>
+                <span class="d-block font-weight-bold fs-2 text-uppercase">
+                    {{ getSenderNameByDrink(currentDrink) }}
+                </span>
+            </span>
+            
+        </div>
+
     </div>
 </template>
+
 <script lang="ts">
-    import { Component, Vue, Watch, Prop } from 'vue-property-decorator';
+    import { Component, Vue, Watch, Prop, Ref } from 'vue-property-decorator';
+    import addHours from 'date-fns/addHours';
+    import addMinutes from 'date-fns/addMinutes';
+    import format from 'date-fns/format';
+    import LobbyOverview from '@/components/LobbyOverview.vue';
     import FullScoreboard from '@/components/FullScoreboard.vue';
     import Feed from '@/components/Feed.vue';
     import NHL from '@/services/NhlApiService';
-    import { Game } from '@/models/game';
-    import { GamePlay } from '@/models/game-play';
-    import TeamColors from '@/models/teamColorLookup';
+    import FeedItem from '@/models/feedItem';
     import * as jsonpatch from 'fast-json-patch';
+    import EventType from '@/models/nhlApi/enums/eventType';
+    import GameStatusCode from '@/models/nhlApi/enums/gameStatusCode';
+    import LoadingMessages from '@/models/loadingMessages';
+    import PlayerType from '@/models/nhlApi/enums/playerType';
+    import LobbyEventType from '@/enums/lobbyEventType';
     import LobbyService from '@/services/LobbyService';
+    import { mapState, mapActions, mapGetters } from 'vuex';
+    import VueResizable from 'vue-resizable'
+    import '@/extensions/arrayExtensions';
+
+
+    type View = "feed" | "game" | "lobby";
 
     @Component({
-        components: { FullScoreboard, Feed }
+        components: { LobbyOverview, FullScoreboard, Feed, VueResizable },
+        computed: {
+            ...mapState('lobby', ['lobby', 'currentUserId', '']),
+            ...mapGetters('lobby', ['isLobbyAdmin'])
+        },
+        methods: { ...mapActions('lobby', ['getLobby']) }
     })
     export default class LobbyComponent extends Vue {
+        //PROPS
         @Prop()
-        code!: string;
+        joinCode!: string;
 
-        lobby: Lobby | null = null;
-        invalidLobby = false;
+        //STORE
+        lobby!: Lobby;
+        currentUserId!: string;
+        getLobby!: (joinCode: string) => void;
+        isLobbyAdmin!: boolean;
 
-        games: Array<Game> = [];
+        //DATA
+        sessionStart: Date = new Date();
+        games: Array<LiveGame> = [];
 
-        date: string = (() => {
-            const d = new Date();
-            d.setHours(d.getHours() - 10);
-            return d.toISOString().split("T")[0];
-        })();
+        selectedDate: string = format(addHours(new Date(), -10), 'yyyy-MM-dd');
 
-        showGames = true;
-        showFeed = false;
-        unseenEvents = 0;
-        currentUserId = localStorage.getItem('userId');
+        isInvalidLobby = false;
+        isLoading = false;
 
+        timers: Array<number> = [];
+        eventBus = new Vue();
         eventSource: EventSource | null = null;
+        lobbyEvents: Array<LobbyEvent> = [];
+        view: View = "game";
 
-        lobbyEvents: Array<object> = [];
-        gameEvents: Array<GamePlay> = [];
+        pendingDrinks: Array<Drink> = [];
+        currentDrink: Drink | null = null;
 
-        get events() {
-            const result = [...this.gameEvents.map(g => ({ rootEventType: "GAME_EVENT", ...g })), ...this.lobbyEvents];
-            result.sort((a, b) => {
-                const aDate = a.rootEventType === "GAME_EVENT"
-                    ? new Date(a.about.dateTime)
-                    : a.date;
+        @Ref('overview') overview!: LobbyOverview;
 
-                const bDate = b.rootEventType === "GAME_EVENT"
-                    ? new Date(b.about.dateTime)
-                    : b.date;
-
-                return aDate - bDate;
-            });
-
-            return result;
-        }
-
-        eventTypeIds = ["goal", "penalty", "period_start", "period_end", "game_end", "challenge"];
-
-        loadingMessages = [
-            "Fixing the zamboni",
-            "Grabbing another beer",
-            "Finding your seats",
-            "Please wait: Puck in play",
-            "Shoveling snow",
-            "Repairing the glass",
-            "Lacin' up the skates",
-            "Stacking pucks",
-            "Drawing up a play",
-            "Challenging something",
-            "Reviewing a goal",
-            "TV Timeout",
-            "Checking our stats",
-            "Serving a penalty",
-            "Looking for a bathroom",
-            "Tailgating",
-            "Filling the water bottles",
-            "Making a pump-up playlist",
-            "Hitting the showers"
-        ];
-
-        goalTexts = [
-            "lights the lamp",
-            "goes bar-down",
-            "puts the biscuit in the basket",
-            "pots a gino",
-            "tickles the twine",
-            "shoots and scores",
-            "nets one",
-            "sends it home",
-            "tucks it in",
-            "adds a tally",
-            "finds the loose change",
-            "goes top cheddar"
-        ];
-
-        loadingMessage = this.loadingMessages[Math.floor(Math.random() * this.loadingMessages.length)];
-
-        isLoading = true;
-
-        mediaQuery = window.matchMedia('(max-width: 500px)');
-
+        //METHODS
         async created() {
             try {
-                this.mediaQuery.addListener(() => {
-                    this.unseenEvents = 0;
-                });
-
-                try {
-                    this.isLoading = true;
-                    await this.getLobby();
-                    this.addEventSource();
-                } catch (e) {
-                    console.error(e);
-                    this.invalidLobby = true;
-                    return;
-                }
-                await this.initialGetGames();
-            } finally {
-                this.isLoading = false;
-            }
-        }
-
-        addEventSource() {
-            this.eventSource = new EventSource(`/api/events/${this.lobby.joinCode}`);
-
-            const lobbyEventTypes = [
-                "UserJoined",
-                "UserRejoined",
-                "UserLeft",
-                "UserNewPick",
-                "UserPickScored",
-                "UserNameChanged",
-                "GoalChanged"
-            ];
-
-            lobbyEventTypes.forEach(t => {
-                this.eventSource.addEventListener(t, async event => {
-                    const data = JSON.parse(event.data);
-                    if (this[`on${t}`])
-                        this[`on${t}`](data);
-
-                    await this.getLobby();
-                })
-            });
-        }
-
-        async getLobby() {
-            this.lobby = await LobbyService.getLobbyByCode(this.code);
-            this.lobby?.lobbyMembers.sort((a, b) => new Date(a.joined) - new Date(b.joined));
-        }
-
-        @Watch('date')
-        async updateGames() {
-            try {
-                this.loadingMessage = this.loadingMessages[Math.floor(Math.random() * this.loadingMessages.length)];
                 this.isLoading = true;
-                await this.initialGetGames();
+                await this.getLobby(this.joinCode);
+                this.selectedDate = format(addHours(this.lobby.created, -10), 'yyyy-MM-dd');
+
+                const currentLobbyMember = this.lobby.members.find(m => m.userId === this.currentUserId);
+                let name = currentLobbyMember?.name ?? null;
+
+                if (!currentLobbyMember) {
+                    name = prompt("Enter your name");
+
+                    if (name == null) throw "User didn't enter name.";
+                    await LobbyService.joinLobbyByCode(this.joinCode, name);
+                    await this.getLobby(this.joinCode);
+                }
+
+                localStorage.setItem('latestLobby', JSON.stringify({ joinCode: this.lobby.joinCode, name }))
+
+                this.connectToEventSource();
+                await this.setGames();
+                this.getMissedDrinks();
+            } catch (e) {
+                console.error(e);
+                this.isInvalidLobby = true;
+                return;
             } finally {
                 this.isLoading = false;
             }
         }
 
-        toggleDisplay() {
-            this.unseenEvents = 0;
-            this.showFeed = !this.showFeed;
-            this.showGames = !this.showGames;
-            this.events.forEach(e => e.isInitial = true);
+        setView(view: View) {
+            this.view = view;
         }
 
-        enableNotifications() {
-            function checkNotificationPromise() {
-                try {
-                    Notification.requestPermission().then();
-                } catch (e) {
-                    return false;
-                }
-
-                return true;
-            }
-
-            //function handlePermission(permission) {
-            // set the button to shown or hidden, depending on what the user answers
-            //    notificationBtn.style.display =
-            //Notification.permission === 'granted' ? 'none' : 'block';
-            //}
-
-            // Let's check if the browser supports notifications
-            if (!('Notification' in window)) {
-                console.log("This browser does not support notifications.");
-            } else if (checkNotificationPromise()) {
-                Notification.requestPermission().then((permission) => {
-                    console.log(permission);
-                });
-            } else {
-                Notification.requestPermission((permission) => {
-                    console.log(permission);
-                });
-            }
-        }
-
-        async initialGetGames() {
-            const schedule = await NHL.getSchedule(this.date);
+        async setGames() {
             this.games = [];
 
-            for (const scheduleGame of schedule.dates[0].games) {
-                if (!scheduleGame.gamePk) continue;
-                const game = await this.getGame(scheduleGame.gamePk)
-                this.games.push(game);
-            }
+            const schedule = await NHL.getSchedule(this.selectedDate);
+            if (schedule.dates.length === 0 || schedule.dates[0].games.length === 0) return;
 
-            this.updateEvents(true);
-            this.games.forEach(g => {
-                if (Number(g.gameData.status.statusCode) < 5)
-                    this.setTimeoutForRefresh(g);
-            })
-        }
+            const gamePromises = schedule.dates[0].games.map(async game => await this.getGameData(game.gamePk));
+            this.games = await Promise.all(gamePromises);
 
-        async getGame(gamePk: number) {
-            const game = await NHL.getGameData(gamePk);
-            game.animations = [];
-
-            //set colors
-            const awayTeam = game?.gameData?.teams?.away;
-            const homeTeam = game?.gameData?.teams?.home;
-
-            if (awayTeam?.id) {
-                awayTeam.colors = { primary: TeamColors[awayTeam.id] };
-                awayTeam.logo = require(`@/assets/img/logos/${awayTeam.abbreviation}.png`);
-                try {
-                    awayTeam.logoLight = require(`@/assets/img/logos/${awayTeam.abbreviation}_LIGHT.png`);
-                } catch {
-                    awayTeam.logoLight = require(`@/assets/img/logos/${awayTeam.abbreviation}.png`);
-                }
-            }
-
-            if (homeTeam?.id) {
-                homeTeam.colors = { primary: TeamColors[homeTeam.id] };
-                homeTeam.logo = require(`@/assets/img/logos/${homeTeam.abbreviation}.png`);
-                try {
-                    homeTeam.logoLight = require(`@/assets/img/logos/${homeTeam.abbreviation}_LIGHT.png`);
-                } catch {
-                    homeTeam.logoLight = require(`@/assets/img/logos/${homeTeam.abbreviation}.png`);
-                }
-            }
-
-            //set periods
-            const gamePeriods = game?.liveData?.linescore?.periods;
-            if (gamePeriods)
-                for (let i = gamePeriods.length + 1; i <= 3; i++)
-                    gamePeriods.push({ num: i });
-
-            return game;
-        }
-
-        async updateGame(game: Game) {
-            const gameIdx = this.games.findIndex(g => g.gamePk === game.gamePk);
-
-            if (Number(game.gameData?.status?.statusCode < 3)) {
-                //game hasn't started
-                this.$set(this.games, gameIdx, await this.getGame(game.gamePk));
-            } else {
-                //game in progress
-                const diffResults = await NHL.getGamePatch(game.gamePk, game.metaData?.timeStamp);
-
-                diffResults.forEach(diffResult => {
-                    const result = jsonpatch.applyPatch(this.games[gameIdx], diffResult.diff);
-                    this.$set(this.games, gameIdx, result.newDocument);
-                });
-
-                this.updateEvents();
-            }
-
-            this.setTimeoutForRefresh(this.games[gameIdx]);
-        }
-
-        async updateEvents(isInitial = false) {
-            const allEvents = this.games
-                .filter(g => g?.liveData?.plays?.allPlays?.length)
-                .flatMap(g => g.liveData.plays.allPlays.map(p => (
-                    {
-                        ...p,
-                        gamePk: g.gamePk,
-                        isInitial,
-                        randomGoalText: this.goalTexts[Math.floor(Math.random() * this.goalTexts.length)]
-                    }
-                )))
-                .filter(e => e?.about?.dateTime && this.eventTypeIds.some(eti => eti === (e?.result?.eventTypeId?.toLowerCase() ?? "")));
-
-            if (isInitial) {
-                this.gameEvents = allEvents;
-            } else {
-                //push new events
-                const existingEventCodes = this.gameEvents.map(e => e.result.eventCode);
-                const newEvents = allEvents.filter(e => existingEventCodes.every(eec => eec != e.result.eventCode));
-                this.gameEvents.push(...newEvents);
-
-                //handle animations
-                const previousGoalsAwaitingScorer = this.gameEvents.filter(e => e.result.eventTypeId.toLowerCase() === "goal" && e.awaitingScorer === true);
-                const newGoals = newEvents.filter(e => e.result.eventTypeId.toLowerCase() === "goal");
-                if (!this.showFeed) this.unseenEvents += newGoals.length;
-
-                const unaddressedGoals = [...previousGoalsAwaitingScorer, ...newGoals];
-                unaddressedGoals.forEach(p => this.onGoalScored(p));
-            }
-        }
-
-        onGoalScored(play: GamePlay) {
-            play.awaitingScorer = true;
-
-            const game = this.games.find(g => g.gamePk === play.gamePk);
-            const teamId = play.team?.id;
-            const team = game.gameData.teams.away.id === teamId
-                ? game.gameData.teams.away
-                : game.gameData.teams.home;
-
-            const scorer = play?.players?.find(p => p.playerType?.toLowerCase() === "scorer")?.player;
-            if (!scorer) return;
-
-            const player = this.getPlayerById(game, scorer.id);
-            if (!player) return;
-
-            play.awaitingScorer = false;
-
-            this.checkGoalAgainstPicks(game, player, play)
-            this.handleGoalAnimation(game, team, player);
-        }
-
-        handleGoalAnimation(game: Game, team: Team, player: Player) {
-            game.animations.push({
-                active: false,
-                team,
-                player
+            this.games.forEach(game => {
+                if (!this.gameIsStale(game))
+                    this.timers.push(setTimeout(() => this.pollForUpdates(game), 10000))
             });
         }
 
-        checkGoalAgainstPicks(game: Game, player: Player, play: GamePlay) {
-            this.lobby.lobbyMembers.forEach(lm => {
-                const picks = lm.lobbyMemberPicks;
-                const matchingPick = picks.find(p => p.gamePk === game.gamePk && p.playerId === player.id);
-                if (!matchingPick) return;
+        async updateGame(game: LiveGame) {
+            const isInProgress = [GameStatusCode.InProgress, GameStatusCode.InProgressCritical].includes(game.gameData.status.statusCode);
+            const gameIndex = this.games.findIndex(g => game === g);
 
-                this.onPickScored(matchingPick, player, play);
-            })
-        }
+            if (!isInProgress) {
+                this.$set(this.games, gameIndex, await this.getGameData(game.gamePk));
+                return;
+            }
 
-        onPickScored(pick: LobbyMemberPick, player: Player, play: GamePlay) {
-            const lobbyMember = this.lobby.lobbyMembers.find(lm => lm.id === pick.lobbyMemberId);
-
-            if (lobbyMember.userId === this.currentUserId) {
-                this.$toast.success(`<strong>${player.firstName} ${player.lastName}</strong> scores! You get to assign a drink!`);
+            const result = await NHL.getGamePatch(game.gamePk, game.metaData.timeStamp);
+            if (Array.isArray(result)) {
+                const patchCollections = result as Array<{ diff: Array<PatchOperation> }>;
+                patchCollections.forEach(patchCollection => jsonpatch.applyPatch(game, patchCollection.diff as readonly jsonpatch.Operation[]));
             } else {
-                this.$toast.info(`<strong>${lobbyMember.name}</strong> gets to assign a drink for a goal by <strong>${player.firstName} ${player.lastName}</strong>!`);
+                this.$set(this.games, gameIndex, await this.getGameData(game.gamePk));
             }
         }
 
-        getPlayerById(game: Game, playerId: number): Player {
-            return game.gameData.players[`ID${playerId}`];
+        async getGameData(gamePk: number) {
+            return await NHL.getGameData(gamePk);
         }
 
-        setTimeoutForRefresh(game: Game) {
-            const gameStatus = Number(game.gameData.status?.statusCode);
-            if (gameStatus >= 5) return;
+        async setDate() {
+            this.timers.forEach(timer => clearTimeout(timer));
+            this.timers = [];
+            await this.setGames();
+        }
 
-            const refreshMs = gameStatus < 3
-                ? 60000
-                : 10000;
+        async pollForUpdates(game: LiveGame) {
+            await this.updateGame(game);
+            const isInProgress = [GameStatusCode.InProgress, GameStatusCode.InProgressCritical].includes(game.gameData.status.statusCode);
 
-            setTimeout(() => { if (game) this.updateGame(game) }, refreshMs);
+            if (this.gameIsStale(game)) return;
+
+            const interval = isInProgress
+                ? 10000
+                : 60000;
+
+            this.timers.push(setTimeout(() => this.pollForUpdates(game), interval));
+        }
+
+        gameIsStale(game: LiveGame) {
+            const isOver = [GameStatusCode.Final, GameStatusCode.GameOver, GameStatusCode.Final2].includes(game.gameData.status.statusCode);
+            return isOver && game.gameData.datetime.endDateTime && (game.gameData.datetime.endDateTime <= addMinutes(new Date(), -10));
+        }
+
+        connectToEventSource() {
+            if (this.eventSource !== null) this.eventSource.close();
+
+            this.eventSource = LobbyService.listen(this.joinCode);
+            this.eventSource.addEventListener("lobbyEvent", (evt) => this.dispatchLobbyEvent({ ...JSON.parse(evt.data), time: new Date() }));
+        }
+
+        notifyOfDrink(drink: Drink) {
+            this.pendingDrinks.push(drink);
+
+            if (this.pendingDrinks.length === 1)
+                this.handleDrinkAnimationQueue();
+        }
+
+        handleDrinkAnimationQueue() {
+            if (this.pendingDrinks.length === 0) return;
+            this.currentDrink = this.pendingDrinks[0];
+
+            setTimeout(() => {
+                this.pendingDrinks.splice(0, 1);
+                this.currentDrink = null;
+                this.$nextTick(() => this.handleDrinkAnimationQueue());
+            }, 5000);
+        }
+
+        getSenderNameByDrink(drink: Drink): string | null {
+            return this.lobby.members.find(m => {
+                return m.picks.flatMap(p => p.drinks).some(d => d.id === drink.id);
+            })?.name ?? null;
+        }
+
+        async dispatchLobbyEvent(lobbyEvent: LobbyEvent) {
+            await this.getLobby(this.joinCode);
+            if (!this.lobby) return;
+
+            this.lobbyEvents.push(lobbyEvent);
+
+            const eventType = LobbyEventType[lobbyEvent.type];
+            const handler = this[`on${eventType}` as keyof LobbyComponent];
+            if (handler)
+                handler(lobbyEvent.entityId);
+        }
+
+        async onDrinkAssigned(drinkId: string) {
+            const drink = this.lobby.members.flatMap(m => m.picks).flatMap(p => p.drinks).find(d => d.id === drinkId);
+            if (drink && drink.recipientLobbyMemberId === this.currentLobbyMember?.id)
+                this.notifyOfDrink(drink);
+        }
+
+        async onNewDrink(drinkId: string) {
+            const drink = this.lobby.members.flatMap(m => m.picks).flatMap(p => p.drinks).find(d => d.id === drinkId);
+            if (!drink) return;
+
+            const pick = this.lobby.members.flatMap(m => m.picks).find(p => p.drinks.includes(drink));
+            if (!pick) return;
+
+            if (pick.lobbyMemberId != this.currentLobbyMember?.id) return;
+
+            const goal = this.goals.find(g => g.gamePk === pick?.gamePk && g.about.eventId === drink.eventId);
+            if (!goal) return;
+
+            const scorer = goal.players.find(p => p.playerType === PlayerType.Scorer);
+            if (!scorer) return;
+
+            this.notifyCurrentUserOfCorrectPick(scorer);
+        }
+
+        async getMissedDrinks() {
+            const picks = this.lobby.members.flatMap(m => m.picks);
+            const drinks = picks.flatMap(p => p.drinks);
+            this.goals.forEach(g => {
+                const scorer = g.players.find(player => player.playerType === PlayerType.Scorer);
+                if (!scorer) return;
+
+                const unawardedPicks = picks
+                    .filter(p => {
+                        const playerIdMatches = p.gamePk === g.gamePk && p.playerId === scorer.player.id
+                        const pickWasBeforeGoal = p.created <= g.about.dateTime;
+                        const notAlreadyGiven = drinks.every(d => d.eventId !== g.about.eventId);
+                        return playerIdMatches && pickWasBeforeGoal && notAlreadyGiven;
+                    });
+
+                unawardedPicks.forEach(async pick => {
+                    const drink = await LobbyService.newDrink(this.joinCode, pick.id, g.about.eventId);
+                    const lobbyMemberId = picks.find(pick => drink.lobbyMemberPickId === pick.id)?.lobbyMemberId ?? null;
+                    if (lobbyMemberId == null) return;
+
+                    const picker = this.lobby.members.find(member => member.id === lobbyMemberId);
+                    if (picker == null) return;
+
+                    if (picker.isBot) {
+                        this.botAssignDrink(drink);
+                    }
+                });
+            });
+        }
+
+        notifyCurrentUserOfCorrectPick(scorer: PlayPlayer) {
+            this.$toast.success(`<span class='fs-3'><strong class= text-uppercase'>Nailed it!</strong> You've been awarded a drink for that goal by ${scorer.player.fullName}!</span>`, { duration: 7500 })
+        }
+
+        //COMPUTED
+        get feedItems() {
+            const desiredEventTypes = [EventType.Goal, EventType.PeriodStart, EventType.PeriodEnd, EventType.GameEnd, EventType.Challenge, EventType.Penalty];
+            const gameItems = this.games.flatMap(game => game.liveData.plays.allPlays.reduce((items: Array<FeedItem>, play) => {
+                if (desiredEventTypes.includes(play.result.eventTypeId) && play.about.dateTime >= this.lobby.created)
+                    return [...items, FeedItem.fromPlay(game.gamePk, game.liveData.linescore.teams, play)];
+                else
+                    return items;
+            }, []));
+
+            const lobbyItems = this.lobbyEvents.map(lobbyEvent => {
+                let player: Player | null = null;
+                let gamePk: number | null = null;
+                let pick: LobbyMemberPick | null = null;
+                let team: Team | null = null;
+
+                if (lobbyEvent.type === LobbyEventType.DrinkAssigned || lobbyEvent.type === LobbyEventType.NewDrink) {
+                    const drink = this.lobby?.members.flatMap(m => m.picks).flatMap(p => p.drinks).find(drink => drink.id === lobbyEvent.entityId) ?? null;
+                    pick = this.lobby?.members.flatMap(m => m.picks).find(p => p.drinks.some(d => d.id === drink?.id)) ?? null;
+                } else if (lobbyEvent.type === LobbyEventType.NewPick) {
+                    pick = this.lobby?.members.flatMap(m => m.picks).find(p => p.id === lobbyEvent.entityId) ?? null;
+                }
+
+                if (pick != null) {
+                    const game = this.games.find(g => g.gamePk === pick?.gamePk);
+                    gamePk = game?.gamePk ?? null;
+                    player = game?.gameData.players[`ID${pick.playerId}`] ?? null;
+                    team = game?.gameData.teams.away.id === player?.currentTeam.id
+                        ? game?.gameData.teams.away ?? null
+                        : game?.gameData.teams.home ?? null;
+                }
+
+                return FeedItem.fromLobbyEvent(gamePk, lobbyEvent, this.lobby, player, team);
+            });
+
+            const feedItems = [...gameItems, ...lobbyItems];
+
+            feedItems.sort((a, b) => Number(a.time) - Number(b.time));
+            return feedItems;
+        }
+
+        get loadingMessage(): string {
+            return LoadingMessages.random();
+        }
+
+        get goals() {
+            const goals = this.games.flatMap(game => game.liveData.plays.allPlays
+                .filter(play => play.result.eventTypeId === EventType.Goal)
+                .map(play => ({ ...play, gamePk: game.gamePk }))
+            ) as Array<ScoringPlay & { gamePk: number }>;
+            return goals;
+        }
+
+        get picks() {
+            return this.lobby?.members.flatMap(m => m.picks);
+        }
+
+        get isGameView() {
+            return this.view === "game";
+        }
+
+        get isFeedView() {
+            return this.view === "feed";
+        }
+
+        get isLobbyView() {
+            return this.view === "lobby";
+        }
+
+        get currentLobbyMember() {
+            return this.lobby.members.find(m => m.userId === this.currentUserId);
+        }
+
+        //WATCHERS / HANDLERS
+        @Watch('goals')
+        onGoalsUpdated(newGoals: Array<ScoringPlay & { gamePk: number }>, oldGoals: Array<ScoringPlay & { gamePk: number }>) {
+            oldGoals = oldGoals.filter(g => g.about.dateTime >= this.sessionStart);
+            newGoals = newGoals.filter(g => g.about.dateTime >= this.sessionStart);
+
+            newGoals.forEach(newGoal => {
+                const newGoalScorer = newGoal.players?.find(player => player.playerType === PlayerType.Scorer) ?? null;
+                const oldGoal = oldGoals.find(oldGoal => oldGoal.result.eventCode === newGoal.result.eventCode);
+                const goalAlreadyExists = !!oldGoal;
+
+                if (goalAlreadyExists) {
+                    const oldGoalScorer = oldGoal.players?.find(player => player.playerType === PlayerType.Scorer) ?? null;
+                    const scorerChanged = oldGoalScorer?.player.id != newGoalScorer?.player.id;
+                    if (scorerChanged) this.onScorerChanged(newGoal, oldGoal);
+                } else {
+                    this.onGoalScored(newGoal);
+                }
+            });
+
+            oldGoals.forEach(oldGoal => {
+                const newGoal = newGoals.find(newGoal => newGoal.result.eventCode === oldGoal.result.eventCode);
+                const goalWasRemoved = !newGoal;
+                if (goalWasRemoved) this.onGoalRemoved(oldGoal);
+            });
+        }
+
+        onGoalScored(goal: ScoringPlay & { gamePk: number }) {
+            const scorer = goal.players?.find(player => player.playerType === PlayerType.Scorer) ?? null;
+
+            this.eventBus.$emit('goalScored', { goal });
+            if (scorer != null) this.onGoalFirstAssigned(goal);
+        }
+
+        async onGoalFirstAssigned(goal: ScoringPlay & { gamePk: number }) {
+            this.eventBus.$emit('onGoalFirstAssigned', { goal });
+
+            const picks = this.lobby.members.flatMap(m => m.picks) as LobbyMemberPick[];
+            const pick = picks.find(p => p.gamePk === goal.gamePk && p.playerId === goal.players.find(player => player.playerType === PlayerType.Scorer)?.player.id) ?? null;
+
+            if (pick != null) {
+                const picker = this.lobby.members.find(m => m.picks.includes(pick));
+                const isPicker = picker && picker.userId === this.currentUserId;
+                const botPickAndIsAdmin = picker && picker.isBot && this.isLobbyAdmin;
+
+                if (!isPicker && !botPickAndIsAdmin) return;
+
+                const drink = await LobbyService.newDrink(this.joinCode, pick.id, goal.about.eventId);
+
+                if (botPickAndIsAdmin)
+                    this.botAssignDrink(drink);
+            }
+        }
+
+        botAssignDrink(drink: Drink) {
+            setTimeout(() => {
+                const randomMember = this.lobby.members.filter(m => !m.isBot).random();
+                LobbyService.assignDrink(this.joinCode, drink.id, randomMember.id);
+            }, 5000);
+        }
+
+        onScorerChanged(newGoal: ScoringPlay & { gamePk: number }, oldGoal: ScoringPlay & { gamePk: number }) {
+            const newScorer = newGoal.players?.find(player => player.playerType === PlayerType.Scorer) ?? null;
+            const oldScorer = oldGoal.players?.find(player => player.playerType === PlayerType.Scorer) ?? null;
+
+            this.eventBus.$emit('scorerChanged', { newGoal, oldGoal });
+            if (oldScorer == null && newScorer != null) this.onGoalFirstAssigned(newGoal);
+        }
+
+        onGoalRemoved(goal: ScoringPlay & { gamePk: number }) {
+            this.eventBus.$emit('goalRemoved', { goal });
         }
     }
 </script>
+
+<style scoped lang="scss">
+    @keyframes bouncein {
+        0% {
+            transform: translate(-50%, -50%) scale(0.4);
+            opacity: 0;
+            animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        25% {
+            transform: translate(-50%, -50%) scale(1.08);
+            opacity: 1;
+            animation-timing-function: ease-out;
+        }
+
+        100% {
+            transform: translate(-50%, -50%) scale(1);
+            animation-timing-function: ease-in-out;
+        }
+    }
+
+
+    .drink-animation {
+        position: absolute;
+        z-index: 99;
+        max-width: 100%;
+        width: 375px;
+        max-height: 100%;
+        height: 375px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%,-50%);
+        background-color: map-get($theme-colors, "amber-500");
+        border-radius: 20px;
+        box-shadow: 0 0 25px black;
+        animation: bouncein;
+        animation-duration: 2.5s;
+        animation-iteration-count: 2;
+        animation-direction: alternate;
+        animation-fill-mode:forwards;
+    }
+</style>

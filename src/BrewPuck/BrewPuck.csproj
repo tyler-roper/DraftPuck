@@ -9,6 +9,23 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="ClientApp\src\enums\botPickStyle.ts" />
+    <None Remove="ClientApp\src\enums\feedItemType.ts" />
+    <None Remove="ClientApp\src\enums\lobbyEventType.ts" />
+    <None Remove="ClientApp\src\models\botNames.ts" />
+    <None Remove="ClientApp\src\models\goalTexts.ts" />
+    <None Remove="ClientApp\src\models\loadingMessages.ts" />
+    <None Remove="ClientApp\src\models\lobbyEvent.d.ts" />
+    <None Remove="ClientApp\src\models\nhlApi\enums\eventType.ts" />
+    <None Remove="ClientApp\src\models\nhlApi\enums\gameStatusCode.ts" />
+    <None Remove="ClientApp\src\models\nhlApi\enums\gameType.ts" />
+    <None Remove="ClientApp\src\models\nhlApi\enums\periodType.ts" />
+    <None Remove="ClientApp\src\models\nhlApi\enums\playerType.ts" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="12.0.0" />
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.SpaServices" Version="3.1.32" />
     <PackageReference Include="Microsoft.AspNetCore.SpaServices.Extensions" Version="7.0.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.1" />
@@ -22,6 +39,35 @@
 
   <ItemGroup>
     <Folder Include="Infrastructure\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <TypeScriptCompile Include="ClientApp\src\enums\botPickStyle.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include="ClientApp\src\enums\feedItemType.ts" />
+    <TypeScriptCompile Include="ClientApp\src\enums\lobbyEventType.ts" />
+    <TypeScriptCompile Include="ClientApp\src\models\loadingMessages.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include="ClientApp\src\models\botNames.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include="ClientApp\src\models\goalTexts.ts" />
+    <TypeScriptCompile Include="ClientApp\src\models\lobbyEvent.d.ts" />
+    <TypeScriptCompile Include="ClientApp\src\models\nhlApi\enums\periodType.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include="ClientApp\src\models\nhlApi\enums\gameStatusCode.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include="ClientApp\src\models\nhlApi\enums\eventType.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include="ClientApp\src\models\nhlApi\enums\playerType.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include="ClientApp\src\models\nhlApi\enums\gameType.ts" />
   </ItemGroup>
 
 	<Target Name="ReleaseBuildWeb" BeforeTargets="BeforeBuild" Condition="'$(Configuration)' == 'Release'">

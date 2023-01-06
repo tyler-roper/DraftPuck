@@ -12,6 +12,10 @@ public partial class LobbyMember
 
     public string Name { get; set; } = null!;
 
+    public bool IsBot { get; set; } = false;
+
+    public BotPickStyle? BotPickStyle { get; set; }
+
     public virtual ICollection<Drink> Drinks { get; } = new List<Drink>();
 
     public virtual Lobby Lobby { get; set; } = null!;

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import parseISO from 'date-fns/parseISO';
 const apiBasePath = `/api/`;
 export default class HttpService {
     constructor(controller, addUserHeader = true, basePath) {
@@ -12,6 +13,10 @@ export default class HttpService {
             return config;
         }, error => {
             Promise.reject(error);
+        });
+        axiosInstance.interceptors.response.use(originalResponse => {
+            handleDates(originalResponse.data);
+            return originalResponse;
         });
         this._axios = axiosInstance;
         this._basePath = basePath ? `${basePath}${controller}` : `${apiBasePath}${controller}/`;
@@ -52,6 +57,21 @@ export default class HttpService {
     }
     async delete(endpoint) {
         await this._axios.delete(`${this._basePath}${endpoint}`);
+    }
+}
+const isoDateFormat = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d*)?$/;
+function isIsoDateString(value) {
+    return value && typeof value === "string" && isoDateFormat.test(value);
+}
+export function handleDates(body) {
+    if (body === null || body === undefined || typeof body !== "object")
+        return body;
+    for (const key of Object.keys(body)) {
+        const value = body[key];
+        if (isIsoDateString(value))
+            body[key] = parseISO(value);
+        else if (typeof value === "object")
+            handleDates(value);
     }
 }
 //# sourceMappingURL=HttpService.js.map

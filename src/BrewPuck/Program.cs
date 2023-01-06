@@ -20,6 +20,7 @@ builder.Services.AddMvc(options =>
     options.EnableEndpointRouting = false;
 });
 
+
 builder.Logging.AddConsole();
 
 //services
@@ -28,9 +29,8 @@ builder.Services
     .AddEndpointsApiExplorer()
     .AddTransient<ILobbyEventService, LobbyEventService>()
     .AddSingleton<IEventService, EventService>()
-    .AddHostedService<KeepAliveService>();
-    //.AddHostedService<GameCheckerService>()
-    //.AddHttpClient();
+    .AddHostedService<KeepAliveService>()
+    .AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 //kestrel
 builder.WebHost.UseKestrel();

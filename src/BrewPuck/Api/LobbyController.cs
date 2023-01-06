@@ -1,5 +1,6 @@
-﻿using BrewPuck.Data;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace BrewPuck.Api
 {
@@ -8,18 +9,21 @@ namespace BrewPuck.Api
         private static Random random = new Random();
         private readonly BrewPuckContext _dbContext;
         private readonly IEventService _eventService;
+        private readonly IMapper _mapper;
+        private readonly JsonSerializerOptions _jsonSerializerOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, ReferenceHandler = ReferenceHandler.IgnoreCycles };
 
-        public LobbyController(BrewPuckContext dbContext, IEventService eventService)
+        public LobbyController(BrewPuckContext dbContext, IEventService eventService, IMapper mapper)
         {
             _dbContext = dbContext;
             _eventService = eventService;
+            _mapper = mapper;
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateLobby(string name)
+        public async Task<IActionResult> CreateLobby(NewLobbyRequest request)
         {
             if (CurrentUser == null) return Unauthorized();
-            if (string.IsNullOrEmpty(name)) return BadRequest();
+            if (string.IsNullOrEmpty(request.Name)) return BadRequest();
 
             var newLobbyId = Guid.NewGuid();
             var lobby = new Lobby()
@@ -27,7 +31,8 @@ namespace BrewPuck.Api
                 Id = newLobbyId,
                 JoinCode = await RandomString(4),
                 Status = 0,
-                CreatedBy = CurrentUser.Id
+                CreatedBy = CurrentUser.Id,
+                PicksPerTeam = request.PicksPerTeam
             };
 
             _dbContext.Lobbies.Add(lobby);
@@ -35,11 +40,11 @@ namespace BrewPuck.Api
             {
                 LobbyId = newLobbyId,
                 UserId = CurrentUser.Id,
-                Name = name
+                Name = request.Name
             });
 
             await _dbContext.SaveChangesAsync();
-            return Created($"lobbies/{newLobbyId}", lobby);
+            return Created($"lobbies/{newLobbyId}", _mapper.Map<LobbyResponse>(lobby));
         }
 
         [HttpGet("{code}")]
@@ -48,49 +53,63 @@ namespace BrewPuck.Api
             var lobby = await _dbContext.Lobbies
                 .Include(l => l.LobbyMembers)
                     .ThenInclude(lm => lm.LobbyMemberPicks)
+                        .ThenInclude(lmp => lmp.Drinks)
                 .FirstOrDefaultAsync(l => l.JoinCode == code);
 
             return lobby == null
                 ? NotFound()
-                : Ok(lobby);
+                : Ok(_mapper.Map<LobbyResponse>(lobby));
         }
 
-        [HttpPost("join/{code}")]
-        public async Task<IActionResult> JoinLobbyByCode(string code, string name)
+        [HttpPost("{code}/join")]
+        public async Task<IActionResult> JoinLobbyByCode(string code, JoinLobbyRequest request)
         {
-            if (CurrentUser == null) return Unauthorized();
+            if (CurrentUser == null && !request.IsBot) return Unauthorized();
+
+            var userId = !request.IsBot
+                ? CurrentUser!.Id
+                : Guid.NewGuid();
+
+            if (request.IsBot)
+            {
+                _dbContext.Users.Add(new User() { Id = userId });
+                await _dbContext.SaveChangesAsync();
+            }
 
             var lobby = await _dbContext.Lobbies
                 .Include(l => l.LobbyMembers)
                 .FirstOrDefaultAsync(l => l.JoinCode == code);
             if (lobby == null) return NotFound();
 
-            var existingLobbyMember = lobby.LobbyMembers.FirstOrDefault(lm => lm.UserId == CurrentUser.Id);
+            var existingLobbyMember = lobby.LobbyMembers.FirstOrDefault(lm => lm.UserId == userId);
             if (existingLobbyMember == null)
             {
                 //JOINED LOBBY
                 var lobbyMember = new LobbyMember()
                 {
                     LobbyId = lobby.Id,
-                    UserId = CurrentUser.Id,
-                    Name = name
+                    UserId = userId,
+                    Name = request.Name,
+                    IsBot = request.IsBot,
+                    BotPickStyle = request.BotPickStyle
                 };
+
                 _dbContext.LobbyMembers.Add(lobbyMember);
                 await _dbContext.SaveChangesAsync();
 
                 _eventService.Notify(new LobbyEventModel(LobbyEventType.UserJoined, lobby.Id, lobbyMember));
 
-            } else if (existingLobbyMember.Name != name)
+            } else if (existingLobbyMember.Name != request.Name)
             {
                 //NAME CHANGE
                 var lobbyMemberEntity = await _dbContext.LobbyMembers.FindAsync(existingLobbyMember.Id);
-                lobbyMemberEntity.Name = name;
+                lobbyMemberEntity.Name = request.Name;
                 await _dbContext.SaveChangesAsync();
 
                 _eventService.Notify(new LobbyEventModel(LobbyEventType.UserNameChanged, lobby.Id, lobbyMemberEntity));
             }
 
-            return Ok(lobby);
+            return Ok(_mapper.Map<LobbyResponse>(lobby));
         }
 
         [HttpPost("{code}/pick")]
@@ -104,53 +123,143 @@ namespace BrewPuck.Api
 
             if (lobby == null) return NotFound();
 
-            var lobbyMember = lobby.LobbyMembers.FirstOrDefault(lm => lm.UserId == CurrentUser.Id);
+            var lobbyMember = request.LobbyMemberId != null
+                ? lobby.LobbyMembers.FirstOrDefault(lm => lm.Id == request.LobbyMemberId)
+                : lobby.LobbyMembers.FirstOrDefault(lm => lm.UserId == CurrentUser.Id);
+
             if (lobbyMember == null) return Unauthorized();
 
-            var player = await _dbContext.Players.FindAsync(request.Player.Id);
-            if (player == null) {
-                player = new Player()
-                {
-                    Id = request.Player.Id,
-                    FirstName = request.Player.FirstName,
-                    LastName = request.Player.LastName,
-                    Position = request.Player.Position,
-                    Number = request.Player.Number,
-                    TeamId = request.Player.TeamId
-                };
-
-                _dbContext.Players.Add(player);
-                await _dbContext.SaveChangesAsync();
-            }
-            else
-            {
-                player.FirstName = request.Player.FirstName;
-                player.LastName = request.Player.LastName;
-                player.Position = request.Player.Position;
-                player.Number = request.Player.Number;
-                player.TeamId = request.Player.TeamId;
-                await _dbContext.SaveChangesAsync();
-            }
+            if (lobby.LobbyMembers.SelectMany(lm => lm.LobbyMemberPicks).Any(pick => pick.PlayerId == request.PlayerId && pick.GamePk == request.GamePk))
+                return Conflict();
 
             var pick = new LobbyMemberPick()
             {
                 LobbyMemberId = lobbyMember.Id,
-                PlayerId = player.Id,
+                PlayerId = request.PlayerId,
                 GamePk = request.GamePk
             };
 
             _dbContext.LobbyMemberPicks.Add(pick);
             await _dbContext.SaveChangesAsync();
 
-            _eventService.Notify(new LobbyEventModel(LobbyEventType.NewPick, lobby.Id, lobbyMember));
+            _eventService.Notify(new LobbyEventModel(LobbyEventType.NewPick, lobby.Id, pick));
 
-            return Ok(pick);
+            return Ok(_mapper.Map<LobbyMemberPickResponse>(pick));
         }
 
-        [HttpPost("pick/{pickId}/score")]
-        public async Task<IActionResult> PickScored(Guid pickId, [FromQuery] int eventId)
+        [HttpPost("{code}/drink")]
+        public async Task<IActionResult> Drink(string code, NewDrinkRequest request)
         {
+            if (CurrentUser == null) return Unauthorized();
+            var lobby = await _dbContext.Lobbies
+                .Include(l => l.LobbyMembers)
+                .ThenInclude(lm => lm.LobbyMemberPicks)
+                .ThenInclude(lmp => lmp.Drinks)
+                .FirstOrDefaultAsync(l => l.JoinCode == code);
 
+            if (lobby == null) return NotFound();
+
+            var lobbyMember = lobby.LobbyMembers.FirstOrDefault(lm => lm.UserId == CurrentUser.Id);
+            if (lobbyMember == null) return Unauthorized();
+
+            var lobbyMemberPick = lobby.LobbyMembers.SelectMany(lm => lm.LobbyMemberPicks).FirstOrDefault(lmp => lmp.Id == request.LobbyMemberPickId);
+            if (lobbyMemberPick == null || (lobbyMemberPick.LobbyMember.UserId != CurrentUser.Id && !lobbyMemberPick.LobbyMember.IsBot)) return Unauthorized();
+
+            var drink = new Drink()
+            {
+                LobbyMemberPickId = lobbyMemberPick.Id,
+                RecipientLobbyMemberId = null,
+                EventId = request.EventId
+            };
+
+            _dbContext.Drinks.Add(drink);
+            await _dbContext.SaveChangesAsync();
+
+            _eventService.Notify(new LobbyEventModel(LobbyEventType.NewDrink, lobby.Id, drink));
+
+            return Ok(_mapper.Map<DrinkResponse>(drink));
+        }
+
+        [HttpPost("{code}/drink/{drinkId}/assign")]
+        public async Task<IActionResult> AssignDrink(string code, Guid drinkId, Guid recipientLobbyMemberId)
+        {
+            if (CurrentUser == null) return Unauthorized();
+
+            var lobby = await _dbContext.Lobbies
+                .Include(l => l.LobbyMembers)
+                .ThenInclude(lm => lm.LobbyMemberPicks)
+                .ThenInclude(lmp => lmp.Drinks)
+                .FirstOrDefaultAsync(l => l.JoinCode == code);
+
+            if (lobby == null) return NotFound();
+
+            var lobbyMember = lobby.LobbyMembers.FirstOrDefault(lm => lm.UserId == CurrentUser.Id);
+            if (lobbyMember == null) return Unauthorized();
+
+            var recipient = lobby.LobbyMembers.FirstOrDefault(member => member.Id == recipientLobbyMemberId);
+            if (recipient == null) return NotFound();
+
+            var drink = lobby.LobbyMembers.SelectMany(member => member.LobbyMemberPicks).SelectMany(lmp => lmp.Drinks).FirstOrDefault(d => d.Id == drinkId);
+            if (drink == null) return NotFound();
+            if (drink.RecipientLobbyMemberId != null) return Conflict();
+
+            drink.RecipientLobbyMemberId = recipient.Id;
+            await _dbContext.SaveChangesAsync();
+
+            _eventService.Notify(new LobbyEventModel(LobbyEventType.DrinkAssigned, lobby.Id, drink));
+
+            return Ok(_mapper.Map<DrinkResponse>(drink));
+        }
+
+        [Produces("text/event-stream")]
+        [HttpGet("{code}/listen")]
+        public async Task ListenForNotifications(string code, CancellationToken cancellationToken)
+        {
+            var lobby = await _dbContext.Lobbies.FirstOrDefaultAsync(l => l.JoinCode == code);
+            if (lobby == null) return;
+
+            SetServerSentEventHeaders();
+            await Response.WriteAsync($"event:connected\n", cancellationToken);
+            await Response.Body.FlushAsync(cancellationToken);
+
+            async void OnNotification(object? sender, LobbyEventArgs eventArgs)
+            {
+                if (eventArgs.LobbyEvent.LobbyId != lobby.Id) return;
+                var json = JsonSerializer.Serialize(eventArgs.LobbyEvent, _jsonSerializerOptions);
+                await Response.WriteAsync("retry:10000\n", cancellationToken);
+                await Response.WriteAsync($"event:lobbyEvent\n", cancellationToken);
+                await Response.WriteAsync($"data:{json}\n\n", cancellationToken);
+                await Response.Body.FlushAsync(cancellationToken);
+            }
+
+            async void KeepAlive(object? sender, EventArgs eventArgs)
+            {
+                await Response.WriteAsync("event:keep-alive\n", cancellationToken);
+                await Response.WriteAsync("data:keep-alive\n\n", cancellationToken);
+                await Response.Body.FlushAsync(cancellationToken);
+            }
+
+            _eventService.LobbyEvent += OnNotification;
+            _eventService.KeepAlive += KeepAlive;
+
+            try
+            {
+                while (!cancellationToken.IsCancellationRequested)
+                    await Task.Delay(1000, cancellationToken);
+            }
+            finally
+            {
+                _eventService.LobbyEvent -= OnNotification;
+                _eventService.KeepAlive -= KeepAlive;
+            }
+        }
+
+        private void SetServerSentEventHeaders()
+        {
+            Response.StatusCode = 200;
+            Response.Headers.Add("Content-Type", "text/event-stream");
+            Response.Headers.Add("Cache-Control", "no-cache");
+            Response.Headers.Add("Connection", "keep-alive");
         }
 
         private async Task<string> RandomString(int length)
@@ -168,19 +277,70 @@ namespace BrewPuck.Api
         }
     }
 
-    public class MakePickRequest
+    public class NewLobbyRequest
     {
-        public long GamePk { get; set; }
-        public PlayerRequest Player { get; set; } = null!;
+        public string Name { get; set; } = null!;
+        public int PicksPerTeam { get; set; }
     }
 
-    public class PlayerRequest
+    public class LobbyResponse
     {
-        public long Id { get; set; }
-        public string FirstName { get; set; } = null!;
-        public string LastName { get; set; } = null!;
-        public string Number { get; set; }
-        public int TeamId { get; set; }
-        public string Position { get; set; } = null!;
+        public Guid Id { get; set; }
+        public string JoinCode { get; set; } = null!;
+        public LobbyStatus Status { get; set; }
+        public int PicksPerTeam { get; set; }
+        public DateTime Created { get; set; }
+        public Guid CreatedBy { get; set; }
+        public List<LobbyMemberResponse> Members { get; set; } = new();
+    }
+
+    public class LobbyMemberResponse
+    {
+        public Guid Id { get; set; }
+        public Guid LobbyId { get; set; }
+        public Guid UserId { get; set; }
+        public DateTime Joined { get; set; }
+        public string Name { get; set; } = null!;
+        public bool IsBot { get; set; }
+        public BotPickStyle BotPickStyle { get; set; }
+        public List<LobbyMemberPickResponse> Picks { get; set; } = new();
+    }
+
+    public class LobbyMemberPickResponse
+    {
+        public Guid Id { get; set; }
+        public Guid LobbyMemberId { get; set; }
+        public long PlayerId { get; set; }
+        public long GamePk { get; set; }
+        public DateTime Created { get; set; }
+        public List<DrinkResponse> Drinks { get; set; } = new();
+    }
+
+    public class DrinkResponse
+    {
+        public Guid Id { get; set; }
+        public Guid LobbyMemberPickId { get; set; }
+        public Guid? RecipientLobbyMemberId { get; set; }
+        public int EventId { get; set; }
+    }
+
+    public class JoinLobbyRequest
+    {
+        public string Name { get; set; } = null!;
+        public bool IsBot { get; set; } = false;
+        public BotPickStyle? BotPickStyle { get; set; }
+    }
+
+    public class MakePickRequest
+    {
+        public Guid? LobbyMemberId { get; set; }
+        public long GamePk { get; set; }
+        public long PlayerId { get; set; }
+    }
+
+    public class NewDrinkRequest
+    {
+        public Guid LobbyMemberPickId { get; set; }
+        public int EventId { get; set; }
     }
 }

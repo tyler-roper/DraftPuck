@@ -7,7 +7,7 @@
         UserLeft,
         UserNameChanged,
         NewPick,
-        PickScored,
-        GoalChanged
+        NewDrink,
+        DrinkAssigned
     }
 }
