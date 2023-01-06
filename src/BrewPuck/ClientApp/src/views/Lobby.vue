@@ -91,7 +91,7 @@
     @Component({
         components: { LobbyOverview, FullScoreboard, Feed, VueResizable },
         computed: {
-            ...mapState('lobby', ['lobby', 'currentUserId', '']),
+            ...mapState('lobby', ['lobby', 'currentUserId']),
             ...mapGetters('lobby', ['isLobbyAdmin'])
         },
         methods: { ...mapActions('lobby', ['getLobby']) }
@@ -135,17 +135,12 @@
                 this.selectedDate = format(addHours(this.lobby.created, -10), 'yyyy-MM-dd');
 
                 const currentLobbyMember = this.lobby.members.find(m => m.userId === this.currentUserId);
-                let name = currentLobbyMember?.name ?? null;
+                const name = currentLobbyMember?.name ?? null;
 
                 if (!currentLobbyMember) {
-                    name = prompt("Enter your name");
-
-                    if (name == null) throw "User didn't enter name.";
-                    await LobbyService.joinLobbyByCode(this.joinCode, name);
-                    await this.getLobby(this.joinCode);
+                    localStorage.setItem('latestLobby', JSON.stringify({ joinCode: this.lobby.joinCode, name }))
+                    this.$router.push({ name: 'Home' });
                 }
-
-                localStorage.setItem('latestLobby', JSON.stringify({ joinCode: this.lobby.joinCode, name }))
 
                 this.connectToEventSource();
                 await this.setGames();

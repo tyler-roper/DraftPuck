@@ -7,13 +7,18 @@
                 </div>
                 <template v-if="!showLobbySettings">
                     <div>
+                        <span>Lobby Code</span>
                         <b-form-input v-model="code" placeholder="Code" class="font-weight-bold code-input px-3 py-4 text-stone-900" maxlength="4"></b-form-input>
                     </div>
                     <div class="mt-3">
-                        <b-form-input v-model="name" placeholder="Name" class="px-3 py-4" maxlength="20"></b-form-input>
+                        <span>Name</span>
+                        <b-form-input ref="nameInput" v-model="name" placeholder="Wayne Gretzky" class="px-3 py-4" maxlength="20"></b-form-input>
                     </div>
                     <div class="mt-3 d-flex">
-                        <button @click="joinLobby" class="d-block btn btn-primary w-100 font-weight-bold py-3 text-uppercase">Join Lobby</button>
+                        <button @click="joinLobby" class="d-block btn btn-primary w-100 font-weight-bold py-3 text-uppercase" :disabled="isLoading">
+                            <span v-if="!isJoiningLobby">Join Lobby</span>
+                            <b-spinner v-if="isJoiningLobby" class="m-n2" style="height: 30px; width: 30px;"></b-spinner>
+                        </button>
                     </div>
 
                     <div class="d-flex align-items-center my-4">
@@ -23,7 +28,9 @@
                     </div>
 
                     <div class="text-center">
-                        <button @click="startCreateLobby" class="d-block btn bg-stone-700 w-100 font-weight-bold py-3 text-uppercase">Create Lobby</button>
+                        <button @click="startCreateLobby" class="d-block btn bg-stone-700 w-100 font-weight-bold py-3 text-uppercase" :disabled="isLoading">
+                            <span>Create Lobby</span>
+                        </button>
                     </div>
                 </template>
 
@@ -31,17 +38,17 @@
                     <span class="fs-4 text-stone-100 font-weight-bold">New Lobby</span>
 
                     <div class="mt-3">
-                        <span class="text-uppercase font-weight-bold text-stone-300">Your Name</span>
+                        <span>Your Name</span>
                         <b-form-input v-model="name" placeholder="Wayne Gretzky" class="px-3 py-4" maxlength="20"></b-form-input>
                     </div>
 
                     <div class="mt-3">
-                        <span class="text-uppercase font-weight-bold text-stone-300">Picks Per Team</span>
+                        <span>Picks Per Team</span>
                         <b-form-input type="number" v-model="settings.picksPerTeam" class="px-3 py-4"></b-form-input>
                     </div>
 
                     <div class="mt-3">
-                        <span class="text-uppercase font-weight-bold text-stone-300">Bots:</span>
+                        <span>Bots:</span>
                         <span v-if="settings.bots.length === 0">(None)</span>
                         <div class="mt-n2" v-if="settings.bots.length > 0">
                             <div v-for="(bot, idx) in settings.bots" :key="idx" class="my-2 d-flex mx-n2 align-items-center">
@@ -62,11 +69,14 @@
                     </div>
 
                     <div class="text-center mt-5">
-                        <button @click="createLobby" class="d-block btn bg-primary w-100 font-weight-bold py-3 text-uppercase">Create Lobby</button>
+                        <button @click="createLobby" class="d-block btn bg-primary w-100 font-weight-bold py-3 text-uppercase" :disabled="isLoading">
+                            <span v-if="!isCreatingLobby">Create Lobby</span>
+                            <b-spinner v-if="isCreatingLobby" class="m-n2" style="height: 30px; width: 30px;"></b-spinner>
+                        </button>
                     </div>
 
                     <div class="text-center mt-5">
-                        <a role="button" @click="showLobbySettings = false">Back</a>
+                        <a role="button" @click="showLobbySettings = false" :disabled="isLoading">Back</a>
                     </div>
                 </template>
             </div>
@@ -75,7 +85,7 @@
 </template>
 
 <script lang="ts">
-    import { Component, Vue } from 'vue-property-decorator';
+    import { Component, Vue, Ref } from 'vue-property-decorator';
     import LobbyService from '@/services/LobbyService';
     import BotNames from '@/models/botNames';
     import BotPickStyle from '@/enums/botPickStyle';
@@ -96,7 +106,19 @@
         name = "";
         code = "";
         showLobbySettings = false;
-        
+
+        @Ref('nameInput')
+        nameInput!: HTMLInputElement;
+
+        isCreatingLobby = false;
+        isJoiningLobby = false;
+        get isLoading() { return this.isCreatingLobby || this.isJoiningLobby }
+
+        mounted() {
+            if (this.code != "" && this.name === null)
+                this.$nextTick(() => this.nameInput.focus());
+        }
+
         botPickStyles = [
             { text: "Pick Style", value: null },
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -146,7 +168,7 @@
                 this.$toast.error("You must set the picks per game. For infinite, choose 0.");
                 return;
             }
-            
+
             if (this.settings.bots.some(b => b.name.trim() === "")) {
                 this.$toast.error("Bots must have a name.");
                 return;
@@ -167,12 +189,19 @@
                 return;
             }
 
-            const lobby = await LobbyService.createLobby({ name: this.name, picksPerTeam: this.settings.picksPerTeam });
+            try {
+                this.isCreatingLobby = true;
 
-            const botPromises = this.settings.bots.map(async b => await LobbyService.joinLobbyByCode(lobby.joinCode, b.name, true, Number(b.pickStyle)));
-            await Promise.all(botPromises);
+                const lobby = await LobbyService.createLobby({ name: this.name, picksPerTeam: this.settings.picksPerTeam });
 
-            this.$router.push({ name: 'Lobby', params: { joinCode: lobby.joinCode } });
+                const botPromises = this.settings.bots.map(async b => await LobbyService.joinLobbyByCode(lobby.joinCode, b.name, true, Number(b.pickStyle)));
+                await Promise.all(botPromises);
+
+                this.$router.push({ name: 'Lobby', params: { joinCode: lobby.joinCode } });
+            } catch {
+                this.$toast.error("Something went wrong.");
+                this.isCreatingLobby = false;
+            }
         }
 
         async joinLobby() {
@@ -187,10 +216,21 @@
             }
 
             try {
-                const lobby = await LobbyService.joinLobbyByCode(this.code, this.name);
+                this.isJoiningLobby = true;
+                const lobby = await LobbyService.getLobbyByCode(this.code);
+                const existingMember = lobby.members.find(m => m.name.trim().toLowerCase() === this.name.trim().toLowerCase());
+                const userId = localStorage.getItem('userId');
+
+                if (existingMember && userId && existingMember.userId !== userId) {
+                    this.$toast.error("Username already taken.");
+                    return;
+                }
+
+                await LobbyService.joinLobbyByCode(this.code, this.name);
                 this.$router.push({ name: 'Lobby', params: { joinCode: lobby.joinCode } });
             } catch {
                 this.$toast.error("Lobby not found.");
+                this.isJoiningLobby = false;
                 return;
             }
         }
@@ -209,33 +249,33 @@
         letter-spacing: 2px;
     }
 
-    ::-webkit-input-placeholder { /* WebKit browsers */
-        text-transform: none;
-        font-weight: normal !important;
-        letter-spacing: normal !important;
-    }
+        .code-input::-webkit-input-placeholder { /* WebKit browsers */
+            text-transform: none;
+            font-weight: normal !important;
+            letter-spacing: normal !important;
+        }
 
-    :-moz-placeholder { /* Mozilla Firefox 4 to 18 */
-        text-transform: none;
-        font-weight: normal !important;
-        letter-spacing: normal !important;
-    }
+        .code-input:-moz-placeholder { /* Mozilla Firefox 4 to 18 */
+            text-transform: none;
+            font-weight: normal !important;
+            letter-spacing: normal !important;
+        }
 
-    ::-moz-placeholder { /* Mozilla Firefox 19+ */
-        text-transform: none;
-        font-weight: normal !important;
-        letter-spacing: normal !important;
-    }
+        .code-input::-moz-placeholder { /* Mozilla Firefox 19+ */
+            text-transform: none;
+            font-weight: normal !important;
+            letter-spacing: normal !important;
+        }
 
-    :-ms-input-placeholder { /* Internet Explorer 10+ */
-        text-transform: none;
-        font-weight: normal !important;
-        letter-spacing: normal !important;
-    }
+        .code-input:-ms-input-placeholder { /* Internet Explorer 10+ */
+            text-transform: none;
+            font-weight: normal !important;
+            letter-spacing: normal !important;
+        }
 
-    ::placeholder { /* Recent browsers */
-        text-transform: none;
-        font-weight: normal !important;
-        letter-spacing: normal !important;
-    }
+        .code-input::placeholder { /* Recent browsers */
+            text-transform: none;
+            font-weight: normal !important;
+            letter-spacing: normal !important;
+        }
 </style>
