@@ -82,7 +82,7 @@ const configProvider = (env) => {
                 template: viewTemplatePath,
                 filename: viewFilePath,  //COMMENT FOR NPM RUN BUILD
                 minify: false,
-                title: "BREWPUCK"
+                title: "DRAFTPUCK"
             }),
             new CopyPlugin([{
                 from: assetsPathFileGlob,

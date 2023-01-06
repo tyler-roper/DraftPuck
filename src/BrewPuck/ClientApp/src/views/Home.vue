@@ -3,7 +3,7 @@
         <div class="shadow overflow-hidden p-5" style="border-radius: 20px; background-color: rgba(0,0,0,0.5)">
             <div style="width: 300px">
                 <div class="mb-3 mt-n2 text-center">
-                    <span class="fs-1 text-stone-100" style="font-family: 'Rubik Mono One';">BrewPuck</span>
+                    <span class="fs-1 text-stone-100" style="font-family: 'Rubik Mono One';">DraftPuck</span>
                 </div>
                 <template v-if="!showLobbySettings">
                     <div>

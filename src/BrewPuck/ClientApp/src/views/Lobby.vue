@@ -3,7 +3,7 @@
         <template v-if="!isInvalidLobby">
 
             <div class="bg-stone-800 px-sm-4 px-2 py-2 shadow position-relative d-flex align-items-center" style="z-index: 10;">
-                <span class="fs-1 banner-logo">BrewPuck</span>
+                <span class="fs-1 banner-logo">DraftPuck</span>
 
                 <div class="ml-auto mr-n2">
                     <a role="button" class="mx-2 badge badge-pill bg-stone-600 py-2 px-3 d-sm-none font-weight-bold text-uppercase text-stone-200" style="text-decoration: none !important;" @click="setView('lobby')">
