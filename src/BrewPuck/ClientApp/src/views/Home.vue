@@ -146,7 +146,7 @@
                 this.$toast.error("You must set the picks per game. For infinite, choose 0.");
                 return;
             }
-
+            
             if (this.settings.bots.some(b => b.name.trim() === "")) {
                 this.$toast.error("Bots must have a name.");
                 return;
