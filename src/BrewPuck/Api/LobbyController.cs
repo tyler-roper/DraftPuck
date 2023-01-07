@@ -1,6 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+﻿using BrewPuck.Hubs;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 
 namespace BrewPuck.Api
 {
@@ -8,15 +8,14 @@ namespace BrewPuck.Api
     {
         private static Random random = new Random();
         private readonly BrewPuckContext _dbContext;
-        private readonly IEventService _eventService;
         private readonly IMapper _mapper;
-        private readonly JsonSerializerOptions _jsonSerializerOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, ReferenceHandler = ReferenceHandler.IgnoreCycles };
+        private readonly IHubContext<LobbyHub> _hubContext;
 
-        public LobbyController(BrewPuckContext dbContext, IEventService eventService, IMapper mapper)
+        public LobbyController(BrewPuckContext dbContext, IMapper mapper, IHubContext<LobbyHub> hubContext)
         {
             _dbContext = dbContext;
-            _eventService = eventService;
             _mapper = mapper;
+            _hubContext = hubContext;
         }
 
         [HttpPost]
@@ -97,7 +96,8 @@ namespace BrewPuck.Api
                 _dbContext.LobbyMembers.Add(lobbyMember);
                 await _dbContext.SaveChangesAsync();
 
-                _eventService.Notify(new LobbyEventModel(LobbyEventType.UserJoined, lobby.Id, lobbyMember));
+                var lobbyEvent = new LobbyEventModel(LobbyEventType.UserJoined, lobby.Id, lobbyMember);
+                await _hubContext.Clients.All.SendAsync("LobbyEvent", lobbyEvent);
 
             } else if (existingLobbyMember.Name != request.Name)
             {
@@ -106,7 +106,8 @@ namespace BrewPuck.Api
                 lobbyMemberEntity.Name = request.Name;
                 await _dbContext.SaveChangesAsync();
 
-                _eventService.Notify(new LobbyEventModel(LobbyEventType.UserNameChanged, lobby.Id, lobbyMemberEntity));
+                var lobbyEvent = new LobbyEventModel(LobbyEventType.UserNameChanged, lobby.Id, lobbyMemberEntity);
+                await _hubContext.Clients.All.SendAsync("LobbyEvent", lobbyEvent);
             }
 
             return Ok(_mapper.Map<LobbyResponse>(lobby));
@@ -142,7 +143,8 @@ namespace BrewPuck.Api
             _dbContext.LobbyMemberPicks.Add(pick);
             await _dbContext.SaveChangesAsync();
 
-            _eventService.Notify(new LobbyEventModel(LobbyEventType.NewPick, lobby.Id, pick));
+            var lobbyEvent = new LobbyEventModel(LobbyEventType.NewPick, lobby.Id, pick);
+            await _hubContext.Clients.All.SendAsync("LobbyEvent", lobbyEvent);
 
             return Ok(_mapper.Map<LobbyMemberPickResponse>(pick));
         }
@@ -175,7 +177,8 @@ namespace BrewPuck.Api
             _dbContext.Drinks.Add(drink);
             await _dbContext.SaveChangesAsync();
 
-            _eventService.Notify(new LobbyEventModel(LobbyEventType.NewDrink, lobby.Id, drink));
+            var lobbyEvent = new LobbyEventModel(LobbyEventType.NewDrink, lobby.Id, drink);
+            await _hubContext.Clients.All.SendAsync("LobbyEvent", lobbyEvent);
 
             return Ok(_mapper.Map<DrinkResponse>(drink));
         }
@@ -206,60 +209,10 @@ namespace BrewPuck.Api
             drink.RecipientLobbyMemberId = recipient.Id;
             await _dbContext.SaveChangesAsync();
 
-            _eventService.Notify(new LobbyEventModel(LobbyEventType.DrinkAssigned, lobby.Id, drink));
+            var lobbyEvent = new LobbyEventModel(LobbyEventType.DrinkAssigned, lobby.Id, drink);
+            await _hubContext.Clients.All.SendAsync("LobbyEvent", lobbyEvent);
 
             return Ok(_mapper.Map<DrinkResponse>(drink));
-        }
-
-        [Produces("text/event-stream")]
-        [HttpGet("{code}/listen")]
-        public async Task ListenForNotifications(string code, CancellationToken cancellationToken)
-        {
-            var lobby = await _dbContext.Lobbies.FirstOrDefaultAsync(l => l.JoinCode == code);
-            if (lobby == null) return;
-
-            SetServerSentEventHeaders();
-            await Response.WriteAsync($"event:connected\n", cancellationToken);
-            await Response.Body.FlushAsync(cancellationToken);
-
-            async void OnNotification(object? sender, LobbyEventArgs eventArgs)
-            {
-                if (eventArgs.LobbyEvent.LobbyId != lobby.Id) return;
-                var json = JsonSerializer.Serialize(eventArgs.LobbyEvent, _jsonSerializerOptions);
-                await Response.WriteAsync("retry:10000\n", cancellationToken);
-                await Response.WriteAsync($"event:lobbyEvent\n", cancellationToken);
-                await Response.WriteAsync($"data:{json}\n\n", cancellationToken);
-                await Response.Body.FlushAsync(cancellationToken);
-            }
-
-            async void KeepAlive(object? sender, EventArgs eventArgs)
-            {
-                await Response.WriteAsync("event:keep-alive\n", cancellationToken);
-                await Response.WriteAsync("data:keep-alive\n\n", cancellationToken);
-                await Response.Body.FlushAsync(cancellationToken);
-            }
-
-            _eventService.LobbyEvent += OnNotification;
-            _eventService.KeepAlive += KeepAlive;
-
-            try
-            {
-                while (!cancellationToken.IsCancellationRequested)
-                    await Task.Delay(1000, cancellationToken);
-            }
-            finally
-            {
-                _eventService.LobbyEvent -= OnNotification;
-                _eventService.KeepAlive -= KeepAlive;
-            }
-        }
-
-        private void SetServerSentEventHeaders()
-        {
-            Response.StatusCode = 200;
-            Response.Headers.Add("Content-Type", "text/event-stream");
-            Response.Headers.Add("Cache-Control", "no-cache");
-            Response.Headers.Add("Connection", "keep-alive");
         }
 
         private async Task<string> RandomString(int length)
