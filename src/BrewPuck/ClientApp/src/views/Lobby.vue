@@ -225,6 +225,7 @@
             const connection = new signalR.HubConnectionBuilder()
                 .withUrl('/hub', signalR.HttpTransportType.ServerSentEvents)
                 .configureLogging(signalR.LogLevel.Error)
+                .withAutomaticReconnect()
                 .build();
 
             connection.on("LobbyEvent", (lobbyEvent: LobbyEvent) => {
