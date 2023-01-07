@@ -97,7 +97,7 @@ namespace BrewPuck.Api
                 await _dbContext.SaveChangesAsync();
 
                 var lobbyEvent = new LobbyEventModel(LobbyEventType.UserJoined, lobby.Id, lobbyMember);
-                await _hubContext.Clients.All.SendAsync("LobbyEvent", lobbyEvent);
+                await _hubContext.Clients.Group(code).SendAsync("LobbyEvent", lobbyEvent);
 
             } else if (existingLobbyMember.Name != request.Name)
             {
@@ -107,7 +107,7 @@ namespace BrewPuck.Api
                 await _dbContext.SaveChangesAsync();
 
                 var lobbyEvent = new LobbyEventModel(LobbyEventType.UserNameChanged, lobby.Id, lobbyMemberEntity);
-                await _hubContext.Clients.All.SendAsync("LobbyEvent", lobbyEvent);
+                await _hubContext.Clients.Group(code).SendAsync("LobbyEvent", lobbyEvent);
             }
 
             return Ok(_mapper.Map<LobbyResponse>(lobby));
@@ -144,7 +144,7 @@ namespace BrewPuck.Api
             await _dbContext.SaveChangesAsync();
 
             var lobbyEvent = new LobbyEventModel(LobbyEventType.NewPick, lobby.Id, pick);
-            await _hubContext.Clients.All.SendAsync("LobbyEvent", lobbyEvent);
+            await _hubContext.Clients.Group(code).SendAsync("LobbyEvent", lobbyEvent);
 
             return Ok(_mapper.Map<LobbyMemberPickResponse>(pick));
         }
@@ -178,7 +178,7 @@ namespace BrewPuck.Api
             await _dbContext.SaveChangesAsync();
 
             var lobbyEvent = new LobbyEventModel(LobbyEventType.NewDrink, lobby.Id, drink);
-            await _hubContext.Clients.All.SendAsync("LobbyEvent", lobbyEvent);
+            await _hubContext.Clients.Group(code).SendAsync("LobbyEvent", lobbyEvent);
 
             return Ok(_mapper.Map<DrinkResponse>(drink));
         }
@@ -210,7 +210,7 @@ namespace BrewPuck.Api
             await _dbContext.SaveChangesAsync();
 
             var lobbyEvent = new LobbyEventModel(LobbyEventType.DrinkAssigned, lobby.Id, drink);
-            await _hubContext.Clients.All.SendAsync("LobbyEvent", lobbyEvent);
+            await _hubContext.Clients.Group(code).SendAsync("LobbyEvent", lobbyEvent);
 
             return Ok(_mapper.Map<DrinkResponse>(drink));
         }

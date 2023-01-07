@@ -233,6 +233,7 @@
 
             try {
                 await connection.start()
+                await connection.invoke("JoinLobby", this.joinCode);
             } catch (err) {
                 console.error(err);
             }
