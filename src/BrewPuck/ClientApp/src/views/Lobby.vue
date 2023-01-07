@@ -84,6 +84,7 @@
     import { mapState, mapActions, mapGetters } from 'vuex';
     import VueResizable from 'vue-resizable'
     import '@/extensions/arrayExtensions';
+    import * as signalR from "@microsoft/signalr";
 
 
     type View = "feed" | "game" | "lobby";
@@ -118,7 +119,7 @@
 
         timers: Array<number> = [];
         eventBus = new Vue();
-        eventSource: EventSource | null = null;
+        connection: HubConnection | null = null;
         lobbyEvents: Array<LobbyEvent> = [];
         view: View = "game";
 
@@ -142,7 +143,7 @@
                     this.$router.push({ name: 'Home' });
                 }
 
-                this.connectToEventSource();
+                await this.connectToEventSource();
                 await this.setGames();
                 this.getMissedDrinks();
             } catch (e) {
@@ -219,11 +220,22 @@
             return isOver && game.gameData.datetime.endDateTime && (game.gameData.datetime.endDateTime <= addMinutes(new Date(), -10));
         }
 
-        connectToEventSource() {
-            if (this.eventSource !== null) this.eventSource.close();
 
-            this.eventSource = LobbyService.listen(this.joinCode);
-            this.eventSource.addEventListener("lobbyEvent", (evt) => this.dispatchLobbyEvent({ ...JSON.parse(evt.data), time: new Date() }));
+        async connectToEventSource() {
+            const connection = new signalR.HubConnectionBuilder()
+                .withUrl('/hub', signalR.HttpTransportType.ServerSentEvents)
+                .configureLogging(signalR.LogLevel.Error)
+                .build();
+
+            connection.on("LobbyEvent", (lobbyEvent: LobbyEvent) => {
+                this.dispatchLobbyEvent({ ...lobbyEvent, time: new Date() });
+            });
+
+            try {
+                await connection.start()
+            } catch (err) {
+                console.error(err);
+            }
         }
 
         notifyOfDrink(drink: Drink) {
@@ -396,7 +408,7 @@
         //WATCHERS / HANDLERS
         @Watch('goals')
         onGoalsUpdated(newGoals: Array<ScoringPlay & { gamePk: number }>, oldGoals: Array<ScoringPlay & { gamePk: number }>) {
-            oldGoals = oldGoals.filter(g => g.about.dateTime >= this.sessionStart);
+            oldGoals = oldGoals.filter(g => g.about.dateTime < this.sessionStart);
             newGoals = newGoals.filter(g => g.about.dateTime >= this.sessionStart);
 
             newGoals.forEach(newGoal => {

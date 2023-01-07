@@ -1,5 +1,5 @@
+using BrewPuck.Hubs;
 using BrewPuck.Middleware;
-using BrewPuck.Services.Hosted;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 
@@ -20,6 +20,7 @@ builder.Services.AddMvc(options =>
     options.EnableEndpointRouting = false;
 });
 
+builder.Services.AddSignalR();
 
 builder.Logging.AddConsole();
 
@@ -27,9 +28,6 @@ builder.Logging.AddConsole();
 builder.Services
     .AddDbContext<BrewPuckContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")))
     .AddEndpointsApiExplorer()
-    .AddTransient<ILobbyEventService, LobbyEventService>()
-    .AddSingleton<IEventService, EventService>()
-    .AddHostedService<KeepAliveService>()
     .AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 //kestrel
@@ -45,13 +43,17 @@ app
     .UseStaticFiles()
     .UseHsts()
     .UseHttpsRedirection()
+    .UseEndpoints(endpoints =>
+    {
+        endpoints.MapHub<LobbyHub>("/hub");
+        endpoints.MapControllers();
+    })
     .UseMvc(routes =>
     {
         routes.MapRoute(name: "default", template: "{controller=App}/{action=Index}/{id?}");
         routes.MapSpaFallbackRoute("spa-routes", new { controller = "App", action = "Index" });
     })
-    .UseAuthentication()
-    .UseEndpoints(endpoints => { endpoints.MapControllers(); });
+    .UseAuthentication();
 
 if (app.Environment.IsDevelopment())
     app.UseSpa(spa => spa.UseProxyToSpaDevelopmentServer("https://localhost:17010"));
