@@ -9,13 +9,15 @@
                 <span class="d-block mb-n2">The</span>
                 <span class="fs-4 font-weight-bold d-block text-uppercase">Feed</span>
             </div>
-            <div class="ml-auto">
-                <a role="button" @click="toggleSettings" class="p-3 text-stone-400 d-block m-n3" style="text-decoration: none !important;"><i class="fs-3 fi fi-sr-settings mb-n2 d-block"></i></a>
+            <div class="ml-auto d-flex">
+                <a role="button" @click="show = 'feed'" class="fs-3 p-3 text-stone-400 d-block my-n3 mx-3 font-weight-bold" style="text-decoration: none !important;">F</a>
+                <a role="button" @click="show = 'list'" class="p-3 text-stone-400 d-block my-n3 mx-3" style="text-decoration: none !important;"><i class="fs-3 fi fi-sr-list mb-n2 d-block"></i></a>
+                <a role="button" @click="show = 'settings'" class="p-3 text-stone-400 d-block m-n3" style="text-decoration: none !important;"><i class="fs-3 fi fi-sr-settings mb-n2 d-block"></i></a>
             </div>
         </div>
 
         <div class="d-flex flex-column-reverse flex-grow-1" style="justify-content: flex-end">
-            <div v-if="showSettings" class="flex-grow-1">
+            <div v-if="show == 'settings'" class="flex-grow-1">
                 <div class="p-4">
                     <span class="d-block fs-6">Show the following events in the feed:</span>
                     <div class="font-weight-bold text-uppercase">
@@ -29,7 +31,11 @@
                 </div>
             </div>
 
-            <template v-if="!showSettings">
+            <template v-if="show == 'list'">
+                <div v-for="drink in lobby.drinks" :key="drink.id"><strong>{{ getNameByDrink(drink) }}</strong> gives to <strong>{{ getRecipientNameByDrink(drink) }}</strong></div>
+            </template>
+
+            <template v-if="show == 'feed'">
                 <FeedItemComponent v-for="(item, idx) in filteredItems" :key="idx" :item="item "></FeedItemComponent>
 
                 <!--<div v-if="items.length === 0" class="align-self-center flex-grow-1 d-flex align-items-center">
@@ -48,7 +54,7 @@
 
 <script lang="ts">
     import { Component, Vue, Prop } from 'vue-property-decorator';
-    import { mapActions } from 'vuex';
+    import { mapActions, mapState } from 'vuex';
     import GameScoreboard from '@/components/GameScoreboard.vue';
     import FeedItem from '@/models/feedItem';
     import FeedItemComponent from '@/components/FeedItem.vue';
@@ -57,7 +63,12 @@
 
     @Component({
         components: { GameScoreboard, FeedItemComponent },
-        methods: { ...mapActions('games', ['getGames']) }
+        methods: {
+            ...mapActions('games', ['getGames'])
+        },
+        computed: {
+            ...mapState('lobby', ['lobby'])
+        }
     })
     export default class Feed extends Vue {
         @Prop()
@@ -80,7 +91,7 @@
             });
         }
 
-        showSettings = false;
+        show = "feed";
 
         filters = {
             showGoals: true,
@@ -95,11 +106,6 @@
             this.getFilters();
         }
 
-        toggleSettings() {
-            this.showSettings = !this.showSettings;
-            if (!this.showSettings) this.setFilters();
-        }
-
         setFilters() {
             localStorage.setItem('feedFilters', JSON.stringify(this.filters));
         }
@@ -108,6 +114,24 @@
             const existingFilters = localStorage.getItem('feedFilters');
             if (existingFilters)
                 this.filters = { ...this.filters, ...JSON.parse(existingFilters) };
+        }
+
+        getNameByDrink(drink: Drink) {
+            const member = this.lobby.members.find(m => {
+                const pick = m.picks.find(p => p.id === drink.lobbyMemberPickId);
+                if (!pick) return;
+                return pick;
+            })
+
+            if (member) return member.name;
+            return "";
+        }
+
+        getRecipientNameByDrink(drink: Drink) {
+            const member = this.lobby.members.find(m => m.id === drink.recipientLobbyMemberId);
+            if (member) return member.name;
+
+            return null;
         }
     }
 </script>
