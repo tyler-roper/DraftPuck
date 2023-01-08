@@ -452,7 +452,8 @@
                 const isPicker = picker && picker.userId === this.currentUserId;
                 const botPickAndIsAdmin = picker && picker.isBot && this.isLobbyAdmin;
 
-                if (!isPicker && !botPickAndIsAdmin) return;
+                if (!isPicker) return;
+                if (!botPickAndIsAdmin) return;
 
                 const drink = await LobbyService.newDrink(this.joinCode, pick.id, goal.about.eventId);
 
