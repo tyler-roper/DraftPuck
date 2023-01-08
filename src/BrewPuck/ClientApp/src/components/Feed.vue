@@ -32,7 +32,7 @@
             </div>
 
             <template v-if="show == 'list'">
-                <div v-for="drink in drinks" :key="drink.id"><strong>{{ getNameByDrink(drink) }}</strong> gives to <strong>{{ getRecipientNameByDrink(drink) }}</strong></div>
+                <div v-for="drink in drinks" :key="drink.id" class="py-2"><strong>{{ getNameByDrink(drink) }}</strong> gives to <strong>{{ getRecipientNameByDrink(drink) }}</strong></div>
             </template>
 
             <template v-if="show == 'feed'">
