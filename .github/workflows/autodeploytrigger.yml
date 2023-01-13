@@ -55,4 +55,4 @@ jobs:
             az containerapp registry set -n brewpuck -g BrewPuck --server brewpuck.azurecr.io --username  ${{ secrets.BREWPUCK_REGISTRY_USERNAME }} --password ${{ secrets.BREWPUCK_REGISTRY_PASSWORD }}
             az containerapp update -n brewpuck -g BrewPuck --image brewpuck.azurecr.io/brewpuck:${{ github.sha }} \
               --replace-env-vars \
-                BREWPUCK_ConnectionStrings__DefaultConnection=secretref:sql-connection-string
+                DRAFTPUCK_ConnectionStrings__DefaultConnection=secretref:sql-connection-string
