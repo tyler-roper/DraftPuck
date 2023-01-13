@@ -54,7 +54,6 @@ export default {
             commit('setLobbyEvents', lobbyEvents);
         },
         async pickPlayer({ state, commit }: { state: State; commit: Commit }, { gamePk, playerId, teamId, lobbyMemberId }: { gamePk: number; playerId: number; teamId: number; lobbyMemberId: string | null }) {
-            console.log(lobbyMemberId);
             const pick = {
                 id: "",
                 lobbyMemberId: lobbyMemberId,

@@ -346,8 +346,6 @@
                 return;
             }
 
-            console.log(lobbyMemberId);
-
             await this.pickPlayer({ gamePk: this.gamePk, playerId, teamId, lobbyMemberId });
         }
 
