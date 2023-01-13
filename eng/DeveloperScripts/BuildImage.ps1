@@ -1,5 +1,5 @@
 docker build `
--f "..\..\src\BrewPuck\Dockerfile" `
+-f "..\..\src\DraftPuck\Dockerfile" `
 --build-arg BUILD_CONFIGURATION='Release' `
 --build-arg ASPNETCORE_URLS=https://+:17000/ `
--t brewpuck:latest ..\..\
+-t draftpuck:latest ..\..\

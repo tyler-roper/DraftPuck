@@ -1,4 +1,4 @@
-$certificateName = "BrewPuck.pfx"
+$certificateName = "DraftPuck.pfx"
 $certificatePassword = "b30b3f16-18c1-4a00-8f8f-0ce0fba61cb2"
 $appDataPath = "$env:USERPROFILE\AppData\Roaming\ASP.NET\Https"
 $userAspNetPath = "$env:USERPROFILE\.aspnet\https"

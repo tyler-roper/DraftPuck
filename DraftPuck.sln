@@ -1,0 +1,35 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32407.343
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DraftPuck", "src\DraftPuck\DraftPuck.csproj", "{B30ED5AC-77E5-43B7-AC46-6899E4A77B99}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{54BEB89E-0EF2-4B78-8611-30C54212C33E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionItems", "SolutionItems", "{ECB1F0AA-99A0-4FA7-8FD4-F96E4E96F6F9}"
+	ProjectSection(SolutionItems) = preProject
+		env.development.list = env.development.list
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B30ED5AC-77E5-43B7-AC46-6899E4A77B99}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B30ED5AC-77E5-43B7-AC46-6899E4A77B99}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B30ED5AC-77E5-43B7-AC46-6899E4A77B99}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B30ED5AC-77E5-43B7-AC46-6899E4A77B99}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{B30ED5AC-77E5-43B7-AC46-6899E4A77B99} = {54BEB89E-0EF2-4B78-8611-30C54212C33E}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {48CD0C1A-AAE2-4AF5-8D30-7803870D7A52}
+	EndGlobalSection
+EndGlobal
