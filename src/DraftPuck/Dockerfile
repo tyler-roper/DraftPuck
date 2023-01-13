@@ -1,4 +1,4 @@
-ARG IMAGE_VERSION=7.0-alpine
+ARG IMAGE_VERSION=7.0-alpine3.16
 
 FROM mcr.microsoft.com/dotnet/sdk:$IMAGE_VERSION AS base
 WORKDIR /opt/app
