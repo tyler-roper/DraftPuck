@@ -6,7 +6,7 @@ WORKDIR /opt/app
 FROM mcr.microsoft.com/dotnet/sdk:$IMAGE_VERSION AS build
 LABEL BUILD_IMAGE=true
 
-RUN apk add --update nodejs@16.17.1-r0 npm@8.10.0-r0
+RUN apk add --update nodejs npm
 WORKDIR /repo
 
 COPY ./src/DraftPuck/DraftPuck.csproj ./src/DraftPuck/
