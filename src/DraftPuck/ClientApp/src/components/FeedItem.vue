@@ -50,7 +50,11 @@
         }
 
         logo(img: string): string {
-            return require(`@/assets/img/logos/${img}`);
+            try {
+                return require(`@/assets/img/logos/${img}`);
+            } catch {
+                console.log(this.item);
+            }
         }
 
         getClassByType(): string {

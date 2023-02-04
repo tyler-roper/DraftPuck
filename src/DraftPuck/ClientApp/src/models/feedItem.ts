@@ -69,10 +69,24 @@ export default class FeedItem {
                 ? homeAbbreviation
                 : awayAbbreviation;
 
-            if (play.result.eventTypeId === EventType.Goal && scoringTeamAbbreviation.toLowerCase() === "tbl")
-                images = [`${scoringTeamAbbreviation}_LIGHT.png`];
-            else
-                images = [`${scoringTeamAbbreviation}.png`];
+            if (!scoringTeamAbbreviation) {
+                if (scoringPlay.team.name == "Team Pacific")
+                    images = [`PAC.png`];
+
+                if (scoringPlay.team.name == "Team Metro")
+                    images = [`MET.png`];
+
+                if (scoringPlay.team.name == "Team Atlantic")
+                    images = [`ATL.png`];
+
+                if (scoringPlay.team.name == "Team Central")
+                    images = [`CEN.png`];
+            } else {
+                if (play.result.eventTypeId === EventType.Goal && scoringTeamAbbreviation.toLowerCase() === "tbl")
+                    images = [`${scoringTeamAbbreviation}_LIGHT.png`];
+                else
+                    images = [`${scoringTeamAbbreviation}.png`];
+            }
         }
 
         //set title
