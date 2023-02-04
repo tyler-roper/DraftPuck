@@ -33,7 +33,7 @@ namespace DraftPuck.Services
             RemoveOldGamesFromCache();
 
             var cachedGames = _gameCache.GetAllGames();
-            if (cachedGames.Count == 0)
+            if (cachedGames.Count == 0 || ((DateTime.UtcNow.Minute == 0 || DateTime.UtcNow.Minute == 30) && DateTime.UtcNow.Second > 0 && DateTime.UtcNow.Second <= 10))
             {
                 await AddAllScheduledGamesToCache();
                 return;
