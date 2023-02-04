@@ -345,11 +345,28 @@
                             : teams.away;
 
                         let logo = "";
-                        try {
-                            logo = require(`@/assets/img/logos/${team.team.abbreviation}_LIGHT.png`);
-                        } catch {
-                            logo = require(`@/assets/img/logos/${team.team.abbreviation}.png`);
+
+                        if (!team.team.abbreviation) {
+                            if (team.team.name == "Team Pacific")
+                                logo = require(`@/assets/img/logos/PAC.png`);
+
+                            if (team.team.name == "Team Metro")
+                                logo = require(`@/assets/img/logos/MET.png`);
+
+                            if (team.team.name == "Team Atlantic")
+                                logo = require(`@/assets/img/logos/ATL.png`);
+
+                            if (team.team.name == "Team Central")
+                                logo = require(`@/assets/img/logos/CEN.png`);
+                        } else {
+                            try {
+                                logo = require(`@/assets/img/logos/${team.team.abbreviation}_LIGHT.png`);
+                            } catch {
+                                logo = require(`@/assets/img/logos/${team.team.abbreviation}.png`);
+                            }
                         }
+
+                       
 
                         const img = `<img style='height: 27px; width: 27px; margin-left: -20px; margin-right: -1px; margin-top: -12px; margin-bottom: -10px;' src="${logo}" />`;
                         const teamColor = TeamColorLookup[team.team.id];
