@@ -9,8 +9,9 @@ export default class Scoreboard {
     gameStatus: GameStatus;
     teams: { home: Team; away: Team };
     players: Array<Player>;
+    startTime: Date;
 
-    constructor(gamePk: number, time: string, linescore: LineScore, boxscore: BoxScore, gameStatus: GameStatus, teams: { home: Team; away: Team }, players: Array<Player>) {
+    constructor(gamePk: number, time: string, linescore: LineScore, boxscore: BoxScore, gameStatus: GameStatus, teams: { home: Team; away: Team }, players: Array<Player>, startTime: Date) {
         this.gamePk = gamePk;
         this.time = time;
         this.linescore = linescore;
@@ -18,6 +19,7 @@ export default class Scoreboard {
         this.gameStatus = gameStatus;
         this.teams = teams;
         this.players = players;
+        this.startTime = startTime;
     }
 
     get isInProgress() {
@@ -58,6 +60,6 @@ export default class Scoreboard {
                 time += ` (${game.liveData.linescore.currentPeriodOrdinal})`;
         }
 
-        return new this(game.gamePk, time, game.liveData.linescore, game.liveData.boxscore, status, game.gameData.teams, Object.values(game.gameData.players));
+        return new this(game.gamePk, time, game.liveData.linescore, game.liveData.boxscore, status, game.gameData.teams, Object.values(game.gameData.players), game.gameData.datetime.dateTime);
     } 
 }

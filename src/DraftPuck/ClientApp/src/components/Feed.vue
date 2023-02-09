@@ -26,12 +26,12 @@
                         <a role="button" v-if="allGameEventsOn" class="text-decoration-none text-primary fs-8 ml-3" @click="hideAllGameEvents">Hide All</a>
                     </div>
                     <div class="py-3 pl-4">
-                        <b-form-checkbox v-model="filters.showGoals" name="check-button" size="lg" class="mb-3" switch>Goal</b-form-checkbox>
-                        <b-form-checkbox v-model="filters.showPenalties" name="check-button" size="lg" class="my-3" switch>Penalty</b-form-checkbox>
-                        <b-form-checkbox v-model="filters.showPeriodStarts" name="check-button" size="lg" class="my-3" switch>Period Start</b-form-checkbox>
-                        <b-form-checkbox v-model="filters.showPeriodEnds" name="check-button" size="lg" class="my-3" switch>Period End</b-form-checkbox>
-                        <b-form-checkbox v-model="filters.showGameEnds" name="check-button" size="lg" class="my-3" switch>Game End</b-form-checkbox>
-                        <b-form-checkbox v-model="filters.showChallenges" name="check-button" size="lg" class="my-3" switch>Coach's Challenge</b-form-checkbox>
+                        <b-form-checkbox v-model="filters.showGoals" name="check-button" size="lg" class="mb-3" @change="setFilters" switch>Goal</b-form-checkbox>
+                        <b-form-checkbox v-model="filters.showPenalties" name="check-button" size="lg" class="my-3" @change="setFilters" switch>Penalty</b-form-checkbox>
+                        <b-form-checkbox v-model="filters.showPeriodStarts" name="check-button" size="lg" class="my-3" @change="setFilters" switch>Period Start</b-form-checkbox>
+                        <b-form-checkbox v-model="filters.showPeriodEnds" name="check-button" size="lg" class="my-3" @change="setFilters" switch>Period End</b-form-checkbox>
+                        <b-form-checkbox v-model="filters.showGameEnds" name="check-button" size="lg" class="my-3" @change="setFilters" switch>Game End</b-form-checkbox>
+                        <b-form-checkbox v-model="filters.showChallenges" name="check-button" size="lg" class="my-3" @change="setFilters" switch>Coach's Challenge</b-form-checkbox>
                     </div>
 
                     <div class="font-weight-bold">
@@ -40,11 +40,11 @@
                         <a role="button" v-if="allLobbyEventsOn" class="text-decoration-none text-primary fs-8 ml-3" @click="hideAllLobbyEvents">Hide All</a>
                     </div>
                     <div class="py-3 pl-4">
-                        <b-form-checkbox v-model="filters.showUserJoin" name="check-button" size="lg" class="mb-3" switch>User Joined</b-form-checkbox>
-                        <b-form-checkbox v-model="filters.showNameChange" name="check-button" size="lg" class="mb-3" switch>Name Change</b-form-checkbox>
-                        <b-form-checkbox v-model="filters.showPicks" name="check-button" size="lg" class="my-3" switch>Pick Player</b-form-checkbox>
-                        <b-form-checkbox v-model="filters.showDrinkAwarded" name="check-button" size="lg" class="my-3" switch>Drink Awarded</b-form-checkbox>
-                        <b-form-checkbox v-model="filters.showDrinkAssigned" name="check-button" size="lg" class="my-3" switch>Drink Assigned</b-form-checkbox>
+                        <b-form-checkbox v-model="filters.showUserJoin" name="check-button" size="lg" class="mb-3" @change="setFilters" switch>User Joined</b-form-checkbox>
+                        <b-form-checkbox v-model="filters.showNameChange" name="check-button" size="lg" class="mb-3" @change="setFilters" switch>Name Change</b-form-checkbox>
+                        <b-form-checkbox v-model="filters.showPicks" name="check-button" size="lg" class="my-3" @change="setFilters" switch>Pick Player</b-form-checkbox>
+                        <b-form-checkbox v-model="filters.showDrinkAwarded" name="check-button" size="lg" @change="setFilters" class="my-3" switch>Drink Awarded</b-form-checkbox>
+                        <b-form-checkbox v-model="filters.showDrinkAssigned" name="check-button" size="lg" @change="setFilters" class="my-3" switch>Drink Assigned</b-form-checkbox>
                     </div>
                 </div>
             </div>
@@ -170,6 +170,7 @@
 
         getFilters() {
             const existingFilters = localStorage.getItem('feedFilters');
+            console.log(existingFilters);
             if (existingFilters)
                 this.filters = { ...this.filters, ...JSON.parse(existingFilters) };
         }
@@ -202,6 +203,7 @@
                 showChallenges: true,
                 showGameEnds: true
             }
+            this.setFilters();
         }
 
         hideAllGameEvents() {
@@ -214,6 +216,7 @@
                 showChallenges: false,
                 showGameEnds: false
             }
+            this.setFilters();
         }
 
         showAllLobbyEvents() {
@@ -225,6 +228,7 @@
                 showDrinkAwarded: true,
                 showDrinkAssigned: true
             }
+            this.setFilters();
         }
 
         hideAllLobbyEvents() {
@@ -236,6 +240,7 @@
                 showDrinkAwarded: false,
                 showDrinkAssigned: false
             }
+            this.setFilters();
         }
 
         get assignedDrinks() {

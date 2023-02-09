@@ -57,7 +57,7 @@
                     Courtesy Of
                 </span>
                 <span class="d-block font-weight-bold fs-2 text-uppercase">
-                    {{ getSenderNameByDrink(currentDrink) }}
+                    {{ getSenderNameByLobbyEvent(currentDrink) }}
                 </span>
             </span>
             
@@ -136,6 +136,8 @@
         pendingDrinks: Array<LobbyEvent> = [];
         currentDrink: LobbyEvent | null = null;
 
+        notificationPermissionsGranted = false;
+
         @Ref('overview') overview!: LobbyOverview;
 
         //METHODS
@@ -168,6 +170,9 @@
             } finally {
                 this.isLoading = false;
             }
+
+            const permission = await Notification.requestPermission();
+            this.notificationPermissionsGranted = permission === 'granted';
         }
 
         setView(view: View) {
@@ -265,6 +270,9 @@
             if (this.pendingDrinks.length === 0) return;
             this.currentDrink = this.pendingDrinks[0];
 
+            if (this.notificationPermissionsGranted)
+                new Notification('🍺 Drink!', { body: `Courtesy of ${this.getSenderNameByLobbyEvent(this.currentDrink)}` });
+
             setTimeout(() => {
                 this.pendingDrinks.splice(0, 1);
                 this.currentDrink = null;
@@ -272,10 +280,10 @@
             }, 5000);
         }
 
-        getSenderNameByDrink(drink: Drink): string | null {
-            return this.lobby.members.find(m => {
-                return m.picks.flatMap(p => p.drinks).some(d => d.id === drink.id);
-            })?.name ?? null;
+        getSenderNameByLobbyEvent(lobbyEvent: LobbyEvent): string | null {
+            if (!lobbyEvent.lobbyMemberId) return null;
+
+            return this.lobby.members.find(m => m.id === lobbyEvent.lobbyMemberId)?.name ?? null;
         }
 
         async dispatchLobbyEvent(lobbyEvent: LobbyEvent) {
@@ -346,27 +354,11 @@
 
                         let logo = "";
 
-                        if (!team.team.abbreviation) {
-                            if (team.team.name == "Team Pacific")
-                                logo = require(`@/assets/img/logos/PAC.png`);
-
-                            if (team.team.name == "Team Metro")
-                                logo = require(`@/assets/img/logos/MET.png`);
-
-                            if (team.team.name == "Team Atlantic")
-                                logo = require(`@/assets/img/logos/ATL.png`);
-
-                            if (team.team.name == "Team Central")
-                                logo = require(`@/assets/img/logos/CEN.png`);
-                        } else {
-                            try {
-                                logo = require(`@/assets/img/logos/${team.team.abbreviation}_LIGHT.png`);
-                            } catch {
-                                logo = require(`@/assets/img/logos/${team.team.abbreviation}.png`);
-                            }
+                        try {
+                            logo = require(`@/assets/img/logos/${team.team.abbreviation}_LIGHT.png`);
+                        } catch {
+                            logo = require(`@/assets/img/logos/${team.team.abbreviation}.png`);
                         }
-
-                       
 
                         const img = `<img style='height: 27px; width: 27px; margin-left: -20px; margin-right: -1px; margin-top: -12px; margin-bottom: -10px;' src="${logo}" />`;
                         const teamColor = TeamColorLookup[team.team.id];
@@ -414,7 +406,7 @@
 
         async onDrinkAwarded(lobbyEvent: LobbyEvent) {
             if (lobbyEvent.lobbyMemberId === this.currentLobbyMember?.id)
-                this.notifyCurrentUserOfCorrectPick();
+                this.notifyCurrentUserOfCorrectPick(lobbyEvent);
         }
 
         getSenderName(lobbyEvent: LobbyEvent) {
@@ -424,8 +416,17 @@
             return sender.name;
         }
 
-        notifyCurrentUserOfCorrectPick() {
-            this.$toast.success(`<span class='fs-3'><strong class= text-uppercase'>Nailed it!</strong> You've been awarded a drink!</span>`, { duration: 5000 })
+        notifyCurrentUserOfCorrectPick(lobbyEvent: LobbyEvent) {
+            this.$toast.success(`<span class='fs-3'><strong class= text-uppercase'>Nailed it!</strong> You've been awarded a drink!</span>`, { duration: 5000 });
+            if (this.notificationPermissionsGranted) {
+                const players = this.games.flatMap(g => Object.values(g.gameData.players));
+                const player = players.find(p => p.id === lobbyEvent.playerId);
+                if (player) {
+                    new Notification('🚨 Give out a drink!', { body: `${player.fullName} shoots and scores!` });
+                } else {
+                    new Notification('🚨 Give out a drink!');
+                }
+            }
         }
 
         //COMPUTED

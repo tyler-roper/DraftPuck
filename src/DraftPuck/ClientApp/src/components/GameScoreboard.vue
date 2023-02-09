@@ -68,9 +68,10 @@
                                 <i v-if="!showRoster" class="d-block mb-n3 fi fi-sr-caret-right"></i>
                                 <i v-if="showRoster" class="d-block mb-n3 fi fi-sr-caret-down"></i>
                             </a>
-                            <span v-if="(canPickForTeam(teams.away) && awayRoster.length > 0) || (canPickForTeam(teams.home) && homeRoster.length > 0)" class="badge badge-danger text-uppercase mt-1 ml-3">Picks Available</span>
 
-                            <span v-if="homeRoster.length === 0 && awayRoster.length === 0" class="text-stone-400 font-weight-bold">Rosters</span>
+                            <span v-if="pickingStarted && ((canPickForTeam(teams.away) && awayRoster.length > 0) || (canPickForTeam(teams.home) && homeRoster.length > 0))" class="badge badge-danger text-uppercase mt-1 ml-3">Picks Available</span>
+                            <span v-if="!pickingStarted" class="text-stone-600 small mt-1 mb-n1 ml-2">Picking starts in {{ timeUntilPicking }}</span>
+                            <span v-if="homeRoster.length === 0 && awayRoster.length === 0" class="text-stone-400 font-weight-bold">Rosters Not Yet Available</span>
                         </div>
                         <VueSlideToggle :open="showRoster">
                             <div class="row inset-shadow">
@@ -100,7 +101,7 @@
                                                 <td class="text-right" style="width: 40px;">{{ player.primaryNumber }} </td>
                                                 <td>
                                                     <span class="text-stone-700" :class="{'font-weight-bold': getPickerName(player.id) !== null}">{{ player.fullName }}</span>
-                                                    <a v-if="getPickerName(player.id) === null && canPickForTeam(team)" role="button" class="text-decoration-none fs-8 font-weight-bold" @click="pick(player.id, team.id)">PICK</a>
+                                                    <a v-if="pickingStarted && getPickerName(player.id) === null && canPickForTeam(team)" role="button" class="text-decoration-none fs-8 font-weight-bold" @click="pick(player.id, team.id)">PICK</a>
 
                                                     <span v-if="getPickerName(player.id) !== null && !isCurrentUserPick(player)" class="badge badge-blue text-uppercase">({{ getPickerName(player.id) }})</span>
                                                     <span v-if="isCurrentUserPick(player)" class="badge badge-danger text-uppercase">(You)</span>
@@ -150,6 +151,9 @@
     import { mapState, mapActions, mapGetters } from 'vuex';
     import BotPickStyle from '@/enums/botPickStyle';
     import '@/extensions/arrayExtensions';
+    import addMinutes from 'date-fns/addMinutes';
+    import intervalToDuration from 'date-fns/intervalToDuration';
+    import formatDuration from 'date-fns/formatDuration';
 
     @Component({
         components: { VueSlideToggle },
@@ -175,8 +179,13 @@
         boxscore = this.scoreboard.boxscore;
         teams = this.scoreboard.teams;
         players = this.scoreboard.players;
+        startTime = this.scoreboard.startTime;
         homeRoster: Array<Player & { stats: PlayerSeasonStats }> = [];
         awayRoster: Array<Player & { stats: PlayerSeasonStats }> = [];
+        pickingStarted = false;
+        pickingStartingTimer?: number;
+        timeUntilPicking: string | null = null;
+        pickTime = addMinutes(this.startTime, -30);
 
         @Watch('scoreboard')
         onScoreboardUpdate() {
@@ -195,6 +204,28 @@
         async created() {
             await this.setRosterByTeam(this.teams.home);
             await this.setRosterByTeam(this.teams.away);
+
+            this.updateTimeUntilPicking();
+
+            if (!this.pickingStarted) {
+                this.pickingStartingTimer = setInterval(() => {
+                    this.updateTimeUntilPicking();
+                }, 1000);
+            }
+        }
+
+        updateTimeUntilPicking() {
+            this.pickingStarted = this.pickTime <= new Date();
+            if (this.pickingStarted) {
+                clearInterval(this.pickingStartingTimer);
+                return;
+            }
+
+            const duration = intervalToDuration({ start: this.pickTime, end: new Date() });
+            if (duration.hours === 0 && duration.minutes == 0)
+                this.timeUntilPicking = formatDuration(duration, { format: ["seconds"], zero: true });
+            else
+                this.timeUntilPicking = formatDuration(duration, { format: ["hours", "minutes"] });
         }
 
         getGameTimeStyling() {
