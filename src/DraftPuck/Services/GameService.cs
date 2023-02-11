@@ -185,6 +185,7 @@ namespace DraftPuck.Services
 
         private async Task HandleScorerChange(long gamePk, Play play, PlayerSummary newScorer, PlayerSummary oldScorer)
         {
+            return;
             await _lobbyEventService.SendGoalChangedEvent(gamePk, newScorer.Id, oldScorer.Id, play.Team.Id);
 
             var affectedDrinks = await _dbContext.Drinks
