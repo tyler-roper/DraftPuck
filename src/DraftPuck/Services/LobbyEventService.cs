@@ -20,8 +20,14 @@ namespace DraftPuck.Services
         public async Task SendUserJoinedEvent(Lobby lobby, LobbyMember lobbyMember)
             => await NewLobbyEvent(lobby.Id, lobby.JoinCode, LobbyEventType.UserJoined, lobbyMemberId: lobbyMember.Id);
 
+        public async Task SendUserRejoinedEvent(Lobby lobby, LobbyMember lobbyMember)
+            => await NewLobbyEvent(lobby.Id, lobby.JoinCode, LobbyEventType.UserRejoined, lobbyMemberId: lobbyMember.Id);
+
+        public async Task SendUserRemovedEvent(Lobby lobby, LobbyMember lobbyMember)
+            => await NewLobbyEvent(lobby.Id, lobby.JoinCode, LobbyEventType.UserRemoved, lobbyMemberId: lobbyMember.Id, text: $"<strong>{lobbyMember.Name}</strong> was removed from the lobby.");
+
         public async Task SendUserNameChangedEvent(Lobby lobby, LobbyMember lobbyMember, string oldName)
-            => await NewLobbyEvent(lobby.Id, lobby.JoinCode, LobbyEventType.UserNameChanged, lobbyMemberId: lobbyMember.Id, oldName: oldName, newName: lobbyMember.Name);
+            => await NewLobbyEvent(lobby.Id, lobby.JoinCode, LobbyEventType.UserNameChanged, lobbyMemberId: lobbyMember.Id, title: "Name Change", text: $"<strong>{oldName}</strong> changed name to <strong>{lobbyMember.Name}</strong>.");
 
         public async Task SendNewPickEvent(Lobby lobby, LobbyMember lobbyMember, long gamePk, long playerId, int teamId)
             => await NewLobbyEvent(lobby.Id, lobby.JoinCode, LobbyEventType.NewPick, lobbyMemberId: lobbyMember.Id, gamePk: gamePk, playerId: playerId, teamId: teamId);
@@ -44,17 +50,13 @@ namespace DraftPuck.Services
         public async Task SendGoalRemovedEvent(long gamePk, long playerId)
             => await NewGlobalEvent(LobbyEventType.GoalRemoved, playerId: playerId, gamePk: gamePk);
 
-        private async Task NewLobbyEvent(Guid lobbyId, string joinCode, LobbyEventType eventType, DateTime? timeUtc = null, Guid? lobbyMemberId = null, int? gameEventId = null, long? gamePk = null, Guid? lobbyMember2Id = null, long? playerId = null, long? player2Id = null, int? teamId = null, string? oldName = null, string? newName = null)
+        private async Task NewLobbyEvent(Guid lobbyId, string joinCode, LobbyEventType eventType, DateTime? timeUtc = null, Guid? lobbyMemberId = null, int? gameEventId = null, long? gamePk = null, Guid? lobbyMember2Id = null, long? playerId = null, long? player2Id = null, int? teamId = null, string? title = null, string? text = null)
         {
             var lobbyEvent = new LobbyEvent()
             {
                 TimeUtc = timeUtc ?? DateTime.UtcNow,
-                Title = eventType == LobbyEventType.UserNameChanged
-                    ? "Name Change"
-                    : GetTitle(eventType),
-                Text = eventType == LobbyEventType.UserNameChanged
-                    ? $"<strong>{oldName}</strong> changed name to <strong>{newName}</strong>."
-                    : GetText(eventType),
+                Title = title ?? GetTitle(eventType),
+                Text = text ?? GetText(eventType),
                 GameEventId = gameEventId,
                 GamePk = gamePk,
                 LobbyId = lobbyId,

@@ -15,6 +15,8 @@
             if (eventType == LobbyEventType.DrinkRevoked) return DrinkRevoked.Title;   
             if (eventType == LobbyEventType.GoalChanged) return GoalChanged.Title;
             if (eventType == LobbyEventType.GoalRemoved) return GoalRemoved.Title;
+            if (eventType == LobbyEventType.UserRejoined) return UserRejoined.Title;
+            if (eventType == LobbyEventType.UserRemoved) return UserRemoved.Title;
             return "No title";
         }
 
@@ -29,6 +31,8 @@
             if (eventType == LobbyEventType.DrinkRevoked) return Random(DrinkRevoked.Texts);
             if (eventType == LobbyEventType.GoalChanged) return Random(GoalChanged.Texts);
             if (eventType == LobbyEventType.GoalRemoved) return Random(GoalRemoved.Texts);
+            if (eventType == LobbyEventType.UserRejoined) return Random(UserRejoined.Texts);
+            if (eventType == LobbyEventType.UserRemoved) return Random(UserRemoved.Texts);
             return "No text generated";
         }
 
@@ -51,6 +55,25 @@
                 "Welcome, {{name}}!"
             };
         }
+
+        private static class UserRejoined
+        {
+            public static string Title = "User Rejoined";
+            public static List<string> Texts = new()
+            {
+                "Welcome back, {{name}}!"
+            };
+        }
+
+        private static class UserRemoved
+        {
+            public static string Title = "User Removed";
+            public static List<string> Texts = new()
+            {
+                "{{name}} was removed from the lobby."
+            };
+        }
+
         private static class NewPick
         {
             public static string Title = "New Pick";

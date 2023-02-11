@@ -69,9 +69,12 @@
                                 <i v-if="showRoster" class="d-block mb-n3 fi fi-sr-caret-down"></i>
                             </a>
 
+                            <span v-if="homeRoster.length === 0 && awayRoster.length === 0" class="text-stone-400 small mt-1">
+                                No Rosters Yet
+                            </span>
+
                             <span v-if="pickingStarted && ((canPickForTeam(teams.away) && awayRoster.length > 0) || (canPickForTeam(teams.home) && homeRoster.length > 0))" class="badge badge-danger text-uppercase mt-1 ml-3">Picks Available</span>
-                            <span v-if="!pickingStarted" class="text-stone-600 small mt-1 mb-n1 ml-2">Picking starts in {{ timeUntilPicking }}</span>
-                            <span v-if="homeRoster.length === 0 && awayRoster.length === 0" class="text-stone-400 font-weight-bold">Rosters Not Yet Available</span>
+                            <span v-if="!pickingStarted" class="text-stone-600 small mt-1 mb-n1 ml-3">Picks open @ <strong>{{ pickTime | formattedDate }}</strong></span>
                         </div>
                         <VueSlideToggle :open="showRoster">
                             <div class="row inset-shadow">
@@ -103,8 +106,14 @@
                                                     <span class="text-stone-700" :class="{'font-weight-bold': getPickerName(player.id) !== null}">{{ player.fullName }}</span>
                                                     <a v-if="pickingStarted && getPickerName(player.id) === null && canPickForTeam(team)" role="button" class="text-decoration-none fs-8 font-weight-bold" @click="pick(player.id, team.id)">PICK</a>
 
-                                                    <span v-if="getPickerName(player.id) !== null && !isCurrentUserPick(player)" class="badge badge-blue text-uppercase">({{ getPickerName(player.id) }})</span>
-                                                    <span v-if="isCurrentUserPick(player)" class="badge badge-danger text-uppercase">(You)</span>
+                                                    <span v-if="getPickerName(player.id) !== null && !isCurrentUserPick(player)" class="badge badge-blue text-uppercase">
+                                                        ({{ getPickerName(player.id) }})
+                                                        <a v-if="isLobbyAdmin" role="button" class="ml-1" @click="getPickIdAndRemovePick(player.id)">x</a>
+                                                    </span>
+                                                    <span v-if="isCurrentUserPick(player)" class="badge badge-danger text-uppercase">
+                                                        (You)
+                                                        <a v-if="isLobbyAdmin" role="button" class="ml-1 text-white" @click="getPickIdAndRemovePick(player.id)">x</a>
+                                                    </span>
                                                 </td>
                                                 <td class="text-right">{{ player.stats.games }}</td>
                                                 <td class="text-right">{{ player.stats.goals }}</td>
@@ -154,6 +163,7 @@
     import addMinutes from 'date-fns/addMinutes';
     import intervalToDuration from 'date-fns/intervalToDuration';
     import formatDuration from 'date-fns/formatDuration';
+    import format from 'date-fns/format';
 
     @Component({
         components: { VueSlideToggle },
@@ -161,14 +171,20 @@
             ...mapState('lobby', ['lobby', 'currentUserId']),
             ...mapGetters('lobby', ['isLobbyAdmin']) 
         },
-        methods: { ...mapActions('lobby', ['pickPlayer'] )}
+        methods: { ...mapActions('lobby', ['pickPlayer', 'removePick']) },
+        filters: {
+            formattedDate: (d: Date) => {
+                return format(d, "p");
+            }
+        }
     })
     export default class GameScoreboard extends Vue {
         @Prop()
         scoreboard!: Scoreboard;
 
         lobby!: Lobby;
-        pickPlayer!: (args: { gamePk: number; playerId: number; teamId: number;  lobbyMemberId: string | null }) => Promise<void>;
+        pickPlayer!: (args: { gamePk: number; playerId: number; teamId: number; lobbyMemberId: string | null }) => Promise<void>;
+        removePick!: (pickId: string) => Promise<void>;
         currentUserId!: string;
         isLobbyAdmin!: boolean;
 
@@ -355,6 +371,14 @@
             });
 
             return scorers.join(", ");
+        }
+
+        async getPickIdAndRemovePick(playerId: number) {
+            const picks = this.lobby?.members.flatMap(m => m.picks);
+            const pick = picks.find(p => p.playerId === playerId);
+            if (!pick) return;
+
+            await this.removePick(pick.id);
         }
 
         async pick(playerId: number, teamId: number, lobbyMemberId: string | null = null) {

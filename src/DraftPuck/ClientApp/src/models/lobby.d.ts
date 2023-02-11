@@ -17,6 +17,7 @@ interface LobbyMember {
     picks: Array<LobbyMemberPick>
     isBot: boolean;
     botPickStyle: BotPickStyle;
+    isRemoved: boolean;
 }
 
 interface LobbyMemberPick {
@@ -27,6 +28,7 @@ interface LobbyMemberPick {
     teamId: number;
     drinks: Array<Drink>;
     created: Date;
+    isActive: boolean;
 }
 
 interface Drink {

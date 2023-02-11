@@ -14,6 +14,8 @@ public partial class LobbyMemberPick
 
     public DateTime Created { get; set; }
 
+    public bool IsActive { get; set; } = true;
+
     public virtual ICollection<Drink> Drinks { get; } = new List<Drink>();
 
     public virtual LobbyMember LobbyMember { get; set; } = null!;

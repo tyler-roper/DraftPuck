@@ -8,7 +8,9 @@
     DrinkInvalidated,
     DrinkRevoked,
     GoalChanged,
-    GoalRemoved
+    GoalRemoved,
+    UserRejoined,
+    UserRemoved
 }
 
 export default LobbyEventType;

@@ -124,5 +124,45 @@
                 return Conflict(ex.Message);
             }
         }
+
+        [HttpDelete("{code}/member/{lobbyMemberId}")]
+        public async Task<IActionResult> RemoveLobbyMember(string code, Guid lobbyMemberId)
+        {
+            if (CurrentUser == null) return Unauthorized();
+
+            try
+            {
+                await _lobbyService.RemoveLobbyMember(CurrentUser.Id, code, lobbyMemberId);
+                return NoContent();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(ex.Message);
+            }
+        }
+
+        [HttpDelete("{code}/pick/{pickId}")]
+        public async Task<IActionResult> RemovePick(string code, Guid pickId)
+        {
+            if (CurrentUser == null) return Unauthorized();
+
+            try
+            {
+                await _lobbyService.RemovePick(CurrentUser.Id, code, pickId);
+                return NoContent();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(ex.Message);
+            }
+        }
     }
 }
