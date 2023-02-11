@@ -212,6 +212,7 @@ namespace DraftPuck.Services
 
         private async Task HandleGoalRemoved(long gamePk, int eventId, PlayerSummary scorer)
         {
+            return;
             await _lobbyEventService.SendGoalRemovedEvent(gamePk, scorer.Id);
 
             var affectedDrinks = await _dbContext.Drinks
