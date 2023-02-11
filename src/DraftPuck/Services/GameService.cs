@@ -110,14 +110,14 @@ namespace DraftPuck.Services
                 }
                 else
                 {
-                    var oldScorer = scorersBeforeUpdate[scorerAfterUpdate.Key];
-                    var newScorer = scorerAfterUpdate.Value;
+                    //var oldScorer = scorersBeforeUpdate[scorerAfterUpdate.Key];
+                    //var newScorer = scorerAfterUpdate.Value;
 
-                    if (oldScorer.Id != newScorer.Id)
-                    {
-                        await HandleScorerChange(game.GamePk, newScoringPlay, newScorer, oldScorer);
-                        await HandleNewScoringPlay(game.GamePk, newScoringPlay);
-                    }
+                    //if (oldScorer.Id != newScorer.Id)
+                    //{
+                    //    await HandleScorerChange(game.GamePk, newScoringPlay, newScorer, oldScorer);
+                    //    await HandleNewScoringPlay(game.GamePk, newScoringPlay);
+                    //}
                 }
             }
 
