@@ -33,7 +33,7 @@ namespace DraftPuck.Services
             RemoveOldGamesFromCache();
 
             var cachedGames = _gameCache.GetAllGames();
-            if (cachedGames.Count == 0 || ((DateTime.UtcNow.Minute == 0 || DateTime.UtcNow.Minute == 30) && DateTime.UtcNow.Second > 0 && DateTime.UtcNow.Second <= 10))
+            if (cachedGames.Count == 0)
             {
                 await AddAllScheduledGamesToCache();
                 return;
@@ -110,14 +110,14 @@ namespace DraftPuck.Services
                 }
                 else
                 {
-                    //var oldScorer = scorersBeforeUpdate[scorerAfterUpdate.Key];
-                    //var newScorer = scorerAfterUpdate.Value;
+                    var oldScorer = scorersBeforeUpdate[scorerAfterUpdate.Key];
+                    var newScorer = scorerAfterUpdate.Value;
 
-                    //if (oldScorer.Id != newScorer.Id)
-                    //{
-                    //    await HandleScorerChange(game.GamePk, newScoringPlay, newScorer, oldScorer);
-                    //    await HandleNewScoringPlay(game.GamePk, newScoringPlay);
-                    //}
+                    if (oldScorer.Id != newScorer.Id)
+                    {
+                        await HandleScorerChange(game.GamePk, newScoringPlay, newScorer, oldScorer);
+                        await HandleNewScoringPlay(game.GamePk, newScoringPlay);
+                    }
                 }
             }
 
@@ -185,7 +185,6 @@ namespace DraftPuck.Services
 
         private async Task HandleScorerChange(long gamePk, Play play, PlayerSummary newScorer, PlayerSummary oldScorer)
         {
-            return;
             await _lobbyEventService.SendGoalChangedEvent(gamePk, newScorer.Id, oldScorer.Id, play.Team.Id);
 
             var affectedDrinks = await _dbContext.Drinks
@@ -213,7 +212,6 @@ namespace DraftPuck.Services
 
         private async Task HandleGoalRemoved(long gamePk, int eventId, PlayerSummary scorer)
         {
-            return;
             await _lobbyEventService.SendGoalRemovedEvent(gamePk, scorer.Id);
 
             var affectedDrinks = await _dbContext.Drinks
