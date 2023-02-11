@@ -153,7 +153,8 @@ namespace DraftPuck.Services
                 .Include(pick => pick.LobbyMember)
                     .ThenInclude(member => member.Lobby)
                         .ThenInclude(lobby => lobby.LobbyMembers)
-                .Where(pick => pick.GamePk == gamePk
+                .Where(pick => pick.IsActive
+                    && pick.GamePk == gamePk
                     && pick.PlayerId == scorer.Player.Id
                     && !pick.Drinks.Any(d => d.EventId == play.About.EventId))
                 .ToListAsync();
@@ -173,7 +174,7 @@ namespace DraftPuck.Services
 
                 if (pickToReward.LobbyMember.IsBot)
                 {
-                    var members = pickToReward.LobbyMember.Lobby.LobbyMembers.Where(member => !member.IsBot).ToList();
+                    var members = pickToReward.LobbyMember.Lobby.LobbyMembers.Where(member => !member.IsBot && !member.IsRemoved).ToList();
                     var index = _random.Next(members.Count);
                     var recipient = members[index];
 
@@ -198,9 +199,9 @@ namespace DraftPuck.Services
             if (!affectedDrinks.Any()) return;
 
             foreach (var drink in affectedDrinks) {
-                if (drink.RecipientLobbyMember != null)
+                if (drink.RecipientLobbyMember != null && !drink.RecipientLobbyMember.IsRemoved)
                     await _lobbyEventService.SendDrinkInvalidatedEvent(drink.LobbyMemberPick.LobbyMember.Lobby, drink.LobbyMemberPick.LobbyMember, drink.RecipientLobbyMember, gamePk, play.About.EventId, oldScorer.Id);
-                else
+                else if (drink.LobbyMemberPick.IsActive)
                 {
                     await _lobbyEventService.SendDrinkRemovedEvent(drink.LobbyMemberPick.LobbyMember.Lobby, drink.LobbyMemberPick.LobbyMember);
                     _dbContext.Drinks.Remove(drink);
@@ -226,9 +227,9 @@ namespace DraftPuck.Services
 
             foreach (var drink in affectedDrinks)
             {
-                if (drink.RecipientLobbyMember != null)
+                if (drink.RecipientLobbyMember != null && !drink.RecipientLobbyMember.IsRemoved)
                     await _lobbyEventService.SendDrinkInvalidatedEvent(drink.LobbyMemberPick.LobbyMember.Lobby, drink.LobbyMemberPick.LobbyMember, drink.RecipientLobbyMember, gamePk, eventId, scorer.Id);
-                else
+                else if (drink.LobbyMemberPick.IsActive)
                 {
                     await _lobbyEventService.SendDrinkRemovedEvent(drink.LobbyMemberPick.LobbyMember.Lobby, drink.LobbyMemberPick.LobbyMember);
                     _dbContext.Drinks.Remove(drink);

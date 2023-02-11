@@ -4,6 +4,10 @@
     {
         public Task SendUserJoinedEvent(Lobby lobby, LobbyMember lobbyMember);
 
+        public Task SendUserRejoinedEvent(Lobby lobby, LobbyMember lobbyMember);
+
+        public Task SendUserRemovedEvent(Lobby lobby, LobbyMember lobbyMember);
+
         public Task SendUserNameChangedEvent(Lobby lobby, LobbyMember lobbyMember, string oldName);
 
         public Task SendNewPickEvent(Lobby lobby, LobbyMember lobbyMember, long gamePk, long playerId, int teamId);

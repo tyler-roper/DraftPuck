@@ -33,6 +33,8 @@
                         <button @click="startCreateLobby" class="d-block btn bg-stone-700 w-100 font-weight-bold py-3 text-uppercase" :disabled="isLoading">
                             <span>Create Lobby</span>
                         </button>
+                        <span v-if="loadedGames" class="d-block mt-3">({{ gameCount }} games remaining)</span>
+                        <span v-if="!loadedGames" class="d-block mt-3">Fetching games...</span>
                     </div>
                 </template>
 
@@ -98,6 +100,8 @@
     import BotNames from '@/models/botNames';
     import BotPickStyle from '@/enums/botPickStyle';
     import '@/extensions/arrayExtensions';
+    import NHL from '@/services/NhlApiService';
+import GameStatusCode from '../models/nhlApi/enums/gameStatusCode';
 
     interface Bot {
         name: string;
@@ -121,6 +125,8 @@
         isCreatingLobby = false;
         isJoiningLobby = false;
         get isLoading() { return this.isCreatingLobby || this.isJoiningLobby }
+        loadedGames = false;
+        gameCount = 0;
 
         mounted() {
             if (this.code != "" && this.name === null)
@@ -146,13 +152,17 @@
             this.settings.bots = this.settings.bots.filter(b => b !== bot);
         }
 
-        created() {
+        async created() {
             const latestLobby = localStorage.getItem('latestLobby');
             if (latestLobby != null) {
                 const latestLobbyParsed: { joinCode: string; name: string } = JSON.parse(latestLobby);
                 this.name = latestLobbyParsed.name;
                 this.code = latestLobbyParsed.joinCode;
             }
+
+            const schedule = await NHL.getSchedule();
+            this.gameCount = schedule.dates[0].games.filter(g => ![GameStatusCode.Final, GameStatusCode.Final2, GameStatusCode.GameOver, GameStatusCode.Postponed].includes(g.status.statusCode)).length;
+            this.loadedGames = true;
         }
 
         startCreateLobby() {

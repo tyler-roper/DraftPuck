@@ -11,6 +11,8 @@
         DrinkInvalidated,
         DrinkRevoked,
         GoalChanged,
-        GoalRemoved
+        GoalRemoved,
+        UserRejoined,
+        UserRemoved
     }
 }

@@ -35,6 +35,14 @@ class LobbyService {
         return this._http.post(`${code}/pick`, { gamePk, playerId, lobbyMemberId, teamId });
     }
 
+    public async removeLobbyMember(code: string, lobbyMemberId: string): Promise<void> {
+        return this._http.delete(`${code}/member/${lobbyMemberId}`);
+    }
+
+    public async removePick(code: string, pickId: string): Promise<void> {
+        return this._http.delete(`${code}/pick/${pickId}`);
+    }
+
     public async assignDrink(code: string, drinkId: string, recipientLobbyMemberId: string): Promise<Drink> {
         return this._http.post(`${code}/drink/${drinkId}/assign?recipientLobbyMemberId=${recipientLobbyMemberId}`, null);
     }

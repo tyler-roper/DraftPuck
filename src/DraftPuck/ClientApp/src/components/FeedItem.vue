@@ -70,6 +70,7 @@
 
             const icons: { [key: number ]: string } = {
                 [LobbyEventType.UserJoined]: "fi-sr-user-add",
+                [LobbyEventType.UserRejoined]: "fi-sr-user-add",
                 [LobbyEventType.NewPick]: "fi-rr-badge-check",
                 [LobbyEventType.DrinkAssigned]: "fi-sr-beer",
                 [LobbyEventType.DrinkAwarded]: "fi-rr-beer",
@@ -77,7 +78,8 @@
                 [LobbyEventType.DrinkRevoked]: "fi-rr-comment-slash",
                 [LobbyEventType.UserNameChanged]: 'fi-rr-id-badge',
                 [LobbyEventType.DrinkInvalidated]: 'fi-rr-trash',
-                [LobbyEventType.GoalRemoved]: "fi-sr-cross-circle"
+                [LobbyEventType.GoalRemoved]: "fi-sr-cross-circle",
+                [LobbyEventType.UserRemoved]: "fi-sr-user-delete",
             }
 
             return icons[this.item.subType];

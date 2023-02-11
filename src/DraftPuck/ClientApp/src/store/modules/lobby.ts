@@ -41,6 +41,20 @@ export default {
             if (!member) return;
 
             member.name = newName;
+        },
+        removeLobbyMember(state: State, lobbyMemberId: string) {
+            state.lobby.members = state.lobby.members.filter(lm => lm.id != lobbyMemberId);
+        },
+        removePick(state: State, pickId: string) {
+            state.lobby.members.forEach(m => m.picks = m.picks.filter(p => p.id != pickId));
+        },
+        addBot(state: State, args: { name: string; botPickStyle: number }) {
+            state.lobby.members.push({
+                id: "",
+                botPickStyle: args.botPickStyle,
+                isBot: true,
+                name: args.name
+            });
         }
     },
     actions: {
@@ -61,7 +75,8 @@ export default {
                 gamePk: gamePk,
                 teamId: teamId,
                 drinks: [],
-                created: new Date()
+                created: new Date(),
+                isActive: true
             } as LobbyMemberPick
             commit('addPick', pick);
 
@@ -75,6 +90,18 @@ export default {
         async changeName({ state, commit }: { state: State; commit: Commit }, newName: string) {
             commit('changeName', newName);
             await LobbyService.changeName(state.lobby?.joinCode, newName);
+        },
+        async removeLobbyMember({ state, commit }: { state: State; commit: Commit }, lobbyMemberId: string) {
+            commit('removeLobbyMember', lobbyMemberId);
+            await LobbyService.removeLobbyMember(state.lobby?.joinCode, lobbyMemberId);
+        },
+        async removePick({ state, commit }: { state: State; commit: Commit }, pickId: string) {
+            commit('removePick', pickId);
+            await LobbyService.removePick(state.lobby?.joinCode, pickId);
+        },
+        async addBot({ state, commit }: { state: State; commit: Commit }, args: { name: string; botPickStyle: number }) {
+            commit('addBot', args);
+            await LobbyService.joinLobbyByCode(state.lobby?.joinCode, args.name, true, args.botPickStyle)
         }
     },
     getters: {

@@ -136,7 +136,9 @@
                     (item.subType === LobbyEventType.DrinkAssigned && this.filters.showDrinkAssigned) ||
                     (item.subType === LobbyEventType.DrinkInvalidated) ||
                     (item.subType === LobbyEventType.DrinkRevoked) ||
-                    (item.subType === LobbyEventType.GoalChanged);
+                    (item.subType === LobbyEventType.GoalChanged) ||
+                    (item.subType === LobbyEventType.UserRemoved) ||
+                    (item.subType === LobbyEventType.UserRejoined);
 
                 const isDuplicate = array[idx+1] && (item.subType === EventType.PeriodEnd && array[idx + 1].subType === EventType.GameEnd && array[idx + 1].gamePk === item.gamePk);
 
@@ -170,7 +172,6 @@
 
         getFilters() {
             const existingFilters = localStorage.getItem('feedFilters');
-            console.log(existingFilters);
             if (existingFilters)
                 this.filters = { ...this.filters, ...JSON.parse(existingFilters) };
         }

@@ -37,17 +37,17 @@
             return lobby;
         }
 
-        public async Task<Lobby?> GetLobby(string joinCode)
+        public async Task<Lobby?> GetLobby(string joinCode, bool includeRemovedUsers = false)
             => await _dbContext.Lobbies
-                .Include(l => l.LobbyMembers)
-                    .ThenInclude(lm => lm.LobbyMemberPicks)
+                .Include(l => l.LobbyMembers.Where(lm => !lm.IsRemoved || includeRemovedUsers))
+                    .ThenInclude(lm => lm.LobbyMemberPicks.Where(lmp => lmp.IsActive))
                         .ThenInclude(lmp => lmp.Drinks)
                 .FirstOrDefaultAsync(l => l.JoinCode == joinCode);
 
         public async Task<Lobby?> GetLobby(Guid lobbyId)
             => await _dbContext.Lobbies
-                .Include(l => l.LobbyMembers)
-                    .ThenInclude(lm => lm.LobbyMemberPicks)
+                .Include(l => l.LobbyMembers.Where(lm => !lm.IsRemoved))
+                    .ThenInclude(lm => lm.LobbyMemberPicks.Where(lmp => lmp.IsActive))
                         .ThenInclude(lmp => lmp.Drinks)
                 .FirstOrDefaultAsync(l => l.Id == lobbyId);
 
@@ -65,10 +65,10 @@
         }
 
         public async Task<bool> UserIsInLobby(Guid userId, Guid lobbyId)
-            => await _dbContext.LobbyMembers.AnyAsync(lm => lm.UserId == userId && lm.LobbyId == lobbyId);
+            => await _dbContext.LobbyMembers.Where(lm => !lm.IsRemoved).AnyAsync(lm => lm.UserId == userId && lm.LobbyId == lobbyId);
 
         public async Task<bool> UserIsInLobby(Guid userId, string joinCode)
-            => await _dbContext.LobbyMembers.Include(lm => lm.Lobby).AnyAsync(lm => lm.UserId == userId && lm.Lobby.JoinCode == joinCode);
+            => await _dbContext.LobbyMembers.Include(lm => lm.Lobby).Where(lm => !lm.IsRemoved).AnyAsync(lm => lm.UserId == userId && lm.Lobby.JoinCode == joinCode);
 
         public async Task<Lobby?> JoinLobbyByCode(Guid userId, string joinCode, JoinLobbyRequest request)
         {
@@ -78,7 +78,7 @@
                 await _dbContext.SaveChangesAsync();
             }
 
-            var lobby = await GetLobby(joinCode);
+            var lobby = await GetLobby(joinCode, true);
             if (lobby == null) return null;
 
             var existingLobbyMember = lobby.LobbyMembers.FirstOrDefault(lm => lm.UserId == userId);
@@ -99,15 +99,36 @@
 
                 await _lobbyEventService.SendUserJoinedEvent(lobby, lobbyMember);
             }
-            else if (existingLobbyMember.Name != request.Name)
+            else if (!existingLobbyMember.IsRemoved && existingLobbyMember.Name != request.Name)
             {
                 //NAME CHANGE
-                var lobbyMemberEntity = await _dbContext.LobbyMembers.FindAsync(existingLobbyMember.Id);
-                var previousName = lobbyMemberEntity.Name;
-                lobbyMemberEntity.Name = request.Name;
+                var previousName = existingLobbyMember.Name;
+                existingLobbyMember.Name = request.Name;
                 await _dbContext.SaveChangesAsync();
 
-                await _lobbyEventService.SendUserNameChangedEvent(lobby, lobbyMemberEntity, previousName);
+                await _lobbyEventService.SendUserNameChangedEvent(lobby, existingLobbyMember, previousName);
+            }
+            else if (existingLobbyMember.IsRemoved)
+            {
+                //REJOINED AFTER REMOVAL
+                var previousName = existingLobbyMember.Name;
+                existingLobbyMember.Name = request.Name;
+                existingLobbyMember.IsRemoved = false;
+
+                foreach(var pick in existingLobbyMember.LobbyMemberPicks)
+                {
+                    var wasRePicked = lobby.LobbyMembers
+                        .SelectMany(lm => lm.LobbyMemberPicks)
+                        .Any(lmp => lmp.IsActive && lmp.PlayerId == pick.PlayerId);
+
+                    if (!wasRePicked) pick.IsActive = true;
+                }
+
+                await _dbContext.SaveChangesAsync();
+                await _lobbyEventService.SendUserRejoinedEvent(lobby, existingLobbyMember);
+
+                if (previousName != existingLobbyMember.Name)
+                    await _lobbyEventService.SendUserNameChangedEvent(lobby, existingLobbyMember, previousName);
             }
 
             return lobby;
@@ -119,12 +140,12 @@
             if (lobby == null) throw new KeyNotFoundException("Lobby not found.");
 
             var lobbyMember = request.LobbyMemberId == null
-                ? lobby.LobbyMembers.SingleOrDefault(lm => lm.UserId == userId)
-                : lobby.LobbyMembers.FirstOrDefault(lm => lm.Id == request.LobbyMemberId);
+                ? lobby.LobbyMembers.SingleOrDefault(lm => !lm.IsRemoved && lm.UserId == userId)
+                : lobby.LobbyMembers.FirstOrDefault(lm => !lm.IsRemoved && lm.Id == request.LobbyMemberId);
 
             if (lobbyMember == null) throw new KeyNotFoundException("UserId not found in lobby.");
 
-            if (lobby.LobbyMembers.SelectMany(lm => lm.LobbyMemberPicks).Any(pick => pick.PlayerId == request.PlayerId && pick.GamePk == request.GamePk)) 
+            if (lobby.LobbyMembers.Where(lm => !lm.IsRemoved).SelectMany(lm => lm.LobbyMemberPicks).Any(pick => pick.IsActive && pick.PlayerId == request.PlayerId && pick.GamePk == request.GamePk))
                 throw new InvalidOperationException("Player already picked.");
 
             var pick = new LobbyMemberPick()
@@ -134,13 +155,27 @@
                 GamePk = request.GamePk,
                 TeamId = request.TeamId
             };
-             
+
             _dbContext.LobbyMemberPicks.Add(pick);
             await _dbContext.SaveChangesAsync();
 
             await _lobbyEventService.SendNewPickEvent(lobby, lobbyMember, request.GamePk, request.PlayerId, request.TeamId);
 
             return pick;
+        }
+
+        public async Task RemovePick(Guid currentUserId, string joinCode, Guid lobbyMemberPickId)
+        {
+            var lobby = await GetLobby(joinCode);
+            if (lobby == null) throw new KeyNotFoundException("Lobby not found.");
+
+            if (lobby.CreatedBy != currentUserId) throw new UnauthorizedAccessException();
+
+            var pick = lobby.LobbyMembers.SelectMany(lm => lm.LobbyMemberPicks).FirstOrDefault(lmp => lmp.Id == lobbyMemberPickId);
+            if (pick == null) throw new KeyNotFoundException("Pick not found.");
+
+            pick.IsActive = false;
+            await _dbContext.SaveChangesAsync();
         }
 
         public async Task<Drink> AssignDrink(Guid userId, string joinCode, Guid drinkId, Guid recipientLobbyMemberId)
@@ -181,6 +216,25 @@
             await _dbContext.SaveChangesAsync();
 
             await _lobbyEventService.SendUserNameChangedEvent(lobby, lobbyMember, oldName);
+        }
+
+        public async Task RemoveLobbyMember(Guid currentUserId, string joinCode, Guid lobbyMemberId)
+        {
+            var lobby = await GetLobby(joinCode);
+            if (lobby == null) throw new KeyNotFoundException("Lobby not found.");
+
+            if (lobby.CreatedBy != currentUserId) throw new UnauthorizedAccessException();
+
+            var lobbyMemberToRemove = lobby.LobbyMembers.FirstOrDefault(lm => lm.Id == lobbyMemberId);
+            if (lobbyMemberToRemove == null) return;
+
+            lobbyMemberToRemove.IsRemoved = true;
+            foreach (var pick in lobbyMemberToRemove.LobbyMemberPicks)
+                pick.IsActive = false;
+
+            await _dbContext.SaveChangesAsync();
+
+            await _lobbyEventService.SendUserRemovedEvent(lobby, lobbyMemberToRemove);
         }
 
         private async Task<string> RandomString(int length)

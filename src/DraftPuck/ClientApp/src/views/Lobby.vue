@@ -293,6 +293,11 @@
                 if (!this.lobby) return;
             }
 
+            if (lobbyEvent.lobbyEventType === LobbyEventType.UserRemoved && lobbyEvent.lobbyMemberId === currentMember.id) {
+                this.$toast.error("You were removed from the lobby.");
+                this.$router.push({ name: "Home" });
+            }
+
             this.parseDates(lobbyEvent);
 
             this.addLobbyEvent(lobbyEvent);

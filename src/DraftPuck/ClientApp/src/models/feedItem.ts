@@ -62,7 +62,7 @@ export default class FeedItem {
             const scoringPlay = play as ScoringPlay;
             teamColor = TeamColorLookup[scoringPlay.team.id];
 
-            const primaryPlayer = scoringPlay.players.find(player => player.playerType === PlayerType.Scorer || player.playerType === PlayerType.PenaltyOn);
+            const primaryPlayer = scoringPlay.players?.find(player => player.playerType === PlayerType.Scorer || player.playerType === PlayerType.PenaltyOn) ?? null;
             if (primaryPlayer) player = primaryPlayer.player;
 
             const scoringTeamAbbreviation = scoringPlay.team.id === lineScoreTeams.home.team.id

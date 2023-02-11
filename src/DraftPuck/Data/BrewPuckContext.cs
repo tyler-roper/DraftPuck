@@ -71,6 +71,7 @@ public partial class DraftPuckContext : DbContext
             entity.Property(e => e.Name).HasMaxLength(50);
             entity.Property(e => e.Joined).HasDefaultValueSql("(getutcdate())");
             entity.Property(e => e.IsBot).HasDefaultValueSql("((0))");
+            entity.Property(e => e.IsRemoved).HasDefaultValueSql("((0))");
 
             entity.HasOne(d => d.Lobby).WithMany(p => p.LobbyMembers)
                 .HasForeignKey(d => d.LobbyId)
@@ -86,8 +87,8 @@ public partial class DraftPuckContext : DbContext
         modelBuilder.Entity<LobbyMemberPick>(entity =>
         {
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
-
             entity.Property(e => e.Created).HasDefaultValueSql("(getutcdate())");
+            entity.Property(e => e.IsActive).HasDefaultValueSql("((1))");
 
             entity.HasOne(d => d.LobbyMember).WithMany(p => p.LobbyMemberPicks)
                 .HasForeignKey(d => d.LobbyMemberId)

@@ -55,10 +55,22 @@
                 </template>
                 <template v-if="!isCurrentMember(member)">
                     <b-dropdown-item v-if="getPendingDrinksForCurrentMember().length > 0 && !member.isBot" role="button" variant="blue" @click="giveDrink(member)">Give a drink!</b-dropdown-item>
-                    <!--<b-dropdown-item v-if="isLobbyAdmin && member.isBot" role="button">Change Settings</b-dropdown-item>
-                    <b-dropdown-item v-if="isLobbyAdmin" role="button" variant="primary">Remove</b-dropdown-item>-->
+                    <b-dropdown-item v-if="isLobbyAdmin" role="button" variant="primary" @click="removeLobbyMember(member.id)">Remove</b-dropdown-item>
                 </template>
             </b-dropdown>
+            <div class="p-2" v-if="isLobbyAdmin && !isAddingBot"><a role="button" class="text-uppercase font-weight-bold" @click="showAddBot">+ Add Bot</a></div>
+            <div class="p-2 d-flex justify-content-between" v-if="isLobbyAdmin && isAddingBot">
+                <div style="width: 33%;">
+                    <b-form-input ref="botNameInput" v-model="botName"></b-form-input>
+                </div>
+                <div style="width: 33%;">
+                    <b-form-select v-model="botPickStyle" :options="botPickStyles"></b-form-select>
+                </div>
+                <div class="d-flex align-items-center justify-content-between" style="width: 33%;">
+                    <button class="btn btn-blue font-weight-bold" @click="tryAddBot">Add</button>
+                    <a role="button" class="font-weight-bold text-primary" @click="cancelAddBot">Cancel</a>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -69,6 +81,8 @@
     import { mapState, mapGetters, mapActions } from 'vuex';
     import addSeconds from 'date-fns/addSeconds';
     import format from 'date-fns/format';
+    import BotPickStyle from '@/enums/botPickStyle';
+    import BotNames from '@/models/botNames';
 
     @Component({
         filters: {
@@ -81,7 +95,7 @@
             ...mapGetters('lobby', ['isLobbyAdmin'])
         },
         methods: {
-            ...mapActions('lobby', ['assignDrink', 'changeName'])
+            ...mapActions('lobby', ['assignDrink', 'changeName', 'removeLobbyMember', 'addBot'])
         }
     })
     export default class LobbyOverview extends Vue {
@@ -90,12 +104,25 @@
         isLobbyAdmin!: boolean;
         assignDrink!: (args: { drink: Drink; recipient: LobbyMember }) => Promise<void>;
         changeName!: (newName: string) => Promise<void>;
+        removeLobbyMember!: (lobbyMember: LobbyMember) => Promise<void>;
         lastNameChange: Date = new Date(-1);
+        addBot!: (args: { name: string; botPickStyle: number }) => Promise<void>;
 
         @Ref('nameChangeInput')
         nameChangeInput!: HTMLInputElement;
 
+        @Ref('botNameInput')
+        botNameInput!: HTMLInputElement;
+
         isChangingName = false;
+        isAddingBot = false;
+        botName = "";
+        botPickStyle: number | null = null;
+        botPickStyles = [
+            { text: "Pick Style", value: null },
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            ...Object.entries(BotPickStyle).filter(([value, text]: [string, string | number]) => isNaN(Number(text))).map(([value, text]) => ({ text, value }))
+        ];
 
         getPendingDrinksByMember(member: LobbyMember) {
             return member.picks.flatMap(p => p.drinks.filter(d => d.recipientLobbyMemberId === null));
@@ -138,6 +165,25 @@
             await this.changeName(newName.trim());
         }
 
+        async tryAddBot() {
+            if (this.botName.length && this.botPickStyle) {
+                await this.addBot({ name: this.botName, botPickStyle: Number(this.botPickStyle) });
+                this.cancelAddBot();
+            }
+        }
+
+        showAddBot() {
+            this.isAddingBot = true;
+            this.botName = this.getRandomBotName();
+            this.$nextTick(() => this.botNameInput.focus());
+        }
+
+        cancelAddBot() {
+            this.isAddingBot = false;
+            this.botPickStyle = null;
+            this.botName = "";
+        }
+
         async giveDrink(recipient: LobbyMember) {
             const pendingDrinks = this.getPendingDrinksForCurrentMember();
             if (pendingDrinks.length === 0) return;
@@ -147,6 +193,13 @@
 
         get currentUserIsAdmin() {
             return this.lobby.createdBy === this.currentUserId;
+        }
+
+        getRandomBotName(): string {
+            const unusedNames = BotNames.filter(botName => !this.lobby.members.filter(m => m.isBot).map(bot => bot.name).includes(botName));
+            return unusedNames.length
+                ? unusedNames.random()
+                : `Bot ${this.lobby.members.filter(m => m.isBot).length}`;
         }
     }
 </script>
