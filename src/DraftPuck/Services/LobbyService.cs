@@ -74,7 +74,7 @@
         {
             if (request.IsBot)
             {
-                _dbContext.Users.Add(new User() { Id = userId });
+                _dbContext.Users.Add(new User() { Id = userId, IsBot = true });
                 await _dbContext.SaveChangesAsync();
             }
 
