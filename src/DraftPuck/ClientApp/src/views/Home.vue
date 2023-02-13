@@ -1,5 +1,5 @@
 ﻿<template>
-    <div class="d-flex align-items-center justify-content-center bg-net" style="height: 100%; width: 100%;">
+    <div class="d-flex flex-column align-items-center justify-content-center bg-net" style="height: 100%; width: 100%;">
         <div class="shadow overflow-hidden p-5" style="border-radius: 20px; background-color: rgba(0,0,0,0.5)">
             <div style="width: 306px;">
                 <div class="mt-n2 text-center">
@@ -107,6 +107,10 @@
                     completely at random. If their player scores, a random user in the lobby will be picked to drink!</p>
                 </div>
             </div>
+        </div>
+        <div class="mt-3" style="opacity: 0.8;">
+            DRAFTPUCK © {{ new Date().getFullYear() }}
+            <a target="_blank" class="ml-2" href="https://ropersoftworks.com">Roper Softworks LLC</a>
         </div>
     </div>
 </template>
