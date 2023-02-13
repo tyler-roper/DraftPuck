@@ -95,12 +95,12 @@
                 "You did it {{name}}! You really did it! {{playerBadge}}",
                 "Beginner's luck or pure skill? Doesn't matter to {{name}}! {{playerBadge}}",
                 "\"Eeny, meeny, miny, moe...\" - {{name}} {{playerBadge}}",
-                "Someone boutta hop up on {{name}}'s dick and do a full split. {{playerBadge}}",
-                "{{name}} gettin' lubed up to do some rectal damage. {{playerBadge}}",
+                //"Someone boutta hop up on {{name}}'s dick and do a full split. {{playerBadge}}",
+                //"{{name}} gettin' lubed up to do some rectal damage. {{playerBadge}}",
                 "Everyone be on alert, {{name}} is armed and dangerous. {{playerBadge}}",
                 "{{name}} with the chance of a lifetime! {{playerBadge}}",
                 "Hey {{name}}. Pick your target, take a deep breath, and give out a drink. {{playerBadge}}",
-                "That's the sound of buttholes puckering across the world, courtesy of {{name}}. {{playerBadge}}"
+                //"That's the sound of buttholes puckering across the world, courtesy of {{name}}. {{playerBadge}}"
             };
         }
 
@@ -109,17 +109,17 @@
             public static string Title = "Drink Assigned";
             public static List<string> Texts = new()
             {
-                "\"Hey {{recipientName}}, go fuck a goat!\" - {{senderName}}",
+                //"\"Hey {{recipientName}}, go fuck a goat!\" - {{senderName}}",
                 "{{senderName}} is making {{recipientName}} CHUG! CHUG! CHUG!",
                 "{{senderName}} gives {{recipientName}} a bird bath!",
                 "How nice! {{senderName}} has decided to quench {{recipientName}}'s thirst!",
                 "Better bring a bib {{recipientName}}, 'cause {{senderName}} is gettin' you MESSY.",
-                "Hey {{recipientName}}, chug a beer you emaciated prick! (Good one {{senderName}}!).",
+                //"Hey {{recipientName}}, chug a beer you emaciated prick! (Good one {{senderName}}!).",
                 "Oof, {{senderName}} is gonna make {{recipientName}} toss some cookies.",
                 "That's right {{recipientName}}, show {{senderName}} your chug face.",
                 "One beer chug for {{recipientName}}, courtesy of {{senderName}}.",
                 "Hope you got your funnel ready {{recipientName}}, 'cause {{senderName}}'s calling you out.",
-                "{{senderName}}: *turns hat backwards* {{recipientName}}, I CHOOSE YOU!!!"
+                //"{{senderName}}: *turns hat backwards* {{recipientName}}, I CHOOSE YOU!!!"
             };
         }
 
