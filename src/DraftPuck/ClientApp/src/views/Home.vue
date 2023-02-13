@@ -4,6 +4,7 @@
             <div style="width: 306px;">
                 <div class="mt-n2 text-center">
                     <span class="fs-1 text-stone-100" style="font-family: 'Rubik Mono One';">DraftPuck</span>
+                    <span class="d-block text-uppercase text-stone-300 fs-6 mt-n2" style="letter-spacing: 1px;">A live hockey drinking game</span>
                 </div>
                 <template v-if="!showLobbySettings">
                     <div class="d-flex mt-3 mx-n2">
@@ -33,8 +34,6 @@
                         <button @click="startCreateLobby" class="d-block btn bg-stone-700 w-100 font-weight-bold py-3 text-uppercase" :disabled="isLoading">
                             <span>Create Lobby</span>
                         </button>
-                        <span v-if="loadedGames" class="d-block mt-3">({{ gameCount }} games remaining)</span>
-                        <span v-if="!loadedGames" class="d-block mt-3">Fetching games...</span>
                     </div>
                 </template>
 
@@ -86,9 +85,27 @@
                     </div>
 
                     <div class="text-center mt-5">
-                        <a role="button" @click="showLobbySettings = false" :disabled="isLoading">Back</a>
+                        <a role="button" @click="showLobbySettings = false" :disabled="isLoading" class="font-weight-bold">&lt; Back</a>
                     </div>
                 </template>
+                <div class="mt-5 d-flex justify-content-between" >
+                    <div>
+                        <a role="button" @click="showHelp = !showHelp">
+                        <i v-if="!showHelp" class="fi fi-rr-caret-right mr-1"></i>
+                        <i v-if="showHelp" class="fi fi-rr-caret-down mr-1"></i>
+                        How does it work?</a>
+                    </div>
+                    <div>
+                        <span v-if="loadedGames" class="d-block text-stone-300 ">({{ gameCount }} games left today)</span>
+                        <span v-if="!loadedGames" class="d-block text-stone-300 ">Fetching games...</span>
+                    </div>
+                </div>
+                <div v-if="showHelp" class="mt-3 p-3 bg-stone-900">
+                    <p class="m-0 p-0 lh-2"><strong>DRAFTPUCK</strong> is a drinking game that takes place during live NHL games.<br /><br />
+                    The rules are simple: users pick a player from each team. If your player scores, you make someone else drink a beer!<br /><br />
+                    Looking for a twist? Add some bots! Bots make their picks based on the "pick style" assigned to them, which can be anything from auto-picking the best player available, to choosing
+                    completely at random. If their player scores, a random user in the lobby will be picked to drink!</p>
+                </div>
             </div>
         </div>
     </div>
@@ -129,6 +146,7 @@
         get isLoading() { return this.isCreatingLobby || this.isJoiningLobby }
         loadedGames = false;
         gameCount = 0;
+        showHelp = false;
 
         mounted() {
             if (this.code != "" && this.name === null)
