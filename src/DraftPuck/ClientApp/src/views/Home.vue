@@ -88,12 +88,13 @@
                         <a role="button" @click="showLobbySettings = false" :disabled="isLoading" class="font-weight-bold">&lt; Back</a>
                     </div>
                 </template>
-                <div class="mt-5 d-flex justify-content-between" >
+                <div class="mt-5 d-flex justify-content-between">
                     <div>
                         <a role="button" @click="showHelp = !showHelp">
-                        <i v-if="!showHelp" class="fi fi-rr-caret-right mr-1"></i>
-                        <i v-if="showHelp" class="fi fi-rr-caret-down mr-1"></i>
-                        How does it work?</a>
+                            <i v-if="!showHelp" class="fi fi-rr-caret-right mr-1"></i>
+                            <i v-if="showHelp" class="fi fi-rr-caret-down mr-1"></i>
+                            How does it work?
+                        </a>
                     </div>
                     <div>
                         <span v-if="loadedGames" class="d-block text-stone-300 ">({{ gameCount }} games left today)</span>
@@ -101,16 +102,18 @@
                     </div>
                 </div>
                 <div v-if="showHelp" class="mt-3 p-3 bg-stone-900">
-                    <p class="m-0 p-0 lh-2"><strong>DRAFTPUCK</strong> is a drinking game that takes place during live NHL games.<br /><br />
-                    The rules are simple: users pick a player from each team. If your player scores, you make someone else drink a beer!<br /><br />
-                    Looking for a twist? Add some bots! Bots make their picks based on the "pick style" assigned to them, which can be anything from auto-picking the best player available, to choosing
-                    completely at random. If their player scores, a random user in the lobby will be picked to drink!</p>
+                    <p class="m-0 p-0 lh-2">
+                        <strong>DRAFTPUCK</strong> is a drinking game that takes place during live NHL games.<br /><br />
+                        The rules are simple: users pick a player from each team. If your player scores, you make someone else drink a beer!<br /><br />
+                        Looking for a twist? Add some bots! Bots make their picks based on the "pick style" assigned to them, which can be anything from auto-picking the best player available, to choosing
+                        completely at random. If their player scores, a random user in the lobby will be picked to drink!
+                    </p>
                 </div>
             </div>
-        </div>
-        <div class="mt-3" style="opacity: 0.8;">
-            DRAFTPUCK © {{ new Date().getFullYear() }}
-            <a target="_blank" class="ml-2" href="https://ropersoftworks.com">Roper Softworks LLC</a>
+            <div class="mt-4 text-center" style="opacity: 0.8;">
+                DRAFTPUCK © {{ new Date().getFullYear() }}
+                <a target="_blank" class="ml-2" href="https://ropersoftworks.com">Roper Softworks LLC</a>
+            </div>
         </div>
     </div>
 </template>
