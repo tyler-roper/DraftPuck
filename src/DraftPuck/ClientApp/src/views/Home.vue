@@ -162,7 +162,7 @@
                 this.code = latestLobbyParsed.joinCode;
             }
 
-            const schedule = await NHL.getSchedule(format(addHours(new Date(), -10), 'yyyy-MM-dd'););
+            const schedule = await NHL.getSchedule(format(addHours(new Date(), -10), 'yyyy-MM-dd'));
             this.gameCount = schedule.dates[0].games.filter(g => ![GameStatusCode.Final, GameStatusCode.Final2, GameStatusCode.GameOver, GameStatusCode.Postponed].includes(g.status.statusCode)).length;
             this.loadedGames = true;
         }
