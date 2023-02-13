@@ -101,7 +101,9 @@
     import BotPickStyle from '@/enums/botPickStyle';
     import '@/extensions/arrayExtensions';
     import NHL from '@/services/NhlApiService';
-import GameStatusCode from '../models/nhlApi/enums/gameStatusCode';
+    import format from 'date-fns/format';
+    import addHours from 'date-fns/addHours';
+    import GameStatusCode from '@/models/nhlApi/enums/gameStatusCode';
 
     interface Bot {
         name: string;
@@ -160,7 +162,7 @@ import GameStatusCode from '../models/nhlApi/enums/gameStatusCode';
                 this.code = latestLobbyParsed.joinCode;
             }
 
-            const schedule = await NHL.getSchedule();
+            const schedule = await NHL.getSchedule(format(addHours(new Date(), -10), 'yyyy-MM-dd'););
             this.gameCount = schedule.dates[0].games.filter(g => ![GameStatusCode.Final, GameStatusCode.Final2, GameStatusCode.GameOver, GameStatusCode.Postponed].includes(g.status.statusCode)).length;
             this.loadedGames = true;
         }
