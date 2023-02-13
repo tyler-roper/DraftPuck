@@ -1,5 +1,5 @@
 ﻿<template>
-    <div class="d-flex flex-column align-items-center justify-content-center bg-net" style="height: 100%; width: 100%;">
+    <div class="d-flex flex-column align-items-center justify-content-center bg-net" style="min-height: 100%; width: 100%;">
         <div class="shadow overflow-hidden p-5" style="border-radius: 20px; background-color: rgba(0,0,0,0.5)">
             <div style="width: 306px;">
                 <div class="mt-n2 text-center">
