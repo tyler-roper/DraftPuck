@@ -4,7 +4,7 @@
 
             <div class="bg-black px-sm-4 px-2 py-2 shadow position-relative d-flex align-items-center" style="z-index: 10;">
                 <router-link to="/" class="banner-logo text-stone-0 text-decoration-none" style="cursor: pointer">
-                    <img src="@/assets/img/logo-wide.png" style="height: 65px;" />
+                    <img src="@/assets/img/logo-wide.png"/>
                 </router-link>
 
                 <div class="ml-auto mr-n2">

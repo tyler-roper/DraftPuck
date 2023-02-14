@@ -75,6 +75,11 @@ table.score-table > thead > tr > th:not(:first-child) {
     padding-right: 5px;
     margin-top: 4px;
     letter-spacing: -4px;
+    max-width: 300px;
+}
+
+.banner-logo > img {
+    width: 100%;
 }
 
 .team-abr {
@@ -256,6 +261,10 @@ table.score-table > thead > tr > th:not(:first-child) {
     .score-table > thead > tr > td:nth-child(n + 2):nth-child(-n + 5) {
         width: 30px !important;
     }
+
+    .banner-logo {
+        max-width: 200px;
+    }
 }
 
 @media only screen and (max-width: 1000px) {
@@ -373,6 +382,10 @@ table.score-table > thead > tr > th:not(:first-child) {
 }
 
 @media only screen and (max-width: 576px) {
+    .banner-logo {
+        max-width: 150px;
+    }
+
     .feed {
         width: 100% !important;
     }
