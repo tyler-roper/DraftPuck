@@ -1,11 +1,64 @@
 ﻿<template>
+
     <div class="d-flex overflow-hidden flex-column" style="height: 100%;">
+        <b-modal v-model="showInstructions" title="How To Play" header-class="bg-stone-900" body-class="bg-stone-100 text-stone-900" ok-only >
+            <div>
+                <ol class="ml-0 pl-3">
+                    <li>
+                        <strong class="text-uppercase">Invite Your Friends</strong>
+                        <p class="mt-1 mb-0">Have your friends join the lobby by entering your lobby code (<strong>{{ lobby.joinCode }}</strong>) at the home screen...</p>
+                        <p class="my-1 ml-2"><strong class="text-uppercase">or</strong></p>
+                        <p>...share the current URL, which will auto-populate the lobby code for them!</p>
+                    </li>
+
+                    <li class="pt-3">
+                        <strong class="text-uppercase">Pick Your Players</strong>
+                        <p class="mt-1">Once picks become available for a game, click the <strong>ROSTERS</strong> button to see a list of each team's players.</p>
+                        <p class="mt-1">Available players will have a <strong>PICK</strong> button beside their name, whereas players with a username have already been chosen.</p>
+                        <p class="mt-1">Choose carefully! Once you've made your choice, only the lobby creator can undo it for you.</p>
+                        <p class="mt-1">
+                            <strong>Playing with bots?</strong> Bots can make their picks as soon as rosters become available. The lobby creator can initiate the bot
+                            picks by opening the <strong>ROSTERS</strong> and clicking the <strong>MAKE BOT PICKS</strong> button.
+                        </p>
+                    </li>
+
+                    <li class="pt-3">
+                        <strong class="text-uppercase">Cross your fingers</strong>
+                        <p class="mt-1">
+                            If one of your players scores, you get to make someone drink! When this happens, you'll receive a notification letting you know you've got a drink available. Additionally,
+                            this information is listed next to your name in the <strong>Lobby</strong> view.
+                        </p>
+                        <p class="mt-1">
+                            Once you've earned a drink, you can dish it out by going to the <strong>Lobby</strong> view, clicking the desired recipient's name, and selecting <strong>"Give a drink!"</strong>.
+                        </p>
+                        <p class="mt-1">
+                            The recipient will receive a notification letting them know that you've sent a drink their way.
+                        </p>
+                    </li>
+
+                    <li class="pt-3">
+                        <strong class="text-uppercase">Keep an eye on "the feed"</strong>
+                        <p class="mt-1">
+                            Last but certainly not least: <strong>🚨 The Feed</strong> will be your one-stop-shop for all lobby events, from penalties and goals, to drinks earned and drinks taken.
+                        </p>
+                        <p class="mt-1">
+                            You can tailor your feed to your liking by using the <strong><i class="fi fi-sr-settings"></i> Settings</strong> icon at the top. You can also see a history of all drinks assigned by clicking the <strong><i class="fi fi-sr-list"></i> Timeline</strong> button.
+                        </p>
+                    </li>
+                </ol>
+            </div>
+        </b-modal>
         <template v-if="!isInvalidLobby">
 
             <div class="bg-black px-sm-4 px-2 py-2 shadow position-relative d-flex align-items-center" style="z-index: 10;">
                 <router-link to="/" class="banner-logo text-stone-0 text-decoration-none" style="cursor: pointer">
-                    <img src="@/assets/img/logo-wide.png"/>
+                    <img src="@/assets/img/logo-wide.png" />
                 </router-link>
+
+                <b-link class="d-flex ml-2 pt-1 text-stone-300 font-weight-bold text-decoration-none" role="button" @click="showInstructions = true">
+                    <i class="fi fi-rr-question-square d-block ml-4"></i>
+                    <span class="text-uppercase ml-2 d-none d-sm-block" style="margin-top: -2px;">How To Play</span>
+                </b-link>
 
                 <div class="ml-auto mr-n2">
                     <a v-if="!isLobbyView" role="button" class="mx-2 badge badge-pill bg-stone-600 py-2 px-3 d-sm-none font-weight-bold text-uppercase text-stone-200" style="text-decoration: none !important;" @click="setView('lobby')">
@@ -60,7 +113,7 @@
                     {{ getSenderNameByLobbyEvent(currentDrink) }}
                 </span>
             </span>
-            
+
         </div>
 
     </div>
@@ -121,6 +174,7 @@
         sessionStart: Date = new Date();
         games: Array<LiveGame> = [];
         lastLobbyUpdate = new Date(-1);
+        showInstructions = false;
 
         selectedDate: string = format(addHours(new Date(), -10), 'yyyy-MM-dd');
 

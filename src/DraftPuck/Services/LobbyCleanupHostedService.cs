@@ -21,9 +21,9 @@
             var curTime = DateTime.Now;
             var firstInterval = nextMidnight.Subtract(curTime);
 
-            void action()
+            async void action()
             {
-                //await Task.Delay(firstInterval, cancellationToken);
+                await Task.Delay(firstInterval, cancellationToken);
 
                 _timer = new Timer(
                     async _ => await DeleteOldLobbies(cancellationToken),
