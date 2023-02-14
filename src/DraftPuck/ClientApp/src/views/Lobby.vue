@@ -2,9 +2,9 @@
     <div class="d-flex overflow-hidden flex-column" style="height: 100%;">
         <template v-if="!isInvalidLobby">
 
-            <div class="bg-stone-800 px-sm-4 px-2 py-2 shadow position-relative d-flex align-items-center" style="z-index: 10;">
-                <router-link to="/" class="fs-1 banner-logo text-stone-0 text-decoration-none" style="cursor: pointer">
-                    <span>DraftPuck</span>
+            <div class="bg-black px-sm-4 px-2 py-2 shadow position-relative d-flex align-items-center" style="z-index: 10;">
+                <router-link to="/" class="banner-logo text-stone-0 text-decoration-none" style="cursor: pointer">
+                    <img src="@/assets/img/logo-wide.png" style="height: 65px;" />
                 </router-link>
 
                 <div class="ml-auto mr-n2">

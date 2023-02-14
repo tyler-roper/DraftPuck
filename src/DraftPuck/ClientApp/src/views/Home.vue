@@ -2,12 +2,12 @@
     <div class="d-flex flex-column align-items-center justify-content-center bg-net" style="min-height: 100%; width: 100%;">
         <div class="shadow overflow-hidden p-5" style="border-radius: 20px; background-color: rgba(0,0,0,0.5)">
             <div style="width: 306px;">
-                <div class="mt-n2 text-center">
-                    <span class="fs-1 text-stone-100" style="font-family: 'Rubik Mono One';">DraftPuck</span>
-                    <span class="d-block text-uppercase text-stone-300 fs-6 mt-n2" style="letter-spacing: 1px;">A live hockey drinking game</span>
+                <div class="text-center">
+                    <img src="@/assets/img/logo.png" style="width: 100%;" />
+                    <span class="d-block text-uppercase text-white fs-6 mt-1" style="letter-spacing: 1px;">A live hockey drinking game</span>
                 </div>
                 <template v-if="!showLobbySettings">
-                    <div class="d-flex mt-3 mx-n2">
+                    <div class="d-flex mt-4 mx-n2">
                         <div class="mx-2" style="width: 30%">
                             <span>Lobby Code</span>
                             <b-form-input v-model="code" placeholder="Code" class="font-weight-bold code-input px-3 py-4 text-stone-900" style="width: 100%" maxlength="4"></b-form-input>
@@ -31,7 +31,7 @@
                     </div>
 
                     <div class="text-center">
-                        <button @click="startCreateLobby" class="d-block btn bg-stone-700 w-100 font-weight-bold py-3 text-uppercase" :disabled="isLoading">
+                        <button @click="startCreateLobby" class="d-block btn btn-outline-primary w-100 font-weight-bold py-3 text-uppercase" :disabled="isLoading">
                             <span>Create Lobby</span>
                         </button>
                     </div>
@@ -78,14 +78,17 @@
                     </div>
 
                     <div class="text-center mt-5">
-                        <button @click="createLobby" class="d-block btn bg-primary w-100 font-weight-bold py-3 text-uppercase" :disabled="isLoading">
+                        <button @click="createLobby" class="d-block btn btn-primary w-100 font-weight-bold py-3 text-uppercase" :disabled="isLoading">
                             <span v-if="!isCreatingLobby">Create Lobby</span>
                             <b-spinner v-if="isCreatingLobby" class="m-n2" style="height: 30px; width: 30px;"></b-spinner>
                         </button>
                     </div>
 
-                    <div class="text-center mt-5">
-                        <a role="button" @click="showLobbySettings = false" :disabled="isLoading" class="font-weight-bold">&lt; Back</a>
+                    <div class="text-center mt-3">
+                        <a role="button" @click="showLobbySettings = false" :disabled="isLoading" class="font-weight-bold d-inline-flex">
+                            <i class="fi fi-rr-caret-left d-block mr-1" style="margin-top: -2px"></i>
+                            <span class="d-block mt-n1">Back</span>
+                        </a>
                     </div>
                 </template>
                 <div class="mt-5 d-flex justify-content-between">
@@ -101,7 +104,7 @@
                         <span v-if="!loadedGames" class="d-block text-stone-300 ">Fetching games...</span>
                     </div>
                 </div>
-                <div v-if="showHelp" class="mt-3 p-3 bg-stone-900">
+                <div v-if="showHelp" class="mt-3">
                     <p class="m-0 p-0 lh-2">
                         <strong>DRAFTPUCK</strong> is a drinking game that takes place during live NHL games.<br /><br />
                         The rules are simple: users pick a player from each team. If your player scores, you make someone else drink a beer!<br /><br />

@@ -43,13 +43,13 @@ table.score-table > thead > tr > th:not(:first-child) {
 
 .is-live:not(.is-critical) .score-table > tbody > tr > th:first-child,
 .is-live:not(.is-critical) .score-table > thead > tr > th:first-child {
-    color: #dc3545 !important;
+    color: #ffb100 !important;
 }
 
 .is-live.is-critical .score-table > tbody > tr > th:first-child,
 .is-live.is-critical .score-table > thead > tr > th:first-child {
     color: white !important;
-    background-color: #dc3545 !important;
+    background-color: #ffb100 !important;
     position: relative;
 }
 
@@ -109,7 +109,7 @@ table.score-table > thead > tr > th:not(:first-child) {
 .feed-item.item-type-subtype-6,
 .feed-item.item-type-subtype-7,
 .feed-item.item-type-subtype-11 {
-    background-color: #dc3545;
+    background-color: #ffb100;
     color: white;
 }
 
