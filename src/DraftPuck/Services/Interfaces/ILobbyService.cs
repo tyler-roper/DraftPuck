@@ -25,5 +25,7 @@
         public Task ChangeName(Guid userId, string joinCode, string newName);
 
         public Task RemoveLobbyMember(Guid currentUserId, string joinCode, Guid lobbyMemberId);
+
+        public Task DeleteOldLobbies();
     }
 }

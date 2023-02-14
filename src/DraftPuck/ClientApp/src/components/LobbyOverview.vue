@@ -58,7 +58,7 @@
                     <b-dropdown-item v-if="isLobbyAdmin" role="button" variant="primary" @click="removeLobbyMember(member.id)">Remove</b-dropdown-item>
                 </template>
             </b-dropdown>
-            <div class="p-2" v-if="isLobbyAdmin && !isAddingBot"><a role="button" class="text-uppercase font-weight-bold" @click="showAddBot">+ Add Bot</a></div>
+            <div class="p-2" v-if="isLobbyAdmin && !isAddingBot && bots.length < 10"><a role="button" class="text-uppercase font-weight-bold" @click="showAddBot">+ Add Bot</a></div>
             <div class="p-2 d-flex justify-content-between" v-if="isLobbyAdmin && isAddingBot">
                 <div style="width: 33%;">
                     <b-form-input ref="botNameInput" v-model="botName"></b-form-input>
@@ -193,6 +193,10 @@
 
         get currentUserIsAdmin() {
             return this.lobby.createdBy === this.currentUserId;
+        }
+
+        get bots() {
+            return this.lobby.members.filter(m => m.isBot);
         }
 
         getRandomBotName(): string {

@@ -28,6 +28,7 @@ builder.Services.AddHttpClient<INhlApiService, NhlApiService>(client => client.B
 builder.Services
     .AddDbContext<DraftPuckContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")))
     .AddHostedService<GameCheckerHostedService>()
+    .AddHostedService<LobbyCleanupHostedService>()
     .AddSingleton<IGameCache, GameCache>()
     .AddTransient<IGameService, GameService>()
     .AddTransient<ILobbyService, LobbyService>()

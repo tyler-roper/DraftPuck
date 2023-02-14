@@ -73,7 +73,7 @@
                             </div>
                         </div>
                         <div>
-                            <a role="button" class="d-block text-uppercase font-weight-bold" @click="addBot">Add</a>
+                            <a role="button" v-if="settings.bots.length < maxBots" class="d-block text-uppercase font-weight-bold" @click="addBot">Add</a>
                         </div>
                     </div>
 
@@ -144,6 +144,7 @@
 
     @Component
     export default class Home extends Vue {
+        maxBots = 10;
         name = "";
         code = "";
         showLobbySettings = false;
@@ -234,6 +235,11 @@
 
             if (this.settings.bots.some(b => b.pickStyle === null)) {
                 this.$toast.error("Bots must have a pick style.");
+                return;
+            }
+
+            if (this.settings.bots.length > this.maxBots) {
+                this.$toast.error(`The maximum number of bots is 10.`);
                 return;
             }
 

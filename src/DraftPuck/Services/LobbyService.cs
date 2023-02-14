@@ -237,6 +237,29 @@
             await _lobbyEventService.SendUserRemovedEvent(lobby, lobbyMemberToRemove);
         }
 
+        public async Task DeleteOldLobbies()
+        {
+            var oldLobbies = await _dbContext.Lobbies
+                .Include(l => l.LobbyMembers)
+                    .ThenInclude(lm => lm.LobbyMemberPicks)
+                        .ThenInclude(lmp => lmp.Drinks)
+                .Where(l => l.Created <= DateTime.UtcNow.AddDays(-2))
+                .ToListAsync();
+
+            var members = oldLobbies.SelectMany(l => l.LobbyMembers);
+            var picks = members.SelectMany(lm => lm.LobbyMemberPicks);
+            var drinks = picks.SelectMany(lmp => lmp.Drinks);
+            _dbContext.Drinks.RemoveRange(drinks);
+            _dbContext.LobbyMemberPicks.RemoveRange(picks);
+            _dbContext.LobbyMembers.RemoveRange(members);
+            _dbContext.Lobbies.RemoveRange(oldLobbies);
+
+            var oldLobbyEvents = await _dbContext.LobbyEvents.Where(le => le.Created <= DateTime.UtcNow.AddDays(-2)).ToListAsync();
+            _dbContext.LobbyEvents.RemoveRange(oldLobbyEvents);
+
+            await _dbContext.SaveChangesAsync();
+        }
+
         private async Task<string> RandomString(int length)
         {
             const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
