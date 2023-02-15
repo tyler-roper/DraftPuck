@@ -1,6 +1,6 @@
 ﻿<template>
     <div class="bg-stone-200 text-stone-800 overflow-hidden rounded position-relative" :class="getGameTimeStyling()">
-        <table class="score-table > tbody > tr > w-100">
+        <table class="score-table">
 
             <!-- HEADER -->
             <thead>
@@ -63,7 +63,7 @@
                 <tr>
                     <td colspan="100" class="bg-stone-100 p-0">
                         <div class="d-flex px-3 py-2 footer-bar">
-                            <a v-if="homeRoster.length || awayRoster.length" role="button" class="pt-1 d-flex font-weight-bold uppercase text-decoration-none" @click="showRoster = !showRoster">
+                            <a v-if="homeRoster.length || awayRoster.length" role="button" class="text-stone-900 pt-1 d-flex font-weight-bold uppercase text-decoration-none" @click="showRoster = !showRoster">
                                 <span class="d-block" style="margin-top: -3px;">Rosters</span>
                                 <i v-if="!showRoster" class="d-block mb-n3 fi fi-sr-caret-right"></i>
                                 <i v-if="showRoster" class="d-block mb-n3 fi fi-sr-caret-down"></i>
@@ -90,7 +90,7 @@
                                         <thead>
                                             <tr>
                                                 <th colspan="3">
-                                                    <a v-if="botsHavePicks(team) && isLobbyAdmin" @click="makeBotPicks(team)" role="button" class="text-decoration-none">Make Bot Picks</a>
+                                                    <a v-if="botsHavePicks(team) && isLobbyAdmin" @click="makeBotPicks(team)" role="button" class="text-decoration-none text-blue">Make Bot Picks</a>
                                                 </th>
                                                 <th class="text-right" style="width: 40px;">GP</th>
                                                 <th class="text-right" style="width: 40px;">G</th>
@@ -103,8 +103,8 @@
                                                 <td class="text-right" style="width: 50px;">{{ player.primaryPosition.abbreviation }}</td>
                                                 <td class="text-right" style="width: 40px;">{{ player.primaryNumber }} </td>
                                                 <td>
-                                                    <span class="text-stone-700" :class="{'font-weight-bold': getPickerName(player.id) !== null}">{{ player.fullName }}</span>
-                                                    <a v-if="pickingStarted && getPickerName(player.id) === null && canPickForTeam(team)" role="button" class="text-decoration-none fs-8 font-weight-bold" @click="pick(player.id, team.id)">PICK</a>
+                                                    <span class="text-stone-700" :class="{'font-weight-bold': isCurrentUserPick(player)}">{{ player.fullName }}</span>
+                                                    <a v-if="pickingStarted && getPickerName(player.id) === null && canPickForTeam(team)" role="button" class="text-blue text-decoration-none fs-8 font-weight-bold" @click="pick(player.id, team.id)">PICK</a>
 
                                                     <span v-if="getPickerName(player.id) !== null && !isCurrentUserPick(player)" class="badge badge-blue text-uppercase">
                                                         ({{ getPickerName(player.id) }})

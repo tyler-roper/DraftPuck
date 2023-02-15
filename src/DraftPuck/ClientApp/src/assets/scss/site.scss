@@ -22,6 +22,7 @@ table.score-table > thead > tr > th {
 
 table.score-table {
     height: 100%;
+    width: 100%;
 }
 
 table.score-table > tbody > tr > th,
@@ -43,12 +44,12 @@ table.score-table > thead > tr > th:not(:first-child) {
 
 .is-live:not(.is-critical) .score-table > tbody > tr > th:first-child,
 .is-live:not(.is-critical) .score-table > thead > tr > th:first-child {
-    color: #ffb100 !important;
+    color: map-get($theme-colors, "stone-700") !important;
 }
 
 .is-live.is-critical .score-table > tbody > tr > th:first-child,
 .is-live.is-critical .score-table > thead > tr > th:first-child {
-    color: white !important;
+    color: map-get($theme-colors, "stone-700") !important;
     background-color: #ffb100 !important;
     position: relative;
 }

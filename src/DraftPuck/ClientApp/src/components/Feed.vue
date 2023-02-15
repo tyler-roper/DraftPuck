@@ -137,6 +137,7 @@
                     (item.subType === LobbyEventType.DrinkInvalidated) ||
                     (item.subType === LobbyEventType.DrinkRevoked) ||
                     (item.subType === LobbyEventType.GoalChanged) ||
+                    (item.subType === LobbyEventType.GoalRemoved) ||
                     (item.subType === LobbyEventType.UserRemoved) ||
                     (item.subType === LobbyEventType.UserRejoined);
 

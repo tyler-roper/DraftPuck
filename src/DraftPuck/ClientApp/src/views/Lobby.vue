@@ -492,7 +492,10 @@
         get feedItems() {
             const desiredEventTypes = [EventType.Goal, EventType.PeriodStart, EventType.PeriodEnd, EventType.GameEnd, EventType.Challenge, EventType.Penalty];
             const gameItems = this.games.flatMap(game => game.liveData.plays.allPlays.reduce((items: Array<FeedItem>, play) => {
-                if (desiredEventTypes.includes(play.result.eventTypeId) && play.about.dateTime >= this.lobby.created)
+                const includedInFilters = desiredEventTypes.includes(play.result.eventTypeId);
+                const happenedAfterLobbyStarted = play.about.dateTime >= this.lobby.created;
+                const isShootoutGoal = play.result.eventTypeId === EventType.Goal && play.about.periodType === "SHOOTOUT";
+                if (includedInFilters && happenedAfterLobbyStarted && !isShootoutGoal)
                     return [...items, FeedItem.fromPlay(game.gamePk, game.liveData.linescore.teams, play)];
                 else
                     return items;

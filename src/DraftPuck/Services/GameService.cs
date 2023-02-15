@@ -133,7 +133,10 @@ namespace DraftPuck.Services
 
         private static Dictionary<int, PlayerSummary> GetScorersByEventId(LiveGame game) =>
             game.LiveData.Plays.AllPlays
-            .Where(play => play.Result.EventTypeId == GameEventTypes.Goal && play.Players?.FirstOrDefault(p => p.PlayerType == PlayerTypes.Scorer)?.Player.Id != null)
+            .Where(play => 
+                play.Result.EventTypeId == GameEventTypes.Goal 
+                && play.Players?.FirstOrDefault(p => p.PlayerType == PlayerTypes.Scorer)?.Player.Id != null
+                && play.About?.PeriodType != "SHOOTOUT")
             .DistinctBy(play => play.About.EventId)
             .ToDictionary(k => k.About.EventId, v => new PlayerSummary()
             {
@@ -213,8 +216,6 @@ namespace DraftPuck.Services
 
         private async Task HandleGoalRemoved(long gamePk, int eventId, PlayerSummary scorer)
         {
-            await _lobbyEventService.SendGoalRemovedEvent(gamePk, scorer.Id);
-
             var affectedDrinks = await _dbContext.Drinks
                 .Include(d => d.RecipientLobbyMember)
                 .Include(d => d.LobbyMemberPick)
@@ -228,9 +229,13 @@ namespace DraftPuck.Services
             foreach (var drink in affectedDrinks)
             {
                 if (drink.RecipientLobbyMember != null && !drink.RecipientLobbyMember.IsRemoved)
+                {
+                    await _lobbyEventService.SendGoalRemovedEvent(gamePk, scorer.Id);
                     await _lobbyEventService.SendDrinkInvalidatedEvent(drink.LobbyMemberPick.LobbyMember.Lobby, drink.LobbyMemberPick.LobbyMember, drink.RecipientLobbyMember, gamePk, eventId, scorer.Id);
+                }
                 else if (drink.LobbyMemberPick.IsActive)
                 {
+                    await _lobbyEventService.SendGoalRemovedEvent(gamePk, scorer.Id);
                     await _lobbyEventService.SendDrinkRemovedEvent(drink.LobbyMemberPick.LobbyMember.Lobby, drink.LobbyMemberPick.LobbyMember);
                     _dbContext.Drinks.Remove(drink);
                 }
