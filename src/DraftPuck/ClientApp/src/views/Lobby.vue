@@ -201,7 +201,7 @@
                 await this.getLobby(this.joinCode);
                 this.lastLobbyUpdate = new Date();
 
-                this.selectedDate = format(addHours(this.lobby.created, -10), 'yyyy-MM-dd');
+                this.selectedDate = format(addHours(this.lobby.created, -4), 'yyyy-MM-dd');
 
                 const currentLobbyMember = this.lobby.members.find(m => m.userId === this.currentUserId);
                 const name = currentLobbyMember?.name ?? null;
