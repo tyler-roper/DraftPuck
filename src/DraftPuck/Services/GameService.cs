@@ -254,7 +254,7 @@ namespace DraftPuck.Services
 
         private async Task AddAllScheduledGamesToCache()
         {
-            var schedule = await _nhlApi.GetScheduleAsync(DateTime.UtcNow.AddHours(-10));
+            var schedule = await _nhlApi.GetScheduleAsync(DateTime.UtcNow.AddHours(-4));
             if (!schedule.Dates.Any()) return;
 
             var date = schedule.Dates.First();
