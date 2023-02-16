@@ -85,8 +85,8 @@
 
             <div class="bottom-nav d-flex d-sm-none bg-stone-900 shadow font-weight-bold" v-if="!isLoading">
                 <a role="button" class="text-center p-2 text-white" :class="{ active: isLobbyView }" @click="setView('lobby')">
-                    <i v-if="pendingDrinkCount > 0" class="fi fi-rr-users-alt"></i>
-                    <span v-if="pendingDrinkCount <= 0" class="drink-badge">🚨 {{ pendingDrinkCount }}</span>
+                    <i v-if="pendingDrinkCount <= 0" class="fi fi-rr-users-alt"></i>
+                    <span v-if="pendingDrinkCount > 0" class="drink-badge">🚨 {{ pendingDrinkCount }}</span>
                     <br />
                     <span>LOBBY</span>
 
