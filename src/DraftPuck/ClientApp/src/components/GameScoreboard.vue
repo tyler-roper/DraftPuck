@@ -63,8 +63,8 @@
                 <tr>
                     <td colspan="100" class="bg-stone-100 p-0">
                         <div class="d-flex px-3 py-2 footer-bar">
-                            <a v-if="homeRoster.length || awayRoster.length" role="button" class="text-stone-900 pl-0 pr-0 d-flex font-weight-bold uppercase text-decoration-none" style="border-bottom: 2px solid #1c1917; padding-top: 2px;" @click="showRoster = !showRoster">
-                                <span class="d-block" style="margin-top: -3px; margin-bottom: -5px">Rosters</span>
+                            <a v-if="homeRoster.length || awayRoster.length" role="button" class="text-stone-900 pl-0 pr-0 d-flex font-weight-bold uppercase text-decoration-none" style="align-self: flex-start; border-bottom: 2px solid #1c1917; padding-top: 2px;" @click="showRoster = !showRoster">
+                                <span class="d-block" style="margin-top: -3px; margin-bottom: -3px">Rosters</span>
                                 <i v-if="!showRoster" class="d-block mb-n3 fi fi-sr-caret-right mr-n1"></i>
                                 <i v-if="showRoster" class="d-block mb-n3 fi fi-sr-caret-down mr-n1"></i>
                             </a>
@@ -93,7 +93,13 @@
                                         <thead>
                                             <tr>
                                                 <th colspan="3">
-                                                    <a v-if="botsHavePicks(team) && isLobbyAdmin" @click="makeBotPicks(team)" role="button" class="text-decoration-none text-blue">Make Bot Picks</a>
+                                                    <a v-if="botsHavePicks(team) && isLobbyAdmin" 
+                                                       @click="makeBotPicks(team)" 
+                                                       role="button" 
+                                                       style="height: 14px; line-height: 14px;"
+                                                       class="text-decoration-none btn btn-primary py-0 font-weight-bold text-uppercase px-1 fs-8">
+                                                    Make Bot Picks
+                                                    </a>
                                                 </th>
                                                 <th class="text-right" style="width: 40px;">GP</th>
                                                 <th class="text-right" style="width: 40px;">G</th>
@@ -107,7 +113,13 @@
                                                 <td class="text-right" style="width: 40px;">{{ player.primaryNumber }} </td>
                                                 <td>
                                                     <span class="text-stone-700" :class="{'font-weight-bold': isCurrentUserPick(player)}">{{ player.fullName }}</span>
-                                                    <a v-if="pickingStarted && getPickerName(player.id) === null && canPickForTeam(team)" role="button" class="text-blue text-decoration-none fs-8 font-weight-bold" @click="pick(player.id, team.id)">PICK</a>
+                                                    <a v-if="pickingStarted && getPickerName(player.id) === null && canPickForTeam(team)" 
+                                                       role="button" 
+                                                       class="btn btn-primary py-0 px-1 text-decoration-none fs-8 font-weight-bold" 
+                                                       style="height: 12px; line-height: 12px; margin-top: -1px"
+                                                       @click="pick(player.id, team.id)">
+                                                    PICK
+                                                    </a>
 
                                                     <span v-if="getPickerName(player.id) !== null && !isCurrentUserPick(player)" class="badge badge-blue text-uppercase">
                                                         ({{ getPickerName(player.id) }})
