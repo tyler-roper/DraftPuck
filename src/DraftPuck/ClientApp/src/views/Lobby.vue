@@ -186,7 +186,7 @@
         eventBus = new Vue();
         connection: HubConnection | null = null;
 
-        view: View = "game";
+        view: View = "lobby";
 
         pendingDrinks: Array<LobbyEvent> = [];
         currentDrink: LobbyEvent | null = null;
