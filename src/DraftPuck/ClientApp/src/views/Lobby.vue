@@ -103,7 +103,7 @@
         </div>
 
 
-        <div class="bottom-nav d-flex d-xs-none bg-stone-900 shadow font-weight-bold">
+        <div class="bottom-nav d-flex d-sm-none bg-stone-900 shadow font-weight-bold">
             <a role="button" class="text-center p-2 text-white" :class="{ active: isLobbyView }" @click="setView('lobby')">
                 <i class="fi fi-rr-users-alt"></i><br />
                 <span>LOBBY</span>
