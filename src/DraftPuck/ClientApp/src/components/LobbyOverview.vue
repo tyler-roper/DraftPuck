@@ -7,7 +7,7 @@
             </div>
             <div>
                 <span class="d-block mb-n2">Lobby</span>
-                <a class="text-stone-900 fs-4 font-weight-bold d-block text-uppercase" @click="copyInvite">{{ lobby.joinCode }}</a>
+                <a role="button" class="text-decoration-none text-stone-900 fs-4 font-weight-bold d-block text-uppercase" @click="copyInvite">{{ lobby.joinCode }}</a>
             </div>
             <div class="ml-auto font-weight-bold fs-5">
                 <span> {{ lobby.created | time }}</span>

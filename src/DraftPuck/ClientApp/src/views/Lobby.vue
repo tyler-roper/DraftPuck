@@ -1,7 +1,7 @@
 ﻿<template>
 
     <div class="d-flex overflow-hidden flex-column" style="height: 100%;">
-        <b-modal v-model="showInstructions" title="How To Play" header-class="bg-stone-900" body-class="bg-stone-100 text-stone-900" ok-only >
+        <b-modal v-model="showInstructions" title="How To Play" header-class="bg-stone-900" body-class="bg-stone-100 text-stone-900" ok-only>
             <div>
                 <ol class="ml-0 pl-3">
                     <li>
@@ -50,32 +50,18 @@
         </b-modal>
         <template v-if="!isInvalidLobby">
 
-            <div class="bg-black px-sm-4 px-2 py-2 shadow position-relative d-flex align-items-center" style="z-index: 10;">
+            <div class="bg-stone-900 px-sm-4 px-2 py-2 shadow position-relative d-flex align-items-center" style="z-index: 10;">
                 <router-link to="/" class="banner-logo text-stone-0 text-decoration-none" style="cursor: pointer">
                     <img src="@/assets/img/logo-wide.png" />
                 </router-link>
 
-                <b-link class="d-flex ml-2 pt-1 text-stone-300 font-weight-bold text-decoration-none" role="button" @click="showInstructions = true">
+                <b-link class="d-flex ml-auto pt-1 text-stone-0 font-weight-bold text-decoration-none" role="button" @click="showInstructions = true">
                     <i class="fi fi-rr-question-square d-block ml-4"></i>
-                    <span class="text-uppercase ml-2 d-none d-sm-block" style="margin-top: -2px;">How To Play</span>
+                    <span class="text-uppercase ml-2 d-block" style="margin-top: -2px;">How To Play</span>
                 </b-link>
-
-                <div class="ml-auto mr-n2">
-                    <a v-if="!isLobbyView" role="button" class="mx-2 badge badge-pill bg-stone-600 py-2 px-3 d-sm-none font-weight-bold text-uppercase text-stone-200" style="text-decoration: none !important;" @click="setView('lobby')">
-                        <span>Lobby</span>
-                    </a>
-
-                    <a v-if="!isFeedView" role="button" class="mx-2 badge badge-pill bg-stone-600 py-2 px-3 d-sm-none font-weight-bold text-uppercase text-stone-200" style="text-decoration: none !important;" @click="setView('feed')">
-                        <span>Feed</span>
-                    </a>
-
-                    <a v-if="!isGameView" role="button" class="mx-2 badge badge-pill bg-stone-600 py-2 px-3 d-sm-none font-weight-bold text-uppercase text-stone-200" style="text-decoration: none !important;" @click="setView('game')">
-                        <span>Scores</span>
-                    </a>
-                </div>
             </div>
 
-            <div class="d-flex flex-grow-1 overflow-hidden">
+            <div class="d-flex flex-grow-1 overflow-hidden bg-stone-800">
                 <template v-if="!isLoading">
                     <FullScoreboard class="full-scoreboard flex-grow-1" :eventBus="eventBus" :class="{ 'hide-mobile': !isGameView }" :games="games" style="overflow: auto;"></FullScoreboard>
 
@@ -116,6 +102,21 @@
 
         </div>
 
+
+        <div class="bottom-nav d-flex d-xs-none bg-stone-900 shadow font-weight-bold">
+            <a role="button" class="text-center p-2 text-white" :class="{ active: isLobbyView }" @click="setView('lobby')">
+                <i class="fi fi-rr-users-alt"></i><br />
+                <span>LOBBY</span>
+            </a>
+            <a role="button" class="text-center p-2 text-white" :class="{ active: isFeedView }" @click="setView('feed')">
+                <i class="fi fi-rr-list"></i><br />
+                <span>FEED</span>
+            </a>
+            <a role="button" class="text-center p-2 text-white" :class="{ active: isGameView }" @click="setView('game')">
+                <i class="fi fi-rr-hockey-puck"></i><br />
+                <span>SCORES</span>
+            </a>
+        </div>
     </div>
 </template>
 
@@ -582,5 +583,32 @@
         animation-iteration-count: 2;
         animation-direction: alternate;
         animation-fill-mode:forwards;
+    }
+
+    .bottom-nav {
+        border: 2px solid map-get($theme-colors, "stone-900");
+        box-shadow: 0 0 10px black;
+        position: relative;
+        z-index: 10;
+    }
+
+    .bottom-nav > a {
+        display: block;
+        width: calc(100% / 3);
+        text-decoration: none !important;
+    }
+
+    .bottom-nav > a:not(.active):hover {
+        background-color: map-get($theme-colors, "stone-800") !important;
+    }
+
+    .bottom-nav > a.active {
+        background-color: map-get($theme-colors, "stone-300") !important;
+        color: map-get($theme-colors, "stone-900") !important;
+    }
+
+    .bottom-nav > a:nth-child(2) {
+        border-left: 1px solid map-get($theme-colors, "stone-800");
+        border-right: 1px solid map-get($theme-colors, "stone-800");
     }
 </style>
