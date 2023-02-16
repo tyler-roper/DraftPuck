@@ -85,9 +85,11 @@
 
             <div class="bottom-nav d-flex d-sm-none bg-stone-900 shadow font-weight-bold" v-if="!isLoading">
                 <a role="button" class="text-center p-2 text-white" :class="{ active: isLobbyView }" @click="setView('lobby')">
-                    <i class="fi fi-rr-users-alt"></i><br />
+                    <i v-if="pendingDrinkCount > 0" class="fi fi-rr-users-alt"></i>
+                    <span v-if="pendingDrinkCount <= 0" class="drink-badge">🚨 {{ pendingDrinkCount }}</span>
+                    <br />
                     <span>LOBBY</span>
-                    <span v-if="pendingDrinkCount > 0" class="drink-badge">🚨 {{ pendingDrinkCount }}</span>
+
                 </a>
                 <a role="button" class="text-center p-2 text-white" :class="{ active: isFeedView }" @click="setView('feed')">
                     <i class="fi fi-rr-list"></i><br />
@@ -622,15 +624,9 @@
     }
 
     .drink-badge {
-        display: block;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translateX(27px) translateY(-4px);
+        display: inline-block;
         background-color: map-get($theme-colors, "stone-0");
-        border: 2px solid map-get($theme-colors, "stone-500");
         color: map-get($theme-colors, "stone-900");
-        padding: 2px;
         padding-left: 7px;
         padding-right: 9px;
         border-radius: 20px;
