@@ -42,6 +42,10 @@ table.score-table > thead > tr > th:not(:first-child) {
     border-left: 1px solid rgba(0,0,0,0.02);
 }
 
+.is-live {
+    border: 3px solid map-get($theme-colors, "primary") !important;
+}
+
 .is-live:not(.is-critical) .score-table > tbody > tr > th:first-child,
 .is-live:not(.is-critical) .score-table > thead > tr > th:first-child {
     color: map-get($theme-colors, "stone-700") !important;

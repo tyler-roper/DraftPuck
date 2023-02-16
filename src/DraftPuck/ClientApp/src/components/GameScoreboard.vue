@@ -63,17 +63,20 @@
                 <tr>
                     <td colspan="100" class="bg-stone-100 p-0">
                         <div class="d-flex px-3 py-2 footer-bar">
-                            <a v-if="homeRoster.length || awayRoster.length" role="button" class="text-stone-900 pt-1 d-flex font-weight-bold uppercase text-decoration-none" @click="showRoster = !showRoster">
-                                <span class="d-block" style="margin-top: -3px;">Rosters</span>
-                                <i v-if="!showRoster" class="d-block mb-n3 fi fi-sr-caret-right"></i>
-                                <i v-if="showRoster" class="d-block mb-n3 fi fi-sr-caret-down"></i>
+                            <a v-if="homeRoster.length || awayRoster.length" role="button" class="text-stone-900 pl-0 pr-0 d-flex font-weight-bold uppercase text-decoration-none" style="border-bottom: 2px solid #1c1917; padding-top: 2px;" @click="showRoster = !showRoster">
+                                <span class="d-block" style="margin-top: -3px; margin-bottom: -5px">Rosters</span>
+                                <i v-if="!showRoster" class="d-block mb-n3 fi fi-sr-caret-right mr-n1"></i>
+                                <i v-if="showRoster" class="d-block mb-n3 fi fi-sr-caret-down mr-n1"></i>
                             </a>
 
                             <span v-if="homeRoster.length === 0 && awayRoster.length === 0" class="text-stone-400 small mt-1">
                                 No Rosters Yet
                             </span>
 
-                            <span v-if="pickingStarted && ((canPickForTeam(teams.away) && awayRoster.length > 0) || (canPickForTeam(teams.home) && homeRoster.length > 0))" class="badge badge-danger text-uppercase mt-1 ml-3">Picks Available</span>
+                            <span v-if="pickingStarted && ((canPickForTeam(teams.away) && awayRoster.length > 0) || (canPickForTeam(teams.home) && homeRoster.length > 0))" class="d-flex align-items-center small text-uppercase ml-3" style="margin-top: 2px;">
+                                <span class="d-block mb-n1"><i class="fs-7 fi fi-sr-exclamation text-danger"></i></span>
+                                <span class="d-block mb-n1 ml-1 font-weight-bold">Picks Available</span>
+                            </span>
                             <span v-if="!pickingStarted" class="text-stone-600 small mt-1 mb-n1 ml-3">Picks open @ <strong>{{ pickTime | formattedDate }}</strong></span>
                         </div>
                         <VueSlideToggle :open="showRoster">

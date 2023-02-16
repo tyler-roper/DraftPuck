@@ -61,7 +61,9 @@
                     <b-dropdown-item v-if="isLobbyAdmin" role="button" variant="primary" @click="removeLobbyMember(member.id)">Remove</b-dropdown-item>
                 </template>
             </b-dropdown>
-            <div class="p-2" v-if="isLobbyAdmin && !isAddingBot && bots.length < 10"><a role="button" class="text-uppercase font-weight-bold text-stone-900" @click="showAddBot">+ Add Bot</a></div>
+            <div class="p-2" v-if="isLobbyAdmin && !isAddingBot && bots.length < 10">
+                <button class="btn btn-primary text-uppercase font-weight-bold text-stone-900 py-0 px-1" @click="showAddBot">+ Add Bot</button>
+            </div>
             <div class="p-2 d-flex justify-content-between" v-if="isLobbyAdmin && isAddingBot">
                 <div style="width: 33%;">
                     <b-form-input ref="botNameInput" v-model="botName"></b-form-input>
@@ -70,7 +72,7 @@
                     <b-form-select v-model="botPickStyle" :options="botPickStyles"></b-form-select>
                 </div>
                 <div class="d-flex align-items-center justify-content-between" style="width: 33%;">
-                    <button class="btn btn-blue font-weight-bold" @click="tryAddBot">Add</button>
+                    <button class="btn btn-primary font-weight-bold" @click="tryAddBot">Add</button>
                     <a role="button" class="font-weight-bold text-danger" @click="cancelAddBot">Cancel</a>
                 </div>
             </div>
