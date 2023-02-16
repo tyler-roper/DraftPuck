@@ -79,6 +79,21 @@
                 </div>
             </div>
 
+            <div class="bottom-nav d-flex d-sm-none bg-stone-900 shadow font-weight-bold" v-if="!isLoading">
+                <a role="button" class="text-center p-2 text-white" :class="{ active: isLobbyView }" @click="setView('lobby')">
+                    <i class="fi fi-rr-users-alt"></i><br />
+                    <span>LOBBY</span>
+                </a>
+                <a role="button" class="text-center p-2 text-white" :class="{ active: isFeedView }" @click="setView('feed')">
+                    <i class="fi fi-rr-list"></i><br />
+                    <span>FEED</span>
+                </a>
+                <a role="button" class="text-center p-2 text-white" :class="{ active: isGameView }" @click="setView('game')">
+                    <i class="fi fi-rr-hockey-puck"></i><br />
+                    <span>SCORES</span>
+                </a>
+            </div>
+
         </template>
 
         <template v-if="isInvalidLobby">
@@ -100,22 +115,6 @@
                 </span>
             </span>
 
-        </div>
-
-
-        <div class="bottom-nav d-flex d-sm-none bg-stone-900 shadow font-weight-bold">
-            <a role="button" class="text-center p-2 text-white" :class="{ active: isLobbyView }" @click="setView('lobby')">
-                <i class="fi fi-rr-users-alt"></i><br />
-                <span>LOBBY</span>
-            </a>
-            <a role="button" class="text-center p-2 text-white" :class="{ active: isFeedView }" @click="setView('feed')">
-                <i class="fi fi-rr-list"></i><br />
-                <span>FEED</span>
-            </a>
-            <a role="button" class="text-center p-2 text-white" :class="{ active: isGameView }" @click="setView('game')">
-                <i class="fi fi-rr-hockey-puck"></i><br />
-                <span>SCORES</span>
-            </a>
         </div>
     </div>
 </template>
