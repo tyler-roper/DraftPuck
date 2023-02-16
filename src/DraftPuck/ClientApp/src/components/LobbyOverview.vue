@@ -6,10 +6,13 @@
                 🏒
             </div>
             <div>
-                <span class="d-block mb-n2">Lobby</span>
-                <a role="button" class="text-decoration-none text-stone-900 fs-4 font-weight-bold d-block text-uppercase" @click="copyInvite">{{ lobby.joinCode }}</a>
+                <span class="d-block mb-n2">Code</span>
+                <div class="text-decoration-none text-stone-900 d-flex align-items-center">
+                    <span class="font-weight-bold fs-4 text-uppercase">{{ lobby.joinCode }}</span>
+                    <button class="d-block btn btn-primary px-1 py-0 ml-2 text-uppercase font-weight-bold" @click="copyInvite">Invite</button>
+                </div>
             </div>
-            <div class="ml-auto font-weight-bold fs-5">
+            <div class="ml-auto font-weight-bold">
                 <span> {{ lobby.created | time }}</span>
             </div>
             <!--<div class="ml-auto" v-if="currentUserIsAdmin">
@@ -150,7 +153,7 @@
         async copyInvite() {
             try {
                 await navigator.clipboard.writeText(`Join my DRAFTPUCK lobby! Code: ${this.lobby.joinCode}\n\nhttps://draftpuck.com/lobby/${this.lobby.joinCode}`);
-                this.$toast.success("Copied invite to clipboard!");
+                this.$toast.success("Copied invite to clipboard!", { position: "top" });
             } catch ($e) {
                 this.$toast.error('Cannot copy');
             }
