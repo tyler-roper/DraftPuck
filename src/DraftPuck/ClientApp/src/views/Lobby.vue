@@ -299,7 +299,7 @@
         async connectToEventSource() {
             const connection = new signalR.HubConnectionBuilder()
                 .withUrl('/hub', signalR.HttpTransportType.WebSockets)
-                .configureLogging(signalR.LogLevel.Trace)
+                .configureLogging(signalR.LogLevel.Error)
                 .withAutomaticReconnect()
                 .build();
 
