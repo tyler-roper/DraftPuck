@@ -325,9 +325,7 @@
         handleDrinkAnimationQueue() {
             if (this.pendingDrinks.length === 0) return;
             this.currentDrink = this.pendingDrinks[0];
-
-            if (this.notificationPermissionsGranted)
-                new Notification('🍺 Drink!', { body: `Courtesy of ${this.getSenderNameByLobbyEvent(this.currentDrink)}` });
+            this.sendNotification('🍺 Drink!', { body: `Courtesy of ${this.getSenderNameByLobbyEvent(this.currentDrink)}` });
 
             setTimeout(() => {
                 this.pendingDrinks.splice(0, 1);
@@ -482,12 +480,24 @@
             if (this.notificationPermissionsGranted) {
                 const players = this.games.flatMap(g => Object.values(g.gameData.players));
                 const player = players.find(p => p.id === lobbyEvent.playerId);
+
+                
                 if (player) {
-                    new Notification('🚨 Give out a drink!', { body: `${player.fullName} shoots and scores!` });
+                    this.sendNotification('🚨 Give out a drink!', { body: `${player.fullName} shoots and scores!` });
                 } else {
-                    new Notification('🚨 Give out a drink!');
+                    this.sendNotification('🚨 Give out a drink!');
                 }
             }
+        }
+
+        sendNotification(text: string, options: {} | null = null) {
+            if (!('Notification' in window)) return;
+            if (!this.notificationPermissionsGranted) return;
+
+            if (options)
+                new Notification(text, options);
+            else
+                new Notification(text);
         }
 
         //COMPUTED

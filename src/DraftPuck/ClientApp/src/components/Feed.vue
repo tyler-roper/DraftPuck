@@ -21,9 +21,12 @@
                 <div class="font-weight-bold text-uppercase text-center border py-2 bg-stone-0" style="border-bottom: none !important;">Feed Settings</div>
                 <div class="pt-4 px-4">
                     <span class="d-block fs-6 font-weight-bold">Push Notifications</span>
-                    <div class="ml-3">
+                    <div class="ml-3" v-if="notificationsSupported">
                         <button v-if="!notificationPermissionsGranted" @click="requestNotificationPermissions" class="btn btn-primary font-weight-bold text-uppercase">Enable Notifications</button>
                         <span v-if="notificationPermissionsGranted"><strong>You've enabled push notifications!</strong><br />You can disable them through your browser.</span>
+                    </div>
+                    <div class="ml-3" v-if="!notificationsSupported">
+                        Sorry, your browser does not support push notifications.
                     </div>
                 </div>
                 <div class="p-4 fs-6">
@@ -127,7 +130,8 @@
 
         lobby!: Lobby;
 
-        notificationPermissionsGranted = Notification.permission === "granted";
+        notificationsSupported = 'Notification' in window;
+        notificationPermissionsGranted = this.notificationsSupported && Notification.permission === "granted";
 
         get filteredItems() {
             return this.items.filter((item, idx, array) => {
