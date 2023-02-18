@@ -53,7 +53,8 @@ export default {
                 id: "",
                 botPickStyle: args.botPickStyle,
                 isBot: true,
-                name: args.name
+                name: args.name,
+                picks: []
             });
         }
     },
