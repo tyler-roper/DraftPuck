@@ -58,8 +58,7 @@ app
     {
         routes.MapRoute(name: "default", template: "{controller=App}/{action=Index}/{id?}");
         routes.MapSpaFallbackRoute("spa-routes", new { controller = "App", action = "Index" });
-    })
-    .UseAuthentication();
+    });
 
 if (app.Environment.IsDevelopment())
     app.UseSpa(spa => spa.UseProxyToSpaDevelopmentServer("https://localhost:17010"));

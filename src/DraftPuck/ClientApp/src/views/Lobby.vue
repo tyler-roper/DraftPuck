@@ -197,8 +197,6 @@
         pendingDrinks: Array<LobbyEvent> = [];
         currentDrink: LobbyEvent | null = null;
 
-        notificationPermissionsGranted = false;
-
         @Ref('overview') overview!: LobbyOverview;
 
         //METHODS
@@ -217,6 +215,7 @@
                 
                 if (!currentLobbyMember) {
                     this.$router.push({ name: 'Home' });
+                    return;
                 }
 
                 await this.getLobbyEvents(this.lobby.id);
@@ -224,16 +223,12 @@
                 await this.setGames();
 
                 this.mappedLobbyEvents = this.lobbyEvents.map(evt => this.replaceTemplatedStrings(evt));
+                this.isLoading = false;
             } catch (e) {
                 console.error(e);
                 this.isInvalidLobby = true;
-                return;
-            } finally {
                 this.isLoading = false;
             }
-
-            const permission = await Notification.requestPermission();
-            this.notificationPermissionsGranted = permission === 'granted';
         }
 
         setView(view: View) {
@@ -303,8 +298,8 @@
 
         async connectToEventSource() {
             const connection = new signalR.HubConnectionBuilder()
-                .withUrl('/hub', signalR.HttpTransportType.ServerSentEvents)
-                .configureLogging(signalR.LogLevel.Error)
+                .withUrl('/hub', signalR.HttpTransportType.WebSockets)
+                .configureLogging(signalR.LogLevel.Trace)
                 .withAutomaticReconnect()
                 .build();
 
@@ -550,6 +545,10 @@
 
         get pendingDrinkCount() {
             return this.currentLobbyMember?.picks.flatMap(p => p.drinks.filter(d => d.recipientLobbyMemberId === null)).length ?? 0;
+        }
+
+        get notificationPermissionsGranted() {
+            return Notification.permission === "granted";
         }
     }
 </script>

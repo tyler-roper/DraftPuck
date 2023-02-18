@@ -19,6 +19,13 @@
         <div class="d-flex flex-column-reverse flex-grow-1" style="justify-content: flex-end">
             <div v-if="show == 'settings'" class="flex-grow-1 bg-stone-100">
                 <div class="font-weight-bold text-uppercase text-center border py-2 bg-stone-0" style="border-bottom: none !important;">Feed Settings</div>
+                <div class="pt-4 px-4">
+                    <span class="d-block fs-6 font-weight-bold">Push Notifications</span>
+                    <div class="ml-3">
+                        <button v-if="!notificationPermissionsGranted" @click="requestNotificationPermissions" class="btn btn-primary font-weight-bold text-uppercase">Enable Notifications</button>
+                        <span v-if="notificationPermissionsGranted"><strong>You've enabled push notifications!</strong><br />You can disable them through your browser.</span>
+                    </div>
+                </div>
                 <div class="p-4 fs-6">
                     <div class="font-weight-bold">
                         <span>Game Events</span>
@@ -120,6 +127,8 @@
 
         lobby!: Lobby;
 
+        notificationPermissionsGranted = Notification.permission === "granted";
+
         get filteredItems() {
             return this.items.filter((item, idx, array) => {
                 const includedInFilters =
@@ -162,6 +171,11 @@
             showDrinkAwarded: true,
             showDrinkAssigned: true
         };
+
+        async requestNotificationPermissions() {
+            const request = await Notification.requestPermission();
+            this.notificationPermissionsGranted = request === "granted";
+        }
 
         created() {
             this.getFilters();
@@ -265,6 +279,8 @@
                 this.filters.showDrinkAwarded &&
                 this.filters.showDrinkAssigned
         }
+
+        
     }
 </script>
 
