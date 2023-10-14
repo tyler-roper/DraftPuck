@@ -44,6 +44,9 @@ namespace DraftPuck.Services
         public async Task SendDrinkRemovedEvent(Lobby lobby, LobbyMember lobbyMember)
             => await NewLobbyEvent(lobby.Id, lobby.JoinCode, LobbyEventType.DrinkRevoked, lobbyMemberId: lobbyMember.Id);
 
+        public async Task Broadcast(Lobby lobby, string message)
+            => await NewLobbyEvent(lobby.Id, lobby.JoinCode, LobbyEventType.Broadcast, title: "Broadcast", text: message);
+
         public async Task SendGoalChangedEvent(long gamePk, long newPlayerId, long oldPlayerId, int teamId)
             => await NewGlobalEvent(LobbyEventType.GoalChanged, playerId: newPlayerId, player2Id: oldPlayerId, gamePk: gamePk, teamId: teamId);
 

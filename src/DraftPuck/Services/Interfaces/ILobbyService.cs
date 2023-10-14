@@ -27,5 +27,7 @@
         public Task RemoveLobbyMember(Guid currentUserId, string joinCode, Guid lobbyMemberId);
 
         public Task DeleteOldLobbies();
+
+        public Task Broadcast(string joinCode, string message);
     }
 }

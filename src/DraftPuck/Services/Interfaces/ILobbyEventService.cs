@@ -23,5 +23,7 @@
         public Task SendGoalChangedEvent(long gamePk, long newPlayerId, long oldPlayerId, int teamId);
 
         public Task SendGoalRemovedEvent(long gamePk, long playerId);
+
+        public Task Broadcast(Lobby lobby, string message);
     }
 }

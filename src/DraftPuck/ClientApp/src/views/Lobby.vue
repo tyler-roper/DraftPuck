@@ -212,7 +212,7 @@
                 const name = currentLobbyMember?.name ?? null;
 
                 localStorage.setItem('latestLobby', JSON.stringify({ joinCode: this.lobby.joinCode, name }))
-                
+
                 if (!currentLobbyMember) {
                     this.$router.push({ name: 'Home' });
                     return;
@@ -298,7 +298,7 @@
 
         async connectToEventSource() {
             const connection = new signalR.HubConnectionBuilder()
-                .withUrl('/hub', signalR.HttpTransportType.WebSockets)
+                .withUrl('/hub', signalR.HttpTransportType.LongPolling)
                 .configureLogging(signalR.LogLevel.Error)
                 .withAutomaticReconnect()
                 .build();

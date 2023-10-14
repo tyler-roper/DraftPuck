@@ -13,6 +13,7 @@
         GoalChanged,
         GoalRemoved,
         UserRejoined,
-        UserRemoved
+        UserRemoved,
+        Broadcast
     }
 }

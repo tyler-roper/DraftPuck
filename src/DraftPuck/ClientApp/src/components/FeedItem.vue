@@ -80,6 +80,7 @@
                 [LobbyEventType.DrinkInvalidated]: 'fi-rr-trash',
                 [LobbyEventType.GoalRemoved]: "fi-sr-cross-circle",
                 [LobbyEventType.UserRemoved]: "fi-sr-user-delete",
+                [LobbyEventType.Broadcast]: "fi-sr-megaphone"
             }
 
             return icons[this.item.subType];

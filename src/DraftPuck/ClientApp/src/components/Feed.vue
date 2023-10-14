@@ -152,7 +152,8 @@
                     (item.subType === LobbyEventType.GoalChanged) ||
                     (item.subType === LobbyEventType.GoalRemoved) ||
                     (item.subType === LobbyEventType.UserRemoved) ||
-                    (item.subType === LobbyEventType.UserRejoined);
+                    (item.subType === LobbyEventType.UserRejoined) ||
+                    (item.subType === LobbyEventType.Broadcast);
 
                 const isDuplicate = array[idx+1] && (item.subType === EventType.PeriodEnd && array[idx + 1].subType === EventType.GameEnd && array[idx + 1].gamePk === item.gamePk);
 

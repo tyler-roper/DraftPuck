@@ -164,5 +164,28 @@
                 return Conflict(ex.Message);
             }
         }
+
+        [HttpPost("{code}/broadcast")]
+        public async Task<IActionResult> Broadcast(string code, Broadcast broadcast)
+        {
+            try
+            {
+                await _lobbyService.Broadcast(code, broadcast.Message);
+                return NoContent();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(ex.Message);
+            }
+        }
+    }
+
+    public class Broadcast
+    {
+        public string Message { get; set; } = null!;
     }
 }

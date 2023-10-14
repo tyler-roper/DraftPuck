@@ -260,6 +260,14 @@
             await _dbContext.SaveChangesAsync();
         }
 
+        public async Task Broadcast(string joinCode, string message)
+        {
+            var lobby = await GetLobby(joinCode);
+            if (lobby == null) throw new KeyNotFoundException("Lobby not found.");
+
+            await _lobbyEventService.Broadcast(lobby, message);
+        }
+
         private async Task<string> RandomString(int length)
         {
             const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
