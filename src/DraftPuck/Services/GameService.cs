@@ -46,7 +46,7 @@ namespace DraftPuck.Services
         private async Task UpdateGame(LiveGame game)
         {
             if (!ShouldUpdateGame(game)) return;
-            var scorersBeforeUpdate = GetScorersByEventId(game);
+            var goalsBeforeUpdate = GetGoalSummaries(game);
             var result = await _nhlApi.GetPatchAsync(game.GamePk, game.MetaData.TimeStamp);
 
             if (result.Type == JTokenType.Array)
@@ -91,58 +91,71 @@ namespace DraftPuck.Services
                         });
                     }
                 }
-            } else if (result.Type == JTokenType.Object)
+            }
+            else if (result.Type == JTokenType.Object)
             {
                 game = result.ToObject<LiveGame>();
             }
 
             _gameCache.UpdateGame(game);
 
-            var scorersAfterUpdate = GetScorersByEventId(game);
+            var goalsAfterUpdate = GetGoalSummaries(game);
 
-            foreach (var scorerAfterUpdate in scorersAfterUpdate)
+            foreach (var goalAfterUpdate in goalsAfterUpdate)
             {
-                var isNewGoal = !scorersBeforeUpdate.ContainsKey(scorerAfterUpdate.Key);
-                var newScoringPlay = game.LiveData.Plays.AllPlays.First(p => p.About.EventId == scorerAfterUpdate.Key);
+                var goalDidntChange = goalsBeforeUpdate.Any(kvp => kvp.Value.IsSameGoal(goalAfterUpdate.Value));
+                if (goalDidntChange) continue;
+
+                var isNewGoal = !goalsBeforeUpdate.ContainsKey(goalAfterUpdate.Key);
+                var newScoringPlay = game.LiveData.Plays.AllPlays.First(p => p.About.EventId == goalAfterUpdate.Key);
+
                 if (isNewGoal)
                 {
                     await HandleNewScoringPlay(game.GamePk, newScoringPlay);
+                    continue;
                 }
-                else
-                {
-                    var oldScorer = scorersBeforeUpdate[scorerAfterUpdate.Key];
-                    var newScorer = scorerAfterUpdate.Value;
 
-                    if (oldScorer.Id != newScorer.Id)
-                    {
-                        await HandleScorerChange(game.GamePk, newScoringPlay, newScorer, oldScorer);
-                        await HandleNewScoringPlay(game.GamePk, newScoringPlay);
-                    }
+                var oldScorer = goalsBeforeUpdate[goalAfterUpdate.Key].Player;
+                var newScorer = goalAfterUpdate.Value.Player;
+                var isScoringChange = oldScorer.Id != newScorer.Id;
+
+                if (isScoringChange)
+                {
+                    await HandleScorerChange(game.GamePk, newScoringPlay, newScorer, oldScorer);
+                    await HandleNewScoringPlay(game.GamePk, newScoringPlay);
+                    continue;
                 }
             }
 
-            foreach (var scorerBeforeUpdate in scorersBeforeUpdate)
+            foreach (var goalBeforeUpdate in goalsBeforeUpdate)
             {
-                var wasRemoved = !scorersAfterUpdate.ContainsKey(scorerBeforeUpdate.Key);
+                var goalDidntChange = goalsAfterUpdate.Any(kvp => kvp.Value.IsSameGoal(goalBeforeUpdate.Value));
+                if (goalDidntChange) return;
+
+                var wasRemoved = !goalsAfterUpdate.ContainsKey(goalBeforeUpdate.Key);
                 if (!wasRemoved) continue;
 
-                var scorer = scorerBeforeUpdate.Value;
-                await HandleGoalRemoved(game.GamePk, scorerBeforeUpdate.Key, scorer);
+                var scorer = goalBeforeUpdate.Value.Player;
+                await HandleGoalRemoved(game.GamePk, goalBeforeUpdate.Key, scorer);
             }
         }
 
-        private static Dictionary<int, PlayerSummary> GetScorersByEventId(LiveGame game) =>
+        private static Dictionary<int, GoalSummary> GetGoalSummaries(LiveGame game) =>
             game.LiveData.Plays.AllPlays
-            .Where(play => 
-                play.Result.EventTypeId == GameEventTypes.Goal 
+            .Where(play =>
+                play.Result.EventTypeId == GameEventTypes.Goal
                 && play.Players?.FirstOrDefault(p => p.PlayerType == PlayerTypes.Scorer)?.Player.Id != null
                 && play.About?.PeriodType != "SHOOTOUT")
             .DistinctBy(play => play.About.EventId)
-            .ToDictionary(k => k.About.EventId, v => new PlayerSummary()
+            .ToDictionary(k => k.About.EventId, v => new GoalSummary()
             {
-                Id = v.Players.First(p => p.PlayerType == PlayerTypes.Scorer).Player.Id,
-                FullName = v.Players.First(p => p.PlayerType == PlayerTypes.Scorer).Player.FullName,
-                Link = v.Players.First(p => p.PlayerType == PlayerTypes.Scorer).Player.Link
+                Player = new PlayerSummary()
+                {
+                    Id = v.Players.First(p => p.PlayerType == PlayerTypes.Scorer).Player.Id,
+                    FullName = v.Players.First(p => p.PlayerType == PlayerTypes.Scorer).Player.FullName,
+                    Link = v.Players.First(p => p.PlayerType == PlayerTypes.Scorer).Player.Link
+                },
+                PeriodTime = v.About.PeriodTime
             });
 
         private async Task HandleNewScoringPlay(long gamePk, Play play)
@@ -201,7 +214,8 @@ namespace DraftPuck.Services
 
             if (!affectedDrinks.Any()) return;
 
-            foreach (var drink in affectedDrinks) {
+            foreach (var drink in affectedDrinks)
+            {
                 if (drink.RecipientLobbyMember != null && !drink.RecipientLobbyMember.IsRemoved)
                     await _lobbyEventService.SendDrinkInvalidatedEvent(drink.LobbyMemberPick.LobbyMember.Lobby, drink.LobbyMemberPick.LobbyMember, drink.RecipientLobbyMember, gamePk, play.About.EventId, oldScorer.Id);
                 else if (drink.LobbyMemberPick.IsActive)
