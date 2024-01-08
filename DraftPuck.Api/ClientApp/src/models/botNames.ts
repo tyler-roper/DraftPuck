@@ -1,0 +1,31 @@
+﻿const BotNames: Array<string> = [
+  'Grimace',
+  'Chunk',
+  'Harbin',
+  'Binky',
+  'Roboto Luongo',
+  'Botwick',
+  'Gary Bottman',
+  'A.I. Parenteau',
+  'Bryan Bottier',
+  'Ryan Getzass',
+  'Cal Clutterbot',
+  'Ron Chugnutt',
+  'Mario Lebrew',
+  'Orrs Light',
+  'Magnum P Ice',
+  'Toe Dragon',
+  'Daft Puck',
+  'Moby Deke',
+  'Bender',
+  'Buzzed Lightbeer',
+  'Hattrick Swayze',
+  'Jagrbomb',
+  'Easton Fection',
+  'Matt Damon',
+  'Teemu Salami',
+  'Fussy Pucker',
+  'Botch Goring'
+]
+
+export default BotNames
