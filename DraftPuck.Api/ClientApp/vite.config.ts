@@ -4,7 +4,6 @@ import vue from '@vitejs/plugin-vue'
 import path, { resolve } from 'path'
 import move from './scripts/vite-plugin-move'
 
-// https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const isDev = mode === 'debug'
   const fileNamePattern = !isDev ? '[name]-[hash]' : '[name]'
@@ -24,10 +23,10 @@ export default defineConfig(({ mode }) => {
       host: 'localhost',
       port: 17010,
       watch: { usePolling: false },
-      https: {
-        pfx: path.resolve(process.env.USERPROFILE!, '.aspnet/https/Casknotes.pfx'),
-        passphrase: 'e20c46ff-c901-483a-9d65-3185c16eb8b1'
-      },
+      // https: {
+      //   pfx: path.resolve(process.env.USERPROFILE!, '.aspnet/https/Casknotes.pfx'),
+      //   passphrase: 'e20c46ff-c901-483a-9d65-3185c16eb8b1'
+      // },
       proxy: {
         '/api': {
           target: 'https://localhost:17000',

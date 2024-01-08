@@ -1,3 +1,0 @@
-interface Content {
-    link: string;
-}
