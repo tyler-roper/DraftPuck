@@ -34,4 +34,4 @@ ENV ASPNETCORE_URLS ${ASPNETCORE_URLS:-http://+:17000/}
 
 EXPOSE 17000 
 
-ENTRYPOINT ["dotnet", "DraftPuck.dll"]
+ENTRYPOINT ["dotnet", "DraftPuck.Api.dll"]
