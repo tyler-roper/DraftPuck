@@ -47,6 +47,7 @@ jobs:
         uses: azure/login@v1
         with:
           creds: ${{ secrets.BREWPUCK_AZURE_CREDENTIALS }}
+          allow-no-subscriptions: true
 
       - name: Deploy to containerapp
         uses: azure/CLI@v1

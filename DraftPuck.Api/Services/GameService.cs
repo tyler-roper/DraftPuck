@@ -252,7 +252,6 @@ namespace DraftPuck.Api.Services
                     continue;
                 }
 
-                var latePuckDropModifier = TimeSpan.FromMinutes(10);
                 var fullPeriodsCompleted = 0;
                 var fullIntermissionsCompleted = 0;
                 var shortPeriodsCompleted = 0;
@@ -271,11 +270,13 @@ namespace DraftPuck.Api.Services
                     shortIntermissionsCompleted = Math.Max(play.Period - 3, 0);
                 }
 
+                var latePuckDropModifier = TimeSpan.FromMinutes(10);
                 var periodDurations = TimeSpan.FromMinutes((fullPeriodsCompleted * FULL_PERIOD_DURATION) + (shortPeriodsCompleted * SHORT_PERIOD_DURATION));
                 var intermissionDurations = TimeSpan.FromMinutes((fullIntermissionsCompleted * FULL_INTERMISSION_DURATION) + (shortIntermissionsCompleted * SHORT_INTERMISSION_DURATION));
                 var periodParts = play.TimeInPeriod.Split(':').Select(int.Parse).ToList();
                 var periodDuration = TimeSpan.FromMinutes(periodParts[0]) + TimeSpan.FromSeconds(periodParts[1]);
-                var offset = periodDurations + intermissionDurations + periodDuration;
+
+                var offset = latePuckDropModifier + periodDurations + intermissionDurations + periodDuration;
 
                 play.DateTime = updatedGame.DateTime.Add(offset);
             }
