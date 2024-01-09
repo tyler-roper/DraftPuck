@@ -29,9 +29,7 @@ FROM base AS final
 WORKDIR /opt/app
 COPY --from=build /app/publish .
 
-ARG ASPNETCORE_URLS
-ENV ASPNETCORE_URLS ${ASPNETCORE_URLS:-http://+:17000/}
-
-EXPOSE 17000 
+ENV ASPNETCORE_URLS http://+:17000/
+EXPOSE 17000
 
 ENTRYPOINT ["dotnet", "DraftPuck.Api.dll"]
