@@ -57,6 +57,8 @@ namespace DraftPuck.Api.Services
 
             updatedGame.HomeTeam.Roster = existingHomeRoster;
             updatedGame.AwayTeam.Roster = existingAwayRoster;
+            cachedGame.HomeTeam.Roster = existingHomeRoster;
+            cachedGame.AwayTeam.Roster = existingAwayRoster;
 
             SetPlayDateTimes(cachedGame, updatedGame);
 
