@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import LobbyEventType from '@/enums/lobbyEventType'
-import type FeedItem from '@/models/feedItem'
+import FeedItem from '@/models/feedItem'
 import { useLobbyStore } from '@/stores/lobby'
 import { storeToRefs } from 'pinia'
 import { ref, computed } from 'vue'
@@ -29,7 +29,7 @@ const lobbyStore = useLobbyStore()
 const { lobby } = storeToRefs(lobbyStore)
 const notificationPermissionsGranted = ref(isNotificationsSupported && Notification.permission === 'granted')
 const currentView = ref<View>('feed')
-const filters = ref({
+const filters = ref<{ [k: string]: boolean }>({
   showGoals: true,
   showPenalties: true,
   showPeriodStarts: true,
@@ -43,35 +43,38 @@ const filters = ref({
   showDrinkAssigned: true
 })
 
+const gameEventFilterLookup = ref({
+  showGoals: PlayType.Goal,
+  showPenalties: PlayType.Penalty,
+  showPeriodStarts: PlayType.PeriodStart,
+  showPeriodEnds: PlayType.PeriodEnd,
+  showChallenges: PlayType.Challenge,
+  showGameEnds: PlayType.GameEnd,
+});
+
+const lobbyEventFilterLookup = ref({
+  showUserJoin: LobbyEventType.UserJoined,
+  showNameChange: LobbyEventType.UserNameChanged,
+  showPicks: LobbyEventType.NewPick,
+  showDrinkAwarded: LobbyEventType.DrinkAwarded,
+  showDrinkAssigned: LobbyEventType.DrinkAssigned
+});
+
 //computed
 const filteredItems = computed(() => {
   return props.items.filter((item, idx, array) => {
-    
-    const includedInFilters =
-      (item.type === FeedItemType.GameEvent && item.subType === PlayType.Goal && filters.value.showGoals) ||
-      (item.type === FeedItemType.GameEvent && item.subType === PlayType.Penalty && filters.value.showPenalties) ||
-      (item.type === FeedItemType.GameEvent && item.subType === PlayType.PeriodStart && filters.value.showPeriodStarts) ||
-      (item.type === FeedItemType.GameEvent && item.subType === PlayType.PeriodEnd && filters.value.showPeriodEnds) ||
-      (item.type === FeedItemType.GameEvent && item.subType === PlayType.Challenge && filters.value.showChallenges) ||
-      (item.type === FeedItemType.GameEvent && item.subType === PlayType.GameEnd && filters.value.showGameEnds) ||
-      (item.type === FeedItemType.LobbyEvent && item.subType === LobbyEventType.UserJoined && filters.value.showUserJoin) ||
-      (item.type === FeedItemType.LobbyEvent && item.subType === LobbyEventType.UserNameChanged && filters.value.showNameChange) ||
-      (item.type === FeedItemType.LobbyEvent && item.subType === LobbyEventType.NewPick && filters.value.showPicks) ||
-      (item.type === FeedItemType.LobbyEvent && item.subType === LobbyEventType.DrinkAwarded && filters.value.showDrinkAwarded) ||
-      (item.type === FeedItemType.LobbyEvent && item.subType === LobbyEventType.DrinkAssigned && filters.value.showDrinkAssigned) ||
-      item.type === FeedItemType.LobbyEvent && item.subType === LobbyEventType.PickRemoved ||
-      item.type === FeedItemType.LobbyEvent && item.subType === LobbyEventType.DrinkInvalidated ||
-      item.type === FeedItemType.LobbyEvent && item.subType === LobbyEventType.DrinkRevoked ||
-      item.type === FeedItemType.LobbyEvent && item.subType === LobbyEventType.GoalChanged ||
-      item.type === FeedItemType.LobbyEvent && item.subType === LobbyEventType.GoalRemoved ||
-      item.type === FeedItemType.LobbyEvent && item.subType === LobbyEventType.UserRemoved ||
-      item.type === FeedItemType.LobbyEvent && item.subType === LobbyEventType.UserRejoined ||
-      item.type === FeedItemType.LobbyEvent && item.subType === LobbyEventType.Broadcast
+
+    const relevantFilterLookups = item.type === FeedItemType.GameEvent
+      ? gameEventFilterLookup.value
+      : lobbyEventFilterLookup.value;
+
+    const filterLookup = Object.entries(relevantFilterLookups).find(([_key,value]) => value === item.subType);
+    const shouldShow = filterLookup ? filters.value[filterLookup[0]] : true;
 
     const isDuplicate =
       array[idx + 1] && item.subType === PlayType.PeriodEnd && array[idx + 1].subType === PlayType.GameEnd && array[idx + 1].gameId === item.gameId
 
-    return includedInFilters && !isDuplicate
+    return shouldShow && !isDuplicate
   })}
 )
 
@@ -118,7 +121,6 @@ function initializeFilters() {
 }
 
 function saveFiltersToLocalStorage() {
-  console.log("SET ITEM")
   localStorage.setItem('feedFilters', JSON.stringify(filters.value))
 }
 
