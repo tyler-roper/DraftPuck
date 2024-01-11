@@ -205,9 +205,12 @@ function tryMoveNext() {
             </div>
 
             <div class="mt-3 col-12">
-              <button @click="joinLobby" class="d-block btn btn-primary w-100 fw-bold py-3 text-uppercase" :disabled="isLoading">
+              <button @click="joinLobby" class="d-block btn btn-primary w-100 fw-bold py-3 text-uppercase" :disabled="isJoiningLobby">
                 <span v-if="!isJoiningLobby">Join Lobby</span>
-                <b-spinner v-if="isJoiningLobby" class="m-n2" style="height: 30px; width: 30px"></b-spinner>
+                <span v-if="isJoiningLobby">
+                  <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                  <span class="visually-hidden" role="status">Loading...</span>
+                </span>
               </button>
             </div>
           </div>
@@ -275,9 +278,12 @@ function tryMoveNext() {
           </div>
 
           <div class="text-center mt-4">
-            <button @click="createLobby" class="d-block btn btn-primary w-100 fw-bold py-3 text-uppercase" :disabled="isLoading">
+            <button @click="createLobby" class="d-block btn btn-primary w-100 fw-bold py-3 text-uppercase" :disabled="isCreatingLobby">
               <span v-if="!isCreatingLobby">Create Lobby</span>
-              <b-spinner v-if="isCreatingLobby" class="m-n2" style="height: 30px; width: 30px"></b-spinner>
+              <span v-if="isCreatingLobby">
+                  <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                  <span class="visually-hidden" role="status">Loading...</span>
+                </span>
             </button>
           </div>
 
