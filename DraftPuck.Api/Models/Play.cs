@@ -11,4 +11,7 @@ public class Play
     public PlayType Type { get; set; }
     public int? PrimaryPlayerId { get; set; }
     public int? PrimaryTeamId { get; set; }
+    public int HomeScore { get; set; }
+    public int AwayScore { get; set; }
+    public string? Penalty { get; set; }
 }

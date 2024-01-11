@@ -15,7 +15,7 @@ public class Game
     public PeriodType PeriodType { get; set; }
     public int MinutesRemainingInPeriod { get; set; }
     public int SecondsRemainingInPeriod { get; set; }
-    public string TimeRemainingInPeriod => $"{MinutesRemainingInPeriod:0}:{SecondsRemainingInPeriod:00}";
+    public string TimeRemainingInPeriod => MinutesRemainingInPeriod > 0 || SecondsRemainingInPeriod > 0 ? $"{MinutesRemainingInPeriod:0}:{SecondsRemainingInPeriod:00}" : "End";
     public List<PeriodSummary> GoalsByPeriod { get; set; } = new();
     public List<PlayerSummary> PlayerSummaries { get; set; } = new();
 }

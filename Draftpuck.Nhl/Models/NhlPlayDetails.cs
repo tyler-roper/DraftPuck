@@ -9,7 +9,7 @@
         public int YCoord { get; set; }
         public string ZoneCode { get; set; } = null!;
         public string TypeCode { get; set; } = null!;
-        public string DescKey { get; set; } = null!;
+        public string? DescKey { get; set; }
         public int? Duration { get; set; }
         public int? CommittedByPlayerId { get; set; }
         public int? DrawnByPlayerId { get; set; }
@@ -27,6 +27,7 @@
         public string SecondaryReason { get; set; } = null!;
         public int HomeScore { get; set; }
         public int AwayScore { get; set; }
+        public int? ServedByPlayerId { get; set; }
     }
 
 

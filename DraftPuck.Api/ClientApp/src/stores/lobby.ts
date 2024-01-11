@@ -37,7 +37,7 @@ export const useLobbyStore = defineStore('lobby', () => {
       const pickIdx = member.picks.findIndex((p) => p.id === pickId)
       if (pickIdx === -1) continue
 
-      lobby.value.members.splice(pickIdx)
+      member.picks.splice(pickIdx, 1)
     }
   }
 

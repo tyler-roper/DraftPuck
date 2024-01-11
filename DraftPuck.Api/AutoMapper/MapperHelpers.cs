@@ -1,4 +1,5 @@
 ﻿using Draftpuck.Nhl.Models;
+using System.Globalization;
 
 namespace DraftPuck.Api.AutoMapper
 {
@@ -7,7 +8,7 @@ namespace DraftPuck.Api.AutoMapper
         public static GameState MapGameState(string gameState)
         {
             if (gameState is "FINAL" or "OFF") return GameState.Final;
-            if (gameState == "LIVE") return GameState.Live;
+            if (gameState is "LIVE" or "CRIT") return GameState.Live;
             return GameState.Upcoming;
         }
 
@@ -58,7 +59,8 @@ namespace DraftPuck.Api.AutoMapper
                 { "goal", PlayType.Goal },
                 { "period-end", PlayType.PeriodEnd },
                 { "game-end", PlayType.GameEnd },
-                { "challenge", PlayType.Challenge }
+                { "challenge", PlayType.Challenge },
+                { "shootout-complete", PlayType.ShootoutComplete }
             };
 
             return dict[typeDescKey];
@@ -68,7 +70,7 @@ namespace DraftPuck.Api.AutoMapper
         {
             var playType = MapPlayType(play.TypeDescKey);
             if (playType == PlayType.Faceoff) return play.Details.WinningPlayerId;
-            if (playType == PlayType.Penalty) return play.Details.CommittedByPlayerId;
+            if (playType == PlayType.Penalty) return play.Details.CommittedByPlayerId ?? play.Details.ServedByPlayerId;
             if (playType is PlayType.ShotOnGoal or PlayType.MissedShot) return play.Details.ShootingPlayerId;
             if (playType == PlayType.BlockedShot) return play.Details.BlockingPlayerId;
             if (playType == PlayType.Hit) return play.Details.HittingPlayerId;
@@ -82,6 +84,42 @@ namespace DraftPuck.Api.AutoMapper
             if (gameType == 2) return GameType.RegularSeason;
             if (gameType == 3) return GameType.Playoffs;
             return GameType.Other;
+        }
+
+        public static int MapStrength(NhlSituation? situation, bool isHome)
+        {
+            if (situation == null) return 5;
+            if (isHome && situation.HomeTeam == null) return 5;
+            if (!isHome && situation.AwayTeam == null) return 5;
+
+            return isHome
+                ? situation.HomeTeam.Strength
+                : situation.AwayTeam.Strength;
+        }
+
+        public static List<TeamSituation> MapSituations(NhlSituation? situation, bool isHome)
+        {
+            var teamSituations = isHome
+                ? situation?.HomeTeam?.SituationDescriptions
+                : situation?.AwayTeam?.SituationDescriptions;
+
+            if (teamSituations == null) return new();
+
+            var result = new List<TeamSituation>();
+            teamSituations.ForEach(ts =>
+            {
+                if (ts.Equals("PP")) result.Add(TeamSituation.PowerPlay);
+                if (ts.Equals("PK")) result.Add(TeamSituation.PenaltyKill);
+                if (ts.Equals("EN")) result.Add(TeamSituation.EmptyNet);
+            });
+
+            return result;
+        }
+
+        public static string KebabToCamelCase(string kebabString)
+        {
+            var strWithSpaces = kebabString.Replace('-', ' ');
+            return CultureInfo.InvariantCulture.TextInfo.ToTitleCase(strWithSpaces);
         }
     }
 }

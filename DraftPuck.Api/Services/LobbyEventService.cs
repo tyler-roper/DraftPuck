@@ -32,6 +32,9 @@ namespace DraftPuck.Api.Services
         public async Task SendNewPickEvent(Lobby lobby, LobbyMember lobbyMember, int gameId, int playerId, int teamId)
             => await NewLobbyEvent(lobby.Id, lobby.JoinCode, LobbyEventType.NewPick, lobbyMemberId: lobbyMember.Id, gameId: gameId, playerId: playerId, teamId: teamId);
 
+        public async Task SendPickRemovedEvent(Lobby lobby, LobbyMember lobbyMember, int gameId, int playerId, int teamId)
+            => await NewLobbyEvent(lobby.Id, lobby.JoinCode, LobbyEventType.PickRemoved, lobbyMemberId: lobbyMember.Id, gameId: gameId, playerId: playerId, teamId: teamId);
+
         public async Task SendDrinkAwardedEvent(Lobby lobby, LobbyMember lobbyMember, int gameId, int gameEventId, int playerId, int teamId)
             => await NewLobbyEvent(lobby.Id, lobby.JoinCode, LobbyEventType.DrinkAwarded, lobbyMemberId: lobbyMember.Id, gameEventId: gameEventId, gameId: gameId, playerId: playerId, teamId: teamId);
 

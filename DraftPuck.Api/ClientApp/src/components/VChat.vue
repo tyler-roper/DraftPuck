@@ -28,6 +28,7 @@ const message = ref('')
 const error = ref<string>()
 const lastSentMessage = ref(new Date(-1))
 const isLockedToBottom = ref(true)
+const errorTimer = ref<number>()
 
 //hooks/methods
 onMounted(async () => {
@@ -62,8 +63,10 @@ async function sendMessage(e: Event) {
   const originalMessage = message.value
   const wait = Math.ceil((Number(addSeconds(lastSentMessage.value, SECONDS_BETWEEN_MESSAGES)) - Number(new Date())) / 1000)
 
-  if (wait > 0 && !isLobbyAdmin.value) return (error.value = `Wait ${wait} seconds.`)
+  window.clearTimeout(errorTimer.value)
+  errorTimer.value = window.setTimeout(() => error.value = '', wait * 1000)
 
+  if (wait > 0 && !isLobbyAdmin.value) return (error.value = `Wait ${wait} seconds.`)
   if (message.value.length > 400) return (error.value = 'Message exceeds 400 characters.')
   if (!message.value.trim().length) return (error.value = 'Invalid message.')
 

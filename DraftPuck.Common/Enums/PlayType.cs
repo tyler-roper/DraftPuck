@@ -16,5 +16,6 @@ public enum PlayType
     Goal,
     PeriodEnd,
     GameEnd,
-    Challenge
+    Challenge,
+    ShootoutComplete
 }

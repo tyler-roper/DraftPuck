@@ -12,6 +12,8 @@
 
         public Task SendNewPickEvent(Lobby lobby, LobbyMember lobbyMember, int gameId, int playerId, int teamId);
 
+        public Task SendPickRemovedEvent(Lobby lobby, LobbyMember lobbyMember, int gameId, int playerId, int teamId);
+
         public Task SendDrinkAwardedEvent(Lobby lobby, LobbyMember lobbyMember, int gameId, int gameEventId, int playerId, int teamId);
 
         public Task SendDrinkAssignedEvent(Lobby lobby, LobbyMember sender, LobbyMember recipient, int gameId, int gameEventId, int playerId, int teamId);
