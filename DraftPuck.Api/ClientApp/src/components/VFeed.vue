@@ -9,6 +9,7 @@ import { parseISO, format } from 'date-fns'
 import VFeedItem from '@/components/VFeedItem.vue'
 import PlayType from '@/enums/playType'
 import FeedItemType from '@/enums/feedItemType'
+
 //const
 const isNotificationsSupported = 'Notification' in window
 type View = 'feed' | 'list' | 'settings'
@@ -45,6 +46,7 @@ const filters = ref({
 //computed
 const filteredItems = computed(() => {
   return props.items.filter((item, idx, array) => {
+    
     const includedInFilters =
       (item.type === FeedItemType.GameEvent && item.subType === PlayType.Goal && filters.value.showGoals) ||
       (item.type === FeedItemType.GameEvent && item.subType === PlayType.Penalty && filters.value.showPenalties) ||
@@ -52,11 +54,11 @@ const filteredItems = computed(() => {
       (item.type === FeedItemType.GameEvent && item.subType === PlayType.PeriodEnd && filters.value.showPeriodEnds) ||
       (item.type === FeedItemType.GameEvent && item.subType === PlayType.Challenge && filters.value.showChallenges) ||
       (item.type === FeedItemType.GameEvent && item.subType === PlayType.GameEnd && filters.value.showGameEnds) ||
-      (item.type === FeedItemType.GameEvent && item.subType === LobbyEventType.UserJoined && filters.value.showUserJoin) ||
-      (item.type === FeedItemType.GameEvent && item.subType === LobbyEventType.UserNameChanged && filters.value.showNameChange) ||
-      (item.type === FeedItemType.GameEvent && item.subType === LobbyEventType.NewPick && filters.value.showPicks) ||
-      (item.type === FeedItemType.GameEvent && item.subType === LobbyEventType.DrinkAwarded && filters.value.showDrinkAwarded) ||
-      (item.type === FeedItemType.GameEvent && item.subType === LobbyEventType.DrinkAssigned && filters.value.showDrinkAssigned) ||
+      (item.type === FeedItemType.LobbyEvent && item.subType === LobbyEventType.UserJoined && filters.value.showUserJoin) ||
+      (item.type === FeedItemType.LobbyEvent && item.subType === LobbyEventType.UserNameChanged && filters.value.showNameChange) ||
+      (item.type === FeedItemType.LobbyEvent && item.subType === LobbyEventType.NewPick && filters.value.showPicks) ||
+      (item.type === FeedItemType.LobbyEvent && item.subType === LobbyEventType.DrinkAwarded && filters.value.showDrinkAwarded) ||
+      (item.type === FeedItemType.LobbyEvent && item.subType === LobbyEventType.DrinkAssigned && filters.value.showDrinkAssigned) ||
       item.type === FeedItemType.LobbyEvent && item.subType === LobbyEventType.PickRemoved ||
       item.type === FeedItemType.LobbyEvent && item.subType === LobbyEventType.DrinkInvalidated ||
       item.type === FeedItemType.LobbyEvent && item.subType === LobbyEventType.DrinkRevoked ||
