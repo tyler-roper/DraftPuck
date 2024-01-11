@@ -9,6 +9,7 @@
             if (eventType == LobbyEventType.LobbyCreated) return LobbyCreated.Title;
             if (eventType == LobbyEventType.UserJoined) return UserJoined.Title;
             if (eventType == LobbyEventType.NewPick) return NewPick.Title;
+            if (eventType == LobbyEventType.PickRemoved) return PickRemoved.Title;
             if (eventType == LobbyEventType.DrinkAwarded) return DrinkAwarded.Title;
             if (eventType == LobbyEventType.DrinkAssigned) return DrinkAssigned.Title;
             if (eventType == LobbyEventType.DrinkInvalidated) return DrinkInvalidated.Title;
@@ -25,6 +26,7 @@
             if (eventType == LobbyEventType.LobbyCreated) return Random(LobbyCreated.Texts);
             if (eventType == LobbyEventType.UserJoined) return Random(UserJoined.Texts);
             if (eventType == LobbyEventType.NewPick) return Random(NewPick.Texts);
+            if (eventType == LobbyEventType.PickRemoved) return Random(PickRemoved.Texts);
             if (eventType == LobbyEventType.DrinkAwarded) return Random(DrinkAwarded.Texts);
             if (eventType == LobbyEventType.DrinkAssigned) return Random(DrinkAssigned.Texts);
             if (eventType == LobbyEventType.DrinkInvalidated) return Random(DrinkInvalidated.Texts);
@@ -80,6 +82,15 @@
             public static List<string> Texts = new()
             {
                 "{{name}} picks {{playerBadge}}"
+            };
+        }
+
+        private static class PickRemoved
+        {
+            public static string Title = "Pick Removed";
+            public static List<string> Texts = new()
+            {
+                "{{name}} has un-picked {{playerBadge}}"
             };
         }
 

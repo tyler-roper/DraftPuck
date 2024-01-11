@@ -8,6 +8,7 @@ import VSwitch from '@/components/VSwitch.vue'
 import { parseISO, format } from 'date-fns'
 import VFeedItem from '@/components/VFeedItem.vue'
 import PlayType from '@/enums/playType'
+import FeedItemType from '@/enums/feedItemType'
 //const
 const isNotificationsSupported = 'Notification' in window
 type View = 'feed' | 'list' | 'settings'
@@ -41,38 +42,35 @@ const filters = ref({
   showDrinkAssigned: true
 })
 
-console.log(props.items)
-
 //computed
-const filteredItems = computed(() =>
-  props.items.filter((item, idx, array) => {
+const filteredItems = computed(() => {
+  return props.items.filter((item, idx, array) => {
     const includedInFilters =
-      (item.subType === PlayType.Goal && filters.value.showGoals) ||
-      (item.subType === PlayType.Penalty && filters.value.showPenalties) ||
-      (item.subType === PlayType.PeriodStart && filters.value.showPeriodStarts) ||
-      (item.subType === PlayType.PeriodEnd && filters.value.showPeriodEnds) ||
-      (item.subType === PlayType.Challenge && filters.value.showChallenges) ||
-      (item.subType === PlayType.GameEnd && filters.value.showGameEnds) ||
-      (item.subType === LobbyEventType.UserJoined && filters.value.showUserJoin) ||
-      (item.subType === LobbyEventType.UserNameChanged && filters.value.showNameChange) ||
-      (item.subType === LobbyEventType.NewPick && filters.value.showPicks) ||
-      (item.subType === LobbyEventType.DrinkAwarded && filters.value.showDrinkAwarded) ||
-      (item.subType === LobbyEventType.DrinkAssigned && filters.value.showDrinkAssigned) ||
-      item.subType === LobbyEventType.DrinkInvalidated ||
-      item.subType === LobbyEventType.DrinkRevoked ||
-      item.subType === LobbyEventType.GoalChanged ||
-      item.subType === LobbyEventType.GoalRemoved ||
-      item.subType === LobbyEventType.UserRemoved ||
-      item.subType === LobbyEventType.UserRejoined ||
-      item.subType === LobbyEventType.Broadcast
+      (item.type === FeedItemType.GameEvent && item.subType === PlayType.Goal && filters.value.showGoals) ||
+      (item.type === FeedItemType.GameEvent && item.subType === PlayType.Penalty && filters.value.showPenalties) ||
+      (item.type === FeedItemType.GameEvent && item.subType === PlayType.PeriodStart && filters.value.showPeriodStarts) ||
+      (item.type === FeedItemType.GameEvent && item.subType === PlayType.PeriodEnd && filters.value.showPeriodEnds) ||
+      (item.type === FeedItemType.GameEvent && item.subType === PlayType.Challenge && filters.value.showChallenges) ||
+      (item.type === FeedItemType.GameEvent && item.subType === PlayType.GameEnd && filters.value.showGameEnds) ||
+      (item.type === FeedItemType.GameEvent && item.subType === LobbyEventType.UserJoined && filters.value.showUserJoin) ||
+      (item.type === FeedItemType.GameEvent && item.subType === LobbyEventType.UserNameChanged && filters.value.showNameChange) ||
+      (item.type === FeedItemType.GameEvent && item.subType === LobbyEventType.NewPick && filters.value.showPicks) ||
+      (item.type === FeedItemType.GameEvent && item.subType === LobbyEventType.DrinkAwarded && filters.value.showDrinkAwarded) ||
+      (item.type === FeedItemType.GameEvent && item.subType === LobbyEventType.DrinkAssigned && filters.value.showDrinkAssigned) ||
+      item.type === FeedItemType.LobbyEvent && item.subType === LobbyEventType.PickRemoved ||
+      item.type === FeedItemType.LobbyEvent && item.subType === LobbyEventType.DrinkInvalidated ||
+      item.type === FeedItemType.LobbyEvent && item.subType === LobbyEventType.DrinkRevoked ||
+      item.type === FeedItemType.LobbyEvent && item.subType === LobbyEventType.GoalChanged ||
+      item.type === FeedItemType.LobbyEvent && item.subType === LobbyEventType.GoalRemoved ||
+      item.type === FeedItemType.LobbyEvent && item.subType === LobbyEventType.UserRemoved ||
+      item.type === FeedItemType.LobbyEvent && item.subType === LobbyEventType.UserRejoined ||
+      item.type === FeedItemType.LobbyEvent && item.subType === LobbyEventType.Broadcast
 
-    console.log(item)
-    console.log(item.subType, filters.value.showUserJoin)
     const isDuplicate =
       array[idx + 1] && item.subType === PlayType.PeriodEnd && array[idx + 1].subType === PlayType.GameEnd && array[idx + 1].gameId === item.gameId
 
     return includedInFilters && !isDuplicate
-  })
+  })}
 )
 
 const assignedDrinks = computed(() =>
@@ -105,7 +103,7 @@ const allLobbyEventsOn = computed(
 //hooks/methods
 ;(function created() {
   initializeFilters()
-})
+})()
 
 async function requestNotificationPermissions() {
   await Notification.requestPermission()
@@ -118,6 +116,7 @@ function initializeFilters() {
 }
 
 function saveFiltersToLocalStorage() {
+  console.log("SET ITEM")
   localStorage.setItem('feedFilters', JSON.stringify(filters.value))
 }
 

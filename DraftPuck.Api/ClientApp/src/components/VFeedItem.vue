@@ -32,6 +32,7 @@ const itemIcon = computed(() => {
     [LobbyEventType.UserJoined]: 'fi-sr-user-add',
     [LobbyEventType.UserRejoined]: 'fi-sr-user-add',
     [LobbyEventType.NewPick]: 'fi-rr-badge-check',
+    [LobbyEventType.PickRemoved]: 'fi-sr-undo',
     [LobbyEventType.DrinkAssigned]: 'fi-sr-beer',
     [LobbyEventType.DrinkAwarded]: 'fi-rr-beer',
     [LobbyEventType.GoalChanged]: 'fi-rr-shuffle',

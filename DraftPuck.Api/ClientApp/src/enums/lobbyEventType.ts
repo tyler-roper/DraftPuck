@@ -11,7 +11,8 @@
   GoalRemoved,
   UserRejoined,
   UserRemoved,
-  Broadcast
+  Broadcast,
+  PickRemoved
 }
 
 export default LobbyEventType

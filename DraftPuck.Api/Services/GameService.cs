@@ -205,7 +205,6 @@ namespace DraftPuck.Api.Services
             if (!schedule.Games.Any()) return;
 
             var tasks = schedule.Games
-                .Where(game => !GameIsStale(game))
                 .Select(game => _nhlService.GetGameAsync(game.Id));
 
             (await Task.WhenAll(tasks))
@@ -220,13 +219,16 @@ namespace DraftPuck.Api.Services
                 playerTasks.Add(_nhlService.GetPlayerAsync(playerSummary.Id));
 
             await Task.WhenAll(playerTasks);
-            return playerTasks.Select(task => task.Result).ToList();
+            return playerTasks
+                .Select(task => task.Result)
+                .OrderByDescending(p => p.Goals)
+                .ToList();
         }
         private void RemoveOldGamesFromCache()
         {
             var cachedGames = _gameCache.GetAllGames();
             var staleGames = cachedGames
-                .Where(GameIsStale)
+                .Where(GameIsOld)
                 .ToList();
 
             staleGames.ForEach(_gameCache.RemoveGame);
@@ -279,8 +281,8 @@ namespace DraftPuck.Api.Services
                 var periodDuration = TimeSpan.FromMinutes(periodParts[0]) + TimeSpan.FromSeconds(periodParts[1]);
 
                 var offset = latePuckDropModifier + periodDurations + intermissionDurations + periodDuration;
-
-                play.DateTime = updatedGame.DateTime.Add(offset);
+                var timeWithOffset = updatedGame.DateTime.Add(offset);
+                play.DateTime = timeWithOffset > DateTime.UtcNow ? DateTime.UtcNow : timeWithOffset;
             }
         }
 
@@ -325,7 +327,9 @@ namespace DraftPuck.Api.Services
             }
         }
 
-        private static bool GameIsStale(Game game) => game.GameState == GameState.Final;
-        private static bool GameIsStale(GameSummary game) => game.GameState == GameState.Final;
+        private static bool GameIsOld(Game game)
+        {
+            return DateTime.UtcNow.AddHours(-4).Date > game.DateTime.Date;
+        }
     }
 }

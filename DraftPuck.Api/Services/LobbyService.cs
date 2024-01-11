@@ -1,4 +1,8 @@
-﻿namespace DraftPuck.Api.Services
+﻿using Azure.Core;
+using DraftPuck.Data.Entities;
+using System.Reflection;
+
+namespace DraftPuck.Api.Services
 {
     public class LobbyService : ILobbyService
     {
@@ -173,23 +177,23 @@
             var lobby = await GetLobby(joinCode);
             if (lobby == null) throw new KeyNotFoundException("Lobby not found.");
 
-            if (lobby.CreatedBy != currentUserId) throw new UnauthorizedAccessException();
-
             var pick = lobby.LobbyMembers.SelectMany(lm => lm.LobbyMemberPicks).FirstOrDefault(lmp => lmp.Id == lobbyMemberPickId);
             if (pick == null) throw new KeyNotFoundException("Pick not found.");
 
+            if (pick.LobbyMember.UserId != currentUserId && lobby.CreatedBy != currentUserId)
+                throw new UnauthorizedAccessException();
+
             pick.IsActive = false;
             await _dbContext.SaveChangesAsync();
+            await _lobbyEventService.SendPickRemovedEvent(lobby, pick.LobbyMember, pick.GameId, pick.PlayerId, pick.TeamId);
         }
 
         public async Task<Drink> AssignDrink(Guid userId, string joinCode, Guid drinkId, Guid recipientLobbyMemberId)
         {
             var lobby = await GetLobby(joinCode);
             if (lobby == null) throw new KeyNotFoundException("Lobby not found.");
-
             var sender = lobby.LobbyMembers.FirstOrDefault(lm => lm.UserId == userId);
             if (sender == null) throw new KeyNotFoundException("Sender UserId not found in lobby.");
-
             var recipient = lobby.LobbyMembers.FirstOrDefault(member => member.Id == recipientLobbyMemberId);
             if (recipient == null) throw new KeyNotFoundException("Recipient UserId not found in lobby.");
 

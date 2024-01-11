@@ -53,11 +53,18 @@ public class GameProfile : Profile
             .ForMember(dest => dest.DateTime, opt => opt.MapFrom(src => src.StartTimeUTC))
             .ForMember(dest => dest.GameState, opt => opt.MapFrom(src => MapperHelpers.MapGameState(src.GameState)))
             .ForMember(dest => dest.PeriodType, opt => opt.MapFrom(src => MapperHelpers.MapPeriodType(src.PeriodDescriptor.PeriodType)))
-            .ForMember(dest => dest.MinutesRemainingInPeriod, opt => opt.MapFrom(src => MapperHelpers.MapMinutesRemaining(src.Clock.TimeRemaining)))
-            .ForMember(dest => dest.SecondsRemainingInPeriod, opt => opt.MapFrom(src => MapperHelpers.MapSecondsRemaining(src.Clock.TimeRemaining)))
+            .ForMember(dest => dest.MinutesRemainingInPeriod, opt => opt.MapFrom(src => src.Clock.InIntermission ? 0 : MapperHelpers.MapMinutesRemaining(src.Clock.TimeRemaining)))
+            .ForMember(dest => dest.SecondsRemainingInPeriod, opt => opt.MapFrom(src => src.Clock.InIntermission ? 0 : MapperHelpers.MapSecondsRemaining(src.Clock.TimeRemaining)))
             .ForMember(dest => dest.GoalsByPeriod, opt => opt.MapFrom(src => src.Summary.Linescore.ByPeriod))
             .ForMember(dest => dest.GameType, opt => opt.MapFrom(src => MapperHelpers.MapGameType(src.GameType)))
-            .ForMember(dest => dest.PlayerSummaries, opt => opt.MapFrom(src => src.RosterSpots));
+            .ForMember(dest => dest.PlayerSummaries, opt => opt.MapFrom(src => src.RosterSpots))
+            .AfterMap((src, dest) =>
+            {
+                dest.HomeTeam.Strength = MapperHelpers.MapStrength(src.Situation, true);
+                dest.HomeTeam.Situations = MapperHelpers.MapSituations(src.Situation, true);
+                dest.AwayTeam.Strength = MapperHelpers.MapStrength(src.Situation, false);
+                dest.AwayTeam.Situations = MapperHelpers.MapSituations(src.Situation, false);
+            });
     }
 }
 
@@ -120,7 +127,10 @@ public class PlayProfile : Profile
             .ForMember(dest => dest.TimeRemainingInPeriod, opt => opt.MapFrom(src => src.TimeRemaining))
             .ForMember(dest => dest.Type, opt => opt.MapFrom(src => MapperHelpers.MapPlayType(src.TypeDescKey)))
             .ForMember(dest => dest.PrimaryPlayerId, opt => opt.MapFrom(src => MapperHelpers.MapPrimaryPlayerId(src)))
-            .ForMember(dest => dest.PrimaryTeamId, opt => opt.MapFrom(src => src.Details.EventOwnerTeamId));
+            .ForMember(dest => dest.PrimaryTeamId, opt => opt.MapFrom(src => src.Details.EventOwnerTeamId))
+            .ForMember(dest => dest.HomeScore, opt => opt.MapFrom(src => src.Details.HomeScore))
+            .ForMember(dest => dest.AwayScore, opt => opt.MapFrom(src => src.Details.AwayScore))
+            .ForMember(dest => dest.Penalty, opt => opt.MapFrom(src => string.IsNullOrEmpty(src.Details.DescKey) ? null : MapperHelpers.KebabToCamelCase(src.Details.DescKey)));
     }
 }
 
@@ -129,7 +139,9 @@ public class PeriodSummaryProfile : Profile
     public PeriodSummaryProfile()
     {
         CreateMap<NhlLinescorePeriod, PeriodSummary>()
-            .ForMember(dest => dest.Number, opt => opt.MapFrom(src => src.Period));
+            .ForMember(dest => dest.Number, opt => opt.MapFrom(src => src.Period))
+            .ForMember(dest => dest.HomeGoals, opt => opt.MapFrom(src => src.Home))
+            .ForMember(dest => dest.AwayGoals, opt => opt.MapFrom(src => src.Away));
     }
 }
 

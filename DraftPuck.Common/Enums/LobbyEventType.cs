@@ -14,6 +14,7 @@
         GoalRemoved,
         UserRejoined,
         UserRemoved,
-        Broadcast
+        Broadcast,
+        PickRemoved
     }
 }

@@ -13,6 +13,7 @@ import { getOrdinal } from '@/helpers/gameHelpers'
 import GameState from '@/enums/gameState'
 import PeriodType from '@/enums/periodType'
 import PlayType from '@/enums/playType'
+import TeamSituation from '@/enums/teamSituation'
 
 const props = defineProps<{
   game: Game
@@ -28,8 +29,6 @@ const store = useLobbyStore()
 const { lobby, currentUserId, isLobbyAdmin } = storeToRefs(store)
 const { pickPlayer, removePick } = store
 
-const homeRoster = ref<Player[]>([])
-const awayRoster = ref<Player[]>([])
 const isPickingStarted = ref(false)
 const pickingStartingTimer = ref<number>()
 const timeUntilPicking = ref<string>()
@@ -235,7 +234,7 @@ function getLogo(team: GameTeam) {
 
 function getLightLogo(team: GameTeam) {
   if (team.abbreviation !== 'TBL') return getLogo(team)
-  return `img/logos/${team.abbreviation}_LIGHT.png`
+  return `/img/logos/${team.abbreviation}_LIGHT.png`
 }
 
 function isHome(team: GameTeam) {
@@ -253,29 +252,9 @@ function isTeamLosing(team: GameTeam) {
 function isTeamWinning(team: GameTeam) {
   return team.score > getOpponent(team).score
 }
+
 function teamWon(team: GameTeam) {
   return isOver.value && isTeamWinning(team)
-}
-
-// function getTeamSituations(team: GameTeam) {
-//   const situation = game.value.situation
-//   if (!situation) return []
-
-//   const teamSituation = situation.homeTeam?.abbrev === team.abbreviation ? situation.homeTeam : situation.awayTeam
-
-//   if (!teamSituation) return []
-
-//   return teamSituation.situationDescriptions ?? []
-// }
-
-function isTeamOnPowerplay(team: GameTeam) {
-  return false;
-  //return getTeamSituations(team).includes('PP')
-}
-
-function isTeamGoaliePulled(team: GameTeam) {
-  return false;
-  //return getTeamSituations(team).includes('GP') //TODO - what is 'goalie pulled' code?
 }
 
 function getScoreByPeriod(team: GameTeam, period: number) {
@@ -405,21 +384,19 @@ function getFriendlyPosition(position: string) {
               <div class="ms-2 team-abr">
                 <span class="d-block d-block text-uppercase fw-bold">{{ team.abbreviation }}</span>
               </div>
-              <div
-                v-if="!isOver && isTeamOnPowerplay(team)"
-                class="ms-auto fw-bold fs-8 text-stone-0 p-2 rounded text-uppercase"
-                style="line-height: 12px"
-                :style="{ 'background-color': TeamColors[team.id] }"
-              >
-                {{ strengthString === '5-on-4' ? 'PP' : strengthString }}
-              </div>
-              <div
-                v-if="isTeamGoaliePulled(team)"
-                class="ms-auto fw-bold fs-8 text-stone-0 p-2 rounded text-uppercase"
-                style="line-height: 12px"
-                :style="{ 'background-color': TeamColors[team.id] }"
-              >
-                EN
+              <div v-if="!isOver" class="ms-auto fw-bold fs-8 text-stone-0 d-flex">
+                <span
+                  v-for="situation in team.situations"
+                  class="p-1 rounded text-uppercase ms-1 text-nowrap"
+                  style="line-height: 12px"
+                  :key="situation"
+                  :style="{ 'background-color': TeamColors[team.id] }"
+                >
+                  <span v-if="situation === TeamSituation.PowerPlay">
+                    {{ strengthString === '5-on-4' ? 'PP' : strengthString }}
+                  </span>
+                  <span v-if="situation === TeamSituation.EmptyNet">EN</span>
+                </span>
               </div>
             </div>
           </td>
@@ -444,19 +421,19 @@ function getFriendlyPosition(position: string) {
       <tfoot>
         <tr>
           <td colspan="100" class="bg-stone-100 p-0">
-            <div class="d-flex px-3 py-2 footer-bar" style="height:38px">
+            <div class="d-flex px-3 py-2 footer-bar" style="height: 38px">
               <a
-                v-if="homeRoster.length || awayRoster.length"
+                v-if="game.playerSummaries.length"
                 role="button"
                 class="text-stone-900 ps-0 pe-0 d-flex fw-bold uppercase text-decoration-none"
                 style="align-self: flex-start; border-bottom: 2px solid #1c1917; padding-top: 2px"
                 @click="isRosterVisible = !isRosterVisible"
               >
                 <span class="d-block" style="margin-top: -3px; margin-bottom: -3px">Rosters</span>
-                <i class="d-block mb-n3 fi me-n1" :class="isRosterVisible ? 'fi-sr-caret-right' : 'fi-sr-caret-down'"></i>
+                <i class="d-block mb-n3 fi me-n1" :class="!isRosterVisible ? 'fi-sr-caret-right' : 'fi-sr-caret-down'"></i>
               </a>
 
-              <span v-if="!homeRoster.length && !awayRoster.length" class="text-stone-400 small mt-1"> No Rosters Yet </span>
+              <span v-if="!game.playerSummaries.length" class="text-stone-400 small mt-1"> No Rosters Yet </span>
 
               <span v-if="currentUserCanPick" class="d-flex align-items-center small text-uppercase ms-3" style="margin-top: 2px">
                 <span class="d-block mb-n1"><i class="fs-7 fi fi-sr-exclamation text-danger"></i></span>
@@ -507,7 +484,7 @@ function getFriendlyPosition(position: string) {
                           <a
                             v-if="currentUserCanPickPlayer(player, team)"
                             role="button"
-                            class="btn btn-primary py-0 px-1 text-decoration-none fs-8 fw-bold"
+                            class="btn btn-primary py-0 px-1 text-decoration-none fs-8 fw-bold ms-2"
                             style="height: 12px; line-height: 12px; margin-top: -1px"
                             @click="pick(player.id, team.id)"
                           >
@@ -516,10 +493,10 @@ function getFriendlyPosition(position: string) {
 
                           <span
                             v-if="isPlayerPicked(player.id)"
-                            class="badge text-upperase"
-                            :class="isCurrentUserPick(player) ? 'badge-danger' : 'badge-blue'"
+                            class="badge text-upperase ms-2"
+                            :class="isCurrentUserPick(player) ? 'bg-danger' : 'bg-blue'"
                           >
-                            ({{ isCurrentUserPick(player) ? 'You' : getPickerName(player.id) }})
+                            {{ isCurrentUserPick(player) ? '(You)' : getPickerName(player.id) }}
                             <a
                               v-if="currentUserCanRemovePick(player)"
                               role="button"

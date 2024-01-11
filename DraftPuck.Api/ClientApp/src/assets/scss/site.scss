@@ -107,7 +107,8 @@ table.score-table > thead > tr > th:not(:first-child) {
 .feed-item.item-type-subtype-3,
 .feed-item.item-type-subtype-4,
 .feed-item.item-type-subtype-8,
-.feed-item.item-type-subtype-10 {
+.feed-item.item-type-subtype-10,
+.feed-item.item-type-subtype-13 {
   background-color: map-get($theme-colors, 'blue') !important;
   color: white;
 }

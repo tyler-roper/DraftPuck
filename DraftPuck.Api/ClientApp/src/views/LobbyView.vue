@@ -21,6 +21,7 @@ import VChat from '@/components/VChat.vue'
 import LobbyService from '@/services/LobbyService'
 import GameState from '@/enums/gameState'
 import PlayType from '@/enums/playType'
+import PeriodType from '@/enums/periodType'
 
 //const
 type View = 'feed' | 'game' | 'lobby' | 'chat'
@@ -151,9 +152,9 @@ async function setGames() {
   })
 }
 
-async function updateGame(game: Game) {
-  const gameIndex = games.value.findIndex((g) => game === g)
-  games.value[gameIndex] = await getGameData(game.id)
+async function updateGame(gameId: number) {
+  const gameIndex = games.value.findIndex((g) => gameId === g.id)
+  games.value[gameIndex] = await getGameData(gameId)
 }
 
 async function getGameData(gameId: number) {
@@ -161,7 +162,7 @@ async function getGameData(gameId: number) {
 }
 
 async function pollForUpdates(game: Game) {
-  await updateGame(game)
+  await updateGame(game.id)
   if (isGameStale(game)) return
 
   const interval = isGameInProgress(game) ? ACTIVE_GAME_POLLING_INTERVAL_MS : INACTIVE_GAME_POLLING_INTERVAL_MS
@@ -263,15 +264,18 @@ function sendNotification(text: string, options: {} | null = null) {
 function getFeedItems() {
   if (!lobby.value) return []
   const desiredPlayTypes = [PlayType.Goal, PlayType.PeriodStart, PlayType.PeriodEnd, PlayType.GameEnd, PlayType.Challenge, PlayType.Penalty]
-  const gameItems = games.value.flatMap((game) =>
-    game.plays.reduce((items: FeedItem[], play) => {
+
+  const gameItems = games.value.flatMap((game) => {
+    return game.plays.reduce((items: FeedItem[], play) => {
       const includedInFilters = desiredPlayTypes.includes(play.type)
       const happenedAfterLobbyStarted = play.dateTime >= lobby.value!.created
-      const isShootoutGoal = play.type === PlayType.Goal && ['REG', 'OT'].includes(play.periodType) 
-      if (includedInFilters && happenedAfterLobbyStarted && !isShootoutGoal)
+      const isShootoutGoal = play.type === PlayType.Goal && play.periodType === PeriodType.Shootout
+      if (includedInFilters && happenedAfterLobbyStarted && !isShootoutGoal) {
         return [...items, FeedItem.fromPlay(game.id, { away: game.awayTeam, home: game.homeTeam}, play, game.playerSummaries)]
+      }
       else return items
     }, [])
+  }
   )
 
   const lobbyItems = mappedEvents.value.map((evt) => FeedItem.fromLobbyEvent(evt))

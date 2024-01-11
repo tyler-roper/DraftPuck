@@ -58,17 +58,17 @@ export default class FeedItem {
     const homeAbbreviation = teams.home.abbreviation
     const awayAbbreviation = teams.away.abbreviation
 
-    let title = (play.type as string).split('-').map(s => `${s[0].toUpperCase()}${s.slice(1)}`).join(' ')
+    const player = players.find(p => p.id === play.primaryPlayerId)
+
+    let title = PlayType[play.type].replace(/([a-z])([A-Z])/g, '$1 $2')
     let subtext = `${play.timeInPeriod} ${getOrdinal(play.period, play.periodType)}`
     let teamColor: string | undefined = undefined
-    let player: PlayerSummary | undefined = undefined
     let images: Array<string> = [`${homeAbbreviation}.png`, `${awayAbbreviation}.png`]
     let text = ''
 
     //set color, player, image
     if (play.type === PlayType.Penalty || play.type === PlayType.Goal) {
       teamColor = TeamColorLookup[play.primaryTeamId!]
-      player =  players.find(p => p.id = play.primaryPlayerId!)
 
       const scoringTeamAbbreviation = play.primaryTeamId! === teams.home.id ? homeAbbreviation : awayAbbreviation
 
@@ -81,18 +81,25 @@ export default class FeedItem {
 
     //set title
     if (play.type === PlayType.Goal) {
-      const winningScore = Math.max(teams.away.score, teams.home.score)
-      const losingScore = Math.min(teams.away.score, teams.home.score)
+      const winningScore = Math.max(play.awayScore, play.homeScore)
+      const losingScore = Math.min(play.awayScore, play.homeScore)
 
       if (winningScore === losingScore) {
         title = `${winningScore}-${losingScore} TIE`
       } else {
-        const homeTeamIsWinning = winningScore === teams.home.score
+        const homeTeamIsWinning = winningScore === play.homeScore
         title = homeTeamIsWinning ? `${winningScore}-${losingScore} ${homeAbbreviation}` : `${winningScore}-${losingScore} ${awayAbbreviation}`
       }
 
       if (player != null) text = this.getRandomGoalText(`${player.firstName} ${player.lastName}`, play)
       else text = 'Scorer not yet assigned...'
+    }
+
+    if (play.type === PlayType.Penalty) {
+      if (player && play.penalty)
+        text = `${player.firstName} ${player.lastName} - ${play.penalty}`
+      else
+        text = "Waiting for details..."
     }
 
     if (play.type === PlayType.Challenge) {
@@ -105,12 +112,14 @@ export default class FeedItem {
     }
 
     //set subtext
-    if (play.timeInPeriod === '20:00' || play.timeInPeriod == '00:00') {
+    if (play.type === PlayType.PeriodStart || play.type === PlayType.PeriodEnd) {
       subtext = ''
-    }
-
-    if (play.type === PlayType.PeriodStart) {
-      text = `Start of ${getOrdinal(play.period, play.periodType)} Period`
+      text = play.type === PlayType.PeriodStart
+        ? 'Start of '
+        : 'End of '
+      text += getOrdinal(play.period, play.periodType)
+      if (play.period <= 3)
+        text += ' Period'
     }
 
     if (play.type === PlayType.GameEnd) {

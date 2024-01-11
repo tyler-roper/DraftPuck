@@ -1,48 +1,53 @@
+import LobbyEventTemplate from '@/models/lobbyEventTemplates'
 import TeamColorLookup from '@/models/teamColorLookup'
 
 export function parseLobbyEventText(lobbyEvent: LobbyEvent, lobby: Lobby, games: Game[]): LobbyEvent {
   const clone = { ...lobbyEvent }
 
   const templates = [
-    {
-      strings: ['{{name}}', '{{senderName}}'],
-      fill: (string: string, text: string): string => {
+    new LobbyEventTemplate(
+      ['{{name}}', '{{senderName}}'],
+      (token, eventText) => {
         const name = lobby.members.find((m) => m.id === lobbyEvent.lobbyMemberId)?.name ?? '(name)'
-        return text.replace(string, `<strong>${name}</strong>`)
+        return eventText.replace(token, `<strong>${name}</strong>`)
       }
-    },
-    {
-      strings: ['{{recipientName}}'],
-      fill: (string: string, text: string): string => {
+    ),
+    new LobbyEventTemplate(
+      ['{{recipientName}}'],
+      (token, eventText) => {
         const name = lobby.members.find((m) => m.id === lobbyEvent.lobbyMember2Id)?.name ?? '(recipient)'
-        return text.replace(string, `<strong>${name}</strong>`)
+        return eventText.replace(token, `<strong>${name}</strong>`)
       }
-    },
-    {
-      strings: ['{{player}}', '{{newScorer}}'],
-      fill: (string: string, text: string): string => {
+    ),
+    new LobbyEventTemplate(
+      ['{{player}}', '{{newScorer}}'],
+      (token, eventText) => {
         const game = games.find((g) => g.id === lobbyEvent.gameId)
-        if (!game) return text
+        if (!game) return eventText
 
         const player = game.playerSummaries.find((p) => p.id === lobbyEvent.playerId)
-        return text.replace(string, `<strong>${player}</strong>`)
+        if (!player) return 'Goal Changed'
+        const name = `${player.firstName} ${player.lastName}`
+        return eventText.replace(token, `<strong>${name}</strong>`)
       }
-    },
-    {
-      strings: ['{{player2}}', '{{oldScorer}}'],
-      fill: (string: string, text: string): string => {
+    ),
+    new LobbyEventTemplate(
+      ['{{player2}}', '{{oldScorer}}'],
+      (token, eventText) => {
         const game = games.find((g) => g.id === lobbyEvent.gameId)
-        if (!game) return text
+        if (!game) return eventText
 
         const player = game.playerSummaries.find((p) => p.id === lobbyEvent.player2Id)
-        return text.replace(string, `<strong>${player}</strong>`)
+        if (!player) return 'Goal Changed'
+        const name = `${player.firstName} ${player.lastName}`
+        return eventText.replace(token, `<strong>${name}</strong>`)
       }
-    },
-    {
-      strings: ['{{playerBadge}}'],
-      fill: (string: string, text: string): string => {
+    ),
+    new LobbyEventTemplate(
+      ['{{playerBadge}}'],
+      (token, eventText) => {
         const game = games.find((g) => g.id === lobbyEvent.gameId)
-        if (!game) return text
+        if (!game) return eventText
 
         const team = lobbyEvent.teamId === game.homeTeam.id ? game.homeTeam : game.awayTeam
         const logo = team.abbreviation === 'TBL' ? `/img/logos/${team.abbreviation}_LIGHT.png` : `/img/logos/${team.abbreviation}.png`
@@ -51,20 +56,16 @@ export function parseLobbyEventText(lobbyEvent: LobbyEvent, lobby: Lobby, games:
         const teamColor = TeamColorLookup[team.id]
 
         const playerLastName = game.playerSummaries.find((p) => p.id === lobbyEvent.playerId)?.lastName ?? '(Player)'
-        return text.replace(
-          string,
+        return eventText.replace(
+          token,
           `<span class='d-inline-block ps-3 ms-1 badge text-uppercase text-shadow' style='align-self: center; background-color: ${teamColor} !important;'>${img} ${playerLastName}</span>`
         )
       }
-    }
+    )
   ]
 
   clone.text = templates.reduce(
-    (text, template) =>
-      template.strings.reduce((thisText, string) => {
-        if (text.includes(string)) return template.fill(string, thisText)
-        else return thisText
-      }, text),
+    (templatedString, template) => template.replaceTokens(templatedString),
     clone.text
   )
 

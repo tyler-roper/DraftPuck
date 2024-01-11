@@ -8,4 +8,7 @@ interface Play {
     type: PlayType
     primaryPlayerId: number | null
     primaryTeamId: number | null
+    homeScore: number
+    awayScore: number
+    penalty: string | null
 }
