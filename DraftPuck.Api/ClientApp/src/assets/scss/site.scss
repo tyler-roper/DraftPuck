@@ -6,9 +6,12 @@
 
 html,
 body {
-  height: 100%;
   padding: 0;
   margin: 0;
+}
+
+body {
+  height: 100dvh
 }
 
 table.score-table > tbody > tr > td,

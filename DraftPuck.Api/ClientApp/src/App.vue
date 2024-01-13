@@ -40,6 +40,6 @@ const userId = ref(localStorage.getItem('userId'))
 
 <style>
 #app {
-  height: 100dvh;
+  height: 100%;
 }
 </style>
