@@ -35,6 +35,9 @@ const replaceTemplatedStrings = (lobbyEvent: LobbyEvent) => parseLobbyEventText(
 
 const lobbyEventHandlers: { [k: string]: (lobbyEvent: LobbyEvent) => void} = {
   onDrinkAssigned: function (lobbyEvent: LobbyEvent) {
+    console.log("OnDrinkAssigned handler called.")
+    console.log("Recipient:   ", lobbyEvent.lobbyMember2Id)
+    console.log("Current user:", currentLobbyMember.value?.id)
     if (lobbyEvent.lobbyMember2Id === currentLobbyMember.value?.id) notifyCurrentUserOfDrink(lobbyEvent)
   },
   onDrinkAwarded: function (lobbyEvent: LobbyEvent) {
@@ -122,6 +125,10 @@ const messages = computed(() => {
     await initializeHubConnection()
     await setGames()
 
+    setTimeout(() => {
+
+    }, 100)
+
     mappedEvents.value = events.value.map(replaceTemplatedStrings)
   } catch (e) {
     console.error(e)
@@ -198,6 +205,7 @@ function onNewMessage(message: Message) {
 }
 
 function notifyCurrentUserOfDrink(lobbyEvent: LobbyEvent) {
+  console.log("Notifying you...")
   pendingDrinks.value.push(lobbyEvent)
 
   if (pendingDrinks.value.length === 1) processNextDrinkForCurrentUser()
@@ -224,12 +232,14 @@ function getSenderNameByLobbyEvent(lobbyEvent: LobbyEvent) {
 }
 
 async function dispatchLobbyEvent(lobbyEvent: LobbyEvent) {
-  if (lobbyEvent.lobbyEventType != LobbyEventType.NewPick || lobbyEvent.lobbyMemberId !== currentLobbyMember.value!.id) {
+  const currentLobbyMemberValue = currentLobbyMember.value!;
+
+  if (lobbyEvent.lobbyEventType != LobbyEventType.NewPick || lobbyEvent.lobbyMemberId !== currentLobbyMemberValue.id) {
     await getLobby(joinCode.value)
     if (!lobby.value) return
   }
 
-  if (lobbyEvent.lobbyEventType === LobbyEventType.UserRemoved && lobbyEvent.lobbyMemberId === currentLobbyMember.value!.id) {
+  if (lobbyEvent.lobbyEventType === LobbyEventType.UserRemoved && lobbyEvent.lobbyMemberId === currentLobbyMemberValue.id) {
     toast.error('You were removed from the lobby.')
     return router.push({ name: 'Home' })
   }
@@ -239,7 +249,9 @@ async function dispatchLobbyEvent(lobbyEvent: LobbyEvent) {
   mappedEvents.value.push(replaceTemplatedStrings(lobbyEvent))
 
   const eventType = LobbyEventType[lobbyEvent.lobbyEventType]
-  const eventHandler = lobbyEventHandlers[eventType]
+  const eventHandler = lobbyEventHandlers[`on${eventType}`]
+
+  console.log(`Received an event type of ${eventType}. Calling handler.`)
   if (eventHandler) eventHandler(lobbyEvent)
 }
 
