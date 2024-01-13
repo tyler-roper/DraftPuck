@@ -133,7 +133,7 @@ defineExpose({ focus })
         </div>
       </div>
     </div>
-    <div ref="messagesContainer" class="flex-grow-1 overflow-auto">
+    <div ref="messagesContainer" class="flex-grow-1 flex-shrink-1 overflow-auto">
       <div class="message" v-for="message in messages" :key="message.id" :class="{ 'is-current-member': isCurrentMember(message) }">
         <span class="text-nowrap">
           <span class="text-stone-400 small me-2">{{ formatAsTime(message.sent) }}</span>
