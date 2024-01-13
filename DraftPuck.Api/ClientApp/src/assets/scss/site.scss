@@ -10,8 +10,12 @@ body {
   margin: 0;
 }
 
-body {
+html {
   height: 100dvh
+}
+
+body {
+  height: 100%
 }
 
 table.score-table > tbody > tr > td,
