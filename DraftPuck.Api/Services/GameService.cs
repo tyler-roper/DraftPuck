@@ -329,7 +329,7 @@ namespace DraftPuck.Api.Services
 
         private static bool GameIsOld(Game game)
         {
-            return DateTime.UtcNow.AddHours(-4).Date > game.DateTime.Date;
+            return game.GameState == GameState.Final && game.DateTime.Date == DateTime.UtcNow.Date.AddDays(-1);
         }
     }
 }
