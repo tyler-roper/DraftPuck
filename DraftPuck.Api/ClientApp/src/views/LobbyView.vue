@@ -35,9 +35,6 @@ const replaceTemplatedStrings = (lobbyEvent: LobbyEvent) => parseLobbyEventText(
 
 const lobbyEventHandlers: { [k: string]: (lobbyEvent: LobbyEvent) => void} = {
   onDrinkAssigned: function (lobbyEvent: LobbyEvent) {
-    console.log("OnDrinkAssigned handler called.")
-    console.log("Recipient:   ", lobbyEvent.lobbyMember2Id)
-    console.log("Current user:", currentLobbyMember.value?.id)
     if (lobbyEvent.lobbyMember2Id === currentLobbyMember.value?.id) notifyCurrentUserOfDrink(lobbyEvent)
   },
   onDrinkAwarded: function (lobbyEvent: LobbyEvent) {
@@ -205,7 +202,6 @@ function onNewMessage(message: Message) {
 }
 
 function notifyCurrentUserOfDrink(lobbyEvent: LobbyEvent) {
-  console.log("Notifying you...")
   pendingDrinks.value.push(lobbyEvent)
 
   if (pendingDrinks.value.length === 1) processNextDrinkForCurrentUser()
@@ -251,7 +247,6 @@ async function dispatchLobbyEvent(lobbyEvent: LobbyEvent) {
   const eventType = LobbyEventType[lobbyEvent.lobbyEventType]
   const eventHandler = lobbyEventHandlers[`on${eventType}`]
 
-  console.log(`Received an event type of ${eventType}. Calling handler.`)
   if (eventHandler) eventHandler(lobbyEvent)
 }
 
