@@ -122,6 +122,10 @@ const messages = computed(() => {
     await initializeHubConnection()
     await setGames()
 
+    setTimeout(() => {
+
+    }, 100)
+
     mappedEvents.value = events.value.map(replaceTemplatedStrings)
   } catch (e) {
     console.error(e)
@@ -224,12 +228,14 @@ function getSenderNameByLobbyEvent(lobbyEvent: LobbyEvent) {
 }
 
 async function dispatchLobbyEvent(lobbyEvent: LobbyEvent) {
-  if (lobbyEvent.lobbyEventType != LobbyEventType.NewPick || lobbyEvent.lobbyMemberId !== currentLobbyMember.value!.id) {
+  const currentLobbyMemberValue = currentLobbyMember.value!;
+
+  if (lobbyEvent.lobbyEventType != LobbyEventType.NewPick || lobbyEvent.lobbyMemberId !== currentLobbyMemberValue.id) {
     await getLobby(joinCode.value)
     if (!lobby.value) return
   }
 
-  if (lobbyEvent.lobbyEventType === LobbyEventType.UserRemoved && lobbyEvent.lobbyMemberId === currentLobbyMember.value!.id) {
+  if (lobbyEvent.lobbyEventType === LobbyEventType.UserRemoved && lobbyEvent.lobbyMemberId === currentLobbyMemberValue.id) {
     toast.error('You were removed from the lobby.')
     return router.push({ name: 'Home' })
   }
@@ -239,7 +245,8 @@ async function dispatchLobbyEvent(lobbyEvent: LobbyEvent) {
   mappedEvents.value.push(replaceTemplatedStrings(lobbyEvent))
 
   const eventType = LobbyEventType[lobbyEvent.lobbyEventType]
-  const eventHandler = lobbyEventHandlers[eventType]
+  const eventHandler = lobbyEventHandlers[`on${eventType}`]
+
   if (eventHandler) eventHandler(lobbyEvent)
 }
 
