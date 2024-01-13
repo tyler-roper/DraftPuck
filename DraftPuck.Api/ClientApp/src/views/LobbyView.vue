@@ -33,7 +33,7 @@ const HUB_URL = '/hub'
 
 const replaceTemplatedStrings = (lobbyEvent: LobbyEvent) => parseLobbyEventText(lobbyEvent, lobby.value!, games.value)
 
-const lobbyEventHandlers = {
+const lobbyEventHandlers: { [k: string]: (lobbyEvent: LobbyEvent) => void} = {
   onDrinkAssigned: function (lobbyEvent: LobbyEvent) {
     if (lobbyEvent.lobbyMember2Id === currentLobbyMember.value?.id) notifyCurrentUserOfDrink(lobbyEvent)
   },
@@ -239,7 +239,7 @@ async function dispatchLobbyEvent(lobbyEvent: LobbyEvent) {
   mappedEvents.value.push(replaceTemplatedStrings(lobbyEvent))
 
   const eventType = LobbyEventType[lobbyEvent.lobbyEventType]
-  const eventHandler = lobbyEventHandlers[eventType as keyof typeof lobbyEventHandlers]
+  const eventHandler = lobbyEventHandlers[eventType]
   if (eventHandler) eventHandler(lobbyEvent)
 }
 
