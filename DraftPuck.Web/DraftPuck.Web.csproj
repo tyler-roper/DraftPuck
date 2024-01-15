@@ -1,0 +1,48 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<PropertyGroup>
+		<TargetFramework>net7.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UserSecretsId>a471e140-49cf-4214-96cc-d87252676d5b</UserSecretsId>
+		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)'=='Debug'">
+		<DockerfileBuildArguments>--build-arg BUILD_CONFIGURATION=Debug --build-arg ASPNETCORE_URLS=https://+:17000/</DockerfileBuildArguments>
+		<DockerfileRunEnvironmentFiles>../env.development.list</DockerfileRunEnvironmentFiles>
+		<DockerfileFastModeStage>final</DockerfileFastModeStage>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <Compile Remove="ClientApp_Old\**" />
+	  <Content Remove="ClientApp_Old\**" />
+	  <EmbeddedResource Remove="ClientApp_Old\**" />
+	  <None Remove="ClientApp_Old\**" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.SpaServices" Version="3.1.32" />
+		<PackageReference Include="Microsoft.AspNetCore.SpaServices.Extensions" Version="7.0.1" />
+		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.17.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Include="..\.editorconfig" Link=".editorconfig" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\DraftPuck.Core\DraftPuck.Core.csproj" />
+	</ItemGroup>
+
+	<Target Name="DebugBuildWeb" BeforeTargets="BeforeBuild" Condition="'$(Configuration)' == 'Debug' And !Exists('wwwroot')">
+		<Message Text="npm run build:debug" />
+		<Exec Command="npm run build:debug" WorkingDirectory="$(ProjectDir)ClientApp" />
+	</Target>
+
+	<Target Name="ReleaseBuildWeb" BeforeTargets="BeforeBuild" Condition="'$(Configuration)' == 'Release'">
+		<Message Text="npm run build:release" />
+		<Exec Command="npm run build:release" WorkingDirectory="$(ProjectDir)ClientApp" />
+	</Target>
+
+</Project>
