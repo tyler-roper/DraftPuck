@@ -28,7 +28,7 @@ const codeInput = ref<HTMLInputElement | null>(null)
 const nameInput = ref<HTMLInputElement | null>(null)
 const code = ref('')
 const name = ref('')
-const gameCount = ref<Number>()
+const gameCount = ref<number>()
 const isLoading = ref(false)
 const isJoiningLobby = ref(false)
 const isHelpVisible = ref(false)
@@ -301,7 +301,7 @@ function tryMoveNext() {
             </a>
           </div>
           <div>
-            <span v-if="hasLoadedGames" class="d-block text-stone-300">({{ gameCount }} games left today)</span>
+            <span v-if="hasLoadedGames" class="d-block text-stone-300">({{ gameCount }} game<span v-if="gameCount !== 1">s</span> left today)</span>
             <span v-if="!hasLoadedGames" class="d-block text-stone-300">Fetching games...</span>
           </div>
         </div>
