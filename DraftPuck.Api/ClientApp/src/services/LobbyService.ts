@@ -4,7 +4,7 @@ import type PickRequest from '@/models/pickRequest'
 import type Bot from '@/models/bot'
 import type CreateLobbyRequest from '@/models/createLobbyRequest'
 
-const controller = 'lobby'
+const controller = 'lobbies'
 
 class LobbyService {
   private readonly _http: IHttpService

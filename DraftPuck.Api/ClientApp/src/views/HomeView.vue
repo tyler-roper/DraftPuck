@@ -6,10 +6,9 @@ import type { LobbySettings } from '@/models/interfaces/lobbySettings'
 import { onMounted, ref, nextTick } from 'vue'
 import { useToast } from 'vue-toastification'
 import LobbyService from '@/services/LobbyService'
-import NHL from '@/services/NhlService'
+import GameService from '@/services/GameService'
 import CreateLobbyRequest from '@/models/createLobbyRequest'
 import { useRouter } from 'vue-router'
-import { addHours, format } from 'date-fns'
 import '@/extensions/arrayExtensions'
 import GameState from '@/enums/gameState'
 
@@ -49,8 +48,7 @@ const settings = ref<LobbySettings>({
     name.value = latestLobbyParsed.name
     code.value = latestLobbyParsed.joinCode
   }
-  const schedule = await NHL.getSchedule(format(addHours(new Date(), -4), 'yyyy-MM-dd'))
-  gameCount.value = schedule.games.filter((g) => g.gameState !== GameState.Final).length
+  gameCount.value = (await GameService.getAllGameSummaries()).filter(g => g.gameState !== GameState.Final).length
   hasLoadedGames.value = true
 })()
 
@@ -281,9 +279,9 @@ function tryMoveNext() {
             <button @click="createLobby" class="d-block btn btn-primary w-100 fw-bold py-3 text-uppercase" :disabled="isCreatingLobby">
               <span v-if="!isCreatingLobby">Create Lobby</span>
               <span v-if="isCreatingLobby">
-                  <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-                  <span class="visually-hidden" role="status">Loading...</span>
-                </span>
+                <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                <span class="visually-hidden" role="status">Loading...</span>
+              </span>
             </button>
           </div>
 
@@ -318,9 +316,8 @@ function tryMoveNext() {
           </p>
         </div>
       </div>
-      <div class="mt-4 text-center" style="opacity: 0.8">
-        DRAFTPUCK © {{ new Date().getFullYear() }}
-        <a target="_blank" class="ms-2" href="https://ropersoftworks.com">Roper Softworks LLC</a>
+      <div class="mt-4 text-center fw-bold">
+        <a target="_blank" class="text-decoration-none" href="https://discord.gg/Vgj9RbetDB">Join us on Discord</a>
       </div>
     </div>
   </div>
@@ -394,4 +391,4 @@ select.bot-input {
   letter-spacing: normal !important;
 }
 </style>
-@/services/NhlService
+@/services/NhlService @/services/GameService
