@@ -1,6 +1,6 @@
 ﻿import HttpService, { type IHttpService } from '@/services/HttpService'
 
-const controller = 'nhl'
+const controller = 'games'
 
 class NhlApiService {
   private readonly _http: IHttpService
@@ -9,12 +9,16 @@ class NhlApiService {
     this._http = new HttpService(controller)
   }
 
-  public async getSchedule(date: string): Promise<Schedule> {
-      return this._http.get(`schedule/${date}`)
+  public async getAllGameSummaries(): Promise<GameSummary[]> {
+      return this._http.get('summaries')
   }
   
   public async getGame(gameId: number): Promise<Game> {
-    return this._http.get(`game/${gameId}`)
+    return this._http.get(`${gameId}`)
+  }
+
+  public async getAllGames(): Promise<Game[]> {
+    return this._http.get('')
   }
 }
 

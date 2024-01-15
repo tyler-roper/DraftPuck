@@ -1,10 +1,10 @@
 ﻿namespace DraftPuck.Api.Api
 {
-    public class UserController : DraftPuckApiControllerBase
+    public class UsersController : DraftPuckApiControllerBase
     {
         private readonly DraftPuckContext _dbContext;
 
-        public UserController(DraftPuckContext dbContext)
+        public UsersController(DraftPuckContext dbContext)
         {
             _dbContext = dbContext;
         }

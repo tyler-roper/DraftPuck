@@ -9,30 +9,30 @@ namespace DraftPuck.Api.Services
         private readonly DraftPuckContext _dbContext;
         private readonly ILobbyService _lobbyService;
         private readonly ILobbyEventService _lobbyEventService;
+        private readonly IMapper _mapper;
         static readonly Random _random = new();
 
-        public GameService(INhlService nhlApi, IGameCache gameCache, DraftPuckContext dbContext, ILobbyService lobbyService, ILobbyEventService lobbyEventService)
+        public GameService(INhlService nhlApi, IGameCache gameCache, DraftPuckContext dbContext, ILobbyService lobbyService, ILobbyEventService lobbyEventService, IMapper mapper)
         {
             _nhlService = nhlApi;
             _gameCache = gameCache;
             _dbContext = dbContext;
             _lobbyService = lobbyService;
             _lobbyEventService = lobbyEventService;
+            _mapper = mapper;
         }
 
         public async Task CheckGamesAsync()
         {
-            RemoveOldGamesFromCache();
-
             var cachedGames = _gameCache.GetAllGames();
-            if (cachedGames.Count == 0)
+            if (cachedGames.Count == 0 || (DateTime.UtcNow.Minute == 0 && DateTime.UtcNow.Second <= 10))
             {
-                await AddAllScheduledGamesToCache();
+                await CheckScheduleAsync(cachedGames);
                 return;
             }
 
             foreach (var game in cachedGames)
-                await UpdateGame(game);
+                await UpdateGameAsync(game);
         }
 
         public Game GetGameById(int id)
@@ -40,7 +40,18 @@ namespace DraftPuck.Api.Services
             return _gameCache.GetGameById(id)!;
         }
 
-        private async Task UpdateGame(Game cachedGame)
+        public List<Game> GetAllGames()
+        {
+            return _gameCache.GetAllGames();
+        }
+
+        public List<GameSummary> GetAllGameSummaries()
+        {
+            var games = _gameCache.GetAllGames();
+            return _mapper.Map<List<GameSummary>>(games);
+        }
+
+        private async Task UpdateGameAsync(Game cachedGame)
         {
             if (!ShouldUpdateGame(cachedGame)) return;
             var existingHomeRoster = cachedGame.HomeTeam.Roster;
@@ -50,7 +61,7 @@ namespace DraftPuck.Api.Services
 
             if (updatedGame.PlayerSummaries.Any() && !existingHomeRoster.Any() && !existingAwayRoster.Any())
             {
-                var playersWithStats = await FetchPlayerStats(updatedGame.PlayerSummaries);
+                var playersWithStats = await FetchPlayerStatsAsync(updatedGame.PlayerSummaries);
                 existingHomeRoster = playersWithStats.Where(player => player.TeamId == cachedGame.HomeTeam.Id).ToList();
                 existingAwayRoster = playersWithStats.Where(player => player.TeamId == cachedGame.AwayTeam.Id).ToList();
             }
@@ -67,7 +78,7 @@ namespace DraftPuck.Api.Services
 
             _gameCache.UpdateGame(updatedGame);
 
-            await HandleScoringUpdates(goalsBeforeUpdate, goalsAfterUpdate, updatedGame);
+            await HandleScoringUpdatesAsync(goalsBeforeUpdate, goalsAfterUpdate, updatedGame);
         }
 
         private static Dictionary<int, GoalSummary> GetGoalSummaries(Game game) =>
@@ -84,7 +95,7 @@ namespace DraftPuck.Api.Services
                 PeriodTime = v.TimeInPeriod
             });
 
-        private async Task HandleNewScoringPlay(int gameId, Play play)
+        private async Task HandleNewScoringPlayAsync(int gameId, Play play)
         {
             var scorerId = play.PrimaryPlayerId;
             if (scorerId == null) return;
@@ -132,7 +143,7 @@ namespace DraftPuck.Api.Services
             return allPlayers.Single(p => p.Id == id);
         }
 
-        private async Task HandleScorerChange(int gameId, Play play, Player newScorer, Player oldScorer)
+        private async Task HandleScorerChangeAsync(int gameId, Play play, Player newScorer, Player oldScorer)
         {
             await _lobbyEventService.SendGoalChangedEvent(gameId, newScorer.Id, oldScorer.Id, play.PrimaryTeamId!.Value);
 
@@ -160,7 +171,7 @@ namespace DraftPuck.Api.Services
             await _dbContext.SaveChangesAsync();
         }
 
-        private async Task HandleGoalRemoved(int gameId, int eventId, Player scorer)
+        private async Task HandleGoalRemovedAsync(int gameId, int eventId, Player scorer)
         {
             var affectedDrinks = await _dbContext.Drinks
                 .Include(d => d.RecipientLobbyMember)
@@ -198,21 +209,29 @@ namespace DraftPuck.Api.Services
             return false;
         }
 
-        private async Task AddAllScheduledGamesToCache()
+        private async Task CheckScheduleAsync(List<Game> cachedGames)
         {
             var schedule = await _nhlService.GetScheduleByDateAsync(DateTime.UtcNow.AddHours(-4));
 
+            //Remove old games
+            foreach (var cachedGame in cachedGames) {
+                if (!schedule.Games.Select(g => g.Id).Contains(cachedGame.Id))
+                    _gameCache.RemoveGame(cachedGame);
+            }
+
             if (!schedule.Games.Any()) return;
 
-            var tasks = schedule.Games
+
+            var getGamesNotYetCached = schedule.Games
+                .Where(scheduledGame => !cachedGames.Select(g => g.Id).Contains(scheduledGame.Id))
                 .Select(game => _nhlService.GetGameAsync(game.Id));
 
-            (await Task.WhenAll(tasks))
+            (await Task.WhenAll(getGamesNotYetCached))
                 .ToList()
                 .ForEach(_gameCache.AddGame);
         }
 
-        private async Task<List<Player>> FetchPlayerStats(List<PlayerSummary> playerSummaries)
+        private async Task<List<Player>> FetchPlayerStatsAsync(List<PlayerSummary> playerSummaries)
         {
             var playerTasks = new List<Task<Player>>();
             foreach (var playerSummary in playerSummaries)
@@ -223,15 +242,6 @@ namespace DraftPuck.Api.Services
                 .Select(task => task.Result)
                 .OrderByDescending(p => p.Goals)
                 .ToList();
-        }
-        private void RemoveOldGamesFromCache()
-        {
-            var cachedGames = _gameCache.GetAllGames();
-            var staleGames = cachedGames
-                .Where(GameIsOld)
-                .ToList();
-
-            staleGames.ForEach(_gameCache.RemoveGame);
         }
 
         private static void SetPlayDateTimes(Game cachedGame, Game updatedGame)
@@ -286,7 +296,7 @@ namespace DraftPuck.Api.Services
             }
         }
 
-        private async Task HandleScoringUpdates(Dictionary<int, GoalSummary> goalsBeforeUpdate, Dictionary<int, GoalSummary> goalsAfterUpdate, Game game)
+        private async Task HandleScoringUpdatesAsync(Dictionary<int, GoalSummary> goalsBeforeUpdate, Dictionary<int, GoalSummary> goalsAfterUpdate, Game game)
         {
             foreach (var goalAfterUpdate in goalsAfterUpdate)
             {
@@ -298,7 +308,7 @@ namespace DraftPuck.Api.Services
 
                 if (isNewGoal)
                 {
-                    await HandleNewScoringPlay(game.Id, newScoringPlay);
+                    await HandleNewScoringPlayAsync(game.Id, newScoringPlay);
                     continue;
                 }
 
@@ -308,8 +318,8 @@ namespace DraftPuck.Api.Services
 
                 if (isScoringChange)
                 {
-                    await HandleScorerChange(game.Id, newScoringPlay, newScorer, oldScorer);
-                    await HandleNewScoringPlay(game.Id, newScoringPlay);
+                    await HandleScorerChangeAsync(game.Id, newScoringPlay, newScorer, oldScorer);
+                    await HandleNewScoringPlayAsync(game.Id, newScoringPlay);
                     continue;
                 }
             }
@@ -323,13 +333,8 @@ namespace DraftPuck.Api.Services
                 if (!wasRemoved) continue;
 
                 var scorer = goalBeforeUpdate.Value.Player;
-                await HandleGoalRemoved(game.Id, goalBeforeUpdate.Key, scorer);
+                await HandleGoalRemovedAsync(game.Id, goalBeforeUpdate.Key, scorer);
             }
-        }
-
-        private static bool GameIsOld(Game game)
-        {
-            return game.GameState == GameState.Final && game.DateTime.Date == DateTime.UtcNow.Date.AddDays(-1);
         }
     }
 }

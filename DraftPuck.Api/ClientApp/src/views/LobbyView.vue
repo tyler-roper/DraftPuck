@@ -5,8 +5,8 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import * as SignalR from '@microsoft/signalr'
-import { addHours, compareAsc, format } from 'date-fns'
-import NHL from '@/services/NhlService'
+import { compareAsc } from 'date-fns'
+import GameService from '@/services/GameService'
 import LobbyEventType from '@/enums/lobbyEventType'
 import { parseAllDates } from '@/helpers/dateHelpers'
 import { parseLobbyEventText } from '@/helpers/lobbyEventTemplateHelpers'
@@ -70,7 +70,6 @@ let hubConnection: SignalR.HubConnection
 //computed
 const feedItems = computed(getFeedItems)
 const notificationPermissionsGranted = computed(() => Notification.permission === 'granted')
-const selectedDateString = computed(() => (lobby.value ? format(addHours(lobby.value.created, -4), 'yyyy-MM-dd') : '1900-01-01'))
 const currentLobbyMember = computed(() => lobby.value?.members.find((m) => m.userId === currentUserId.value))
 const loadingMessage = computed(() => LoadingMessages.random())
 const isLobbyView = computed(() => currentView.value === 'lobby')
@@ -144,13 +143,7 @@ function setView(view: View) {
 }
 
 async function setGames() {
-  games.value = []
-
-  const schedule = await NHL.getSchedule(selectedDateString.value)
-  if (!schedule.games.length) return
-
-  const gamePromises = schedule.games.map(async (game) => await getGameData(game.id))
-  games.value = await Promise.all(gamePromises)
+  games.value = await GameService.getAllGames();
   games.value.forEach((game) => {
     if (!isGameStale(game)) timers.value.push(window.setTimeout(() => pollForUpdates(game), ACTIVE_GAME_POLLING_INTERVAL_MS))
   })
@@ -162,7 +155,7 @@ async function updateGame(gameId: number) {
 }
 
 async function getGameData(gameId: number) {
-  return await NHL.getGame(gameId)
+  return await GameService.getGame(gameId)
 }
 
 async function pollForUpdates(game: Game) {
@@ -323,14 +316,16 @@ watch(() => feedItems.value.length, (newLength, oldLength) => {
     <template v-if="!isInvalidLobby">
       <VInstructionsModal v-if="isInstructionsVisible" :join-code="lobby?.joinCode" @close="isInstructionsVisible = false" />
 
-      <div class="bg-stone-900 px-sm-4 px-2 py-2 shadow position-relative d-flex align-items-center" style="z-index: 10">
+      <div class="bg-stone-900 px-sm-4 px-2 py-2 shadow position-relative d-flex align-items-center justify-content-between" style="z-index: 10">
         <router-link to="/" class="banner-logo text-stone-0 text-decoration-none" style="cursor: pointer">
           <img src="/img/logo-wide.png" />
         </router-link>
 
-        <a class="d-flex ms-auto pt-1 text-stone-0 fw-bold text-decoration-none" role="button" @click="isInstructionsVisible = true">
-          <i class="fi fi-rr-question-square d-block ms-4"></i>
-          <span class="text-uppercase ms-2 d-block" style="margin-top: -2px">How To Play</span>
+        <a target="_blank" class="text-decoration-none text-uppercase fw-bold mt-1 fs-8" href="https://discord.gg/Vgj9RbetDB">Join the Discord</a>
+
+        <a class="d-flex pt-1 text-stone-0 fw-bold text-decoration-none align-items-center" role="button" @click="isInstructionsVisible = true">
+          <i class="fi fi-rr-question-square d-block fs-3" style="line-height: 20px"></i>
+          <span class="d-none d-sm-block text-uppercase ms-2" style="margin-top: -2px">How To Play</span>
         </a>
       </div>
 
@@ -477,4 +472,4 @@ watch(() => feedItems.value.length, (newLength, oldLength) => {
   border-radius: 20px;
 }
 </style>
-@/services/NhlService
+@/services/NhlService@/services/GameService

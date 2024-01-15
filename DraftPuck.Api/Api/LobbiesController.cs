@@ -1,11 +1,11 @@
 ﻿namespace DraftPuck.Api.Api
 {
-    public class LobbyController : DraftPuckApiControllerBase
+    public class LobbiesController : DraftPuckApiControllerBase
     {
         private readonly ILobbyService _lobbyService;
         private readonly IMapper _mapper;
 
-        public LobbyController(ILobbyService lobbyService, IMapper mapper)
+        public LobbiesController(ILobbyService lobbyService, IMapper mapper)
         {
             _lobbyService = lobbyService;
             _mapper = mapper;

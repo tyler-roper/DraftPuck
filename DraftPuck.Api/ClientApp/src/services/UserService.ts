@@ -1,6 +1,6 @@
 ﻿import HttpService, { type IHttpService } from '@/services/HttpService'
 
-const controller = 'user'
+const controller = 'users'
 
 class UserService {
   private readonly _http: IHttpService

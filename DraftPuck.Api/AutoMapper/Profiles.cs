@@ -153,6 +153,8 @@ public class GameSummaryProfile : Profile
             .ForMember(dest => dest.DateTime, opt => opt.MapFrom(src => src.StartTimeUTC))
             .ForMember(dest => dest.GameState, opt => opt.MapFrom(src => MapperHelpers.MapGameState(src.GameState)))
             .ForMember(dest => dest.GameType, opt => opt.MapFrom(src => MapperHelpers.MapGameType(src.GameType)));
+
+        CreateMap<Game, GameSummary>();
     }
 }
 
