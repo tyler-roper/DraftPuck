@@ -251,20 +251,20 @@ function formatAsTime(date: Date | string) {
             <a role="button" v-if="allGameEventsOn" class="text-decoration-none text-primary fs-8 ms-3" @click="hideAllGameEvents">Hide All</a>
           </div>
           <div class="py-3 ps-4">
-            <VSwitch v-model="filters.showGoals" name="check-button" size="lg" class="mb-3" @change="saveFiltersToLocalStorage" switch>Goal</VSwitch>
-            <VSwitch v-model="filters.showPenalties" name="check-button" size="lg" class="my-3" @change="saveFiltersToLocalStorage" switch
+            <VSwitch v-model="filters.showGoals" id="showGoals" name="check-button" size="lg" class="mb-3" @change="saveFiltersToLocalStorage" switch>Goal</VSwitch>
+            <VSwitch v-model="filters.showPenalties" id="showPenalties" name="check-button" size="lg" class="my-3" @change="saveFiltersToLocalStorage" switch
               >Penalty</VSwitch
             >
-            <VSwitch v-model="filters.showPeriodStarts" name="check-button" size="lg" class="my-3" @change="saveFiltersToLocalStorage" switch
+            <VSwitch v-model="filters.showPeriodStarts" id="showPeriodStarts" name="check-button" size="lg" class="my-3" @change="saveFiltersToLocalStorage" switch
               >Period Start</VSwitch
             >
-            <VSwitch v-model="filters.showPeriodEnds" name="check-button" size="lg" class="my-3" @change="saveFiltersToLocalStorage" switch
+            <VSwitch v-model="filters.showPeriodEnds" id="showPeriodEnds" name="check-button" size="lg" class="my-3" @change="saveFiltersToLocalStorage" switch
               >Period End</VSwitch
             >
-            <VSwitch v-model="filters.showGameEnds" name="check-button" size="lg" class="my-3" @change="saveFiltersToLocalStorage" switch
+            <VSwitch v-model="filters.showGameEnds" id="showGameEnds" name="check-button" size="lg" class="my-3" @change="saveFiltersToLocalStorage" switch
               >Game End</VSwitch
             >
-            <VSwitch v-model="filters.showChallenges" name="check-button" size="lg" class="my-3" @change="saveFiltersToLocalStorage" switch
+            <VSwitch v-model="filters.showChallenges" id="showChallenges" name="check-button" size="lg" class="my-3" @change="saveFiltersToLocalStorage" switch
               >Coach's Challenge</VSwitch
             >
           </div>
@@ -275,19 +275,19 @@ function formatAsTime(date: Date | string) {
             <a role="button" v-if="allLobbyEventsOn" class="text-decoration-none text-primary fs-8 ms-3" @click="hideAllLobbyEvents">Hide All</a>
           </div>
           <div class="py-3 ps-4">
-            <VSwitch v-model="filters.showUserJoin" name="check-button" size="lg" class="mb-3" @change="saveFiltersToLocalStorage" switch
+            <VSwitch v-model="filters.showUserJoin" id="showUserJoin" name="check-button" size="lg" class="mb-3" @change="saveFiltersToLocalStorage" switch
               >User Joined</VSwitch
             >
-            <VSwitch v-model="filters.showNameChange" name="check-button" size="lg" class="mb-3" @change="saveFiltersToLocalStorage" switch
+            <VSwitch v-model="filters.showNameChange" id="showNameChange" name="check-button" size="lg" class="mb-3" @change="saveFiltersToLocalStorage" switch
               >Name Change</VSwitch
             >
-            <VSwitch v-model="filters.showPicks" name="check-button" size="lg" class="my-3" @change="saveFiltersToLocalStorage" switch
+            <VSwitch v-model="filters.showPicks" id="showPicks" name="check-button" size="lg" class="my-3" @change="saveFiltersToLocalStorage" switch
               >Pick Player</VSwitch
             >
-            <VSwitch v-model="filters.showDrinkAwarded" name="check-button" size="lg" @change="saveFiltersToLocalStorage" class="my-3" switch
+            <VSwitch v-model="filters.showDrinkAwarded" id="showDrinkAwarded" name="check-button" size="lg" @change="saveFiltersToLocalStorage" class="my-3" switch
               >Drink Awarded</VSwitch
             >
-            <VSwitch v-model="filters.showDrinkAssigned" name="check-button" size="lg" @change="saveFiltersToLocalStorage" class="my-3" switch
+            <VSwitch v-model="filters.showDrinkAssigned" id="showDrinkAssigned" name="check-button" size="lg" @change="saveFiltersToLocalStorage" class="my-3" switch
               >Drink Assigned</VSwitch
             >
           </div>

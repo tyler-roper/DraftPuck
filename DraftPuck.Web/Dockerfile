@@ -7,12 +7,12 @@ LABEL BUILD_IMAGE=true
 RUN apk add --update nodejs npm
 WORKDIR /repo
 
-COPY ./DraftPuck.Api/DraftPuck.Api.csproj ./DraftPuck.Api/
+COPY ./DraftPuck.Web/DraftPuck.Web.csproj ./DraftPuck.Web/
 COPY ./DraftPuck.sln ./
-COPY ./DraftPuck.Api/ClientApp/package.json ./DraftPuck.Api/ClientApp/
-COPY ./DraftPuck.Api/ClientApp/package-lock.json ./DraftPuck.Api/ClientApp/
+COPY ./DraftPuck.Web/ClientApp/package.json ./DraftPuck.Web/ClientApp/
+COPY ./DraftPuck.Web/ClientApp/package-lock.json ./DraftPuck.Web/ClientApp/
 
-WORKDIR /repo/DraftPuck.Api/ClientApp
+WORKDIR /repo/DraftPuck.Web/ClientApp
 RUN npm install
 
 WORKDIR /repo
@@ -23,7 +23,7 @@ ARG BUILD_CONFIGURATION=Release
 RUN dotnet restore
 
 RUN dotnet build --no-restore -c $BUILD_CONFIGURATION && \
-	dotnet publish "DraftPuck.Api/DraftPuck.Api.csproj" --no-build --no-restore -c $BUILD_CONFIGURATION -o /app/publish
+	dotnet publish "DraftPuck.Web/DraftPuck.Web.csproj" --no-build --no-restore -c $BUILD_CONFIGURATION -o /app/publish
 
 FROM base AS final
 WORKDIR /opt/app

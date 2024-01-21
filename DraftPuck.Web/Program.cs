@@ -38,6 +38,7 @@ builder.Services
     .AddTransient<ILobbyService, LobbyService>()
     .AddTransient<ILobbyEventService, LobbyEventService>()
     .AddTransient<INhlService, NhlService>()
+    .AddTransient<IUserService, UserService>()
     .AddEndpointsApiExplorer()
     .AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 

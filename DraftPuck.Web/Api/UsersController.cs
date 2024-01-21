@@ -1,20 +1,18 @@
-﻿using DraftPuck.Data.Data;
-
-namespace DraftPuck.Web.Api;
+﻿namespace DraftPuck.Web.Api;
 
 public class UsersController : DraftPuckApiControllerBase
 {
-    private readonly DraftPuckContext _dbContext;
+    private readonly IUserService _userService;
 
-    public UsersController(DraftPuckContext dbContext)
+    public UsersController(IUserService userService)
     {
-        _dbContext = dbContext;
+        _userService = userService;
     }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetUserById(Guid id)
     {
-        User? user = await _dbContext.Users.FindAsync(id);
+        var user = await _userService.GetUserByIdAsync(id);
         return user == null
             ? NotFound()
             : Ok(user);
@@ -23,10 +21,7 @@ public class UsersController : DraftPuckApiControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateUser()
     {
-        User user = new();
-        _ = _dbContext.Users.Add(user);
-        _ = await _dbContext.SaveChangesAsync();
-
+        var user = await _userService.CreateUserAsync();
         return Created($"/user/{user.Id}", user);
     }
 }
