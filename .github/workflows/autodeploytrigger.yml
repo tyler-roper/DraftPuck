@@ -36,7 +36,7 @@ jobs:
         with:
           push: true
           tags: brewpuck.azurecr.io/brewpuck:${{ github.sha }}
-          file: DraftPuck.Api/Dockerfile
+          file: DraftPuck.Web/Dockerfile
 
   deploy:
     runs-on: ubuntu-latest
