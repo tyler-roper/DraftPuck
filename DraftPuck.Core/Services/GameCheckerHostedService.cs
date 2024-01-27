@@ -32,7 +32,7 @@ public class GameCheckerHostedService : IHostedService
             );
         }
 
-        _ = Task.Run(action, cancellationToken);
+        Task.Run(action, cancellationToken);
         return Task.CompletedTask;
     }
 
@@ -44,8 +44,8 @@ public class GameCheckerHostedService : IHostedService
 
     private async Task CheckGames(CancellationToken cancellationToken)
     {
-        using IServiceScope scope = _services.CreateScope();
-        IGameService? gameService = scope.ServiceProvider.GetService<IGameService>();
+        using var scope = _services.CreateScope();
+        var gameService = scope.ServiceProvider.GetService<IGameService>();
         if (gameService == null)
         {
             return;

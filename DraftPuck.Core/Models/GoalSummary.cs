@@ -7,16 +7,16 @@ public class GoalSummary
 
     public bool IsSameGoal(GoalSummary goalSummary)
     {
-        bool isSamePlayer = Player.Id == goalSummary.Player.Id;
-        bool isSameTime = Math.Abs(GetPeriodTimeInSeconds(PeriodTime) - GetPeriodTimeInSeconds(goalSummary.PeriodTime)) <= 3;
+        var isSamePlayer = Player.Id == goalSummary.Player.Id;
+        var isSameTime = Math.Abs(GetPeriodTimeInSeconds(PeriodTime) - GetPeriodTimeInSeconds(goalSummary.PeriodTime)) <= 3;
         return isSamePlayer && isSameTime;
     }
 
     private static int GetPeriodTimeInSeconds(string periodTime)
     {
-        string[] parts = periodTime.Split(':');
-        int minutes = int.Parse(parts[0]);
-        int seconds = int.Parse(parts[1]);
+        var parts = periodTime.Split(':');
+        var minutes = int.Parse(parts[0]);
+        var seconds = int.Parse(parts[1]);
 
         return (minutes * 60) + seconds;
     }

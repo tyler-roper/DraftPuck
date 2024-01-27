@@ -12,7 +12,9 @@ public class UserService : IUserService
     }
 
     public async Task<User?> GetUserByIdAsync(Guid id)
-        => await _dbContext.Users.FindAsync(id);
+    {
+        return await _dbContext.Users.FindAsync(id);
+    }
 
     public async Task<User> CreateUserAsync()
     {

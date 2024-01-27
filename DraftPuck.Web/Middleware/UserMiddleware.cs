@@ -13,14 +13,14 @@ public class UserMiddleware
 
     public async Task InvokeAsync(HttpContext context, DraftPuckContext dbContext)
     {
-        string? userId = context.Request.Headers["user-id"].FirstOrDefault();
-        if (userId == null || !Guid.TryParse(userId, out Guid id))
+        var userId = context.Request.Headers["user-id"].FirstOrDefault();
+        if (userId == null || !Guid.TryParse(userId, out var id))
         {
             await _next(context);
             return;
         }
 
-        User? user = await dbContext.Users.FindAsync(id);
+        var user = await dbContext.Users.FindAsync(id);
         if (user != null)
         {
             context.Items["User"] = user;

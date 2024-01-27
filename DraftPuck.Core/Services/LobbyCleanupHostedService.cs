@@ -20,10 +20,10 @@ public class LobbyCleanupHostedService : IHostedService
     {
         _logger.LogInformation("Starting LobbyCleanupHostedService...");
 
-        TimeSpan interval = TimeSpan.FromHours(24);
-        DateTime nextMidnight = DateTime.Today.AddDays(1);
-        DateTime curTime = DateTime.Now;
-        TimeSpan firstInterval = nextMidnight.Subtract(curTime);
+        var interval = TimeSpan.FromHours(24);
+        var nextMidnight = DateTime.Today.AddDays(1);
+        var curTime = DateTime.Now;
+        var firstInterval = nextMidnight.Subtract(curTime);
 
         async void action()
         {
@@ -37,7 +37,7 @@ public class LobbyCleanupHostedService : IHostedService
             );
         }
 
-        _ = Task.Run(action, cancellationToken);
+        Task.Run(action, cancellationToken);
         return Task.CompletedTask;
     }
 
@@ -49,8 +49,8 @@ public class LobbyCleanupHostedService : IHostedService
 
     private async Task DeleteOldLobbies(CancellationToken cancellationToken)
     {
-        using IServiceScope scope = _services.CreateScope();
-        ILobbyService? lobbyService = scope.ServiceProvider.GetService<ILobbyService>();
+        using var scope = _services.CreateScope();
+        var lobbyService = scope.ServiceProvider.GetService<ILobbyService>();
         if (lobbyService == null)
         {
             return;

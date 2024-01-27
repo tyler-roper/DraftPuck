@@ -7,7 +7,7 @@ using DraftPuck.Web.Middleware;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 
-WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration.AddEnvironmentVariables("DRAFTPUCK_");
 
@@ -46,7 +46,7 @@ builder.Services
 builder.WebHost.UseKestrel();
 
 //build
-WebApplication app = builder.Build();
+var app = builder.Build();
 
 //this order matters!
 app
@@ -57,12 +57,12 @@ app
     .UseHttpsRedirection()
     .UseEndpoints(endpoints =>
     {
-        _ = endpoints.MapHub<LobbyHub>("/hub");
-        _ = endpoints.MapControllers();
+        endpoints.MapHub<LobbyHub>("/hub");
+        endpoints.MapControllers();
     })
     .UseMvc(routes =>
     {
-        _ = routes.MapRoute(name: "default", template: "{controller=App}/{action=Index}/{id?}");
+        routes.MapRoute(name: "default", template: "{controller=App}/{action=Index}/{id?}");
         routes.MapSpaFallbackRoute("spa-routes", new { controller = "App", action = "Index" });
     });
 

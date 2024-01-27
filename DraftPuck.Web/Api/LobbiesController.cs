@@ -24,7 +24,7 @@ public class LobbiesController : DraftPuckApiControllerBase
             return BadRequest();
         }
 
-        Lobby lobby = await _lobbyService.CreateLobby(CurrentUser.Id, request);
+        var lobby = await _lobbyService.CreateLobby(CurrentUser.Id, request);
 
         return Created($"lobbies/{lobby.Id}", _mapper.Map<LobbyResponse>(lobby));
     }
@@ -37,7 +37,7 @@ public class LobbiesController : DraftPuckApiControllerBase
             return BadRequest();
         }
 
-        Lobby? lobby = await _lobbyService.GetLobby(code);
+        var lobby = await _lobbyService.GetLobby(code);
 
         return lobby == null
             ? NotFound()
@@ -54,7 +54,7 @@ public class LobbiesController : DraftPuckApiControllerBase
 
         try
         {
-            List<LobbyEvent> lobbyEvents = await _lobbyService.GetLobbyEvents(CurrentUser.Id, id);
+            var lobbyEvents = await _lobbyService.GetLobbyEvents(CurrentUser.Id, id);
             return Ok(lobbyEvents);
         }
         catch (Exception ex)
@@ -71,11 +71,11 @@ public class LobbiesController : DraftPuckApiControllerBase
             return Unauthorized();
         }
 
-        Guid userId = !request.IsBot
+        var userId = !request.IsBot
             ? CurrentUser!.Id
             : Guid.NewGuid();
 
-        Lobby? lobby = await _lobbyService.JoinLobbyByCode(userId, code, request);
+        var lobby = await _lobbyService.JoinLobbyByCode(userId, code, request);
         return lobby == null ? NotFound() : Ok(_mapper.Map<LobbyResponse>(lobby));
     }
 
@@ -89,7 +89,7 @@ public class LobbiesController : DraftPuckApiControllerBase
 
         try
         {
-            LobbyMemberPick pick = await _lobbyService.MakePick(CurrentUser.Id, code, request);
+            var pick = await _lobbyService.MakePick(CurrentUser.Id, code, request);
             return Ok(_mapper.Map<LobbyMemberPickResponse>(pick));
         }
         catch (KeyNotFoundException ex)
@@ -112,7 +112,7 @@ public class LobbiesController : DraftPuckApiControllerBase
 
         try
         {
-            Drink drink = await _lobbyService.AssignDrink(CurrentUser.Id, code, drinkId, recipientLobbyMemberId);
+            var drink = await _lobbyService.AssignDrink(CurrentUser.Id, code, drinkId, recipientLobbyMemberId);
             return Ok(_mapper.Map<DrinkResponse>(drink));
         }
         catch (KeyNotFoundException ex)

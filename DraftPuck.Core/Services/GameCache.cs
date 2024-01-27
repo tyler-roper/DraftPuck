@@ -9,7 +9,7 @@ public class GameCache : IGameCache
 
     public Game? GetGameById(int id)
     {
-        return _games.TryGetValue(id, out Game? game) ? game : null;
+        return _games.TryGetValue(id, out var game) ? game : null;
     }
 
     public List<Game> GetAllGames()
@@ -19,17 +19,17 @@ public class GameCache : IGameCache
 
     public void RemoveGame(int id)
     {
-        _ = _games.TryRemove(id, out _);
+        _games.TryRemove(id, out _);
     }
 
     public void RemoveGame(Game game)
     {
-        _ = _games.TryRemove(game.Id, out _);
+        _games.TryRemove(game.Id, out _);
     }
 
     public void AddGame(Game game)
     {
-        _ = _games.TryAdd(game.Id, game);
+        _games.TryAdd(game.Id, game);
     }
 
     public void UpdateGame(Game game)

@@ -117,8 +117,8 @@ public class LobbyEventService : ILobbyEventService
         }
         finally
         {
-            _ = _dbContext.LobbyEvents.Add(lobbyEvent);
-            _ = await _dbContext.SaveChangesAsync();
+            _dbContext.LobbyEvents.Add(lobbyEvent);
+            await _dbContext.SaveChangesAsync();
         }
     }
 
@@ -147,8 +147,8 @@ public class LobbyEventService : ILobbyEventService
         }
         finally
         {
-            _ = _dbContext.LobbyEvents.Add(lobbyEvent);
-            _ = await _dbContext.SaveChangesAsync();
+            _dbContext.LobbyEvents.Add(lobbyEvent);
+            await _dbContext.SaveChangesAsync();
         }
     }
 

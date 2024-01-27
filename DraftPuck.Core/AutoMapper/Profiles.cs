@@ -7,7 +7,7 @@ public class LobbyProfile : Profile
 {
     public LobbyProfile()
     {
-        _ = CreateMap<Lobby, LobbyResponse>()
+        CreateMap<Lobby, LobbyResponse>()
             .ForMember(dest => dest.Members, opt => opt.MapFrom(src => src.LobbyMembers));
     }
 }
@@ -16,7 +16,7 @@ public class LobbyMemberProfile : Profile
 {
     public LobbyMemberProfile()
     {
-        _ = CreateMap<LobbyMember, LobbyMemberResponse>()
+        CreateMap<LobbyMember, LobbyMemberResponse>()
             .ForMember(dest => dest.Picks, opt => opt.MapFrom(src => src.LobbyMemberPicks));
     }
 }
@@ -25,7 +25,7 @@ public class LobbyMemberPickProfile : Profile
 {
     public LobbyMemberPickProfile()
     {
-        _ = CreateMap<LobbyMemberPick, LobbyMemberPickResponse>();
+        CreateMap<LobbyMemberPick, LobbyMemberPickResponse>();
     }
 }
 
@@ -33,7 +33,7 @@ public class DrinkProfile : Profile
 {
     public DrinkProfile()
     {
-        _ = CreateMap<Drink, DrinkResponse>();
+        CreateMap<Drink, DrinkResponse>();
     }
 }
 
@@ -41,7 +41,7 @@ public class MessageProfile : Profile
 {
     public MessageProfile()
     {
-        _ = CreateMap<MessageEntity, MessageModel>();
+        CreateMap<MessageEntity, MessageModel>();
     }
 }
 
@@ -49,7 +49,7 @@ public class GameProfile : Profile
 {
     public GameProfile()
     {
-        _ = CreateMap<NhlFullGame, Game>()
+        CreateMap<NhlFullGame, Game>()
             .ForMember(dest => dest.DateTime, opt => opt.MapFrom(src => src.StartTimeUTC))
             .ForMember(dest => dest.GameState, opt => opt.MapFrom(src => MapperHelpers.MapGameState(src.GameState)))
             .ForMember(dest => dest.PeriodType, opt => opt.MapFrom(src => MapperHelpers.MapPeriodType(src.PeriodDescriptor.PeriodType)))
@@ -72,7 +72,7 @@ public class TeamProfile : Profile
 {
     public TeamProfile()
     {
-        _ = CreateMap<NhlTeamSummary, Team>()
+        CreateMap<NhlTeamSummary, Team>()
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name.Default))
             .ForMember(dest => dest.Location, opt => opt.MapFrom(src => MapperHelpers.MapLocation(src.PlaceName)))
             .ForMember(dest => dest.Abbreviation, opt => opt.MapFrom(src => src.Abbrev))
@@ -84,7 +84,7 @@ public class GameTeamProfile : Profile
 {
     public GameTeamProfile()
     {
-        _ = CreateMap<NhlTeamSummary, GameTeam>();
+        CreateMap<NhlTeamSummary, GameTeam>();
     }
 }
 
@@ -92,7 +92,7 @@ public class PlayerProfile : Profile
 {
     public PlayerProfile()
     {
-        _ = CreateMap<NhlPlayer, Player>()
+        CreateMap<NhlPlayer, Player>()
             .ForMember(dest => dest.FirstName, opt => opt.MapFrom(src => src.FirstName.Default))
             .ForMember(dest => dest.LastName, opt => opt.MapFrom(src => src.LastName.Default))
             .ForMember(dest => dest.TeamId, opt => opt.MapFrom(src => src.CurrentTeamId))
@@ -109,7 +109,7 @@ public class PlayerSummaryProfile : Profile
 {
     public PlayerSummaryProfile()
     {
-        _ = CreateMap<NhlPlayerSummary, PlayerSummary>()
+        CreateMap<NhlPlayerSummary, PlayerSummary>()
             .ForMember(dest => dest.FirstName, opt => opt.MapFrom(src => src.FirstName.Default))
             .ForMember(dest => dest.LastName, opt => opt.MapFrom(src => src.LastName.Default))
             .ForMember(dest => dest.Number, opt => opt.MapFrom(src => src.SweaterNumber))
@@ -121,7 +121,7 @@ public class PlayProfile : Profile
 {
     public PlayProfile()
     {
-        _ = CreateMap<NhlPlay, Play>()
+        CreateMap<NhlPlay, Play>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.EventId))
             .ForMember(dest => dest.PeriodType, opt => opt.MapFrom(src => MapperHelpers.MapPeriodType(src.PeriodDescriptor.PeriodType)))
             .ForMember(dest => dest.TimeRemainingInPeriod, opt => opt.MapFrom(src => src.TimeRemaining))
@@ -138,7 +138,7 @@ public class PeriodSummaryProfile : Profile
 {
     public PeriodSummaryProfile()
     {
-        _ = CreateMap<NhlLinescorePeriod, PeriodSummary>()
+        CreateMap<NhlLinescorePeriod, PeriodSummary>()
             .ForMember(dest => dest.Number, opt => opt.MapFrom(src => src.Period))
             .ForMember(dest => dest.HomeGoals, opt => opt.MapFrom(src => src.Home))
             .ForMember(dest => dest.AwayGoals, opt => opt.MapFrom(src => src.Away));
@@ -149,12 +149,12 @@ public class GameSummaryProfile : Profile
 {
     public GameSummaryProfile()
     {
-        _ = CreateMap<NhlScheduleGame, GameSummary>()
+        CreateMap<NhlScheduleGame, GameSummary>()
             .ForMember(dest => dest.DateTime, opt => opt.MapFrom(src => src.StartTimeUTC))
             .ForMember(dest => dest.GameState, opt => opt.MapFrom(src => MapperHelpers.MapGameState(src.GameState)))
             .ForMember(dest => dest.GameType, opt => opt.MapFrom(src => MapperHelpers.MapGameType(src.GameType)));
 
-        _ = CreateMap<Game, GameSummary>();
+        CreateMap<Game, GameSummary>();
     }
 }
 
@@ -162,7 +162,7 @@ public class ScheduleProfile : Profile
 {
     public ScheduleProfile()
     {
-        _ = CreateMap<NhlSchedule, Schedule>()
+        CreateMap<NhlSchedule, Schedule>()
             .ForMember(dest => dest.Date, opt => opt.MapFrom(src => DateTime.ParseExact(src.GameWeek.First().Date, "yyyy-MM-dd", CultureInfo.InvariantCulture)))
             .ForMember(dest => dest.Games, opt => opt.MapFrom(src => src.GameWeek.First().Games));
     }

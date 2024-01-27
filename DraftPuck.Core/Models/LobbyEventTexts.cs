@@ -6,47 +6,23 @@ public static class LobbyEventTexts
 
     public static string GetTitle(LobbyEventType eventType)
     {
-        if (eventType == LobbyEventType.LobbyCreated)
-        {
-            return LobbyCreated.Title;
-        }
-
-        if (eventType == LobbyEventType.UserJoined)
-        {
-            return UserJoined.Title;
-        }
-
-        if (eventType == LobbyEventType.NewPick)
-        {
-            return NewPick.Title;
-        }
-
-        if (eventType == LobbyEventType.PickRemoved)
-        {
-            return PickRemoved.Title;
-        }
-
-        if (eventType == LobbyEventType.DrinkAwarded)
-        {
-            return DrinkAwarded.Title;
-        }
-
-        if (eventType == LobbyEventType.DrinkAssigned)
-        {
-            return DrinkAssigned.Title;
-        }
-
-        if (eventType == LobbyEventType.DrinkInvalidated)
-        {
-            return DrinkInvalidated.Title;
-        }
-
-        if (eventType == LobbyEventType.DrinkRevoked)
-        {
-            return DrinkRevoked.Title;
-        }
-
-        return eventType == LobbyEventType.GoalChanged
+        return eventType == LobbyEventType.LobbyCreated
+            ? LobbyCreated.Title
+            : eventType == LobbyEventType.UserJoined
+            ? UserJoined.Title
+            : eventType == LobbyEventType.NewPick
+            ? NewPick.Title
+            : eventType == LobbyEventType.PickRemoved
+            ? PickRemoved.Title
+            : eventType == LobbyEventType.DrinkAwarded
+            ? DrinkAwarded.Title
+            : eventType == LobbyEventType.DrinkAssigned
+            ? DrinkAssigned.Title
+            : eventType == LobbyEventType.DrinkInvalidated
+            ? DrinkInvalidated.Title
+            : eventType == LobbyEventType.DrinkRevoked
+            ? DrinkRevoked.Title
+            : eventType == LobbyEventType.GoalChanged
             ? GoalChanged.Title
             : eventType == LobbyEventType.GoalRemoved
             ? GoalRemoved.Title
@@ -57,47 +33,23 @@ public static class LobbyEventTexts
 
     public static string GetText(LobbyEventType eventType)
     {
-        if (eventType == LobbyEventType.LobbyCreated)
-        {
-            return Random(LobbyCreated.Texts);
-        }
-
-        if (eventType == LobbyEventType.UserJoined)
-        {
-            return Random(UserJoined.Texts);
-        }
-
-        if (eventType == LobbyEventType.NewPick)
-        {
-            return Random(NewPick.Texts);
-        }
-
-        if (eventType == LobbyEventType.PickRemoved)
-        {
-            return Random(PickRemoved.Texts);
-        }
-
-        if (eventType == LobbyEventType.DrinkAwarded)
-        {
-            return Random(DrinkAwarded.Texts);
-        }
-
-        if (eventType == LobbyEventType.DrinkAssigned)
-        {
-            return Random(DrinkAssigned.Texts);
-        }
-
-        if (eventType == LobbyEventType.DrinkInvalidated)
-        {
-            return Random(DrinkInvalidated.Texts);
-        }
-
-        if (eventType == LobbyEventType.DrinkRevoked)
-        {
-            return Random(DrinkRevoked.Texts);
-        }
-
-        return eventType == LobbyEventType.GoalChanged
+        return eventType == LobbyEventType.LobbyCreated
+            ? Random(LobbyCreated.Texts)
+            : eventType == LobbyEventType.UserJoined
+            ? Random(UserJoined.Texts)
+            : eventType == LobbyEventType.NewPick
+            ? Random(NewPick.Texts)
+            : eventType == LobbyEventType.PickRemoved
+            ? Random(PickRemoved.Texts)
+            : eventType == LobbyEventType.DrinkAwarded
+            ? Random(DrinkAwarded.Texts)
+            : eventType == LobbyEventType.DrinkAssigned
+            ? Random(DrinkAssigned.Texts)
+            : eventType == LobbyEventType.DrinkInvalidated
+            ? Random(DrinkInvalidated.Texts)
+            : eventType == LobbyEventType.DrinkRevoked
+            ? Random(DrinkRevoked.Texts)
+            : eventType == LobbyEventType.GoalChanged
             ? Random(GoalChanged.Texts)
             : eventType == LobbyEventType.GoalRemoved
             ? Random(GoalRemoved.Texts)

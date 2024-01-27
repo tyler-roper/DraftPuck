@@ -22,7 +22,7 @@ public static class MapperHelpers
             return 0;
         }
 
-        string[] split = timeRemaining.Split(':');
+        var split = timeRemaining.Split(':');
         return split.Length != 2 ? 0 : int.Parse(split[0]);
     }
 
@@ -33,7 +33,7 @@ public static class MapperHelpers
             return 0;
         }
 
-        string[] split = timeRemaining.Split(':');
+        var split = timeRemaining.Split(':');
         return split.Length != 2 ? 0 : int.Parse(split[1]);
     }
 
@@ -69,18 +69,12 @@ public static class MapperHelpers
 
     public static int? MapPrimaryPlayerId(NhlPlay play)
     {
-        PlayType playType = MapPlayType(play.TypeDescKey);
-        if (playType == PlayType.Faceoff)
-        {
-            return play.Details.WinningPlayerId;
-        }
-
-        if (playType == PlayType.Penalty)
-        {
-            return play.Details.CommittedByPlayerId ?? play.Details.ServedByPlayerId;
-        }
-
-        return playType is PlayType.ShotOnGoal or PlayType.MissedShot
+        var playType = MapPlayType(play.TypeDescKey);
+        return playType == PlayType.Faceoff
+            ? play.Details.WinningPlayerId
+            : playType == PlayType.Penalty
+            ? play.Details.CommittedByPlayerId ?? play.Details.ServedByPlayerId
+            : playType is PlayType.ShotOnGoal or PlayType.MissedShot
             ? play.Details.ShootingPlayerId
             : playType == PlayType.BlockedShot
             ? play.Details.BlockingPlayerId
@@ -111,7 +105,7 @@ public static class MapperHelpers
 
     public static List<TeamSituation> MapSituations(NhlSituation? situation, bool isHome)
     {
-        List<string>? teamSituations = isHome
+        var teamSituations = isHome
             ? situation?.HomeTeam?.SituationDescriptions
             : situation?.AwayTeam?.SituationDescriptions;
 
@@ -144,7 +138,7 @@ public static class MapperHelpers
 
     public static string KebabToCamelCase(string kebabString)
     {
-        string strWithSpaces = kebabString.Replace('-', ' ');
+        var strWithSpaces = kebabString.Replace('-', ' ');
         return CultureInfo.InvariantCulture.TextInfo.ToTitleCase(strWithSpaces);
     }
 }
