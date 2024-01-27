@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-	  <ProjectReference Include="..\DraftPuck.Common\DraftPuck.Common.csproj">
+	  <ProjectReference Include="..\DraftPuck.Shared\DraftPuck.Shared.csproj">
 		  <PrivateAssets>all</PrivateAssets>
 	  </ProjectReference>
   </ItemGroup>
