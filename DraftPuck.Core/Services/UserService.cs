@@ -19,7 +19,7 @@ public class UserService : IUserService
     public async Task<User> CreateUserAsync()
     {
         User user = new();
-        _dbContext.Users.Add(new User());
+        _dbContext.Users.Add(user);
         await _dbContext.SaveChangesAsync();
         return user;
     }
