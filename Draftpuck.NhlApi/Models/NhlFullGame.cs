@@ -20,7 +20,6 @@ public class NhlFullGame : NhlGameBase
         AwayTeam = landing.AwayTeam;
         HomeTeam = landing.HomeTeam;
         Clock = playByPlay.Clock;
-        Period = playByPlay.Period;
         PeriodDescriptor = playByPlay.PeriodDescriptor;
         RosterSpots = playByPlay.RosterSpots;
         DisplayPeriod = playByPlay.DisplayPeriod;
@@ -29,7 +28,6 @@ public class NhlFullGame : NhlGameBase
         Situation = landing.Situation;
     }
 
-    public int Period { get; set; }
     public NhlPeriodDescriptor PeriodDescriptor { get; set; } = null!;
     public List<NhlPlayerSummary> RosterSpots { get; set; } = null!;
     public int DisplayPeriod { get; set; }

@@ -474,7 +474,7 @@ function getFriendlyPosition(position: string) {
                       </tr>
                     </thead>
                     <tbody>
-                      <tr v-for="player in team.roster" :key="player.id">
+                      <tr v-for="player in team.roster.filter(p => p.position !== 'G')" :key="player.id">
                         <td class="text-right" style="width: 20px">{{ getFriendlyPosition(player.position) }}</td>
                         <td class="text-right" style="width: 40px">#{{ player.number }}</td>
                         <td>

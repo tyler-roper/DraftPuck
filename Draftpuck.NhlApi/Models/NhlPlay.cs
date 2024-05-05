@@ -3,7 +3,6 @@
 public class NhlPlay
 {
     public int EventId { get; set; }
-    public int Period { get; set; }
     public NhlPeriodDescriptor PeriodDescriptor { get; set; } = null!;
     public string TimeInPeriod { get; set; } = null!;
     public string TimeRemaining { get; set; } = null!;

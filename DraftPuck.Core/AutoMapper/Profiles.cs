@@ -57,6 +57,7 @@ public class GameProfile : Profile
             .ForMember(dest => dest.SecondsRemainingInPeriod, opt => opt.MapFrom(src => src.Clock.InIntermission ? 0 : MapperHelpers.MapSecondsRemaining(src.Clock.TimeRemaining)))
             .ForMember(dest => dest.GoalsByPeriod, opt => opt.MapFrom(src => src.Summary.Linescore.ByPeriod))
             .ForMember(dest => dest.GameType, opt => opt.MapFrom(src => MapperHelpers.MapGameType(src.GameType)))
+            .ForMember(dest => dest.Period, opt => opt.MapFrom(src => src.PeriodDescriptor.Number))
             .ForMember(dest => dest.PlayerSummaries, opt => opt.MapFrom(src => src.RosterSpots))
             .AfterMap((src, dest) =>
             {
@@ -123,6 +124,7 @@ public class PlayProfile : Profile
     {
         CreateMap<NhlPlay, Play>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.EventId))
+            .ForMember(dest => dest.Period, opt => opt.MapFrom(src => src.PeriodDescriptor.Number))
             .ForMember(dest => dest.PeriodType, opt => opt.MapFrom(src => MapperHelpers.MapPeriodType(src.PeriodDescriptor.PeriodType)))
             .ForMember(dest => dest.TimeRemainingInPeriod, opt => opt.MapFrom(src => src.TimeRemaining))
             .ForMember(dest => dest.Type, opt => opt.MapFrom(src => MapperHelpers.MapPlayType(src.TypeDescKey)))
@@ -139,7 +141,7 @@ public class PeriodSummaryProfile : Profile
     public PeriodSummaryProfile()
     {
         CreateMap<NhlLinescorePeriod, PeriodSummary>()
-            .ForMember(dest => dest.Number, opt => opt.MapFrom(src => src.Period))
+            .ForMember(dest => dest.Number, opt => opt.MapFrom(src => src.PeriodDescriptor.Number))
             .ForMember(dest => dest.HomeGoals, opt => opt.MapFrom(src => src.Home))
             .ForMember(dest => dest.AwayGoals, opt => opt.MapFrom(src => src.Away));
     }
