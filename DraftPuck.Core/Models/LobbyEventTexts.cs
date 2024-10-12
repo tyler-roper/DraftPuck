@@ -77,7 +77,14 @@ public static class LobbyEventTexts
         public static string Title = "New Challenger";
         public static List<string> Texts = new()
         {
-            "Welcome, {{name}}!"
+            "Welcome, {{name}}!",
+            "Nice of you to join us, {{name}}!",
+            "{{name}}'s finally here!",
+            "Who gave {{name}} the code...",
+            "{{name}} enters the chat.",
+            "Why is {{name}} here?",
+            "Welcome to the team, {{name}}.",
+            "Who is {{name}}?"
         };
     }
 
@@ -129,12 +136,17 @@ public static class LobbyEventTexts
             "You did it {{name}}! You really did it! {{playerBadge}}",
             "Beginner's luck or pure skill? Doesn't matter to {{name}}! {{playerBadge}}",
             "\"Eeny, meeny, miny, moe...\" - {{name}} {{playerBadge}}",
-            //"Someone boutta hop up on {{name}}'s dick and do a full split. {{playerBadge}}",
-            //"{{name}} gettin' lubed up to do some rectal damage. {{playerBadge}}",
+            "Someone boutta hop up on {{name}}'s dick and do a full split. {{playerBadge}}",
             "Everyone be on alert, {{name}} is armed and dangerous. {{playerBadge}}",
             "{{name}} with the chance of a lifetime! {{playerBadge}}",
             "Hey {{name}}. Pick your target, take a deep breath, and give out a drink. {{playerBadge}}",
-            //"That's the sound of buttholes puckering across the world, courtesy of {{name}}. {{playerBadge}}"
+            "That's the sound of buttholes puckering across the world, courtesy of {{name}}. {{playerBadge}}",
+            "{{name}} is locked and loaded! {{playerBadge}}",
+            "Time to start making enemies, {{name}}. {{playerBadge}}",
+            "Who ya got, {{name}}? {{playerBadge}}",
+            "He shoots... he scores! {{name}} has been awarded a drink. {{playerBadge}}",
+            "Hey {{name}} - give out a drink, bud! {{playerBadge}}",
+            "Someone tell {{name}} that their pick just scored."
         };
     }
 
@@ -143,17 +155,27 @@ public static class LobbyEventTexts
         public static string Title = "Drink Assigned";
         public static List<string> Texts = new()
         {
-            //"\"Hey {{recipientName}}, go fuck a goat!\" - {{senderName}}",
+            "\"Hey {{recipientName}}, go fuck a goat!\" - {{senderName}}",
             "{{senderName}} is making {{recipientName}} CHUG! CHUG! CHUG!",
             "{{senderName}} gives {{recipientName}} a bird bath!",
             "How nice! {{senderName}} has decided to quench {{recipientName}}'s thirst!",
             "Better bring a bib {{recipientName}}, 'cause {{senderName}} is gettin' you MESSY.",
-            //"Hey {{recipientName}}, chug a beer you emaciated prick! (Good one {{senderName}}!).",
+            "Hey {{recipientName}}, chug a beer you emaciated prick! (Good one {{senderName}}!).",
             "Oof, {{senderName}} is gonna make {{recipientName}} toss some cookies.",
             "That's right {{recipientName}}, show {{senderName}} your chug face.",
             "One beer chug for {{recipientName}}, courtesy of {{senderName}}.",
             "Hope you got your funnel ready {{recipientName}}, 'cause {{senderName}}'s calling you out.",
-            //"{{senderName}}: *turns hat backwards* {{recipientName}}, I CHOOSE YOU!!!"
+            "CUT {{recipientName}}'s LIFE INTO PIECES, THIS IS {{senderName}}'s LAST RESORT!",
+            "Is that Zdeno Chara's dick? Oh nevermind, it's just {{recipientName}} chugging a beer from {{senderName}}.",
+            "{{senderName}} draws first blood with a vicious attack on {{recipientName}}. But this is far from over...",
+            "{{senderName}} just turned {{recipientName}}'s whole life into a managerie of assplay.",
+            "A right hook by {{senderName}}, DOWN GOES {{recipientName}}!",
+            "\"Gluglglguglglgugl\" - {{recipientName}}, chugging a beer from {{senderName}}",
+            "{{recipientName}} just got shit-slapped by {{senderName}}!",
+            "{{senderName}} just sunk your battleship, {{recipientName}}.",
+            "{{senderName}} is taking {{recipientName}} down a peg.",
+            "Dr. {{senderName}} performs a spontaneous colonoscopy on {{recipientName}}!",
+            "{{senderName}} absolutely bullying {{recipientName}}. Enjoy the beer, dork!"
         };
     }
 
@@ -162,7 +184,7 @@ public static class LobbyEventTexts
         public static string Title = "Drink Update";
         public static List<string> Texts = new()
         {
-            "{{recipientName}} chugged a beer for {{senderName}} even though {{player}} didn't score."
+            "Hope you didn't chug yet, {{recipientName}}, because {{senderName}}'s drink just got revoked."
         };
     }
 

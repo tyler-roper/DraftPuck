@@ -79,14 +79,10 @@ const time = computed(() => {
 })
 
 const strengthString = computed(() => {
-  return '5-on-5'
-  // const situation = game.value.situation
-  // if (!situation) return '5-on-5'
-
-  // const homeStrength = situation.homeTeam?.strength ?? 5
-  // const awayStrength = situation.awayTeam?.strength ?? 5
-
-  // return homeStrength >= awayStrength ? `${homeStrength}-on-${awayStrength}` : `${awayStrength}-on-${homeStrength}`
+  const homeStrength = game.value.homeTeam.strength
+  const awayStrength = game.value.awayTeam.strength
+  const result = `${Math.max(homeStrength, awayStrength)}-on-${Math.min(homeStrength, awayStrength)}`
+  return result === `5-on-4` ? 'PP' : result
 })
 
 //hooks
@@ -392,9 +388,7 @@ function getFriendlyPosition(position: string) {
                   :key="situation"
                   :style="{ 'background-color': TeamColors[team.id] }"
                 >
-                  <span v-if="situation === TeamSituation.PowerPlay">
-                    {{ strengthString === '5-on-4' ? 'PP' : strengthString }}
-                  </span>
+                  <span v-if="situation === TeamSituation.PowerPlay">{{ strengthString }}</span>
                   <span v-if="situation === TeamSituation.EmptyNet">EN</span>
                 </span>
               </div>
@@ -474,7 +468,7 @@ function getFriendlyPosition(position: string) {
                       </tr>
                     </thead>
                     <tbody>
-                      <tr v-for="player in team.roster.filter(p => p.position !== 'G')" :key="player.id">
+                      <tr v-for="player in team.roster.filter((p) => p.position !== 'G')" :key="player.id">
                         <td class="text-right" style="width: 20px">{{ getFriendlyPosition(player.position) }}</td>
                         <td class="text-right" style="width: 40px">#{{ player.number }}</td>
                         <td>
