@@ -5,7 +5,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import * as SignalR from '@microsoft/signalr'
-import { compareAsc } from 'date-fns'
+import { compareAsc, addHours } from 'date-fns'
 import GameService from '@/services/GameService'
 import LobbyEventType from '@/enums/lobbyEventType'
 import { parseAllDates } from '@/helpers/dateHelpers'
@@ -33,7 +33,7 @@ const HUB_URL = '/hub'
 
 const replaceTemplatedStrings = (lobbyEvent: LobbyEvent) => parseLobbyEventText(lobbyEvent, lobby.value!, games.value)
 
-const lobbyEventHandlers: { [k: string]: (lobbyEvent: LobbyEvent) => void} = {
+const lobbyEventHandlers: { [k: string]: (lobbyEvent: LobbyEvent) => void } = {
   onDrinkAssigned: function (lobbyEvent: LobbyEvent) {
     if (lobbyEvent.lobbyMember2Id === currentLobbyMember.value?.id) notifyCurrentUserOfDrink(lobbyEvent)
   },
@@ -76,6 +76,20 @@ const isLobbyView = computed(() => currentView.value === 'lobby')
 const isFeedView = computed(() => currentView.value === 'feed')
 const isGameView = computed(() => currentView.value === 'game')
 const isChatView = computed(() => currentView.value === 'chat')
+
+const isOpeningDay = computed(() => {
+  const today = new Date()
+  const openingDay = new Date(2024, 9, 12)
+  const paddingHours = 12
+  const start = addHours(openingDay, -1 * paddingHours)
+  const end = addHours(openingDay, paddingHours)
+
+
+  return (start.getDate() === today.getDate() || end.getDate() === today.getDate()) 
+    && (start.getMonth() === today.getMonth() || end.getMonth() === today.getMonth()) 
+    && (start.getFullYear() === today.getFullYear() || end.getFullYear() === today.getFullYear())
+})
+
 const pendingDrinkCount = computed(
   () => currentLobbyMember.value?.picks.flatMap((p) => p.drinks.filter((d) => !d.recipientLobbyMemberId)).length ?? 0
 )
@@ -86,7 +100,7 @@ const messages = computed(() => {
     .reduce(
       (messages: MessageViewModel[], member) => [
         ...messages,
-        ...member.messages?.map((msg) => new MessageViewModel(member, msg.message, msg.sent, msg.id)) ?? []
+        ...(member.messages?.map((msg) => new MessageViewModel(member, msg.message, msg.sent, msg.id)) ?? [])
       ],
       []
     )
@@ -100,12 +114,11 @@ const messages = computed(() => {
     await getLobby(joinCode.value)
     if (!lobby.value) throw 'Lobby not found'
 
-
     if (!currentLobbyMember.value) {
       let name: string | null = ''
       name = prompt('Welcome! Choose a name...')
 
-      while (name !== null && lobby.value?.members.some(m => m.name.toLowerCase() === name?.toLowerCase()))
+      while (name !== null && lobby.value?.members.some((m) => m.name.toLowerCase() === name?.toLowerCase()))
         name = prompt('Sorry, that name is taken. Try another...')
 
       if (!name) return router.push({ name: 'Home' })
@@ -121,9 +134,7 @@ const messages = computed(() => {
     await initializeHubConnection()
     await setGames()
 
-    setTimeout(() => {
-
-    }, 100)
+    setTimeout(() => {}, 100)
 
     mappedEvents.value = events.value.map(replaceTemplatedStrings)
   } catch (e) {
@@ -143,7 +154,7 @@ function setView(view: View) {
 }
 
 async function setGames() {
-  games.value = await GameService.getAllGames();
+  games.value = await GameService.getAllGames()
   games.value.forEach((game) => {
     if (!isGameStale(game)) timers.value.push(window.setTimeout(() => pollForUpdates(game), ACTIVE_GAME_POLLING_INTERVAL_MS))
   })
@@ -190,8 +201,7 @@ function onNewMessage(message: Message) {
   parseAllDates(message)
   addMessageToStore(message)
 
-  if (currentView.value !== 'chat')
-    unseenMessageCount.value++
+  if (currentView.value !== 'chat') unseenMessageCount.value++
 }
 
 function notifyCurrentUserOfDrink(lobbyEvent: LobbyEvent) {
@@ -221,7 +231,7 @@ function getSenderNameByLobbyEvent(lobbyEvent: LobbyEvent) {
 }
 
 async function dispatchLobbyEvent(lobbyEvent: LobbyEvent) {
-  const currentLobbyMemberValue = currentLobbyMember.value!;
+  const currentLobbyMemberValue = currentLobbyMember.value!
 
   if (lobbyEvent.lobbyEventType != LobbyEventType.NewPick || lobbyEvent.lobbyMemberId !== currentLobbyMemberValue.id) {
     await getLobby(joinCode.value)
@@ -271,12 +281,10 @@ function getFeedItems() {
       const happenedAfterLobbyStarted = play.dateTime >= lobby.value!.created
       const isShootoutGoal = play.type === PlayType.Goal && play.periodType === PeriodType.Shootout
       if (includedInFilters && happenedAfterLobbyStarted && !isShootoutGoal) {
-        return [...items, FeedItem.fromPlay(game.id, { away: game.awayTeam, home: game.homeTeam}, play, game.playerSummaries)]
-      }
-      else return items
+        return [...items, FeedItem.fromPlay(game.id, { away: game.awayTeam, home: game.homeTeam }, play, game.playerSummaries)]
+      } else return items
     }, [])
-  }
-  )
+  })
 
   const lobbyItems = mappedEvents.value.map((evt) => FeedItem.fromLobbyEvent(evt))
   const feedItems = [...gameItems, ...lobbyItems]
@@ -294,21 +302,24 @@ async function setViewToChat() {
 
 function animateFeed() {
   if (isInitialLoad.value) {
-    window.setTimeout(() => isInitialLoad.value = false, 2000)
+    window.setTimeout(() => (isInitialLoad.value = false), 2000)
     return
   }
 
   shouldAnimateFeed.value = true
   window.clearTimeout(feedAnimationTimer.value)
-  window.setTimeout(() => shouldAnimateFeed.value = false, 700)
+  window.setTimeout(() => (shouldAnimateFeed.value = false), 700)
 }
 
-//watch 
-watch(() => feedItems.value.length, (newLength, oldLength) => {
-  if (newLength > oldLength) {
-    animateFeed()
+//watch
+watch(
+  () => feedItems.value.length,
+  (newLength, oldLength) => {
+    if (newLength > oldLength) {
+      animateFeed()
+    }
   }
-})
+)
 </script>
 
 <template>
@@ -318,7 +329,8 @@ watch(() => feedItems.value.length, (newLength, oldLength) => {
 
       <div class="bg-stone-900 px-sm-4 px-2 py-2 shadow position-relative d-flex align-items-center justify-content-between" style="z-index: 10">
         <router-link to="/" class="banner-logo text-stone-0 text-decoration-none" style="cursor: pointer">
-          <img src="/img/logo-wide.png" />
+          <img v-if="!isOpeningDay" src="/img/logo-wide.png" />
+          <img v-if="isOpeningDay" src="/img/logo-wide-opening-day-2024.png" />
         </router-link>
 
         <a target="_blank" class="text-decoration-none text-uppercase fw-bold mt-1 fs-8" href="https://discord.gg/Vgj9RbetDB">Join the Discord</a>
@@ -333,9 +345,17 @@ watch(() => feedItems.value.length, (newLength, oldLength) => {
         <template v-if="!isLoading">
           <VGameScoreboards class="full-scoreboard flex-grow-1" :class="{ 'hide-mobile': !isGameView }" :games="games" style="overflow: auto" />
 
-          <div class="feed flex-shrink-0 d-flex flex-column" :class="{ 'hide-mobile': !isFeedView && !isLobbyView && !isChatView }" style="width: 400px">
-            <VLobbyOverview ref="overview" class="lobby-overview flex-shrink-0 v-lobby-overview  flex-grow-1" :class="{ 'hide-mobile': !isLobbyView }" />
-            <VFeed class="flex-grow-1 v-feed" :items="feedItems" :class="{ 'hide-mobile': !isFeedView, 'animate': shouldAnimateFeed }" />
+          <div
+            class="feed flex-shrink-0 d-flex flex-column"
+            :class="{ 'hide-mobile': !isFeedView && !isLobbyView && !isChatView }"
+            style="width: 400px"
+          >
+            <VLobbyOverview
+              ref="overview"
+              class="lobby-overview flex-shrink-0 v-lobby-overview flex-grow-1"
+              :class="{ 'hide-mobile': !isLobbyView }"
+            />
+            <VFeed class="flex-grow-1 v-feed" :items="feedItems" :class="{ 'hide-mobile': !isFeedView, animate: shouldAnimateFeed }" />
             <VChat ref="vChat" :messages="messages" class="flex-grow-1 v-chat" :class="{ 'hide-mobile': !isChatView }"></VChat>
           </div>
         </template>
