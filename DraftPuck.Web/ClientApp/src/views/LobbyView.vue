@@ -352,7 +352,7 @@ watch(
           >
             <VLobbyOverview
               ref="overview"
-              class="lobby-overview flex-shrink-0 v-lobby-overview flex-grow-1"
+              class="lobby-overview v-lobby-overview flex-grow-1"
               :class="{ 'hide-mobile': !isLobbyView }"
             />
             <VFeed class="flex-grow-1 v-feed" :items="feedItems" :class="{ 'hide-mobile': !isFeedView, animate: shouldAnimateFeed }" />
