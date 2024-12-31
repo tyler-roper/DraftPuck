@@ -12,6 +12,7 @@ import CreateLobbyRequest from '@/models/createLobbyRequest'
 import { useRouter } from 'vue-router'
 import '@/extensions/arrayExtensions'
 import GameState from '@/enums/gameState'
+import VSwitch from '@/components/VSwitch.vue'
 
 //const
 const MAX_BOTS = 10
@@ -38,7 +39,8 @@ const isCreatingLobby = ref(false)
 const hasLoadedGames = ref(false)
 const settings = ref<LobbySettings>({
   picksPerTeam: 1,
-  bots: []
+  bots: [],
+  isBotAutoPickingEnabled: false
 })
 
 //computed
@@ -49,10 +51,11 @@ const isOpeningDay = computed(() => {
   const start = addHours(openingDay, -1 * paddingHours)
   const end = addHours(openingDay, paddingHours)
 
-
-  return (start.getDate() === today.getDate() || end.getDate() === today.getDate()) 
-    && (start.getMonth() === today.getMonth() || end.getMonth() === today.getMonth()) 
-    && (start.getFullYear() === today.getFullYear() || end.getFullYear() === today.getFullYear())
+  return (
+    (start.getDate() === today.getDate() || end.getDate() === today.getDate()) &&
+    (start.getMonth() === today.getMonth() || end.getMonth() === today.getMonth()) &&
+    (start.getFullYear() === today.getFullYear() || end.getFullYear() === today.getFullYear())
+  )
 })
 
 //hooks/methods
@@ -63,7 +66,7 @@ const isOpeningDay = computed(() => {
     name.value = latestLobbyParsed.name
     code.value = latestLobbyParsed.joinCode
   }
-  gameCount.value = (await GameService.getAllGameSummaries()).filter(g => g.gameState !== GameState.Final).length
+  gameCount.value = (await GameService.getAllGameSummaries()).filter((g) => g.gameState !== GameState.Final).length
   hasLoadedGames.value = true
 })()
 
@@ -120,7 +123,9 @@ async function createLobby() {
 
   try {
     isCreatingLobby.value = true
-    const lobby = await LobbyService.createLobby(new CreateLobbyRequest(name.value, settings.value.picksPerTeam))
+    const lobby = await LobbyService.createLobby(
+      new CreateLobbyRequest(name.value, settings.value.picksPerTeam, settings.value.isBotAutoPickingEnabled)
+    )
     const botPromises = settings.value.bots.map(async (b) => await LobbyService.joinLobbyByCode(lobby.joinCode, b.name, true, Number(b.botPickStyle)))
     await Promise.all(botPromises)
 
@@ -284,6 +289,17 @@ function tryMoveNext() {
                 <div class="col-1">
                   <a role="button" @click="removeBot(bot)"><i class="fi fi-rr-x"></i></a>
                 </div>
+              </div>
+              <div>
+                <VSwitch
+                  v-model="settings.isBotAutoPickingEnabled"
+                  id="chkIsBotAutoPickingEnabled"
+                  name="chkIsBotAutoPickingEnabled"
+                  size="lg"
+                  switch
+                >
+                  Make Bot Picks Automatically
+                </VSwitch>
               </div>
             </div>
             <div>

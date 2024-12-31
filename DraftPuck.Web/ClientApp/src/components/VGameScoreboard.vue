@@ -31,6 +31,7 @@ const { pickPlayer, removePick } = store
 
 const isPickingStarted = ref(false)
 const pickingStartingTimer = ref<number>()
+const checkIfBotPicksAvailableTimer = ref<number>()
 const timeUntilPicking = ref<string>()
 const pickTime = ref(addMinutes(game.value.dateTime, -30))
 const isRosterVisible = ref(false)
@@ -90,6 +91,8 @@ const strengthString = computed(() => {
 //hooks
 ;(async function onCreated() {
   updateTimeUntilPicking()
+  const isBotAutoPickingEnabled = lobby.value && lobby.value.isBotAutoPickingEnabled
+  if (isBotAutoPickingEnabled) setUpBotAutoPicking()
 
   if (!isPickingStarted.value) {
     pickingStartingTimer.value = window.setInterval(() => {
@@ -99,6 +102,16 @@ const strengthString = computed(() => {
 })()
 
 //methods
+function setUpBotAutoPicking() {
+  makeBotAutoPicksIfAvailable()
+  window.setInterval(makeBotAutoPicksIfAvailable, 10000)
+}
+
+function makeBotAutoPicksIfAvailable() {
+  if (botsHavePicks(game.value.homeTeam)) makeBotPicks(game.value.homeTeam)
+  if (botsHavePicks(game.value.awayTeam)) makeBotPicks(game.value.awayTeam)
+}
+
 function updateTimeUntilPicking() {
   isPickingStarted.value = pickTime.value <= new Date()
   if (isPickingStarted.value) return window.clearInterval(pickingStartingTimer.value)
@@ -157,7 +170,7 @@ async function makeBotPicks(team: GameTeam) {
     }
   })
 
-  setTimeout(() => setIsBotPicking(team, false), waitTime - (botsWithPicks.length * delayBetweenBotPicks))
+  setTimeout(() => setIsBotPicking(team, false), waitTime - botsWithPicks.length * delayBetweenBotPicks)
 }
 
 function setIsBotPicking(team: GameTeam, value: boolean) {
