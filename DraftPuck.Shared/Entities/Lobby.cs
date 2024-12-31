@@ -16,6 +16,8 @@ public partial class Lobby
 
     public int PicksPerTeam { get; set; }
 
+    public bool IsBotAutoPickingEnabled { get; set; } = false;
+
     public virtual User CreatedByUser { get; set; } = null!;
 
     public virtual ICollection<LobbyMember> LobbyMembers { get; } = new List<LobbyMember>();

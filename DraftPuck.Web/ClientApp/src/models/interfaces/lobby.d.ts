@@ -4,6 +4,7 @@ interface Lobby {
   status: number
   picksPerTeam: number
   created: Date
+  isBotAutoPickingEnabled: boolean
   createdBy: string
   members: Array<LobbyMember>
 }

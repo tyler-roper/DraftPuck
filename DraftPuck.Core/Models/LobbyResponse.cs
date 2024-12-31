@@ -7,6 +7,7 @@ public class LobbyResponse
     public LobbyStatus Status { get; set; }
     public int PicksPerTeam { get; set; }
     public DateTime Created { get; set; }
+    public bool IsBotAutoPickingEnabled { get; set; }
     public Guid CreatedBy { get; set; }
     public List<LobbyMemberResponse> Members { get; set; } = new();
 }

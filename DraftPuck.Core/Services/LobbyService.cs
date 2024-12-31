@@ -23,7 +23,8 @@ public class LobbyService : ILobbyService
             JoinCode = await RandomString(4),
             Status = 0,
             CreatedBy = userId,
-            PicksPerTeam = request.PicksPerTeam
+            PicksPerTeam = request.PicksPerTeam,
+            IsBotAutoPickingEnabled = request.IsBotAutoPickingEnabled
         };
 
         _dbContext.Lobbies.Add(lobby);
