@@ -5,6 +5,7 @@ export default class MessageViewModel {
   lobbyMemberUserId: string
   message: string
   sent: Date
+  isSystem: boolean = false
 
   constructor(lobbyMember: LobbyMember, message: string, sent: Date, id?: string) {
     this.lobbyMemberName = lobbyMember.name
