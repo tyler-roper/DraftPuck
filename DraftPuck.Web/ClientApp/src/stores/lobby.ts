@@ -4,12 +4,15 @@ import type Bot from '@/models/bot'
 import LobbyService from '@/services/LobbyService'
 import { compareAsc } from 'date-fns'
 import type PickRequest from '@/models/pickRequest'
+import SystemMessageViewModel from '@/models/systemMessageViewModel'
 
 export const useLobbyStore = defineStore('lobby', () => {
   //#region state
   const lobby = ref<Lobby>()
   const events = ref<LobbyEvent[]>([])
   const currentUserId = ref<string>()
+  const systemMessages = ref<SystemMessageViewModel[]>([])
+  const debugLevel = ref(0)
   //#endregion
 
   //#region mutations
@@ -73,6 +76,18 @@ export const useLobbyStore = defineStore('lobby', () => {
     const member = lobby.value?.members.find((m) => m.id === message.lobbyMemberId)
     if (!member) return
     member.messages.push(message)
+  }
+
+  function sendSystemMessage(message: string) {
+    systemMessages.value.push(new SystemMessageViewModel(message))
+  }
+
+  function sendDebugMessage(message: string, level: number) {
+    if (debugLevel.value !== 0 && level >= debugLevel.value) systemMessages.value.push(new SystemMessageViewModel(message))
+  }
+
+  function setDebugging(level: number = 1) {
+    debugLevel.value = level
   }
   //#endregion
 
@@ -144,12 +159,15 @@ export const useLobbyStore = defineStore('lobby', () => {
 
   //#region getters
   const isLobbyAdmin = computed(() => currentUserId.value === lobby.value?.createdBy)
+  const currentMember = computed(() => lobby.value?.members?.find((m) => m.id === currentUserId.value))
   //#endregion
 
   return {
     lobby,
     events,
     currentUserId,
+    systemMessages,
+    debugLevel,
     setLobby,
     setEvents,
     setCurrentUserId,
@@ -171,6 +189,9 @@ export const useLobbyStore = defineStore('lobby', () => {
     removePick,
     addBot,
     sendMessage,
-    isLobbyAdmin
+    isLobbyAdmin,
+    sendDebugMessage,
+    sendSystemMessage,
+    setDebugging
   }
 })

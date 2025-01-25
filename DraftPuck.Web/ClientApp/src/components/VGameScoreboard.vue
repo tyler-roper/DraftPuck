@@ -27,11 +27,10 @@ const toast = useToast()
 const store = useLobbyStore()
 
 const { lobby, currentUserId, isLobbyAdmin } = storeToRefs(store)
-const { pickPlayer, removePick } = store
+const { pickPlayer, removePick, sendDebugMessage } = store
 
 const isPickingStarted = ref(false)
 const pickingStartingTimer = ref<number>()
-const checkIfBotPicksAvailableTimer = ref<number>()
 const timeUntilPicking = ref<string>()
 const pickTime = ref(addMinutes(game.value.dateTime, -30))
 const isRosterVisible = ref(false)

@@ -42,13 +42,48 @@ const lobbyEventHandlers: { [k: string]: (lobbyEvent: LobbyEvent) => void } = {
   }
 }
 
+const commands = computed<{ [command: string]: (...args: string[]) => void }>(() => ({
+  debug: (level?: string) => {
+    const newLevel = level == undefined || isNaN(+level) ? 1 : +level
+    const newLevelClamped = Math.min(3, newLevel)
+    setDebugging(newLevelClamped)
+    if (newLevelClamped === 0) sendSystemMessage(`Debugging disabled.`)
+    else sendSystemMessage(`Debugging enabled (Level ${newLevelClamped}).`)
+  },
+  connection: () => {
+    sendSystemMessage(
+      JSON.stringify(
+        {
+          id: hubConnection.connectionId,
+          baseUrl: hubConnection.baseUrl,
+          state: hubConnection.state
+        },
+        undefined,
+        2
+      )
+    )
+  },
+  me: () => {
+    sendSystemMessage(JSON.stringify(getLobbyMemberInfo(), undefined, 2))
+  },
+  user: (...nameParts: string[]) => {
+    const name = nameParts.join(' ')
+    const lobbyMember = lobby.value?.members.find((m) => m.name.toUpperCase() === name.toUpperCase())
+    if (lobbyMember) {
+      sendSystemMessage(JSON.stringify(getLobbyMemberInfo(name), undefined, 2))
+    } else {
+      sendSystemMessage(`User ${name} not found.`)
+    }
+  }
+}))
+
 //data
 const store = useLobbyStore()
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
-const { lobby, currentUserId, events } = storeToRefs(store)
-const { getLobby, getLobbyEvents, addLobbyEvent, addMessageToStore } = store
+const { lobby, currentUserId, events, systemMessages } = storeToRefs(store)
+const { getLobby, getLobbyEvents, addLobbyEvent, addMessageToStore, sendDebugMessage, sendSystemMessage, setDebugging } = store
 const joinCode = ref(route.params.joinCode as string)
 const games = ref<Game[]>([])
 const isInstructionsVisible = ref(false)
@@ -84,10 +119,11 @@ const isOpeningDay = computed(() => {
   const start = addHours(openingDay, -1 * paddingHours)
   const end = addHours(openingDay, paddingHours)
 
-
-  return (start.getDate() === today.getDate() || end.getDate() === today.getDate()) 
-    && (start.getMonth() === today.getMonth() || end.getMonth() === today.getMonth()) 
-    && (start.getFullYear() === today.getFullYear() || end.getFullYear() === today.getFullYear())
+  return (
+    (start.getDate() === today.getDate() || end.getDate() === today.getDate()) &&
+    (start.getMonth() === today.getMonth() || end.getMonth() === today.getMonth()) &&
+    (start.getFullYear() === today.getFullYear() || end.getFullYear() === today.getFullYear())
+  )
 })
 
 const pendingDrinkCount = computed(
@@ -96,15 +132,16 @@ const pendingDrinkCount = computed(
 const messages = computed(() => {
   if (!lobby.value) return []
 
-  return lobby.value.members
-    .reduce(
-      (messages: MessageViewModel[], member) => [
-        ...messages,
-        ...(member.messages?.map((msg) => new MessageViewModel(member, msg.message, msg.sent, msg.id)) ?? [])
-      ],
-      []
-    )
-    .sort((a, b) => compareAsc(a.sent, b.sent))
+  const lobbyMemberMessages = lobby.value.members.reduce(
+    (messages: MessageViewModel[], member) => [
+      ...messages,
+      ...(member.messages?.map((msg) => new MessageViewModel(member, msg.message, msg.sent, msg.id)) ?? [])
+    ],
+    []
+  )
+
+  const allMessages = [...lobbyMemberMessages, ...systemMessages.value]
+  return allMessages.sort((a, b) => compareAsc(a.sent, b.sent))
 })
 
 //hooks/methods
@@ -138,7 +175,7 @@ const messages = computed(() => {
 
     mappedEvents.value = events.value.map(replaceTemplatedStrings)
   } catch (e) {
-    console.error(e)
+    logError(e as string)
     isInvalidLobby.value = true
   } finally {
     isLoading.value = false
@@ -153,8 +190,15 @@ function setView(view: View) {
   currentView.value = view
 }
 
+function logError(error: string) {
+  console.error(error)
+  sendDebugMessage(error, 3)
+}
+
 async function setGames() {
+  sendDebugMessage(`Setting games...`, 1)
   games.value = await GameService.getAllGames()
+  sendDebugMessage(`${games.value.length} games retrieved.`, 1)
   games.value.forEach((game) => {
     if (!isGameStale(game)) timers.value.push(window.setTimeout(() => pollForUpdates(game), ACTIVE_GAME_POLLING_INTERVAL_MS))
   })
@@ -170,29 +214,42 @@ async function getGameData(gameId: number) {
 }
 
 async function pollForUpdates(game: Game) {
-  await updateGame(game.id)
-  if (isGameStale(game)) return
+  const msgPrefix = `[${game.awayTeam.abbreviation} @ ${game.homeTeam.abbreviation}]`
+  try {
+    await updateGame(game.id)
+    if (isGameStale(game)) {
+      sendDebugMessage(`${msgPrefix} Game is stale. `, 1)
+      return
+    }
 
-  const interval = isGameInProgress(game) ? ACTIVE_GAME_POLLING_INTERVAL_MS : INACTIVE_GAME_POLLING_INTERVAL_MS
+    const interval = isGameInProgress(game) ? ACTIVE_GAME_POLLING_INTERVAL_MS : INACTIVE_GAME_POLLING_INTERVAL_MS
 
-  timers.value.push(window.setTimeout(() => pollForUpdates(game), interval))
+    sendDebugMessage(`${msgPrefix} Updated. (Next update in ${interval / 1000} seconds)`, 1)
+    timers.value.push(window.setTimeout(() => pollForUpdates(game), interval))
+  } catch (e) {
+    logError(`${msgPrefix} ${e as string}`)
+  }
 }
 
 async function initializeHubConnection() {
   hubConnection = new SignalR.HubConnectionBuilder()
-    .withUrl(HUB_URL, SignalR.HttpTransportType.LongPolling)
+    .withUrl(HUB_URL, SignalR.HttpTransportType.ServerSentEvents)
     .configureLogging(SignalR.LogLevel.Error)
     .withAutomaticReconnect()
     .build()
 
   hubConnection.on('LobbyEvent', dispatchLobbyEvent)
   hubConnection.on('Message', onNewMessage)
+  hubConnection.onreconnecting(() => sendDebugMessage(`Hub connection reconnecting... (State: ${hubConnection.state})`, 2))
+  hubConnection.onreconnected(() => sendDebugMessage(`Hub connection reconnected. (State: ${hubConnection.state})`, 2))
 
   try {
     await hubConnection.start()
+    sendDebugMessage(`Hub connection started. (State: ${hubConnection.state})`, 2)
     await hubConnection.invoke('JoinLobby', joinCode.value)
+    sendDebugMessage(`Hub connection "Join Lobby" invoked. (State: ${hubConnection.state})`, 2)
   } catch (err) {
-    console.error(err)
+    logError(err as string)
   }
 }
 
@@ -232,6 +289,9 @@ function getSenderNameByLobbyEvent(lobbyEvent: LobbyEvent) {
 
 async function dispatchLobbyEvent(lobbyEvent: LobbyEvent) {
   const currentLobbyMemberValue = currentLobbyMember.value!
+
+  sendDebugMessage(`New ${LobbyEventType[lobbyEvent.lobbyEventType]} Event`, 3)
+  sendDebugMessage(JSON.stringify(lobbyEvent, undefined, 4), 2)
 
   if (lobbyEvent.lobbyEventType != LobbyEventType.NewPick || lobbyEvent.lobbyMemberId !== currentLobbyMemberValue.id) {
     await getLobby(joinCode.value)
@@ -311,6 +371,20 @@ function animateFeed() {
   window.setTimeout(() => (shouldAnimateFeed.value = false), 700)
 }
 
+function handleCommand(command: string, ...args: [string]) {
+  if (commands.value[command]) commands.value[command](...args)
+}
+
+function getLobbyMemberInfo(name?: string): Partial<LobbyMember> | undefined {
+  const lobbyMember = name 
+    ? lobby.value?.members.find((m) => m.name.toUpperCase() === name.toUpperCase())
+    : currentLobbyMember.value
+    
+  if (!lobbyMember) return
+  const {messages, picks, ...lobbyMemberInfo } = lobbyMember
+  return lobbyMemberInfo
+}
+
 //watch
 watch(
   () => feedItems.value.length,
@@ -350,13 +424,15 @@ watch(
             :class="{ 'hide-mobile': !isFeedView && !isLobbyView && !isChatView }"
             style="width: 400px"
           >
-            <VLobbyOverview
-              ref="overview"
-              class="lobby-overview v-lobby-overview flex-grow-1"
-              :class="{ 'hide-mobile': !isLobbyView }"
-            />
+            <VLobbyOverview ref="overview" class="lobby-overview v-lobby-overview flex-grow-1" :class="{ 'hide-mobile': !isLobbyView }" />
             <VFeed class="flex-grow-1 v-feed" :items="feedItems" :class="{ 'hide-mobile': !isFeedView, animate: shouldAnimateFeed }" />
-            <VChat ref="vChat" :messages="messages" class="flex-grow-1 v-chat" :class="{ 'hide-mobile': !isChatView }"></VChat>
+            <VChat
+              ref="vChat"
+              :messages="messages"
+              class="flex-grow-1 v-chat"
+              :class="{ 'hide-mobile': !isChatView }"
+              @command="handleCommand"
+            ></VChat>
           </div>
         </template>
 
@@ -492,4 +568,3 @@ watch(
   border-radius: 20px;
 }
 </style>
-@/services/NhlService@/services/GameService

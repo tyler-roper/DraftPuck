@@ -3,7 +3,8 @@ import type MessageViewModel from '@/models/messageViewModel'
 import { addSeconds, format, parseISO } from 'date-fns'
 import { useLobbyStore } from '@/stores/lobby'
 import { storeToRefs } from 'pinia'
-import { ref, watch, nextTick, onMounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
+import type SystemMessageViewModel from '@/models/systemMessageViewModel'
 
 //const
 const SECONDS_BETWEEN_MESSAGES = 3
@@ -11,17 +12,20 @@ const SECONDS_BETWEEN_MESSAGES = 3
 //props
 const props = withDefaults(
   defineProps<{
-    messages: MessageViewModel[]
+    messages: (MessageViewModel | SystemMessageViewModel)[]
   }>(),
   {
     messages: () => []
   }
 )
 
+//emitters
+const emit = defineEmits(['command'])
+
 //data
 const lobbyStore = useLobbyStore()
-const { currentUserId, isLobbyAdmin } = storeToRefs(lobbyStore)
-const { sendMessage: storeSendMessage } = lobbyStore
+const { currentUserId, isLobbyAdmin, debugLevel } = storeToRefs(lobbyStore)
+const { sendMessage: storeSendMessage, setDebugging, sendDebugMessage, sendSystemMessage } = lobbyStore
 const messageInput = ref<HTMLTextAreaElement | null>(null)
 const messagesContainer = ref<HTMLDivElement | null>(null)
 const message = ref('')
@@ -29,6 +33,8 @@ const error = ref<string>()
 const lastSentMessage = ref(new Date(-1))
 const isLockedToBottom = ref(true)
 const errorTimer = ref<number>()
+
+
 
 //hooks/methods
 onMounted(async () => {
@@ -38,13 +44,26 @@ onMounted(async () => {
   messagesContainer.value.addEventListener('scroll', onChatScroll)
 })
 
+function processCommand(message: string) {
+  const messageParts = message.split('/')
+  if (messageParts.length <= 1) return
+
+  message = message.toLowerCase()
+  const commandParts = messageParts[1].split(' ')
+  const command = commandParts[0]
+  const args = commandParts.slice(1)
+
+  emit('command', command, ...args)
+}
+
 function formatAsTime(date: Date | string) {
   date = typeof date === 'string' ? parseISO(date) : date
   return format(date, 'p')
 }
 
-function isCurrentMember(message: MessageViewModel) {
-  return message.lobbyMemberUserId === currentUserId.value
+function isCurrentMember(message: MessageViewModel | SystemMessageViewModel) {
+  if (message.isSystem) return false
+  return (message as MessageViewModel).lobbyMemberUserId === currentUserId.value
 }
 
 async function resizeMessageInput() {
@@ -58,16 +77,27 @@ function onEnterKeydown(e: KeyboardEvent) {
   sendMessage(e)
 }
 
-async function sendMessage(e: Event) {
+async function sendMessage(e: Event, isSystem: boolean = false) {
   e.preventDefault()
   const originalMessage = message.value
+  const isCommand = originalMessage.startsWith('/')
+
+  if (isCommand) {
+    try {
+    processCommand(message.value)
+    } catch (e) {
+      if (typeof e === 'string') error.value = e
+      return
+    }
+  }
+
   const wait = Math.ceil((Number(addSeconds(lastSentMessage.value, SECONDS_BETWEEN_MESSAGES)) - Number(new Date())) / 1000)
 
   window.clearTimeout(errorTimer.value)
-  errorTimer.value = window.setTimeout(() => error.value = '', wait * 1000)
+  errorTimer.value = window.setTimeout(() => (error.value = ''), wait * 1000)
 
-  if (wait > 0 && !isLobbyAdmin.value) return (error.value = `Wait ${wait} seconds.`)
-  if (message.value.length > 400) return (error.value = 'Message exceeds 400 characters.')
+  if (wait > 0 && !isLobbyAdmin.value && !isSystem) return (error.value = `Wait ${wait} seconds.`)
+  if (message.value.length > 400 && !isSystem) return (error.value = 'Message exceeds 400 characters.')
   if (!message.value.trim().length) return (error.value = 'Invalid message.')
 
   message.value = ''
@@ -75,13 +105,17 @@ async function sendMessage(e: Event) {
   resizeMessageInput()
 
   try {
-    await storeSendMessage(originalMessage.trim())
+    if (!isCommand) {
+      await storeSendMessage(originalMessage.trim())
+      lastSentMessage.value = new Date()
+    }
     error.value = ''
-    lastSentMessage.value = new Date()
-  } catch {
+  } catch (exception) {
     message.value = originalMessage
     await nextTick()
     resizeMessageInput()
+
+    
   }
 }
 
@@ -134,12 +168,13 @@ defineExpose({ focus })
       </div>
     </div>
     <div ref="messagesContainer" class="flex-grow-1 flex-shrink-1 overflow-auto">
-      <div class="message" v-for="message in messages" :key="message.id" :class="{ 'is-current-member': isCurrentMember(message) }">
+      <div class="message" v-for="(message, idx) in messages" :key="idx" :class="{ 'is-current-member': isCurrentMember(message) }">
         <span class="text-nowrap">
-          <span class="text-stone-400 small me-2">{{ formatAsTime(message.sent) }}</span>
-          <span class="name fw-bold">{{ message.lobbyMemberName }}:</span>
+          <span class="text-stone-400 small">{{ formatAsTime(message.sent) }}</span>
+          <span class="name fw-bold ms-2" v-if="!message.isSystem">{{ (message as MessageViewModel).lobbyMemberName }}:</span>
         </span>
-        <span class="text-break ms-2">{{ message.message }}</span>
+        <span v-if="!message.isSystem" class="text-break ms-2">{{ message.message }}</span>
+        <pre v-if="message.isSystem" class="text-break mb-0">{{ message.message }}</pre>
       </div>
     </div>
     <form @submit="sendMessage" class="chat-form position-relative">
