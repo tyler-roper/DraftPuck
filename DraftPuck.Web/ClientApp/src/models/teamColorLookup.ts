@@ -31,6 +31,10 @@
   54: '#C69214',  //VGK
   55: '#051C2C',  //SEA
   59: '#6cace4',  //UTA
+  60: '#C8102E', //Canada
+  62: '#6cace4', //Finland
+  66: '#FFB81C', //Sweden
+  67: '#041E42', //USA
   87: '#30CCD8',  //All Star Team 1
   88: '#f06ca9',  //All Star Team 2
   89: '#30CCD8',  //All Star Team 3
