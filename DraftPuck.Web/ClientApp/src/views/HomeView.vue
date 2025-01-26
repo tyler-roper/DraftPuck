@@ -2,7 +2,7 @@
 import BotNames from '@/models/botNames'
 import BotPickStyle from '@/enums/botPickStyle'
 import Bot from '@/models/bot'
-import { addHours } from 'date-fns'
+import { addHours, isWithinInterval } from 'date-fns'
 import type { LobbySettings } from '@/models/interfaces/lobbySettings'
 import { onMounted, ref, nextTick, computed } from 'vue'
 import { useToast } from 'vue-toastification'
@@ -44,18 +44,15 @@ const settings = ref<LobbySettings>({
 })
 
 //computed
-const isOpeningDay = computed(() => {
+const is4Nations = computed(() => {
   const today = new Date()
-  const openingDay = new Date(2024, 9, 12)
+  const firstDay = new Date(2025, 1, 12)
+  const lastDay = new Date(2025, 1, 20)
   const paddingHours = 12
-  const start = addHours(openingDay, -1 * paddingHours)
-  const end = addHours(openingDay, paddingHours)
+  const start = addHours(firstDay, -1 * paddingHours)
+  const end = addHours(lastDay, paddingHours)
 
-  return (
-    (start.getDate() === today.getDate() || end.getDate() === today.getDate()) &&
-    (start.getMonth() === today.getMonth() || end.getMonth() === today.getMonth()) &&
-    (start.getFullYear() === today.getFullYear() || end.getFullYear() === today.getFullYear())
-  )
+  return isWithinInterval(today, { start, end })
 })
 
 //hooks/methods
@@ -208,8 +205,8 @@ function tryMoveNext() {
     <div class="shadow overflow-hidden p-5" style="border-radius: 20px; background-color: rgba(0, 0, 0, 0.5)">
       <div style="width: 306px">
         <div class="text-center">
-          <img v-if="!isOpeningDay" src="/img/logo.png" style="width: 100%" />
-          <img v-if="isOpeningDay" src="/img/logo-opening-day-2024.png" style="width: 100%" />
+          <img v-if="!is4Nations" src="/img/logo.png" style="width: 100%" />
+          <img v-if="is4Nations" src="/img/logo-4nations.png" style="width: 100%" />
           <span class="d-block text-uppercase text-white fs-6 mt-1" style="letter-spacing: 1px">A live hockey drinking game</span>
         </div>
         <template v-if="!isLobbySettingsVisible">
