@@ -5,7 +5,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import * as SignalR from '@microsoft/signalr'
-import { compareAsc, addHours } from 'date-fns'
+import { compareAsc, addHours, isWithinInterval } from 'date-fns'
 import GameService from '@/services/GameService'
 import LobbyEventType from '@/enums/lobbyEventType'
 import { parseAllDates } from '@/helpers/dateHelpers'
@@ -112,18 +112,15 @@ const isFeedView = computed(() => currentView.value === 'feed')
 const isGameView = computed(() => currentView.value === 'game')
 const isChatView = computed(() => currentView.value === 'chat')
 
-const isOpeningDay = computed(() => {
+const is4Nations = computed(() => {
   const today = new Date()
-  const openingDay = new Date(2024, 9, 12)
+  const firstDay = new Date(2025, 1, 12)
+  const lastDay = new Date(2025, 1, 20)
   const paddingHours = 12
-  const start = addHours(openingDay, -1 * paddingHours)
-  const end = addHours(openingDay, paddingHours)
+  const start = addHours(firstDay, -1 * paddingHours)
+  const end = addHours(lastDay, paddingHours)
 
-  return (
-    (start.getDate() === today.getDate() || end.getDate() === today.getDate()) &&
-    (start.getMonth() === today.getMonth() || end.getMonth() === today.getMonth()) &&
-    (start.getFullYear() === today.getFullYear() || end.getFullYear() === today.getFullYear())
-  )
+  return isWithinInterval(today, { start, end })
 })
 
 const pendingDrinkCount = computed(
@@ -403,8 +400,8 @@ watch(
 
       <div class="bg-stone-900 px-sm-4 px-2 py-2 shadow position-relative d-flex align-items-center justify-content-between" style="z-index: 10">
         <router-link to="/" class="banner-logo text-stone-0 text-decoration-none" style="cursor: pointer">
-          <img v-if="!isOpeningDay" src="/img/logo-wide.png" />
-          <img v-if="isOpeningDay" src="/img/logo-wide-opening-day-2024.png" />
+          <img v-if="!is4Nations" src="/img/logo-wide.png" />
+          <img v-if="is4Nations" src="/img/logo-wide-4nations.png" />
         </router-link>
 
         <a target="_blank" class="text-decoration-none text-uppercase fw-bold mt-1 fs-8" href="https://discord.gg/Vgj9RbetDB">Join the Discord</a>
