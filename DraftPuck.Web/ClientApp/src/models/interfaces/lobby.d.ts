@@ -6,5 +6,6 @@ interface Lobby {
   created: Date
   isBotAutoPickingEnabled: boolean
   createdBy: string
+  gameIds: Array<number>
   members: Array<LobbyMember>
 }

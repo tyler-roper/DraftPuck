@@ -9,5 +9,6 @@ public class LobbyResponse
     public DateTime Created { get; set; }
     public bool IsBotAutoPickingEnabled { get; set; }
     public Guid CreatedBy { get; set; }
+    public List<int> GameIds { get; set; } = new();
     public List<LobbyMemberResponse> Members { get; set; } = new();
 }

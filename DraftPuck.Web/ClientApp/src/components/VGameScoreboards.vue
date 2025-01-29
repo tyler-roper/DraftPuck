@@ -3,15 +3,23 @@ import VGameScoreboard from '@/components/VGameScoreboard.vue'
 import GameState from '@/enums/gameState'
 import { compareAsc } from 'date-fns'
 import { computed } from 'vue'
+import { useLobbyStore } from '@/stores/lobby'
+import { storeToRefs } from 'pinia'
 
 const props = defineProps<{
   games: Game[]
 }>()
 
+const store = useLobbyStore()
+
+const { lobby } = storeToRefs(store)
+
 const sortedGames = computed(() =>
   [...props.games].sort((a, b) => {
     if (a.gameState === GameState.Final) return 1
     if (b.gameState === GameState.Final) return -1
+    if (lobby.value?.gameIds.includes(a.id) && !lobby.value?.gameIds.includes(b.id)) return -1
+    if (!lobby.value?.gameIds.includes(a.id) && lobby.value?.gameIds.includes(b.id)) return 1
     return compareAsc(a.dateTime, b.dateTime)
   })
 )
