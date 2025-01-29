@@ -4,4 +4,5 @@ interface LobbySettings {
   picksPerTeam: number
   bots: Bot[]
   isBotAutoPickingEnabled: boolean
+  gameIds: number[]
 }

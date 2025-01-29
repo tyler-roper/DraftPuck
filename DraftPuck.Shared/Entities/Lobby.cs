@@ -18,6 +18,8 @@ public partial class Lobby
 
     public bool IsBotAutoPickingEnabled { get; set; } = false;
 
+    public List<int> GameIds { get; set; } = new();
+
     public virtual User CreatedByUser { get; set; } = null!;
 
     public virtual ICollection<LobbyMember> LobbyMembers { get; } = new List<LobbyMember>();
