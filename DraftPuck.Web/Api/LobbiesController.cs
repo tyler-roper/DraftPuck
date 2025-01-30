@@ -226,7 +226,7 @@ public class LobbiesController : DraftPuckApiControllerBase
     [HttpPost("{code}/firebase")]
     public async Task<IActionResult> FirebaseTest(string code, UpdateFcmRegistrationTokenRequestModel model)
     {
-        await _firebase.SendTestMessage("Hello world!", model.Token!);
+        await _firebase.SendPushNotification("Hello world!", model.Token!);
         return NoContent();
     }
 }
