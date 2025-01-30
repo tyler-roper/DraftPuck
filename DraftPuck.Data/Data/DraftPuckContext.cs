@@ -54,6 +54,13 @@ public partial class DraftPuckContext : DbContext
             entity.Property(e => e.PicksPerTeam).HasDefaultValueSql("((1))");
             entity.Property(e => e.IsBotAutoPickingEnabled).HasDefaultValueSql("((0))");
 
+            entity.Property(e => e.GameIds)
+                .HasMaxLength(500)
+                .HasConversion(
+                    v => string.Join(",", v),
+                    v => v.Split(",", StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToList()
+                );
+
             entity.HasOne(d => d.CreatedByUser).WithMany(p => p.CreatedLobbies)
                 .HasForeignKey(d => d.CreatedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)

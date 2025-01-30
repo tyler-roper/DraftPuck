@@ -2,9 +2,9 @@
 import BotNames from '@/models/botNames'
 import BotPickStyle from '@/enums/botPickStyle'
 import Bot from '@/models/bot'
-import { addHours, isWithinInterval } from 'date-fns'
+import { addHours, format, isWithinInterval } from 'date-fns'
 import type { LobbySettings } from '@/models/interfaces/lobbySettings'
-import { onMounted, ref, nextTick, computed } from 'vue'
+import { onMounted, ref, nextTick, computed, watch } from 'vue'
 import { useToast } from 'vue-toastification'
 import LobbyService from '@/services/LobbyService'
 import GameService from '@/services/GameService'
@@ -15,6 +15,8 @@ import GameState from '@/enums/gameState'
 import VSwitch from '@/components/VSwitch.vue'
 import { initializeApp } from 'firebase/app'
 import { getMessaging, getToken } from 'firebase/messaging'
+import { getOrdinal } from '@/helpers/gameHelpers'
+import PeriodType from '@/enums/periodType'
 
 //const
 const MAX_BOTS = 10
@@ -32,20 +34,23 @@ const codeInput = ref<HTMLInputElement | null>(null)
 const nameInput = ref<HTMLInputElement | null>(null)
 const code = ref('')
 const name = ref('')
-const gameCount = ref<number>()
+const gameSummaries = ref<Array<GameSummary>>([])
 const isLoading = ref(false)
 const isJoiningLobby = ref(false)
 const isHelpVisible = ref(false)
 const isLobbySettingsVisible = ref(false)
 const isCreatingLobby = ref(false)
 const hasLoadedGames = ref(false)
+const isPlayAllGames = ref(true)
 const settings = ref<LobbySettings>({
   picksPerTeam: 1,
   bots: [],
-  isBotAutoPickingEnabled: false
+  isBotAutoPickingEnabled: false,
+  gameIds: []
 })
 
 //computed
+const gameCount = computed(() => gameSummaries.value.length)
 const is4Nations = computed(() => {
   const today = new Date()
   const firstDay = new Date(2025, 1, 12)
@@ -65,7 +70,8 @@ const is4Nations = computed(() => {
     name.value = latestLobbyParsed.name
     code.value = latestLobbyParsed.joinCode
   }
-  gameCount.value = (await GameService.getAllGameSummaries()).filter((g) => g.gameState !== GameState.Final).length
+  gameSummaries.value = (await GameService.getAllGameSummaries()).filter((g) => g.gameState !== GameState.Final)
+  settings.value.gameIds = gameSummaries.value.map((g) => g.id)
   hasLoadedGames.value = true
   await initializeFirebase();
 })()
@@ -124,7 +130,7 @@ async function createLobby() {
   try {
     isCreatingLobby.value = true
     const lobby = await LobbyService.createLobby(
-      new CreateLobbyRequest(name.value, settings.value.picksPerTeam, settings.value.isBotAutoPickingEnabled)
+      new CreateLobbyRequest(name.value, settings.value.picksPerTeam, settings.value.isBotAutoPickingEnabled, settings.value.gameIds)
     )
     const botPromises = settings.value.bots.map(async (b) => await LobbyService.joinLobbyByCode(lobby.joinCode, b.name, true, Number(b.botPickStyle)))
     await Promise.all(botPromises)
@@ -162,6 +168,11 @@ function isValidCreateLobby() {
 
   if (settings.value.picksPerTeam === null) {
     toast.error('You must set the picks per game. For infinite, choose 0.')
+    return false
+  }
+
+  if (settings.value.gameIds.length === 0) {
+    toast.error('No games selected!')
     return false
   }
 
@@ -217,6 +228,41 @@ async function initializeFirebase() {
   const token = await getToken(messaging, {vapidKey: "BOngebl5Rmrgo0k0YMjstWPapJ-Zl0Izbbsyl0l0lI7L9cmHiDdcLUEj3moGuibR_YxTfGYKC134nSB42ZxxTaA"});
   console.log("TOKEN", token)
 }
+
+function getLogo(team: Team) {
+  return `/img/logos/${team.abbreviation}.png`
+}
+
+function getTimeString(game: GameSummary) {
+  let time = format(game.dateTime, 'p')
+
+  if (game.gameState === GameState.Upcoming) return time
+
+  const ordinal = getOrdinal(game.period, game.periodType)
+
+  if (game.gameState === GameState.Live) {
+    if (game.periodType === PeriodType.Shootout) time = 'SO'
+    else {
+      time = `${game.timeRemainingInPeriod} - ${ordinal}`
+    }
+  }
+  {
+    time = 'Final'
+    if (game.period > 3) time += ` (${ordinal})`
+  }
+
+  return time
+}
+
+const gameIsSelected = (game: GameSummary) => settings.value.gameIds.includes(game.id)
+
+//watch
+watch(
+  () => isPlayAllGames.value,
+  (newValue) => {
+    if (newValue === true) settings.value.gameIds = gameSummaries.value.map(g => g.id)
+  }
+)
 </script>
 
 <template>
@@ -284,6 +330,23 @@ async function initializeFirebase() {
             <div class="col-5">
               <label class="form-label">Picks Per Team</label>
               <input type="number" v-model="settings.picksPerTeam" />
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <VSwitch v-model="isPlayAllGames" id="chkIsPlayAllGames" name="chkIsPlayAllGames" size="lg" switch>Play All Games</VSwitch>
+            <div class="pt-2" v-if="!isPlayAllGames">
+              <table class="fs-6 w-100">
+                <tr v-for="game in gameSummaries" :idx="game.id" :class="{ 'opacity-75': !gameIsSelected(game)}">
+                  <td class="pe-2"><input class="form-check-input" v-model="settings.gameIds" :id="'chkGame' + game.id" type="checkbox" :value="game.id" checked /></td>
+                  <td><img style="width: 25px" :src="getLogo(game.awayTeam)" /></td>
+                  <td>{{ game.awayTeam.abbreviation }}</td>
+                  <td class="px-1 fs-8">@</td>
+                  <td>{{ game.homeTeam.abbreviation }}</td>
+                  <td><img style="width: 25px" :src="getLogo(game.homeTeam)" /></td>
+                  <td class="ps-4">{{ getTimeString(game) }}</td>
+                </tr>
+              </table>
             </div>
           </div>
 

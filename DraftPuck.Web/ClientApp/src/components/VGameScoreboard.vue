@@ -27,7 +27,7 @@ const toast = useToast()
 const store = useLobbyStore()
 
 const { lobby, currentUserId, isLobbyAdmin } = storeToRefs(store)
-const { pickPlayer, removePick, sendDebugMessage } = store
+const { pickPlayer, removePick } = store
 
 const isPickingStarted = ref(false)
 const pickingStartingTimer = ref<number>()
@@ -38,6 +38,7 @@ const isBotPickingAway = ref(false)
 const isBotPickingHome = ref(false)
 
 //computed
+const gameIsPickable = computed(() => lobby.value?.gameIds.includes(game.value.id))
 const isStarted = computed(() => game.value.gameState !== GameState.Upcoming)
 const isInProgress = computed(() => game.value.gameState === GameState.Live)
 const isOver = computed(() => game.value.gameState === GameState.Final)
@@ -91,9 +92,9 @@ const strengthString = computed(() => {
 ;(async function onCreated() {
   updateTimeUntilPicking()
   const isBotAutoPickingEnabled = lobby.value && lobby.value.isBotAutoPickingEnabled
-  if (isBotAutoPickingEnabled) setUpBotAutoPicking()
+  if (isBotAutoPickingEnabled && gameIsPickable.value === true) setUpBotAutoPicking()
 
-  if (!isPickingStarted.value) {
+  if (!isPickingStarted.value && gameIsPickable.value === true) {
     pickingStartingTimer.value = window.setInterval(() => {
       updateTimeUntilPicking()
     }, 1000)
@@ -462,8 +463,11 @@ function getFriendlyPosition(position: string) {
                 <span class="d-block mb-n1"><i class="fs-7 fi fi-sr-exclamation text-danger"></i></span>
                 <span class="d-block mb-n1 ms-1 fw-bold">Picks Available</span>
               </span>
-              <span v-if="!isPickingStarted" class="text-stone-600 small mt-1 mb-n1 ms-3"
+              <span v-if="!isPickingStarted && gameIsPickable" class="text-stone-600 small mt-1 mb-n1 ms-3"
                 >Picks open @ <strong>{{ pickTimeFormatted }}</strong></span
+              >
+              <span v-if="!gameIsPickable" class="text-stone-600 small mt-1 mb-n1 ms-3">
+                <i class="fi fi-sr-lock me-1"></i>The lobby admin has disabled picks for this game.</span
               >
             </div>
             <div v-if="isRosterVisible">
@@ -481,7 +485,7 @@ function getFriendlyPosition(position: string) {
                       <tr>
                         <th colspan="3">
                           <a
-                            v-if="botsHavePicks(team) && isLobbyAdmin && !isBotPickingForTeam(team)"
+                            v-if="gameIsPickable && botsHavePicks(team) && isLobbyAdmin && !isBotPickingForTeam(team)"
                             @click="makeBotPicks(team)"
                             role="button"
                             style="height: 14px; line-height: 14px"
@@ -506,7 +510,7 @@ function getFriendlyPosition(position: string) {
                             `${player.firstName} ${player.lastName}`
                           }}</span>
                           <a
-                            v-if="currentUserCanPickPlayer(player, team)"
+                            v-if="gameIsPickable && currentUserCanPickPlayer(player, team)"
                             role="button"
                             class="btn btn-primary py-0 px-1 text-decoration-none fs-8 fw-bold ms-2"
                             style="height: 12px; line-height: 12px; margin-top: -1px"

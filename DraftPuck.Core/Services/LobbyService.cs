@@ -25,7 +25,8 @@ public class LobbyService : ILobbyService
             Status = 0,
             CreatedBy = userId,
             PicksPerTeam = request.PicksPerTeam,
-            IsBotAutoPickingEnabled = request.IsBotAutoPickingEnabled
+            IsBotAutoPickingEnabled = request.IsBotAutoPickingEnabled,
+            GameIds = request.GameIds
         };
 
         _dbContext.Lobbies.Add(lobby);
@@ -72,7 +73,7 @@ public class LobbyService : ILobbyService
 
         var lobby = await _dbContext.Lobbies.FindAsync(lobbyId);
         return lobby == null
-            ? (List<LobbyEvent>)(new())
+            ? new()
             : await _dbContext.LobbyEvents
             .Where(lobbyEvent => lobbyEvent.LobbyId == lobbyId || (lobbyEvent.LobbyId == null && lobbyEvent.Created >= lobby.Created && lobbyEvent.Created <= lobby.Created.AddHours(12)))
             .OrderBy(lobbyEvent => lobbyEvent.TimeUtc)
