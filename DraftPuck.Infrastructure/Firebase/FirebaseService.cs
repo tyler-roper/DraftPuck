@@ -5,6 +5,14 @@ using FirebaseAdmin.Messaging;
 namespace DraftPuck.Infrastructure.Firebase;
 public class FirebaseService : IFirebaseService
 {
+
+    private readonly FirebaseApp _app;
+
+    public FirebaseService(FirebaseApp app)
+    {
+        _app = app;
+    }
+
     public async Task SendPushNotification(string message, string token)
     {
         var firebaseMessage = new Message()
