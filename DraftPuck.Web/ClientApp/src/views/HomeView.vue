@@ -13,8 +13,6 @@ import { useRouter } from 'vue-router'
 import '@/extensions/arrayExtensions'
 import GameState from '@/enums/gameState'
 import VSwitch from '@/components/VSwitch.vue'
-import { initializeApp } from 'firebase/app'
-import { getMessaging, getToken } from 'firebase/messaging'
 import { getOrdinal } from '@/helpers/gameHelpers'
 import PeriodType from '@/enums/periodType'
 
@@ -73,7 +71,6 @@ const is4Nations = computed(() => {
   gameSummaries.value = (await GameService.getAllGameSummaries()).filter((g) => g.gameState !== GameState.Final)
   settings.value.gameIds = gameSummaries.value.map((g) => g.id)
   hasLoadedGames.value = true
-  await initializeFirebase();
 })()
 
 onMounted(async () => {
@@ -213,21 +210,6 @@ function tryMoveNext() {
   if (code.value.length >= 4) nameInput.value?.focus()
 }
 
-async function initializeFirebase() {
-  const firebaseConfig = {
-    apiKey: 'AIzaSyBGw_anxN2MDnfPSTyvqmfmYAwKTdLBOAY',
-    authDomain: 'draftpuck.firebaseapp.com',
-    projectId: 'draftpuck',
-    storageBucket: 'draftpuck.firebasestorage.app',
-    messagingSenderId: '34141903027',
-    appId: '1:34141903027:web:7d676e25fe00fcb582b8c6'
-  }
-
-  const app = initializeApp(firebaseConfig)
-  const messaging = getMessaging(app)
-  const token = await getToken(messaging, {vapidKey: "BOngebl5Rmrgo0k0YMjstWPapJ-Zl0Izbbsyl0l0lI7L9cmHiDdcLUEj3moGuibR_YxTfGYKC134nSB42ZxxTaA"});
-  console.log("TOKEN", token)
-}
 
 function getLogo(team: Team) {
   return `/img/logos/${team.abbreviation}.png`
@@ -260,7 +242,7 @@ const gameIsSelected = (game: GameSummary) => settings.value.gameIds.includes(ga
 watch(
   () => isPlayAllGames.value,
   (newValue) => {
-    if (newValue === true) settings.value.gameIds = gameSummaries.value.map(g => g.id)
+    if (newValue === true) settings.value.gameIds = gameSummaries.value.map((g) => g.id)
   }
 )
 </script>
@@ -337,8 +319,10 @@ watch(
             <VSwitch v-model="isPlayAllGames" id="chkIsPlayAllGames" name="chkIsPlayAllGames" size="lg" switch>Play All Games</VSwitch>
             <div class="pt-2" v-if="!isPlayAllGames">
               <table class="fs-6 w-100">
-                <tr v-for="game in gameSummaries" :idx="game.id" :class="{ 'opacity-75': !gameIsSelected(game)}">
-                  <td class="pe-2"><input class="form-check-input" v-model="settings.gameIds" :id="'chkGame' + game.id" type="checkbox" :value="game.id" checked /></td>
+                <tr v-for="game in gameSummaries" :idx="game.id" :class="{ 'opacity-75': !gameIsSelected(game) }">
+                  <td class="pe-2">
+                    <input class="form-check-input" v-model="settings.gameIds" :id="'chkGame' + game.id" type="checkbox" :value="game.id" checked />
+                  </td>
                   <td><img style="width: 25px" :src="getLogo(game.awayTeam)" /></td>
                   <td>{{ game.awayTeam.abbreviation }}</td>
                   <td class="px-1 fs-8">@</td>

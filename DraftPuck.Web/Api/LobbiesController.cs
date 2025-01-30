@@ -1,14 +1,18 @@
-﻿namespace DraftPuck.Web.Api;
+﻿using DraftPuck.Shared.Interfaces;
+
+namespace DraftPuck.Web.Api;
 
 public class LobbiesController : DraftPuckApiControllerBase
 {
     private readonly ILobbyService _lobbyService;
     private readonly IMapper _mapper;
+    private readonly IFirebaseService _firebase;
 
-    public LobbiesController(ILobbyService lobbyService, IMapper mapper)
+    public LobbiesController(ILobbyService lobbyService, IMapper mapper, IFirebaseService firebase)
     {
         _lobbyService = lobbyService;
         _mapper = mapper;
+        _firebase = firebase;
     }
 
     [HttpPost]
@@ -217,6 +221,11 @@ public class LobbiesController : DraftPuckApiControllerBase
     {
         try
         {
+            if (message.Message == "firebase_test" && CurrentUser?.FcmRegistrationToken != null)
+            {
+                await _firebase.SendTestMessage("Hello world!", CurrentUser!.FcmRegistrationToken);
+            }
+
             await _lobbyService.SendMessage(CurrentUser!.Id, code, message.Message);
             return NoContent();
         }

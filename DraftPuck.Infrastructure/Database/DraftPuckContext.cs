@@ -118,6 +118,7 @@ public partial class DraftPuckContext : DbContext
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.Created).HasDefaultValueSql("(getutcdate())");
             entity.Property(e => e.IsBot).HasDefaultValueSql("((0))");
+            entity.Property(e => e.FcmRegistrationToken).HasColumnType("nvarchar(max)");
         });
 
         OnModelCreatingPartial(modelBuilder);

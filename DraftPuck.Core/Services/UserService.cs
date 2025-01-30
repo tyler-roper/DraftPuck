@@ -23,4 +23,14 @@ public class UserService : IUserService
         await _dbContext.SaveChangesAsync();
         return user;
     }
+
+    public async Task<User?> UpdateFcmRegistrationTokenAsync(Guid id, UpdateFcmRegistrationTokenRequestModel model)
+    {
+        var user = await GetUserByIdAsync(id);
+        if (user == null) return null;
+
+        user.FcmRegistrationToken = model.Token;
+        await _dbContext.SaveChangesAsync();
+        return user;
+    }
 }
