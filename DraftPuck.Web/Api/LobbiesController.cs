@@ -234,6 +234,13 @@ public class LobbiesController : DraftPuckApiControllerBase
             return NotFound(ex.Message);
         }
     }
+
+    [HttpPost("{code}/firebase")]
+    public async Task<IActionResult> FirebaseTest(string code, UpdateFcmRegistrationTokenRequestModel model)
+    {
+        await _firebase.SendTestMessage("Hello world!", model.Token!);
+        return NoContent();
+    }
 }
 
 public class Broadcast
