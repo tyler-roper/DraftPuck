@@ -8,12 +8,12 @@ namespace DraftPuck.Core.Services;
 public class LobbyEventService : ILobbyEventService
 {
     private readonly DraftPuckContext _dbContext;
-    private readonly ILobbyHub _lobbyHub;
+    private readonly ILobbyHubContext _lobbyHubContext;
 
-    public LobbyEventService(DraftPuckContext dbContext, ILobbyHub lobbyHub)
+    public LobbyEventService(DraftPuckContext dbContext, ILobbyHubContext lobbyHubContext)
     {
         _dbContext = dbContext;
-        _lobbyHub = lobbyHub;
+        _lobbyHubContext = lobbyHubContext;
     }
 
     public async Task SendLobbyCreatedEvent(Lobby lobby, LobbyMember lobbyMember)
@@ -88,7 +88,7 @@ public class LobbyEventService : ILobbyEventService
 
     public async Task SendMessage(string lobbyCode, MessageModel message)
     {
-        await _lobbyHub.SendMessage(lobbyCode, message);
+        await _lobbyHubContext.SendMessage(lobbyCode, message);
     }
 
     private async Task NewLobbyEvent(Guid lobbyId, string joinCode, LobbyEventType eventType, DateTime? timeUtc = null, Guid? lobbyMemberId = null, int? gameEventId = null, int? gameId = null, Guid? lobbyMember2Id = null, int? playerId = null, int? player2Id = null, int? teamId = null, string? title = null, string? text = null)
@@ -113,7 +113,7 @@ public class LobbyEventService : ILobbyEventService
 
         try
         {
-            await _lobbyHub.SendLobbyEvent(joinCode, lobbyEvent);
+            await _lobbyHubContext.SendLobbyEvent(joinCode, lobbyEvent);
             lobbyEvent.IsSent = true;
         }
         finally
@@ -143,7 +143,7 @@ public class LobbyEventService : ILobbyEventService
 
         try
         {
-            await _lobbyHub.SendGlobalLobbyEvent(lobbyEvent);
+            await _lobbyHubContext.SendGlobalLobbyEvent(lobbyEvent);
             lobbyEvent.IsSent = true;
         }
         finally
