@@ -9,9 +9,12 @@ import { parseISO, format } from 'date-fns'
 import VFeedItem from '@/components/VFeedItem.vue'
 import PlayType from '@/enums/playType'
 import FeedItemType from '@/enums/feedItemType'
+import { initializeApp } from 'firebase/app'
+import { getToken, onMessage, getMessaging } from 'firebase/messaging'
+import UserService from '@/services/UserService'
 
 //const
-const isNotificationsSupported = true
+const isNotificationsSupported = 'Notification' in window
 type View = 'feed' | 'list' | 'settings'
 
 //props
@@ -26,8 +29,9 @@ const props = withDefaults(
 
 //data
 const lobbyStore = useLobbyStore()
-const { lobby } = storeToRefs(lobbyStore)
+const { lobby, currentUserId } = storeToRefs(lobbyStore)
 const notificationPermissionsGranted = ref(isNotificationsSupported && Notification.permission === 'granted')
+const token = ref<string>()
 const currentView = ref<View>('feed')
 const filters = ref<{ [k: string]: boolean }>({
   showGoals: true,
@@ -49,8 +53,8 @@ const gameEventFilterLookup = ref({
   showPeriodStarts: PlayType.PeriodStart,
   showPeriodEnds: PlayType.PeriodEnd,
   showChallenges: PlayType.Challenge,
-  showGameEnds: PlayType.GameEnd,
-});
+  showGameEnds: PlayType.GameEnd
+})
 
 const lobbyEventFilterLookup = ref({
   showUserJoin: LobbyEventType.UserJoined,
@@ -58,25 +62,24 @@ const lobbyEventFilterLookup = ref({
   showPicks: LobbyEventType.NewPick,
   showDrinkAwarded: LobbyEventType.DrinkAwarded,
   showDrinkAssigned: LobbyEventType.DrinkAssigned
-});
+})
+
+const messaging = ref<any>(null)
 
 //computed
 const filteredItems = computed(() => {
   return props.items.filter((item, idx, array) => {
+    const relevantFilterLookups = item.type === FeedItemType.GameEvent ? gameEventFilterLookup.value : lobbyEventFilterLookup.value
 
-    const relevantFilterLookups = item.type === FeedItemType.GameEvent
-      ? gameEventFilterLookup.value
-      : lobbyEventFilterLookup.value;
-
-    const filterLookup = Object.entries(relevantFilterLookups).find(([_key,value]) => value === item.subType);
-    const shouldShow = filterLookup ? filters.value[filterLookup[0]] : true;
+    const filterLookup = Object.entries(relevantFilterLookups).find(([_key, value]) => value === item.subType)
+    const shouldShow = filterLookup ? filters.value[filterLookup[0]] : true
 
     const isDuplicate =
       array[idx + 1] && item.subType === PlayType.PeriodEnd && array[idx + 1].subType === PlayType.GameEnd && array[idx + 1].gameId === item.gameId
 
     return shouldShow && !isDuplicate
-  })}
-)
+  })
+})
 
 const assignedDrinks = computed(() =>
   lobby
@@ -108,16 +111,54 @@ const allLobbyEventsOn = computed(
 //hooks/methods
 ;(function created() {
   initializeFilters()
+  initializeFirebase()
 })()
 
 async function requestNotificationPermissions() {
+  console.log('test')
   await Notification.requestPermission()
   notificationPermissionsGranted.value = Notification.permission === 'granted'
+
+  if (notificationPermissionsGranted.value) fetchAndUpdateFcmToken()
+  else clearFcmToken()
 }
 
 function initializeFilters() {
   const existingFilters = localStorage.getItem('feedFilters')
   if (existingFilters) filters.value = { ...filters.value, ...JSON.parse(existingFilters) }
+}
+
+async function initializeFirebase() {
+  const firebaseConfig = {
+    apiKey: 'AIzaSyBGw_anxN2MDnfPSTyvqmfmYAwKTdLBOAY',
+    authDomain: 'draftpuck.firebaseapp.com',
+    projectId: 'draftpuck',
+    storageBucket: 'draftpuck.firebasestorage.app',
+    messagingSenderId: '34141903027',
+    appId: '1:34141903027:web:7d676e25fe00fcb582b8c6'
+  }
+
+  const app = initializeApp(firebaseConfig)
+  messaging.value = getMessaging(app)
+  onMessage(messaging.value, (payload) => {
+    console.log(`Message received: ${payload}`)
+  })
+
+  if (notificationPermissionsGranted.value) fetchAndUpdateFcmToken()
+  else clearFcmToken()
+}
+
+async function clearFcmToken() {
+  await UserService.updateFcmRegistrationToken(currentUserId.value!, { token: undefined })
+  token.value = undefined
+}
+
+async function fetchAndUpdateFcmToken() {
+  const _token = await getToken(messaging.value, {
+    vapidKey: 'BOngebl5Rmrgo0k0YMjstWPapJ-Zl0Izbbsyl0l0lI7L9cmHiDdcLUEj3moGuibR_YxTfGYKC134nSB42ZxxTaA'
+  })
+  await UserService.updateFcmRegistrationToken(currentUserId.value!, { token: _token })
+  token.value = _token
 }
 
 function saveFiltersToLocalStorage() {
@@ -216,7 +257,8 @@ function formatAsTime(date: Date | string) {
           @click="setView('list')"
           class="p-3 text-stone-400 d-block my-n3 mx-3"
           style="text-decoration: none !important"
-          ><span class="fw-bold text-uppercase">Timeline</span></a>
+          ><span class="fw-bold text-uppercase">Timeline</span></a
+        >
         <a
           role="button"
           v-if="currentView === 'feed'"
@@ -224,7 +266,7 @@ function formatAsTime(date: Date | string) {
           class="p-3 text-stone-400 d-block m-n3"
           style="text-decoration: none !important"
         >
-        <span class="fw-bold text-uppercase">Settings</span>
+          <span class="fw-bold text-uppercase">Settings</span>
         </a>
       </div>
     </div>
@@ -238,7 +280,7 @@ function formatAsTime(date: Date | string) {
             <button v-if="!notificationPermissionsGranted" @click="requestNotificationPermissions" class="btn btn-primary fw-bold text-uppercase">
               Enable Notifications
             </button>
-            <span v-if="notificationPermissionsGranted"
+            <span v-if="notificationPermissionsGranted && !!token"
               ><strong>You've enabled push notifications!</strong><br />You can disable them through your browser.</span
             >
           </div>
@@ -251,20 +293,57 @@ function formatAsTime(date: Date | string) {
             <a role="button" v-if="allGameEventsOn" class="text-decoration-none text-primary fs-8 ms-3" @click="hideAllGameEvents">Hide All</a>
           </div>
           <div class="py-3 ps-4">
-            <VSwitch v-model="filters.showGoals" id="showGoals" name="check-button" size="lg" class="mb-3" @change="saveFiltersToLocalStorage" switch>Goal</VSwitch>
-            <VSwitch v-model="filters.showPenalties" id="showPenalties" name="check-button" size="lg" class="my-3" @change="saveFiltersToLocalStorage" switch
+            <VSwitch v-model="filters.showGoals" id="showGoals" name="check-button" size="lg" class="mb-3" @change="saveFiltersToLocalStorage" switch
+              >Goal</VSwitch
+            >
+            <VSwitch
+              v-model="filters.showPenalties"
+              id="showPenalties"
+              name="check-button"
+              size="lg"
+              class="my-3"
+              @change="saveFiltersToLocalStorage"
+              switch
               >Penalty</VSwitch
             >
-            <VSwitch v-model="filters.showPeriodStarts" id="showPeriodStarts" name="check-button" size="lg" class="my-3" @change="saveFiltersToLocalStorage" switch
+            <VSwitch
+              v-model="filters.showPeriodStarts"
+              id="showPeriodStarts"
+              name="check-button"
+              size="lg"
+              class="my-3"
+              @change="saveFiltersToLocalStorage"
+              switch
               >Period Start</VSwitch
             >
-            <VSwitch v-model="filters.showPeriodEnds" id="showPeriodEnds" name="check-button" size="lg" class="my-3" @change="saveFiltersToLocalStorage" switch
+            <VSwitch
+              v-model="filters.showPeriodEnds"
+              id="showPeriodEnds"
+              name="check-button"
+              size="lg"
+              class="my-3"
+              @change="saveFiltersToLocalStorage"
+              switch
               >Period End</VSwitch
             >
-            <VSwitch v-model="filters.showGameEnds" id="showGameEnds" name="check-button" size="lg" class="my-3" @change="saveFiltersToLocalStorage" switch
+            <VSwitch
+              v-model="filters.showGameEnds"
+              id="showGameEnds"
+              name="check-button"
+              size="lg"
+              class="my-3"
+              @change="saveFiltersToLocalStorage"
+              switch
               >Game End</VSwitch
             >
-            <VSwitch v-model="filters.showChallenges" id="showChallenges" name="check-button" size="lg" class="my-3" @change="saveFiltersToLocalStorage" switch
+            <VSwitch
+              v-model="filters.showChallenges"
+              id="showChallenges"
+              name="check-button"
+              size="lg"
+              class="my-3"
+              @change="saveFiltersToLocalStorage"
+              switch
               >Coach's Challenge</VSwitch
             >
           </div>
@@ -275,19 +354,47 @@ function formatAsTime(date: Date | string) {
             <a role="button" v-if="allLobbyEventsOn" class="text-decoration-none text-primary fs-8 ms-3" @click="hideAllLobbyEvents">Hide All</a>
           </div>
           <div class="py-3 ps-4">
-            <VSwitch v-model="filters.showUserJoin" id="showUserJoin" name="check-button" size="lg" class="mb-3" @change="saveFiltersToLocalStorage" switch
+            <VSwitch
+              v-model="filters.showUserJoin"
+              id="showUserJoin"
+              name="check-button"
+              size="lg"
+              class="mb-3"
+              @change="saveFiltersToLocalStorage"
+              switch
               >User Joined</VSwitch
             >
-            <VSwitch v-model="filters.showNameChange" id="showNameChange" name="check-button" size="lg" class="mb-3" @change="saveFiltersToLocalStorage" switch
+            <VSwitch
+              v-model="filters.showNameChange"
+              id="showNameChange"
+              name="check-button"
+              size="lg"
+              class="mb-3"
+              @change="saveFiltersToLocalStorage"
+              switch
               >Name Change</VSwitch
             >
             <VSwitch v-model="filters.showPicks" id="showPicks" name="check-button" size="lg" class="my-3" @change="saveFiltersToLocalStorage" switch
               >Pick Player</VSwitch
             >
-            <VSwitch v-model="filters.showDrinkAwarded" id="showDrinkAwarded" name="check-button" size="lg" @change="saveFiltersToLocalStorage" class="my-3" switch
+            <VSwitch
+              v-model="filters.showDrinkAwarded"
+              id="showDrinkAwarded"
+              name="check-button"
+              size="lg"
+              @change="saveFiltersToLocalStorage"
+              class="my-3"
+              switch
               >Drink Awarded</VSwitch
             >
-            <VSwitch v-model="filters.showDrinkAssigned" id="showDrinkAssigned" name="check-button" size="lg" @change="saveFiltersToLocalStorage" class="my-3" switch
+            <VSwitch
+              v-model="filters.showDrinkAssigned"
+              id="showDrinkAssigned"
+              name="check-button"
+              size="lg"
+              @change="saveFiltersToLocalStorage"
+              class="my-3"
+              switch
               >Drink Assigned</VSwitch
             >
           </div>
