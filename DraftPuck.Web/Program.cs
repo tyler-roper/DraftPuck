@@ -7,7 +7,6 @@ using DraftPuck.Web.Middleware;
 using System.Text.Json.Serialization;
 using DraftPuck.Shared.Interfaces;
 using DraftPuck.Infrastructure.Firebase;
-using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,7 +43,6 @@ builder.Services
     .AddTransient<INhlService, NhlService>()
     .AddTransient<IUserService, UserService>()
     .AddEndpointsApiExplorer()
-
     .AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 //kestrel
