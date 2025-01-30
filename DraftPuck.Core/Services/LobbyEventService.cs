@@ -1,18 +1,19 @@
-﻿using DraftPuck.Data.Data;
-using DraftPuck.SignalR.Hubs;
-using Microsoft.AspNetCore.SignalR;
+﻿using DraftPuck.Infrastructure.Database;
+using DraftPuck.Infrastructure.SignalR;
+using DraftPuck.Shared.Interfaces;
+using DraftPuck.Shared.Models;
 
 namespace DraftPuck.Core.Services;
 
 public class LobbyEventService : ILobbyEventService
 {
     private readonly DraftPuckContext _dbContext;
-    private readonly IHubContext<LobbyHub> _hubContext;
+    private readonly ILobbyHub _lobbyHub;
 
-    public LobbyEventService(DraftPuckContext dbContext, IHubContext<LobbyHub> hubContext)
+    public LobbyEventService(DraftPuckContext dbContext, ILobbyHub lobbyHub)
     {
         _dbContext = dbContext;
-        _hubContext = hubContext;
+        _lobbyHub = lobbyHub;
     }
 
     public async Task SendLobbyCreatedEvent(Lobby lobby, LobbyMember lobbyMember)
@@ -85,9 +86,9 @@ public class LobbyEventService : ILobbyEventService
         await NewGlobalEvent(LobbyEventType.GoalRemoved, playerId: playerId, gameId: gameId);
     }
 
-    public async Task SendMessage(string joinCode, MessageModel message)
+    public async Task SendMessage(string lobbyCode, MessageModel message)
     {
-        await _hubContext.Clients.Group(joinCode).SendAsync("Message", message);
+        await _lobbyHub.SendMessage(lobbyCode, message);
     }
 
     private async Task NewLobbyEvent(Guid lobbyId, string joinCode, LobbyEventType eventType, DateTime? timeUtc = null, Guid? lobbyMemberId = null, int? gameEventId = null, int? gameId = null, Guid? lobbyMember2Id = null, int? playerId = null, int? player2Id = null, int? teamId = null, string? title = null, string? text = null)
@@ -112,7 +113,7 @@ public class LobbyEventService : ILobbyEventService
 
         try
         {
-            await _hubContext.Clients.Group(joinCode).SendAsync("LobbyEvent", lobbyEvent);
+            await _lobbyHub.SendLobbyEvent(joinCode, lobbyEvent);
             lobbyEvent.IsSent = true;
         }
         finally
@@ -142,7 +143,7 @@ public class LobbyEventService : ILobbyEventService
 
         try
         {
-            await _hubContext.Clients.All.SendAsync("LobbyEvent", lobbyEvent);
+            await _lobbyHub.SendGlobalLobbyEvent(lobbyEvent);
             lobbyEvent.IsSent = true;
         }
         finally

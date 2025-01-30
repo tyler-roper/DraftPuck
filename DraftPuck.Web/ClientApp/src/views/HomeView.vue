@@ -13,6 +13,8 @@ import { useRouter } from 'vue-router'
 import '@/extensions/arrayExtensions'
 import GameState from '@/enums/gameState'
 import VSwitch from '@/components/VSwitch.vue'
+import { initializeApp } from 'firebase/app'
+import { getMessaging, getToken } from 'firebase/messaging'
 
 //const
 const MAX_BOTS = 10
@@ -65,6 +67,7 @@ const is4Nations = computed(() => {
   }
   gameCount.value = (await GameService.getAllGameSummaries()).filter((g) => g.gameState !== GameState.Final).length
   hasLoadedGames.value = true
+  await initializeFirebase();
 })()
 
 onMounted(async () => {
@@ -197,6 +200,22 @@ function getRandomBotName() {
 
 function tryMoveNext() {
   if (code.value.length >= 4) nameInput.value?.focus()
+}
+
+async function initializeFirebase() {
+  const firebaseConfig = {
+    apiKey: 'AIzaSyBGw_anxN2MDnfPSTyvqmfmYAwKTdLBOAY',
+    authDomain: 'draftpuck.firebaseapp.com',
+    projectId: 'draftpuck',
+    storageBucket: 'draftpuck.firebasestorage.app',
+    messagingSenderId: '34141903027',
+    appId: '1:34141903027:web:7d676e25fe00fcb582b8c6'
+  }
+
+  const app = initializeApp(firebaseConfig)
+  const messaging = getMessaging(app)
+  const token = await getToken(messaging, {vapidKey: "BOngebl5Rmrgo0k0YMjstWPapJ-Zl0Izbbsyl0l0lI7L9cmHiDdcLUEj3moGuibR_YxTfGYKC134nSB42ZxxTaA"});
+  console.log("TOKEN", token)
 }
 </script>
 

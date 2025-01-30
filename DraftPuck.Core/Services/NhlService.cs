@@ -1,4 +1,5 @@
-﻿using Draftpuck.NhlApi.Services.Interfaces;
+﻿using DraftPuck.Infrastructure.Nhl.Services.Interfaces;
+using DraftPuck.Shared.Models;
 
 namespace DraftPuck.Core.Services;
 

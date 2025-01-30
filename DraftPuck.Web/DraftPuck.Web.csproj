@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
 	<PropertyGroup>
-		<TargetFramework>net7.0</TargetFramework>
+		<TargetFramework>net8.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UserSecretsId>a471e140-49cf-4214-96cc-d87252676d5b</UserSecretsId>
@@ -32,7 +32,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\DraftPuck.Core\DraftPuck.Core.csproj" />
+		<ProjectReference Include="..\DraftPuck.Core\DraftPuck.Core.csproj"></ProjectReference>
+		<ProjectReference Include="..\DraftPuck.Infrastructure\DraftPuck.Infrastructure.csproj" />
+		<ProjectReference Include="..\DraftPuck.Shared\DraftPuck.Shared.csproj" />
 	</ItemGroup>
 
 	<Target Name="DebugBuildWeb" BeforeTargets="BeforeBuild" Condition="'$(Configuration)' == 'Debug' And !Exists('wwwroot')">

@@ -1,4 +1,4 @@
-﻿using DraftPuck.Data.Data;
+﻿using DraftPuck.Infrastructure.Database;
 
 namespace DraftPuck.Web.Middleware;
 

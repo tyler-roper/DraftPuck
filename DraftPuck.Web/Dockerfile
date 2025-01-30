@@ -1,7 +1,7 @@
-FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /opt/app
 
-FROM mcr.microsoft.com/dotnet/sdk:7.0-alpine3.17 AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine3.21 AS build
 LABEL BUILD_IMAGE=true
 
 RUN apk add --update nodejs npm

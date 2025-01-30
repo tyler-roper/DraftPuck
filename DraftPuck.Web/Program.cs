@@ -1,11 +1,11 @@
-using Draftpuck.NhlApi.Services;
-using Draftpuck.NhlApi.Services.Interfaces;
+using DraftPuck.Infrastructure.Nhl.Services;
+using DraftPuck.Infrastructure.Nhl.Services.Interfaces;
 using DraftPuck.Core.Services;
-using DraftPuck.Data.Data;
-using DraftPuck.SignalR.Hubs;
+using DraftPuck.Infrastructure.Database;
+using DraftPuck.Infrastructure.SignalR;
 using DraftPuck.Web.Middleware;
-using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
+using DraftPuck.Shared.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,16 +30,18 @@ builder.Logging.AddConsole();
 builder.Services.AddSignalR();
 builder.Services.AddHttpClient<INhlApiService, NhlApiService>(client => client.BaseAddress = new Uri("https://api-web.nhle.com/v1/"));
 builder.Services
-    .AddDbContext<DraftPuckContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")))
+    .AddDatabase(builder.Configuration.GetConnectionString("DefaultConnection"))
     .AddHostedService<GameCheckerHostedService>()
     .AddHostedService<LobbyCleanupHostedService>()
     .AddSingleton<IGameCache, GameCache>()
+    .AddTransient<ILobbyHub, LobbyHub>()
     .AddTransient<IGameService, GameService>()
     .AddTransient<ILobbyService, LobbyService>()
     .AddTransient<ILobbyEventService, LobbyEventService>()
     .AddTransient<INhlService, NhlService>()
     .AddTransient<IUserService, UserService>()
     .AddEndpointsApiExplorer()
+
     .AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 //kestrel

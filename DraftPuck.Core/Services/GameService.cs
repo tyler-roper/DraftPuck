@@ -1,4 +1,5 @@
-﻿using DraftPuck.Data.Data;
+﻿using DraftPuck.Infrastructure.Database;
+using DraftPuck.Shared.Models;
 
 namespace DraftPuck.Core.Services;
 

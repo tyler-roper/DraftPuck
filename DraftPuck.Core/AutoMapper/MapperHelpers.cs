@@ -1,4 +1,4 @@
-﻿using Draftpuck.NhlApi.Models;
+﻿using DraftPuck.Infrastructure.Nhl.Models;
 using System.Globalization;
 
 namespace DraftPuck.Core.AutoMapper;

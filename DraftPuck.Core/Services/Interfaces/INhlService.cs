@@ -1,4 +1,6 @@
-﻿namespace DraftPuck.Core.Services.Interfaces;
+﻿using DraftPuck.Shared.Models;
+
+namespace DraftPuck.Core.Services.Interfaces;
 
 public interface INhlService
 {

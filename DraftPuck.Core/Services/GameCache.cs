@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using DraftPuck.Shared.Models;
+using System.Collections.Concurrent;
 
 namespace DraftPuck.Core.Services;
 
