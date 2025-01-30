@@ -4,8 +4,7 @@ import { useLobbyStore } from '@/stores/lobby'
 import { ref } from 'vue'
 import UserService from '@/services/UserService'
 import { initializeApp } from 'firebase/app'
-import { getToken, onMessage } from 'firebase/messaging'
-import { getMessaging } from 'firebase/messaging/sw'
+import { getToken, onMessage, getMessaging } from 'firebase/messaging'
 
 const lobbyStore = useLobbyStore()
 const { setCurrentUserId } = lobbyStore
@@ -49,7 +48,7 @@ async function initializeFirebase() {
   const app = initializeApp(firebaseConfig)
   const messaging = getMessaging(app)
   onMessage(messaging, (payload) => {
-    console.log('Message received:', payload);
+    console.log(`Message received: ${payload}`)
   })
   return await getToken(messaging, { vapidKey: 'BOngebl5Rmrgo0k0YMjstWPapJ-Zl0Izbbsyl0l0lI7L9cmHiDdcLUEj3moGuibR_YxTfGYKC134nSB42ZxxTaA' })
 }
