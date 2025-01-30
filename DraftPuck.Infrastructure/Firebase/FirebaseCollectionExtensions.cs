@@ -15,10 +15,17 @@ public static class FirebaseCollectionExtensions
 
     public static FirebaseApp CreateFirebaseApp(FirebaseOptions options)
     {
-        var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(options.AsJson));
-        return FirebaseApp.Create(new AppOptions()
+        try
         {
-            Credential = GoogleCredential.FromStream(stream)
-        });
+            var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(options.AsJson));
+            return FirebaseApp.Create(new AppOptions()
+            {
+                Credential = GoogleCredential.FromStream(stream)
+            });
+        } catch (Exception e)
+        {
+            Console.WriteLine($"Unable to connect to Firebase: {e}");
+            return FirebaseApp.Create();
+        }
     }
 }
