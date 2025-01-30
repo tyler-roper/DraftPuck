@@ -1,3 +1,26 @@
 {
-    "display": "standalone"
+    "display": "standalone",
+    "description": "DRAFTPUCK - A live hockey drinking game",
+    "name": "DRAFTPUCK",
+    "short_name": "DRAFTPUCK",
+    "start_url": "https://draftpuck.com",
+    "orientation": "portrait",
+    "background_color": "#ffb100",
+    "theme_color": "#ffb100",
+    "icons": [
+        {
+            "src": "img/icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable",
+            "background_color": "#ffb100"
+        },
+        {
+            "src": "img/icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable",
+            "background_color": "#ffb100"
+        }
+    ]
 }
