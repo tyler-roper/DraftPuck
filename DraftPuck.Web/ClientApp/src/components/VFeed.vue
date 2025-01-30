@@ -11,7 +11,7 @@ import PlayType from '@/enums/playType'
 import FeedItemType from '@/enums/feedItemType'
 
 //const
-const isNotificationsSupported = 'Notification' in window
+const isNotificationsSupported = true
 type View = 'feed' | 'list' | 'settings'
 
 //props

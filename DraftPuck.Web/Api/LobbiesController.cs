@@ -219,20 +219,8 @@ public class LobbiesController : DraftPuckApiControllerBase
     [HttpPost("{code}/message")]
     public async Task<IActionResult> SendMessage(string code, MessageModel message)
     {
-        try
-        {
-            if (message.Message == "firebase_test" && CurrentUser?.FcmRegistrationToken != null)
-            {
-                await _firebase.SendTestMessage("Hello world!", CurrentUser!.FcmRegistrationToken);
-            }
-
-            await _lobbyService.SendMessage(CurrentUser!.Id, code, message.Message);
-            return NoContent();
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ex.Message);
-        }
+        await _lobbyService.SendMessage(CurrentUser!.Id, code, message.Message);
+        return NoContent();
     }
 
     [HttpPost("{code}/firebase")]
