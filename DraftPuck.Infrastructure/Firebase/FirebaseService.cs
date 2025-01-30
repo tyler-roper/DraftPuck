@@ -5,14 +5,7 @@ using FirebaseAdmin.Messaging;
 namespace DraftPuck.Infrastructure.Firebase;
 public class FirebaseService : IFirebaseService
 {
-    private FirebaseApp _app;
-
-    public FirebaseService(FirebaseApp app)
-    {
-        _app = app;
-    }
-
-    public async Task SendTestMessage(string message, string token)
+    public async Task SendPushNotification(string message, string token)
     {
         var firebaseMessage = new Message()
         {
@@ -24,7 +17,7 @@ public class FirebaseService : IFirebaseService
             },
             Webpush = new WebpushConfig()
             {
-                FcmOptions = new() { Link = "https://draftpuck.com" }
+                FcmOptions = new() { Link = "https://draftpuck.com/lobby/" }
             }
         };
 
