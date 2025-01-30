@@ -50,6 +50,7 @@ async function initializeFirebase() {
   onMessage(messaging, (payload) => {
     console.log(`Message received: ${payload}`)
   })
+
   return await getToken(messaging, { vapidKey: 'BOngebl5Rmrgo0k0YMjstWPapJ-Zl0Izbbsyl0l0lI7L9cmHiDdcLUEj3moGuibR_YxTfGYKC134nSB42ZxxTaA' })
 }
 </script>
