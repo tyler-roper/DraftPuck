@@ -23,8 +23,7 @@ import GameState from '@/enums/gameState'
 import PlayType from '@/enums/playType'
 import PeriodType from '@/enums/periodType'
 import { initializeApp } from 'firebase/app'
-import { getToken } from 'firebase/messaging'
-import { getMessaging } from 'firebase/messaging/sw'
+import { getToken, getMessaging, onMessage } from 'firebase/messaging'
 import UserService from '@/services/UserService'
 
 //const
@@ -194,8 +193,8 @@ function setView(view: View) {
 }
 
 async function updateUserFcmToken(token?: string) {
-    await UserService.updateFcmRegistrationToken(currentUserId.value!, { token })
-  }
+  await UserService.updateFcmRegistrationToken(currentUserId.value!, { token })
+}
 
 async function requestNotificationPermission() {
   await Notification.requestPermission()
@@ -204,7 +203,7 @@ async function requestNotificationPermission() {
 }
 
 async function initializeFirebase() {
-  if (!notificationsSupported|| !notificationPermissionsGranted.value) {
+  if (!notificationsSupported || !notificationPermissionsGranted.value) {
     await updateUserFcmToken()
     return
   }
@@ -220,10 +219,11 @@ async function initializeFirebase() {
   }
 
   try {
-  const app = initializeApp(firebaseConfig)
-  const messaging = getMessaging()
-  const token = await getToken(messaging, { vapidKey })
-  await updateUserFcmToken(token)
+    const app = initializeApp(firebaseConfig)
+    const messaging = getMessaging(app)
+    onMessage(messaging, (payload) => console.log('Message received:', payload))
+    const token = await getToken(messaging, { vapidKey })
+    await updateUserFcmToken(token)
   } catch (e) {
     console.error(`Unable to initialize firebase`, e)
     sendSystemMessage(`Unable to initialize firebase ${e}`)
@@ -431,7 +431,13 @@ watch(
           <img v-if="is4Nations" src="/img/logo-wide-4nations.png" />
         </router-link>
 
-        <a role="button" v-if="!notificationPermissionsGranted && notificationsSupported" class="text-decoration-none text-uppercase fw-bold mt-1 fs-8" @click="requestNotificationPermission">Enable Notifications</a>
+        <a
+          role="button"
+          v-if="!notificationPermissionsGranted && notificationsSupported"
+          class="text-decoration-none text-uppercase fw-bold mt-1 fs-8"
+          @click="requestNotificationPermission"
+          >Enable Notifications</a
+        >
         <span class="fw-bold mt-1 fs-8">Notifications enabled.</span>
         <!-- <a target="_blank" class="text-decoration-none text-uppercase fw-bold mt-1 fs-8" href="https://discord.gg/Vgj9RbetDB">Join the Discord</a> -->
 

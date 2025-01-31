@@ -1,8 +1,9 @@
 import { fileURLToPath, URL } from 'node:url'
 import { defineConfig, splitVendorChunkPlugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import path, { resolve } from 'path'
+import { resolve } from 'path'
 import move from './scripts/vite-plugin-move'
+import fcm from './scripts/vite-plugin-fcm-sw'
 
 export default defineConfig(({ mode }) => {
   const isDev = mode === 'development'
@@ -17,7 +18,8 @@ export default defineConfig(({ mode }) => {
           dest: resolve(__dirname, '../Views/App/Index.cshtml')
         }
       ]),
-      splitVendorChunkPlugin()
+      splitVendorChunkPlugin(),
+      fcm(isDev)
     ],
     server: {
       host: 'localhost',
@@ -47,8 +49,16 @@ export default defineConfig(({ mode }) => {
       sourcemap: true,
       chunkSizeWarningLimit: 600,
       rollupOptions: {
+        input: {
+          'main': './index.html',
+          'firebase-messaging-sw': './src/firebase-messaging-sw.js'
+        },
         output: {
-          entryFileNames: `${fileNamePattern}.js`,
+          entryFileNames: (chunkInfo: { name: string }) => {
+            return chunkInfo.name === 'firebase-messaging-sw'
+              ? '[name].js'
+              : `${fileNamePattern}.js`
+          },
           chunkFileNames: `${fileNamePattern}.js`,
           assetFileNames: `${fileNamePattern}[extname]`
         }
