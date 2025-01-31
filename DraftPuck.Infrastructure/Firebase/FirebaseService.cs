@@ -22,7 +22,7 @@ public class FirebaseService(IOptions<ApplicationOptions> appConfig) : IFirebase
             },
             Webpush = new WebpushConfig()
             {
-                FcmOptions = new() { Link = $"{_appConfig.BasePath}/lobby/{lobbyCode}" }
+                //FcmOptions = new() { Link = $"{_appConfig.BasePath}/lobby/{lobbyCode}" }
             }
         };
 

@@ -22,6 +22,9 @@ import LobbyService from '@/services/LobbyService'
 import GameState from '@/enums/gameState'
 import PlayType from '@/enums/playType'
 import PeriodType from '@/enums/periodType'
+import { initializeApp } from 'firebase/app'
+import { getToken, onMessage, getMessaging } from 'firebase/messaging'
+import UserService from '@/services/UserService'
 
 //const
 type View = 'feed' | 'game' | 'lobby' | 'chat'
@@ -268,10 +271,6 @@ function processNextDrinkForCurrentUser() {
   if (pendingDrinks.value.length === 0) return
   currentDrink.value = pendingDrinks.value[0]
 
-  sendNotification('🍺 Drink!', {
-    body: `Courtesy of ${getSenderNameByLobbyEvent(currentDrink.value)}`
-  })
-
   window.setTimeout(async () => {
     pendingDrinks.value.splice(0, 1)
     currentDrink.value = undefined
@@ -316,16 +315,6 @@ function notifyCurrentUserOfCorrectPick(lobbyEvent: LobbyEvent) {
   const playerMsg = player ? ` for a goal by ${player.firstName} ${player.lastName}` : ''
   const msg = `Give out a drink${playerMsg}!`
   toast.success(msg)
-
-  sendNotification(`🚨 Give out a drink!`, { body: msg })
-}
-
-function sendNotification(text: string, options: {} | null = null) {
-  if (!('Notification' in window)) return
-  if (!notificationPermissionsGranted.value) return
-
-  if (options) new Notification(text, options)
-  else new Notification(text)
 }
 
 function getFeedItems() {
