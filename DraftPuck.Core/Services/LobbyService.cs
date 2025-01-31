@@ -1,4 +1,6 @@
 ﻿using DraftPuck.Infrastructure.Database;
+using DraftPuck.Shared.Enums;
+using DraftPuck.Shared.Interfaces;
 using DraftPuck.Shared.Models;
 
 namespace DraftPuck.Core.Services;
@@ -7,12 +9,14 @@ public class LobbyService : ILobbyService
 {
     private readonly DraftPuckContext _dbContext;
     private readonly ILobbyEventService _lobbyEventService;
+    private readonly IFirebaseService _firebaseService;
     private static readonly Random _random = new();
 
-    public LobbyService(DraftPuckContext dbContext, ILobbyEventService lobbyEventService)
+    public LobbyService(DraftPuckContext dbContext, ILobbyEventService lobbyEventService, IFirebaseService firebaseService)
     {
         _dbContext = dbContext;
         _lobbyEventService = lobbyEventService;
+        _firebaseService = firebaseService;
     }
 
     public async Task<Lobby> CreateLobby(Guid userId, NewLobbyRequest request)
@@ -226,30 +230,10 @@ public class LobbyService : ILobbyService
 
     public async Task<Drink> AssignDrink(Guid userId, string joinCode, Guid drinkId, Guid recipientLobbyMemberId)
     {
-        var lobby = await GetLobby(joinCode);
-        if (lobby == null)
-        {
-            throw new KeyNotFoundException("Lobby not found.");
-        }
-
-        var sender = lobby.LobbyMembers.FirstOrDefault(lm => lm.UserId == userId);
-        if (sender == null)
-        {
-            throw new KeyNotFoundException("Sender UserId not found in lobby.");
-        }
-
-        var recipient = lobby.LobbyMembers.FirstOrDefault(member => member.Id == recipientLobbyMemberId);
-        if (recipient == null)
-        {
-            throw new KeyNotFoundException("Recipient UserId not found in lobby.");
-        }
-
-        var drink = lobby.LobbyMembers.SelectMany(member => member.LobbyMemberPicks).SelectMany(lmp => lmp.Drinks).FirstOrDefault(d => d.Id == drinkId);
-        if (drink == null)
-        {
-            throw new KeyNotFoundException("DrinkId not found in lobby.");
-        }
-
+        var lobby = await GetLobby(joinCode) ?? throw new KeyNotFoundException("Lobby not found.");
+        var sender = lobby.LobbyMembers.FirstOrDefault(lm => lm.UserId == userId) ?? throw new KeyNotFoundException("Sender UserId not found in lobby.");
+        var recipient = lobby.LobbyMembers.FirstOrDefault(member => member.Id == recipientLobbyMemberId) ?? throw new KeyNotFoundException("Recipient UserId not found in lobby.");
+        var drink = lobby.LobbyMembers.SelectMany(member => member.LobbyMemberPicks).SelectMany(lmp => lmp.Drinks).FirstOrDefault(d => d.Id == drinkId) ?? throw new KeyNotFoundException("DrinkId not found in lobby.");
         if (drink.RecipientLobbyMemberId != null)
         {
             throw new InvalidOperationException("Drink already has recipient assigned.");
@@ -259,6 +243,7 @@ public class LobbyService : ILobbyService
         drink.RecipientLobbyMemberId = recipient.Id;
         await _dbContext.SaveChangesAsync();
 
+        await HandleDrinkNotifications(lobby, LobbyEventType.DrinkAssigned, sender, recipient);
         await _lobbyEventService.SendDrinkAssignedEvent(lobby, sender, recipient, drink.LobbyMemberPick.GameId, drink.EventId, drink.LobbyMemberPick.PlayerId, drink.LobbyMemberPick.TeamId);
 
         return drink;
@@ -282,18 +267,12 @@ public class LobbyService : ILobbyService
 
         lobbyMember.Name = newName;
         await _dbContext.SaveChangesAsync();
-
         await _lobbyEventService.SendUserNameChangedEvent(lobby, lobbyMember, oldName);
     }
 
     public async Task RemoveLobbyMember(Guid currentUserId, string joinCode, Guid lobbyMemberId)
     {
-        var lobby = await GetLobby(joinCode);
-        if (lobby == null)
-        {
-            throw new KeyNotFoundException("Lobby not found.");
-        }
-
+        var lobby = await GetLobby(joinCode) ?? throw new KeyNotFoundException("Lobby not found.");
         if (lobby.CreatedBy != currentUserId)
         {
             throw new UnauthorizedAccessException();
@@ -383,6 +362,71 @@ public class LobbyService : ILobbyService
             Sent = messageEntity.Sent,
             Message = messageEntity.Message,
             LobbyMemberId = messageEntity.LobbyMemberId
+        });
+
+        await HandleChatNotifications(lobby, lobbyMember, message);
+    }
+
+    private async Task HandleChatNotifications(Lobby lobby, LobbyMember sender, string message)
+    {
+        var lobbyUserIds = lobby.LobbyMembers
+           .Where(lm => !lm.IsBot && lm != sender)
+           .Select(lm => lm.UserId);
+
+        var lobbyUsers = _dbContext.Users.Where(u => lobbyUserIds.Contains(u.Id)).ToList();
+        await Parallel.ForEachAsync(lobbyUsers, async (user, _) =>
+        {
+            if (user.FcmRegistrationToken == null || user.ChatNotificationPreference == NotificationPreference.None) return; //notifications disabled
+
+            var userName = lobby.LobbyMembers.Single(lm => lm.UserId == user.Id).Name;
+            var isMentioned = message.Contains($"@{userName}");
+
+            if (!isMentioned && user.ChatNotificationPreference == NotificationPreference.All)
+            {
+                var data = new Dictionary<string, string> { { "lobbyEventType", "chatMessage" }, { "isRelevant", "false" } };
+                await _firebaseService.SendPushNotification(lobby.JoinCode, sender.Name, message, user.FcmRegistrationToken, data);
+            }
+            else if (isMentioned)
+            {
+                var data = new Dictionary<string, string> { { "lobbyEventType", "chatMessage" }, { "isRelevant", "true" } };
+                await _firebaseService.SendPushNotification(lobby.JoinCode, $"{sender.Name} mentioned you.", message, user.FcmRegistrationToken, data);
+            }
+        });
+    }
+
+    private async Task HandleDrinkNotifications(Lobby lobby, LobbyEventType lobbyEventType, LobbyMember sender, LobbyMember recipient)
+    {
+        var lobbyUserIds = lobby.LobbyMembers
+            .Where(lm => !lm.IsBot && lm != sender)
+            .Select(lm => lm.UserId);
+
+        var lobbyUsers = _dbContext.Users.Where(u => lobbyUserIds.Contains(u.Id)).ToList();
+
+        await Parallel.ForEachAsync(lobbyUsers, async (user, _) =>
+        {
+            if (user.FcmRegistrationToken == null) return; //notifications disabled
+
+            var isRecipient = user.Id == recipient.UserId;
+            var userNotificationPreference = lobbyEventType switch
+            {
+                LobbyEventType.DrinkAwarded => user.DrinkAwardedNotificationPreference,
+                LobbyEventType.DrinkAssigned => user.DrinkReceivedNotificationPreference,
+                _ => throw new NotImplementedException()
+            };
+
+            var text = LobbyEventTexts.GetText(lobbyEventType).Replace(" {{playerBadge}}", "").Replace("{{name}}", sender.Name);
+
+            if (!isRecipient && userNotificationPreference == NotificationPreference.All)
+            {
+                var data = new Dictionary<string, string> { { "lobbyEventType", lobbyEventType.ToString() }, { "isRelevant", "false" } };
+                await _firebaseService.SendPushNotification(lobby.JoinCode, LobbyEventTexts.GetTitle(lobbyEventType), text, user.FcmRegistrationToken, data);
+            }
+            else if (isRecipient && userNotificationPreference != NotificationPreference.None)
+            {
+                var title = lobbyEventType == LobbyEventType.DrinkAssigned ? "🍺 DRINK 🍺" : "🚨 GOAL 🚨";
+                var data = new Dictionary<string, string> { { "lobbyEventType", lobbyEventType.ToString() }, { "isRelevant", "true" } };
+                await _firebaseService.SendPushNotification(lobby.JoinCode, title, text, user.FcmRegistrationToken, new Dictionary<string, string> { { "lobbyEventType", lobbyEventType.ToString() }, { "isRelevant", "true" } });
+            }
         });
     }
 
