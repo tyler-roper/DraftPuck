@@ -23,7 +23,7 @@ import GameState from '@/enums/gameState'
 import PlayType from '@/enums/playType'
 import PeriodType from '@/enums/periodType'
 import { initializeApp } from 'firebase/app'
-import { getToken, onMessage, getMessaging } from 'firebase/messaging'
+import { getToken, getMessaging, onMessage } from 'firebase/messaging'
 import UserService from '@/services/UserService'
 
 //const
@@ -102,12 +102,13 @@ const vChat = ref<InstanceType<typeof VChat> | null>(null)
 const shouldAnimateFeed = ref(false)
 const feedAnimationTimer = ref<number>()
 const isInitialLoad = ref(true)
+const notificationPermissionsGranted = ref(Notification.permission === 'granted')
+const notificationsSupported = ref('Notification' in window)
 
 let hubConnection: SignalR.HubConnection
 
 //computed
 const feedItems = computed(getFeedItems)
-const notificationPermissionsGranted = computed(() => Notification.permission === 'granted')
 const currentLobbyMember = computed(() => lobby.value?.members.find((m) => m.userId === currentUserId.value))
 const loadingMessage = computed(() => LoadingMessages.random())
 const isLobbyView = computed(() => currentView.value === 'lobby')
@@ -169,6 +170,7 @@ const messages = computed(() => {
 
     await getLobbyEvents(lobby.value.id)
     await initializeHubConnection()
+    await initializeFirebase()
     await setGames()
 
     setTimeout(() => {}, 100)
@@ -188,6 +190,44 @@ const isGameStale = (game: Game) => isGameOver(game)
 
 function setView(view: View) {
   currentView.value = view
+}
+
+async function updateUserFcmToken(token?: string) {
+  await UserService.updateFcmRegistrationToken(currentUserId.value!, { token })
+}
+
+async function requestNotificationPermission() {
+  await Notification.requestPermission()
+  notificationPermissionsGranted.value = Notification.permission === 'granted'
+  initializeFirebase()
+}
+
+async function initializeFirebase() {
+  if (!notificationsSupported || !notificationPermissionsGranted.value) {
+    await updateUserFcmToken()
+    return
+  }
+
+  const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY
+  const firebaseConfig = {
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID
+  }
+
+  try {
+    const app = initializeApp(firebaseConfig)
+    const messaging = getMessaging(app)
+    onMessage(messaging, (payload) => console.log('Message received:', payload))
+    const token = await getToken(messaging, { vapidKey })
+    await updateUserFcmToken(token)
+  } catch (e) {
+    console.error(`Unable to initialize firebase`, e)
+    sendSystemMessage(`Unable to initialize firebase ${e}`)
+  }
 }
 
 function logError(error: string) {
@@ -362,12 +402,10 @@ function handleCommand(command: string, ...args: [string]) {
 }
 
 function getLobbyMemberInfo(name?: string): Partial<LobbyMember> | undefined {
-  const lobbyMember = name 
-    ? lobby.value?.members.find((m) => m.name.toUpperCase() === name.toUpperCase())
-    : currentLobbyMember.value
-    
+  const lobbyMember = name ? lobby.value?.members.find((m) => m.name.toUpperCase() === name.toUpperCase()) : currentLobbyMember.value
+
   if (!lobbyMember) return
-  const {messages, picks, ...lobbyMemberInfo } = lobbyMember
+  const { messages, picks, ...lobbyMemberInfo } = lobbyMember
   return lobbyMemberInfo
 }
 
@@ -393,7 +431,15 @@ watch(
           <img v-if="is4Nations" src="/img/logo-wide-4nations.png" />
         </router-link>
 
-        <a target="_blank" class="text-decoration-none text-uppercase fw-bold mt-1 fs-8" href="https://discord.gg/Vgj9RbetDB">Join the Discord</a>
+        <a
+          role="button"
+          v-if="!notificationPermissionsGranted && notificationsSupported"
+          class="text-decoration-none text-uppercase fw-bold mt-1 fs-8"
+          @click="requestNotificationPermission"
+          >Enable Notifications</a
+        >
+        <span class="fw-bold mt-1 fs-8">Notifications enabled.</span>
+        <!-- <a target="_blank" class="text-decoration-none text-uppercase fw-bold mt-1 fs-8" href="https://discord.gg/Vgj9RbetDB">Join the Discord</a> -->
 
         <a class="d-flex pt-1 text-stone-0 fw-bold text-decoration-none align-items-center" role="button" @click="isInstructionsVisible = true">
           <i class="fi fi-rr-question-square d-block fs-3" style="line-height: 20px"></i>
