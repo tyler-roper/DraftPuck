@@ -16,7 +16,6 @@ const firebaseConfig = {
 }
 
 export const useFirebaseStore = defineStore('firebase', () => {
-  console.log(vapidKey)
   //#region state
   const fcmToken = ref<string>()
   const currentUserId = ref<string>()
