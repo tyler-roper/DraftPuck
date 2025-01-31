@@ -9,7 +9,6 @@ import { parseISO, format } from 'date-fns'
 import VFeedItem from '@/components/VFeedItem.vue'
 import PlayType from '@/enums/playType'
 import FeedItemType from '@/enums/feedItemType'
-import { useFirebaseStore } from '@/stores/firebase'
 
 //const
 type View = 'feed' | 'list' | 'settings'
@@ -27,9 +26,6 @@ const props = withDefaults(
 //data
 const lobbyStore = useLobbyStore()
 const { lobby } = storeToRefs(lobbyStore)
-const firebaseStore = useFirebaseStore()
-const { requestNotificationPermission } = firebaseStore
-const { isNotificationPermissionGranted, isNotificationSupported } = storeToRefs(firebaseStore)
 const currentView = ref<View>('feed')
 const filters = ref<{ [k: string]: boolean }>({
   showGoals: true,
@@ -229,18 +225,6 @@ function formatAsTime(date: Date | string) {
     <div class="d-flex flex-column-reverse flex-grow-1" style="justify-content: flex-end">
       <div v-if="currentView === 'settings'" class="flex-grow-1 bg-stone-100">
         <div class="fw-bold text-uppercase text-center border py-2 bg-stone-0" style="border-bottom: none !important">Feed Settings</div>
-        <div class="pt-4 px-4">
-          <span class="d-block fs-6 fw-bold">Push Notifications</span>
-          <div class="ms-3" v-if="isNotificationSupported">
-            <button v-if="!isNotificationPermissionGranted" @click="requestNotificationPermission" class="btn btn-primary fw-bold text-uppercase">
-              Enable Notifications
-            </button>
-            <span v-if="isNotificationPermissionGranted"
-              ><strong>You've enabled push notifications!</strong><br />You can disable them through your browser.</span
-            >
-          </div>
-          <div class="ms-3" v-if="!isNotificationSupported">Sorry, your browser does not support push notifications.</div>
-        </div>
         <div class="p-4 fs-6">
           <div class="fw-bold">
             <span>Game Events</span>
