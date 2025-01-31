@@ -1,34 +1,31 @@
-﻿using DraftPuck.Shared.Interfaces;
-using FirebaseAdmin;
+﻿using DraftPuck.Infrastructure.Application;
+using DraftPuck.Shared.Interfaces;
 using FirebaseAdmin.Messaging;
+using Microsoft.Extensions.Options;
 
 namespace DraftPuck.Infrastructure.Firebase;
-public class FirebaseService : IFirebaseService
+public class FirebaseService(IOptions<ApplicationOptions> appConfig) : IFirebaseService
 {
 
-    private readonly FirebaseApp _app;
+    private readonly ApplicationOptions _appConfig = appConfig.Value;
 
-    public FirebaseService(FirebaseApp app)
-    {
-        _app = app;
-    }
-
-    public async Task SendPushNotification(string message, string token)
+    public async Task SendPushNotification(string lobbyCode, string title, string message, string token)
     {
         var firebaseMessage = new Message()
         {
             Token = token,
             Notification = new Notification()
             {
-                Title = "Here's a test!",
-                Body = message
+                Title = title,
+                Body = message,
+                ImageUrl = $"{_appConfig.BasePath}/img/icons/icon-192.png"
             },
             Webpush = new WebpushConfig()
             {
-                FcmOptions = new() { Link = "https://draftpuck.com/lobby/" }
+                FcmOptions = new() { Link = $"{_appConfig.BasePath}/lobby/{lobbyCode}" }
             }
         };
 
-        var response = await FirebaseMessaging.DefaultInstance.SendAsync(firebaseMessage);
+        await FirebaseMessaging.DefaultInstance.SendAsync(firebaseMessage);
     }
 }

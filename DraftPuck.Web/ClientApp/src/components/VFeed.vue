@@ -140,8 +140,15 @@ async function initializeFirebase() {
 
   const app = initializeApp(firebaseConfig)
   messaging.value = getMessaging(app)
-  onMessage(messaging.value, (payload) => {
-    console.log(`Message received: ${payload}`)
+
+  onMessage(messaging.value, async ({ notification, ..._ }) => {
+    console.log("RECEIVED", notification);
+    if (!notification) return
+    const registration = await navigator.serviceWorker.ready
+    registration.showNotification(notification.title ?? "Notification", {
+      body: notification?.body,
+      icon: notification?.icon
+    })
   })
 
   if (notificationPermissionsGranted.value) fetchAndUpdateFcmToken()
