@@ -221,7 +221,16 @@ async function initializeFirebase() {
   try {
     const app = initializeApp(firebaseConfig)
     const messaging = getMessaging(app)
-    onMessage(messaging, (payload) => console.log('Message received:', payload))
+
+    onMessage(messaging, ({ notification, data }) => {
+      const width = window.innerWidth
+      const isChatVisible = width > 600 || currentView.value === 'chat'
+      if (data?.lobbyEventType === 'chatMessage' && !isChatVisible) toast(`<strong>${notification?.title}</strong> | ${notification?.body}`)
+
+      if (['DrinkAwarded', 'DrinkAssigned'].includes(data?.lobbyEventType ?? '') && data?.isRelevant !== 'true')
+        toast(`<strong>${notification?.title}</strong> | ${notification?.body}`)
+    })
+
     const token = await getToken(messaging, { vapidKey })
     await updateUserFcmToken(token)
   } catch (e) {
@@ -439,7 +448,6 @@ watch(
           >Enable Notifications</a
         >
         <span class="fw-bold mt-1 fs-8" v-if="notificationPermissionsGranted && notificationsSupported">Notifications enabled.</span>
-        <!-- <a target="_blank" class="text-decoration-none text-uppercase fw-bold mt-1 fs-8" href="https://discord.gg/Vgj9RbetDB">Join the Discord</a> -->
 
         <a class="d-flex pt-1 text-stone-0 fw-bold text-decoration-none align-items-center" role="button" @click="isInstructionsVisible = true">
           <i class="fi fi-rr-question-square d-block fs-3" style="line-height: 20px"></i>

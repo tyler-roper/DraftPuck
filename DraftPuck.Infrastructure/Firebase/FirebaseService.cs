@@ -9,7 +9,7 @@ public class FirebaseService(IOptions<ApplicationOptions> appConfig) : IFirebase
 
     private readonly ApplicationOptions _appConfig = appConfig.Value;
 
-    public async Task SendPushNotification(string lobbyCode, string title, string message, string token)
+    public async Task SendPushNotification(string lobbyCode, string title, string message, string token, Dictionary<string, string>? data = null)
     {
         var firebaseMessage = new Message()
         {
@@ -28,18 +28,23 @@ public class FirebaseService(IOptions<ApplicationOptions> appConfig) : IFirebase
                     ImageUrl = $"{_appConfig.BasePath}/img/icons/icon-192.png",
                     Color = "#ffce00"
                 }
-            },
-
+            }
         };
 
         if (_appConfig.BasePath.StartsWith("https://"))
-        {
-            firebaseMessage.Webpush = new WebpushConfig()
-            {
-                FcmOptions = new() { Link = $"{_appConfig.BasePath}/lobby/{lobbyCode}" }
-            };
-        }
+            firebaseMessage.Webpush = new WebpushConfig() { FcmOptions = new() { Link = $"{_appConfig.BasePath}/lobby/{lobbyCode}" } };
 
-        await FirebaseMessaging.DefaultInstance.SendAsync(firebaseMessage);
+
+        if (data != null)
+            firebaseMessage.Data = data;
+
+        try
+        {
+            await FirebaseMessaging.DefaultInstance.SendAsync(firebaseMessage);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.ToString());
+        }
     }
 }
