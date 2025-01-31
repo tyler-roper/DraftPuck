@@ -2,20 +2,21 @@ import { defineStore } from 'pinia'
 import { initializeApp } from 'firebase/app'
 import { getToken, getMessaging, onMessage } from 'firebase/messaging'
 import UserService from '@/services/UserService'
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useToast } from 'vue-toastification'
 
-const vapidKey = 'BKj46v7TX9RsVT86YwqQiF2Bg3K6zf8D4ofsJOdBqd9DZJx-aXkEERAlMEaZZxih8nPe4HVo8Nescw7kmHV3OUY'
+const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY
 const firebaseConfig = {
-  apiKey: 'AIzaSyBGw_anxN2MDnfPSTyvqmfmYAwKTdLBOAY',
-  authDomain: 'draftpuck.firebaseapp.com',
-  projectId: 'draftpuck',
-  storageBucket: 'draftpuck.firebasestorage.app',
-  messagingSenderId: '34141903027',
-  appId: '1:34141903027:web:7d676e25fe00fcb582b8c6'
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 }
 
 export const useFirebaseStore = defineStore('firebase', () => {
+  console.log(vapidKey)
   //#region state
   const fcmToken = ref<string>()
   const currentUserId = ref<string>()
