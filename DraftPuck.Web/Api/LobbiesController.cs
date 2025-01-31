@@ -198,24 +198,6 @@ public class LobbiesController : DraftPuckApiControllerBase
         }
     }
 
-    [HttpPost("{code}/broadcast")]
-    public async Task<IActionResult> Broadcast(string code, Broadcast broadcast)
-    {
-        try
-        {
-            await _lobbyService.Broadcast(code, broadcast.Message);
-            return NoContent();
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ex.Message);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(ex.Message);
-        }
-    }
-
     [HttpPost("{code}/message")]
     public async Task<IActionResult> SendMessage(string code, MessageModel message)
     {
@@ -224,14 +206,9 @@ public class LobbiesController : DraftPuckApiControllerBase
     }
 
     [HttpPost("{code}/firebase")]
-    public async Task<IActionResult> FirebaseTest(string code, UpdateFcmRegistrationTokenRequestModel model)
+    public async Task<IActionResult> FirebaseTest(string code, FirebaseTestRequestModel model)
     {
-        await _firebase.SendPushNotification("Hello world!", model.Token!);
+        await _firebase.SendPushNotification(code, model.Title, model.Message, model.Token);
         return NoContent();
     }
-}
-
-public class Broadcast
-{
-    public string Message { get; set; } = null!;
 }

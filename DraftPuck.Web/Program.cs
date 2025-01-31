@@ -7,6 +7,7 @@ using DraftPuck.Web.Middleware;
 using System.Text.Json.Serialization;
 using DraftPuck.Shared.Interfaces;
 using DraftPuck.Infrastructure.Firebase;
+using DraftPuck.Infrastructure.Application;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,6 +32,7 @@ builder.Logging.AddConsole();
 builder.Services.AddSignalR();
 builder.Services.AddHttpClient<INhlApiService, NhlApiService>(client => client.BaseAddress = new Uri("https://api-web.nhle.com/v1/"));
 builder.Services
+    .Configure<ApplicationOptions>(options => builder.Configuration.Bind(ApplicationOptions.SectionName, options))
     .AddDatabase(builder.Configuration.GetConnectionString("DefaultConnection"))
     .AddFirebase(options => builder.Configuration.Bind(FirebaseOptions.SectionName, options))
     .AddHostedService<GameCheckerHostedService>()
