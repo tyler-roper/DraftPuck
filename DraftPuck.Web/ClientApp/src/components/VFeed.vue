@@ -9,12 +9,9 @@ import { parseISO, format } from 'date-fns'
 import VFeedItem from '@/components/VFeedItem.vue'
 import PlayType from '@/enums/playType'
 import FeedItemType from '@/enums/feedItemType'
-import { initializeApp } from 'firebase/app'
-import { getToken, onMessage, getMessaging } from 'firebase/messaging'
-import UserService from '@/services/UserService'
+import { useFirebaseStore } from '@/stores/firebase'
 
 //const
-const isNotificationsSupported = 'Notification' in window
 type View = 'feed' | 'list' | 'settings'
 
 //props
@@ -29,9 +26,10 @@ const props = withDefaults(
 
 //data
 const lobbyStore = useLobbyStore()
-const { lobby, currentUserId } = storeToRefs(lobbyStore)
-const notificationPermissionsGranted = ref(isNotificationsSupported && Notification.permission === 'granted')
-const token = ref<string>()
+const { lobby } = storeToRefs(lobbyStore)
+const firebaseStore = useFirebaseStore()
+const { requestNotificationPermission } = firebaseStore
+const { isNotificationPermissionGranted, isNotificationSupported } = storeToRefs(firebaseStore)
 const currentView = ref<View>('feed')
 const filters = ref<{ [k: string]: boolean }>({
   showGoals: true,
@@ -111,61 +109,11 @@ const allLobbyEventsOn = computed(
 //hooks/methods
 ;(function created() {
   initializeFilters()
-  initializeFirebase()
 })()
-
-async function requestNotificationPermissions() {
-  console.log('test')
-  await Notification.requestPermission()
-  notificationPermissionsGranted.value = Notification.permission === 'granted'
-
-  if (notificationPermissionsGranted.value) fetchAndUpdateFcmToken()
-  else clearFcmToken()
-}
 
 function initializeFilters() {
   const existingFilters = localStorage.getItem('feedFilters')
   if (existingFilters) filters.value = { ...filters.value, ...JSON.parse(existingFilters) }
-}
-
-async function initializeFirebase() {
-  const firebaseConfig = {
-    apiKey: 'AIzaSyBGw_anxN2MDnfPSTyvqmfmYAwKTdLBOAY',
-    authDomain: 'draftpuck.firebaseapp.com',
-    projectId: 'draftpuck',
-    storageBucket: 'draftpuck.firebasestorage.app',
-    messagingSenderId: '34141903027',
-    appId: '1:34141903027:web:7d676e25fe00fcb582b8c6'
-  }
-
-  const app = initializeApp(firebaseConfig)
-  messaging.value = getMessaging(app)
-
-  onMessage(messaging.value, async ({ notification, ..._ }) => {
-    console.log("RECEIVED", notification);
-    if (!notification) return
-    const registration = await navigator.serviceWorker.ready
-    registration.showNotification(notification.title ?? "Notification", {
-      body: notification?.body,
-      icon: notification?.icon
-    })
-  })
-
-  if (notificationPermissionsGranted.value) fetchAndUpdateFcmToken()
-  else clearFcmToken()
-}
-
-async function clearFcmToken() {
-  await UserService.updateFcmRegistrationToken(currentUserId.value!, { token: undefined })
-  token.value = undefined
-}
-
-async function fetchAndUpdateFcmToken() {
-  const _token = await getToken(messaging.value, {
-    vapidKey: 'BOngebl5Rmrgo0k0YMjstWPapJ-Zl0Izbbsyl0l0lI7L9cmHiDdcLUEj3moGuibR_YxTfGYKC134nSB42ZxxTaA'
-  })
-  await UserService.updateFcmRegistrationToken(currentUserId.value!, { token: _token })
-  token.value = _token
 }
 
 function saveFiltersToLocalStorage() {
@@ -283,15 +231,15 @@ function formatAsTime(date: Date | string) {
         <div class="fw-bold text-uppercase text-center border py-2 bg-stone-0" style="border-bottom: none !important">Feed Settings</div>
         <div class="pt-4 px-4">
           <span class="d-block fs-6 fw-bold">Push Notifications</span>
-          <div class="ms-3" v-if="isNotificationsSupported">
-            <button v-if="!notificationPermissionsGranted" @click="requestNotificationPermissions" class="btn btn-primary fw-bold text-uppercase">
+          <div class="ms-3" v-if="isNotificationSupported">
+            <button v-if="!isNotificationPermissionGranted" @click="requestNotificationPermission" class="btn btn-primary fw-bold text-uppercase">
               Enable Notifications
             </button>
-            <span v-if="notificationPermissionsGranted && !!token"
+            <span v-if="isNotificationPermissionGranted"
               ><strong>You've enabled push notifications!</strong><br />You can disable them through your browser.</span
             >
           </div>
-          <div class="ms-3" v-if="!isNotificationsSupported">Sorry, your browser does not support push notifications.</div>
+          <div class="ms-3" v-if="!isNotificationSupported">Sorry, your browser does not support push notifications.</div>
         </div>
         <div class="p-4 fs-6">
           <div class="fw-bold">
