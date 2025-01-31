@@ -438,7 +438,7 @@ watch(
           @click="requestNotificationPermission"
           >Enable Notifications</a
         >
-        <span class="fw-bold mt-1 fs-8">Notifications enabled.</span>
+        <span class="fw-bold mt-1 fs-8" v-if="notificationPermissionsGranted && notificationsSupported">Notifications enabled.</span>
         <!-- <a target="_blank" class="text-decoration-none text-uppercase fw-bold mt-1 fs-8" href="https://discord.gg/Vgj9RbetDB">Join the Discord</a> -->
 
         <a class="d-flex pt-1 text-stone-0 fw-bold text-decoration-none align-items-center" role="button" @click="isInstructionsVisible = true">
