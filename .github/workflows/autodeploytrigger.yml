@@ -59,14 +59,14 @@ jobs:
                 DRAFTPUCK_ConnectionStrings__DefaultConnection=secretref:sql-connection-string \
                 DRAFTPUCK_APPLICATION__BASEPATH=https://draftpuck.com \
                 DRAFTPUCK_FIREBASE__Type=service_account \
-                DRAFTPUCK_FIREBASE__ProjectId=draftpuck \
-                DRAFTPUCK_FIREBASE__PrivateKeyId=1a6bf9228a250af94913f0bf36bf0a9b9450a518 \
+                DRAFTPUCK_FIREBASE__ProjectId=draftpuck-prod \
+                DRAFTPUCK_FIREBASE__PrivateKeyId=1dc7f7f85c30fe3490407aa39341f50261b3cb111 \
                 DRAFTPUCK_FIREBASE__PrivateKey=secretref:firebase-private-key \
-                DRAFTPUCK_FIREBASE__ClientEmail=firebase-adminsdk-fbsvc@draftpuck.iam.gserviceaccount.com \
-                DRAFTPUCK_FIREBASE__ClientId=109573622353752189978 \
+                DRAFTPUCK_FIREBASE__ClientEmail=firebase-adminsdk-fbsvc@draftpuck-prod.iam.gserviceaccount.com \
+                DRAFTPUCK_FIREBASE__ClientId=105690771817979847891 \
                 DRAFTPUCK_FIREBASE__AuthUri=https://accounts.google.com/o/oauth2/auth \
                 DRAFTPUCK_FIREBASE__TokenUri=https://oauth2.googleapis.com/token \
                 DRAFTPUCK_FIREBASE__AuthProviderX509CertUrl=https://www.googleapis.com/oauth2/v1/certs \
-                DRAFTPUCK_FIREBASE__ClientX509CertUrl=https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40draftpuck.iam.gserviceaccount.com \
+                DRAFTPUCK_FIREBASE__ClientX509CertUrl=https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40draftpuck-prod.iam.gserviceaccount.com \
                 DRAFTPUCK_FIREBASE__UniverseDomain=googleapis.com
 

@@ -5,7 +5,7 @@ import path, { resolve } from 'path'
 import move from './scripts/vite-plugin-move'
 
 export default defineConfig(({ mode }) => {
-  const isDev = mode === 'debug'
+  const isDev = mode === 'development'
   const fileNamePattern = !isDev ? '[name]-[hash]' : '[name]'
 
   const config = {
