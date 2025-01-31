@@ -20,11 +20,25 @@ public class FirebaseService(IOptions<ApplicationOptions> appConfig) : IFirebase
                 Body = message,
                 ImageUrl = $"{_appConfig.BasePath}/img/icons/icon-192.png"
             },
-            Webpush = new WebpushConfig()
+            Android = new()
             {
-                //FcmOptions = new() { Link = $"{_appConfig.BasePath}/lobby/{lobbyCode}" }
-            }
+                Notification = new()
+                {
+                    Icon = $"{_appConfig.BasePath}/img/icons/badge.png",
+                    ImageUrl = $"{_appConfig.BasePath}/img/icons/icon-192.png",
+                    Color = "#ffce00"
+                }
+            },
+
         };
+
+        if (_appConfig.BasePath.StartsWith("https://"))
+        {
+            firebaseMessage.Webpush = new WebpushConfig()
+            {
+                FcmOptions = new() { Link = $"{_appConfig.BasePath}/lobby/{lobbyCode}" }
+            };
+        }
 
         await FirebaseMessaging.DefaultInstance.SendAsync(firebaseMessage);
     }
