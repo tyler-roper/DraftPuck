@@ -5,7 +5,7 @@ import { useLobbyStore } from '@/stores/lobby'
 import { storeToRefs } from 'pinia'
 import { ref, watch, nextTick, onMounted } from 'vue'
 import type SystemMessageViewModel from '@/models/systemMessageViewModel'
-import SmartSuggest from 'vue-smart-suggest'
+// import { SmartSuggest, Trigger } from 'vue-smart-suggest'
 
 //const
 const SECONDS_BETWEEN_MESSAGES = 3
@@ -35,10 +35,10 @@ const lastSentMessage = ref(new Date(-1))
 const isLockedToBottom = ref(true)
 const errorTimer = ref<number>()
 const isSmartSuggestOpen = ref(false)
-const userMentionTrigger = {
-  char: '@',
-  items: lobby.value?.members.map(({ name }) => ({ value: `@${name}` })) ?? []
-}
+// const userMentionTrigger: Trigger = {
+//   char: '@',
+//   items: lobby.value?.members.map(({ name }) => ({ value: `@${name}` })) ?? []
+// }
 
 //hooks/methods
 onMounted(async () => {
@@ -198,7 +198,7 @@ defineExpose({ focus })
       <a role="button" v-if="!isLockedToBottom" class="d-block lock-to-bottom btn btn-stone-900" @click="scrollToBottom"
         >Back to bottom <i class="fi fi-rr-arrow-down"></i
       ></a>
-      <SmartSuggest :triggers="[userMentionTrigger]" @open="isSmartSuggestOpen=true" @close="isSmartSuggestOpen=false">
+      <!-- <SmartSuggest :triggers="[userMentionTrigger]" @open="isSmartSuggestOpen=true" @close="isSmartSuggestOpen=false"> -->
         <textarea
           v-model="message"
           maxlength="500"
@@ -207,7 +207,7 @@ defineExpose({ focus })
           @input="resizeMessageInput"
           @keydown.enter="onEnterKeydown"
         ></textarea>
-      </SmartSuggest>
+      <!-- </SmartSuggest> -->
       <div class="d-flex align-items-center justify-content-end">
         <span class="d-block text-danger me-2 fw-bold">{{ error }}</span>
         <button class="d-block btn btn-primary fw-bold">Send</button>
