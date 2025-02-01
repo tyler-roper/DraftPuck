@@ -33,4 +33,16 @@ public class UserService : IUserService
         await _dbContext.SaveChangesAsync();
         return user;
     }
+
+    public async Task<User?> UpdateNotificationPreferencesAsync(Guid id, UserNotificationPreferencesRequestModel model)
+    {
+        var user = await GetUserByIdAsync(id);
+        if (user == null) return null;
+
+        user.DrinkReceivedNotificationPreference = model.DrinkReceivedNotificationPreference;
+        user.DrinkAwardedNotificationPreference = model.DrinkAwardedNotificationPreference;
+        user.ChatNotificationPreference = model.ChatNotificationPreference;
+        await _dbContext.SaveChangesAsync();
+        return user;
+    }
 }

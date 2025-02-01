@@ -243,7 +243,7 @@ public class LobbyService : ILobbyService
         drink.RecipientLobbyMemberId = recipient.Id;
         await _dbContext.SaveChangesAsync();
 
-        await HandleDrinkNotifications(lobby, LobbyEventType.DrinkAssigned, sender, recipient);
+        await HandleDrinkAssignedNotifications(lobby, sender, recipient);
         await _lobbyEventService.SendDrinkAssignedEvent(lobby, sender, recipient, drink.LobbyMemberPick.GameId, drink.EventId, drink.LobbyMemberPick.PlayerId, drink.LobbyMemberPick.TeamId);
 
         return drink;
@@ -379,7 +379,7 @@ public class LobbyService : ILobbyService
             if (user.FcmRegistrationToken == null || user.ChatNotificationPreference == NotificationPreference.None) return; //notifications disabled
 
             var userName = lobby.LobbyMembers.Single(lm => lm.UserId == user.Id).Name;
-            var isMentioned = message.Contains($"@{userName}");
+            var isMentioned = message.Contains($"@{userName}", StringComparison.OrdinalIgnoreCase);
 
             if (!isMentioned && user.ChatNotificationPreference == NotificationPreference.All)
             {
@@ -394,7 +394,7 @@ public class LobbyService : ILobbyService
         });
     }
 
-    private async Task HandleDrinkNotifications(Lobby lobby, LobbyEventType lobbyEventType, LobbyMember sender, LobbyMember recipient)
+    private async Task HandleDrinkAssignedNotifications(Lobby lobby, LobbyMember sender, LobbyMember recipient)
     {
         var lobbyUserIds = lobby.LobbyMembers
             .Where(lm => !lm.IsBot && lm != sender)
@@ -407,25 +407,18 @@ public class LobbyService : ILobbyService
             if (user.FcmRegistrationToken == null) return; //notifications disabled
 
             var isRecipient = user.Id == recipient.UserId;
-            var userNotificationPreference = lobbyEventType switch
-            {
-                LobbyEventType.DrinkAwarded => user.DrinkAwardedNotificationPreference,
-                LobbyEventType.DrinkAssigned => user.DrinkReceivedNotificationPreference,
-                _ => throw new NotImplementedException()
-            };
+            var text = LobbyEventTexts.GetText(LobbyEventType.DrinkAssigned).Replace("{{senderName}}", sender.Name).Replace("{{recipientName}}", recipient.Name);
 
-            var text = LobbyEventTexts.GetText(lobbyEventType).Replace(" {{playerBadge}}", "").Replace("{{name}}", sender.Name);
-
-            if (!isRecipient && userNotificationPreference == NotificationPreference.All)
+            if (!isRecipient && user.DrinkReceivedNotificationPreference == NotificationPreference.All)
             {
-                var data = new Dictionary<string, string> { { "lobbyEventType", lobbyEventType.ToString() }, { "isRelevant", "false" } };
-                await _firebaseService.SendPushNotification(lobby.JoinCode, LobbyEventTexts.GetTitle(lobbyEventType), text, user.FcmRegistrationToken, data);
+                var data = new Dictionary<string, string> { { "lobbyEventType", LobbyEventType.DrinkAssigned.ToString() }, { "isRelevant", "false" } };
+                await _firebaseService.SendPushNotification(lobby.JoinCode, LobbyEventTexts.GetTitle(LobbyEventType.DrinkAssigned), text, user.FcmRegistrationToken, data);
             }
-            else if (isRecipient && userNotificationPreference != NotificationPreference.None)
+            else if (isRecipient && user.DrinkReceivedNotificationPreference != NotificationPreference.None)
             {
-                var title = lobbyEventType == LobbyEventType.DrinkAssigned ? "🍺 DRINK 🍺" : "🚨 GOAL 🚨";
-                var data = new Dictionary<string, string> { { "lobbyEventType", lobbyEventType.ToString() }, { "isRelevant", "true" } };
-                await _firebaseService.SendPushNotification(lobby.JoinCode, title, text, user.FcmRegistrationToken, new Dictionary<string, string> { { "lobbyEventType", lobbyEventType.ToString() }, { "isRelevant", "true" } });
+                var title = "🍺 DRINK 🍺";
+                var data = new Dictionary<string, string> { { "lobbyEventType", LobbyEventType.DrinkAssigned.ToString() }, { "isRelevant", "true" } };
+                await _firebaseService.SendPushNotification(lobby.JoinCode, title, text, user.FcmRegistrationToken, data);
             }
         });
     }

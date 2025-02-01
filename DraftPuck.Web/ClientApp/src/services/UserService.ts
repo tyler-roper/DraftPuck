@@ -21,6 +21,10 @@ class UserService {
   public async updateFcmRegistrationToken(id: string, request: UpdateUserFcmRegistrationTokenRequest): Promise<User> {
     return this._http.patch(`${id}/fcmtoken`, request);
   }
+
+  public async updateNotificationPreferences(id: string, request: UserNotificationPreferencesRequestModel): Promise<User> {
+    return this._http.patch(`${id}/notifications`, request);
+  }
 }
 
 export default new UserService()
