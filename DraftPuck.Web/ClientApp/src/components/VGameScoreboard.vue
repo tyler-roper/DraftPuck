@@ -57,7 +57,7 @@ const pickedPlayers = computed(
 )
 const currentUser = computed(() => lobby.value!.members.find((m) => m.userId === currentUserId.value))
 const currentUserCanPick = computed(
-  () => isPickingStarted.value && (currentUserHasPicksForTeam(game.value.awayTeam) || currentUserHasPicksForTeam(game.value.homeTeam))
+  () => gameIsPickable.value && isPickingStarted.value && (currentUserHasPicksForTeam(game.value.awayTeam) || currentUserHasPicksForTeam(game.value.homeTeam))
 )
 const pickTimeFormatted = computed(() => format(pickTime.value, 'p'))
 
