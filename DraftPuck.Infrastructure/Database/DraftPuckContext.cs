@@ -16,6 +16,8 @@ public partial class DraftPuckContext : DbContext
 
     public virtual DbSet<Drink> Drinks { get; set; }
 
+    public virtual DbSet<ErrorLog> ErrorLogs { get; set; }
+
     public virtual DbSet<Lobby> Lobbies { get; set; }
 
     public virtual DbSet<LobbyEvent> LobbyEvents { get; set; }
@@ -43,6 +45,15 @@ public partial class DraftPuckContext : DbContext
             entity.HasOne(d => d.RecipientLobbyMember).WithMany(p => p.Drinks)
                 .HasForeignKey(d => d.RecipientLobbyMemberId)
                 .HasConstraintName("FK_Drinks_LobbyMembers");
+        });
+
+
+        modelBuilder.Entity<ErrorLog>(entity =>
+        {
+            entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
+            entity.Property(e => e.Created).HasDefaultValueSql("(getutcdate())");
+            entity.Property(e => e.Error).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.Info).HasColumnType("nvarchar(max)");
         });
 
         modelBuilder.Entity<Lobby>(entity =>

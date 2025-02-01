@@ -26,6 +26,7 @@ import PeriodType from '@/enums/periodType'
 import { initializeApp } from 'firebase/app'
 import { getToken, getMessaging, onMessage } from 'firebase/messaging'
 import UserService from '@/services/UserService'
+import { Exception } from 'sass'
 
 //const
 type View = 'feed' | 'game' | 'lobby' | 'chat'
@@ -243,6 +244,7 @@ async function initializeFirebase() {
 function logError(error: string) {
   console.error(error)
   sendDebugMessage(error, 3)
+  throw error
 }
 
 async function setGames() {

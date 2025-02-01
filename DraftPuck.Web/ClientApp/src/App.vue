@@ -3,11 +3,18 @@ import { RouterView } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useLobbyStore } from '@/stores/lobby'
 import PullToRefresh from 'pulltorefreshjs'
+import SystemService from '@/services/SystemService'
 
 const { setCurrentUserId } = useLobbyStore()
 const { initUser } = useUserStore()
 
 ;(async function onCreated() {
+  window.addEventListener('unhandledrejection', function(event) {
+    try {
+      SystemService.reportError(event.promise, event.reason)
+    } catch {}
+ });
+
   enableRefreshOniOS()
   const user = await initUser()
   if (user) setCurrentUserId(user.id)
@@ -25,6 +32,8 @@ function enableRefreshOniOS() {
     })
   }
 }
+
+
 </script>
 
 <template>
