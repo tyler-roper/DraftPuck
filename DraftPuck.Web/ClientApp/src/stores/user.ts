@@ -17,8 +17,10 @@ export const useUserStore = defineStore('user', () => {
     let isValidUser = false
 
     if (userId) {
+      try {
       await getUserById(userId)
       isValidUser = true
+      } catch {}
     }
 
     if (!isValidUser) {
