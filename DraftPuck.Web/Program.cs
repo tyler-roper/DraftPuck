@@ -40,6 +40,7 @@ builder.Services
     .AddSingleton<IGameCache, GameCache>()
     .AddTransient<ILobbyHubContext,LobbyHubContext>()
     .AddTransient<IGameService, GameService>()
+    .AddTransient<IErrorService, ErrorService>()
     .AddTransient<ILobbyService, LobbyService>()
     .AddTransient<ILobbyEventService, LobbyEventService>()
     .AddTransient<INhlService, NhlService>()
