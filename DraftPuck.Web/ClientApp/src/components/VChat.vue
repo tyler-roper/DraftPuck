@@ -3,8 +3,9 @@ import type MessageViewModel from '@/models/messageViewModel'
 import { addSeconds, format, parseISO } from 'date-fns'
 import { useLobbyStore } from '@/stores/lobby'
 import { storeToRefs } from 'pinia'
-import { ref, computed, watch, nextTick, onMounted } from 'vue'
+import { ref, watch, nextTick, onMounted } from 'vue'
 import type SystemMessageViewModel from '@/models/systemMessageViewModel'
+import { SmartSuggest, Trigger } from 'vue-smart-suggest'
 
 //const
 const SECONDS_BETWEEN_MESSAGES = 3
@@ -24,8 +25,8 @@ const emit = defineEmits(['command'])
 
 //data
 const lobbyStore = useLobbyStore()
-const { currentUserId, isLobbyAdmin, debugLevel } = storeToRefs(lobbyStore)
-const { sendMessage: storeSendMessage, setDebugging, sendDebugMessage, sendSystemMessage } = lobbyStore
+const { currentUserId, isLobbyAdmin, lobby } = storeToRefs(lobbyStore)
+const { sendMessage: storeSendMessage } = lobbyStore
 const messageInput = ref<HTMLTextAreaElement | null>(null)
 const messagesContainer = ref<HTMLDivElement | null>(null)
 const message = ref('')
@@ -33,8 +34,11 @@ const error = ref<string>()
 const lastSentMessage = ref(new Date(-1))
 const isLockedToBottom = ref(true)
 const errorTimer = ref<number>()
-
-
+const isSmartSuggestOpen = ref(false)
+const userMentionTrigger: Trigger = {
+  char: '@',
+  items: lobby.value?.members.map(({ name }) => ({ value: `@${name}` })) ?? []
+}
 
 //hooks/methods
 onMounted(async () => {
@@ -73,6 +77,7 @@ async function resizeMessageInput() {
 }
 
 function onEnterKeydown(e: KeyboardEvent) {
+  if (isSmartSuggestOpen.value) return
   if (e.shiftKey) return
   sendMessage(e)
 }
@@ -84,7 +89,7 @@ async function sendMessage(e: Event, isSystem: boolean = false) {
 
   if (isCommand) {
     try {
-    processCommand(message.value)
+      processCommand(message.value)
     } catch (e) {
       if (typeof e === 'string') error.value = e
       return
@@ -114,9 +119,21 @@ async function sendMessage(e: Event, isSystem: boolean = false) {
     message.value = originalMessage
     await nextTick()
     resizeMessageInput()
-
-    
   }
+}
+
+function highlightMentions(message: string) {
+  message = message.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;')
+  if (!lobby.value) return message
+
+  const currentLobbyMember = lobby.value.members.find((lm) => lm.userId === currentUserId.value)
+  if (!currentLobbyMember) return message
+  const updatedMessage = message.replace(new RegExp('(^|\\s)(@' + currentLobbyMember.name + ')(\\s|$)', 'ig'), '$1<span class="mention">$2</span>$3')
+  const otherLobbyMembers = lobby.value.members.filter((lm) => lm.userId !== currentUserId.value && !lm.isBot && !lm.isRemoved)
+  return otherLobbyMembers.reduce(
+    (finalMessage, lobbyMember) => finalMessage.replace(new RegExp('(^|\\s)(@' + lobbyMember.name + ')(\\s|$)', 'ig'), '$1<b>$2</b>$3'),
+    updatedMessage
+  )
 }
 
 function onChatScroll() {
@@ -173,7 +190,7 @@ defineExpose({ focus })
           <span class="text-stone-400 small">{{ formatAsTime(message.sent) }}</span>
           <span class="name fw-bold ms-2" v-if="!message.isSystem">{{ (message as MessageViewModel).lobbyMemberName }}:</span>
         </span>
-        <span v-if="!message.isSystem" class="text-break ms-2">{{ message.message }}</span>
+        <span v-if="!message.isSystem" class="text-break ms-2" v-html="highlightMentions(message.message)"></span>
         <pre v-if="message.isSystem" class="text-break mb-0">{{ message.message }}</pre>
       </div>
     </div>
@@ -181,14 +198,16 @@ defineExpose({ focus })
       <a role="button" v-if="!isLockedToBottom" class="d-block lock-to-bottom btn btn-stone-900" @click="scrollToBottom"
         >Back to bottom <i class="fi fi-rr-arrow-down"></i
       ></a>
-      <textarea
-        v-model="message"
-        maxlength="500"
-        ref="messageInput"
-        placeholder="Send a message"
-        @input="resizeMessageInput"
-        @keydown.enter="onEnterKeydown"
-      ></textarea>
+      <SmartSuggest :triggers="[userMentionTrigger]" @open="isSmartSuggestOpen=true" @close="isSmartSuggestOpen=false">
+        <textarea
+          v-model="message"
+          maxlength="500"
+          ref="messageInput"
+          placeholder="Send a message"
+          @input="resizeMessageInput"
+          @keydown.enter="onEnterKeydown"
+        ></textarea>
+      </SmartSuggest>
       <div class="d-flex align-items-center justify-content-end">
         <span class="d-block text-danger me-2 fw-bold">{{ error }}</span>
         <button class="d-block btn btn-primary fw-bold">Send</button>
@@ -235,5 +254,38 @@ a.lock-to-bottom {
   left: 50%;
   transform: translateX(-50%);
   opacity: 0.9;
+}
+</style>
+
+<style lang="scss">
+@import '@/assets/scss/custom-colors.scss';
+span.mention {
+  font-weight: bold;
+  color: #bd00ff;
+}
+
+.smart-suggest-dropdown {
+  border-radius: 5px;
+  box-shadow: 0 0 5px 5px rgba(0, 0, 0, 0.2);
+  border: 1px solid map-get($custom-colors, 'stone-300');
+  height: 140px !important;
+  top: -140px !important;
+  background-color: map-get($custom-colors, 'stone-0');
+  overflow: auto;
+}
+
+.smart-suggest-item {
+  padding: 4px 8px;
+  font-weight: bold;
+  color: map-get($custom-colors, 'stone-900');
+}
+
+.smart-suggest-item:hover {
+  background-color: map-get($custom-colors, 'stone-200');
+  cursor: pointer;
+}
+
+.smart-suggest-item-active {
+  background-color: map-get($custom-colors, 'stone-200');
 }
 </style>

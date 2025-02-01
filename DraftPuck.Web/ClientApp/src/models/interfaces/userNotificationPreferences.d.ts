@@ -1,8 +1,4 @@
-interface User {
-  id: string
-  created: Date
-  isBot: boolean
-  fcmRegistrationToken?: string
+interface UserNotificationPreferencesRequestModel {
   drinkReceivedNotificationPreference: NotificationPreference
   drinkAwardedNotificationPreference: NotificationPreference
   chatNotificationPreference: NotificationPreference

@@ -1,5 +1,7 @@
 ﻿using DraftPuck.Infrastructure.Database;
+using DraftPuck.Shared.Interfaces;
 using DraftPuck.Shared.Models;
+using FirebaseAdmin.Messaging;
 
 namespace DraftPuck.Core.Services;
 
@@ -11,9 +13,11 @@ public class GameService : IGameService
     private readonly ILobbyService _lobbyService;
     private readonly ILobbyEventService _lobbyEventService;
     private readonly IMapper _mapper;
+    private readonly IFirebaseService _firebaseService;
     private static readonly Random _random = new();
 
-    public GameService(INhlService nhlApi, IGameCache gameCache, DraftPuckContext dbContext, ILobbyService lobbyService, ILobbyEventService lobbyEventService, IMapper mapper)
+
+    public GameService(INhlService nhlApi, IGameCache gameCache, DraftPuckContext dbContext, ILobbyService lobbyService, ILobbyEventService lobbyEventService, IMapper mapper, IFirebaseService firebaseService)
     {
         _nhlService = nhlApi;
         _gameCache = gameCache;
@@ -21,6 +25,7 @@ public class GameService : IGameService
         _lobbyService = lobbyService;
         _lobbyEventService = lobbyEventService;
         _mapper = mapper;
+        _firebaseService = firebaseService;
     }
 
     public async Task CheckGamesAsync()
@@ -136,6 +141,7 @@ public class GameService : IGameService
             await _dbContext.SaveChangesAsync();
 
             await _lobbyEventService.SendDrinkAwardedEvent(pickToReward.LobbyMember.Lobby, pickToReward.LobbyMember, gameId, play.Id, scorerId.Value, play.PrimaryTeamId!.Value);
+            await HandleDrinkAwardedNotifications(pickToReward.LobbyMember.Lobby, pickToReward.LobbyMember);
 
             if (pickToReward.LobbyMember.IsBot)
             {
@@ -149,6 +155,35 @@ public class GameService : IGameService
                 }
             }
         }
+    }
+
+    private async Task HandleDrinkAwardedNotifications(Lobby lobby, LobbyMember recipient)
+    {
+        var lobbyUserIds = lobby.LobbyMembers
+           .Where(lm => !lm.IsBot)
+           .Select(lm => lm.UserId);
+
+        var lobbyUsers = _dbContext.Users.Where(u => lobbyUserIds.Contains(u.Id)).ToList();
+        await Parallel.ForEachAsync(lobbyUsers, async (user, _) =>
+        {
+            if (user.FcmRegistrationToken == null || user.DrinkAwardedNotificationPreference == NotificationPreference.None) return; //notifications disabled
+
+            var userName = lobby.LobbyMembers.Single(lm => lm.UserId == user.Id).Name;
+            var isRecipient = recipient.UserId == user.Id;
+            var title = LobbyEventTexts.GetTitle(LobbyEventType.DrinkAwarded);
+            var text = LobbyEventTexts.GetText(LobbyEventType.DrinkAwarded).Replace("{{name}}", recipient.Name).Replace(" {{playerBadge}}", "");
+
+            if (!isRecipient && user.DrinkAwardedNotificationPreference == NotificationPreference.All)
+            {
+                var data = new Dictionary<string, string> { { "lobbyEventType", LobbyEventType.DrinkAwarded.ToString() }, { "isRelevant", "false" } };
+                await _firebaseService.SendPushNotification(lobby.JoinCode, title, text, user.FcmRegistrationToken, data);
+            }
+            else if (isRecipient)
+            {
+                var data = new Dictionary<string, string> { { "lobbyEventType", LobbyEventType.DrinkAwarded.ToString() }, { "isRelevant", "true" } };
+                await _firebaseService.SendPushNotification(lobby.JoinCode, "🚨 GOAL 🚨", text, user.FcmRegistrationToken, data);
+            }
+        });
     }
 
     private static Player GetPlayerById(Game game, int id)

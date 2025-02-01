@@ -18,6 +18,7 @@ import VLobbyOverview from '@/components/VLobbyOverview.vue'
 import VFeed from '@/components/VFeed.vue'
 import MessageViewModel from '@/models/messageViewModel'
 import VChat from '@/components/VChat.vue'
+import VNotificationSettingsModal from '@/components/VNotificationSettingsModal.vue' 
 import LobbyService from '@/services/LobbyService'
 import GameState from '@/enums/gameState'
 import PlayType from '@/enums/playType'
@@ -90,6 +91,7 @@ const { getLobby, getLobbyEvents, addLobbyEvent, addMessageToStore, sendDebugMes
 const joinCode = ref(route.params.joinCode as string)
 const games = ref<Game[]>([])
 const isInstructionsVisible = ref(false)
+const isNotificationSettingsVisible = ref(false)
 const isInvalidLobby = ref(false)
 const isLoading = ref(false)
 const mappedEvents = ref<LobbyEvent[]>([])
@@ -98,6 +100,7 @@ const currentView = ref<View>('lobby')
 const pendingDrinks = ref<LobbyEvent[]>([])
 const currentDrink = ref<LobbyEvent>()
 const unseenMessageCount = ref(0)
+const unseenMentionsCount = ref(0)
 const vChat = ref<InstanceType<typeof VChat> | null>(null)
 const shouldAnimateFeed = ref(false)
 const feedAnimationTimer = ref<number>()
@@ -223,19 +226,17 @@ async function initializeFirebase() {
     const messaging = getMessaging(app)
 
     onMessage(messaging, ({ notification, data }) => {
-      const width = window.innerWidth
-      const isChatVisible = width > 600 || currentView.value === 'chat'
-      if (data?.lobbyEventType === 'chatMessage' && !isChatVisible) toast(`<strong>${notification?.title}</strong> | ${notification?.body}`)
+      if (!data || !notification) return
+      const isRelevant = data.isRelevant === 'true'
 
-      if (['DrinkAwarded', 'DrinkAssigned'].includes(data?.lobbyEventType ?? '') && data?.isRelevant !== 'true')
-        toast(`<strong>${notification?.title}</strong> | ${notification?.body}`)
+      if (['DrinkAwarded', 'DrinkAssigned'].includes(data.lobbyEventType ?? '') && !isRelevant) toast(`${notification.title} | ${notification.body}`)
     })
 
     const token = await getToken(messaging, { vapidKey })
     await updateUserFcmToken(token)
   } catch (e) {
     console.error(`Unable to initialize firebase`, e)
-    sendSystemMessage(`Unable to initialize firebase ${e}`)
+    sendSystemMessage(`ERROR: Unable to initialize firebase: ${e}`)
   }
 }
 
@@ -307,7 +308,11 @@ function onNewMessage(message: Message) {
   parseAllDates(message)
   addMessageToStore(message)
 
-  if (currentView.value !== 'chat') unseenMessageCount.value++
+  if (currentView.value !== 'chat') {
+    const currentUserIsMentioned = message.message.split(' ').some((word) => word.toUpperCase() === `@${currentLobbyMember.value?.name.toUpperCase()}`)
+    if (currentUserIsMentioned) unseenMentionsCount.value++
+    unseenMessageCount.value++
+  }
 }
 
 function notifyCurrentUserOfDrink(lobbyEvent: LobbyEvent) {
@@ -433,21 +438,17 @@ watch(
   <div class="d-flex overflow-hidden flex-column" style="height: 100%">
     <template v-if="!isInvalidLobby">
       <VInstructionsModal v-if="isInstructionsVisible" :join-code="lobby?.joinCode" @close="isInstructionsVisible = false" />
-
+      <VNotificationSettingsModal v-if="isNotificationSettingsVisible" @close="isNotificationSettingsVisible = false" />
       <div class="bg-stone-900 px-sm-4 px-2 py-2 shadow position-relative d-flex align-items-center justify-content-between" style="z-index: 10">
         <router-link to="/" class="banner-logo text-stone-0 text-decoration-none" style="cursor: pointer">
           <img v-if="!is4Nations" src="/img/logo-wide.png" />
           <img v-if="is4Nations" src="/img/logo-wide-4nations.png" />
         </router-link>
 
-        <a
-          role="button"
-          v-if="!notificationPermissionsGranted && notificationsSupported"
-          class="text-decoration-none text-uppercase fw-bold mt-1 fs-8"
-          @click="requestNotificationPermission"
-          >Enable Notifications</a
-        >
-        <span class="fw-bold mt-1 fs-8" v-if="notificationPermissionsGranted && notificationsSupported">Notifications enabled.</span>
+        <a class="d-flex pt-1 text-primary fw-bold text-decoration-none align-items-center" role="button" @click="isNotificationSettingsVisible = true">
+          <i class="fi fi-sr-settings d-block fs-5" style="line-height: 20px"></i>
+          <span class="d-none d-sm-block text-uppercase ms-2" style="margin-top: -2px">Notifications</span>
+        </a>
 
         <a class="d-flex pt-1 text-stone-0 fw-bold text-decoration-none align-items-center" role="button" @click="isInstructionsVisible = true">
           <i class="fi fi-rr-question-square d-block fs-3" style="line-height: 20px"></i>
@@ -503,7 +504,11 @@ watch(
         </a>
         <a role="button" class="text-center p-2 text-white" :class="{ active: isChatView }" @click="setViewToChat">
           <i v-if="unseenMessageCount <= 0" class="fi fi-rr-comment-alt"></i>
-          <span v-if="unseenMessageCount > 0" class="drink-badge">💬 {{ unseenMessageCount }}</span>
+          <span v-if="unseenMessageCount > 0" class="drink-badge" :class="{ 'bg-primary': unseenMentionsCount > 0 }">
+            <span v-if="unseenMentionsCount > 0">📢</span>
+            <span v-if="unseenMentionsCount <= 0">💬</span>
+            <span>{{ unseenMessageCount }}</span>
+          </span>
           <br />
           <span>CHAT</span>
         </a>

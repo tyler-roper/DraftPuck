@@ -33,4 +33,13 @@ public class UsersController : DraftPuckApiControllerBase
             ? NotFound()
             : Ok(user);
     }
+
+    [HttpPatch("{id}/notifications")]
+    public async Task<IActionResult> UpdateNotificationPreferences(Guid id, UserNotificationPreferencesRequestModel model)
+    {
+        var user = await _userService.UpdateNotificationPreferencesAsync(id, model);
+        return user == null
+            ? NotFound()
+            : Ok(user);
+    }
 }
