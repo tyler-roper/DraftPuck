@@ -5,7 +5,7 @@ import { useLobbyStore } from '@/stores/lobby'
 import { storeToRefs } from 'pinia'
 import { ref, watch, nextTick, onMounted } from 'vue'
 import type SystemMessageViewModel from '@/models/systemMessageViewModel'
-import { SmartSuggest, Trigger } from 'vue-smart-suggest'
+import SmartSuggest from 'vue-smart-suggest'
 
 //const
 const SECONDS_BETWEEN_MESSAGES = 3
@@ -35,7 +35,7 @@ const lastSentMessage = ref(new Date(-1))
 const isLockedToBottom = ref(true)
 const errorTimer = ref<number>()
 const isSmartSuggestOpen = ref(false)
-const userMentionTrigger: Trigger = {
+const userMentionTrigger = {
   char: '@',
   items: lobby.value?.members.map(({ name }) => ({ value: `@${name}` })) ?? []
 }
