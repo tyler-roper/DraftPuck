@@ -18,7 +18,7 @@ import VLobbyOverview from '@/components/VLobbyOverview.vue'
 import VFeed from '@/components/VFeed.vue'
 import MessageViewModel from '@/models/messageViewModel'
 import VChat from '@/components/VChat.vue'
-import VNotificationSettingsModal from '@/components/VNotificationSettingsModal.vue' 
+import VNotificationSettingsModal from '@/components/VNotificationSettingsModal.vue'
 import LobbyService from '@/services/LobbyService'
 import GameState from '@/enums/gameState'
 import PlayType from '@/enums/playType'
@@ -265,22 +265,41 @@ async function getGameData(gameId: number) {
   return await GameService.getGame(gameId)
 }
 
-async function pollForUpdates(game: Game) {
+async function pollForUpdates(game: Game, attempts: number = 1) {
+  const MAX_ATTEMPTS = 5
+  const DEBOUNCE_ENABLED = false
+
   const msgPrefix = `[${game.awayTeam.abbreviation} @ ${game.homeTeam.abbreviation}]`
+  let isSuccess = false
+  let tryAgainIfFailure = attempts < MAX_ATTEMPTS
+
   try {
     await updateGame(game.id)
-    if (isGameStale(game)) {
-      sendDebugMessage(`${msgPrefix} Game is stale. `, 1)
-      return
-    }
-
-    const interval = isGameInProgress(game) ? ACTIVE_GAME_POLLING_INTERVAL_MS : INACTIVE_GAME_POLLING_INTERVAL_MS
-
-    sendDebugMessage(`${msgPrefix} Updated. (Next update in ${interval / 1000} seconds)`, 1)
-    timers.value.push(window.setTimeout(() => pollForUpdates(game), interval))
+    isSuccess = true
   } catch (e) {
     logError(`${msgPrefix} ${e as string}`)
   }
+
+  if (isGameStale(game)) {
+    sendDebugMessage(`${msgPrefix} Game is stale. `, 1)
+    return
+  }
+
+  let interval = isGameInProgress(game) ? ACTIVE_GAME_POLLING_INTERVAL_MS : INACTIVE_GAME_POLLING_INTERVAL_MS
+  let debugMessage = `${msgPrefix} Updated. (Next update in ${interval / 1000} seconds)`
+
+  if (!isSuccess && !tryAgainIfFailure) {
+    debugMessage = `${msgPrefix} Stopping updates after ${MAX_ATTEMPTS} failed attempts.`
+  } else if (!isSuccess) {
+    const nextAttempt = attempts+1
+    if (DEBOUNCE_ENABLED) interval *= nextAttempt
+    debugMessage = `${msgPrefix} Failed to update on attempt #${attempts}. (Trying again in ${interval / 1000} seconds)`
+    timers.value.push(window.setTimeout(() => pollForUpdates(game, nextAttempt), interval))
+  } else if (isSuccess) {
+    timers.value.push(window.setTimeout(() => pollForUpdates(game), interval))
+  }
+
+  sendDebugMessage(debugMessage, 1)
 }
 
 async function initializeHubConnection() {
@@ -311,7 +330,9 @@ function onNewMessage(message: Message) {
   addMessageToStore(message)
 
   if (currentView.value !== 'chat') {
-    const currentUserIsMentioned = message.message.split(' ').some((word) => word.toUpperCase() === `@${currentLobbyMember.value?.name.toUpperCase()}`)
+    const currentUserIsMentioned = message.message
+      .split(' ')
+      .some((word) => word.toUpperCase() === `@${currentLobbyMember.value?.name.toUpperCase()}`)
     if (currentUserIsMentioned) unseenMentionsCount.value++
     unseenMessageCount.value++
   }
@@ -447,7 +468,11 @@ watch(
           <img v-if="is4Nations" src="/img/logo-wide-4nations.png" />
         </router-link>
 
-        <a class="d-flex pt-1 text-primary fw-bold text-decoration-none align-items-center" role="button" @click="isNotificationSettingsVisible = true">
+        <a
+          class="d-flex pt-1 text-primary fw-bold text-decoration-none align-items-center"
+          role="button"
+          @click="isNotificationSettingsVisible = true"
+        >
           <i class="fi fi-sr-settings d-block fs-5" style="line-height: 20px"></i>
           <span class="d-none d-sm-block text-uppercase ms-2" style="margin-top: -2px">Notifications</span>
         </a>
