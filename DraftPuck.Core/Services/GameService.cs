@@ -41,6 +41,10 @@ public class GameService : IGameService
         {
             await UpdateGameAsync(game);
         }
+
+        //check once per minute
+        if (DateTime.UtcNow.Second < 10)
+            await NotifyIfNewPicksAreAvailable();
     }
 
     public Game GetGameById(int id)
@@ -405,5 +409,24 @@ public class GameService : IGameService
             var scorer = goalBeforeUpdate.Value.Player;
             await HandleGoalRemovedAsync(game.Id, goalBeforeUpdate.Key, scorer);
         }
+    }
+
+    private async Task NotifyIfNewPicksAreAvailable()
+    {
+        var cachedGames = _gameCache.GetAllGames();
+        var gamesToSendNotificationsFor = cachedGames.Where(game => game.DateTime.AddMinutes(-30).Minute == DateTime.UtcNow.Minute);
+        if (!gamesToSendNotificationsFor.Any()) return;
+
+        var currentActiveLobbies = await _lobbyService.GetAllLobbies();
+        var lobbiesWithRelevantGames = currentActiveLobbies.Where(lobby => lobby.GameIds.Any(gameId => gamesToSendNotificationsFor.Select(game => game.Id).Contains(gameId)));
+        var lobbyMembers = lobbiesWithRelevantGames.SelectMany(lobby => lobby.LobbyMembers);
+        var lobbyUserIds = lobbyMembers.Select(lm => lm.UserId);
+        var lobbyUsers = await _dbContext.Users.Where(u => lobbyUserIds.Contains(u.Id) && u.PickingStartedNotificationPreference != NotificationPreference.None && u.FcmRegistrationToken != null).ToListAsync();
+
+        var usersByLobby = lobbiesWithRelevantGames.ToDictionary(l => l.JoinCode, l => lobbyUsers.Where(u => l.LobbyMembers.Select(lm => lm.UserId).Contains(u.Id)));
+
+        foreach (var kvp in usersByLobby)
+            foreach (var user in kvp.Value)
+                await _firebaseService.SendPushNotification(kvp.Key, "New picks available!", "30 minutes until gametime.", user.FcmRegistrationToken!);
     }
 }

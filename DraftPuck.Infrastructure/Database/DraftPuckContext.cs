@@ -133,6 +133,7 @@ public partial class DraftPuckContext : DbContext
             entity.Property(e => e.DrinkReceivedNotificationPreference).HasDefaultValueSql("((0))");
             entity.Property(e => e.DrinkAwardedNotificationPreference).HasDefaultValueSql("((0))");
             entity.Property(e => e.ChatNotificationPreference).HasDefaultValueSql("((0))");
+            entity.Property(e => e.PickingStartedNotificationPreference).HasDefaultValueSql("((0))");
         });
 
         OnModelCreatingPartial(modelBuilder);
