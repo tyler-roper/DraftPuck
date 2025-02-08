@@ -10,7 +10,9 @@ public class LobbyHub : Hub
 
     public async Task JoinLobby(string lobbyCode, LobbyMember member)
     {
-        CurrentConnections.TryAdd(Context.ConnectionId, member);
+        if (CurrentConnections.TryAdd(Context.ConnectionId, member))
+            Console.WriteLine($"{member.Name} has connected.");
+
         await Groups.AddToGroupAsync(Context.ConnectionId, lobbyCode);
     }
 
