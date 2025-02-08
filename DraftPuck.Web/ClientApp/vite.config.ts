@@ -25,10 +25,10 @@ export default defineConfig(({ mode }) => {
       host: 'localhost',
       port: 17010,
       watch: { usePolling: false },
-      // https: {
-      //   pfx: path.resolve(process.env.USERPROFILE!, '.aspnet/https/Casknotes.pfx'),
-      //   passphrase: 'e20c46ff-c901-483a-9d65-3185c16eb8b1'
-      // },
+      https: {
+        pfx: resolve(process.env.USERPROFILE!, '.aspnet/https/DraftPuck.pfx'),
+        passphrase: 'b30b3f16-18c1-4a00-8f8f-0ce0fba61cb2'
+      },
       proxy: {
         '/api': {
           target: 'https://localhost:17000',

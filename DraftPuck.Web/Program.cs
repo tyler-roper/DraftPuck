@@ -29,7 +29,10 @@ builder.Services.AddMvc(options =>
 builder.Logging.AddConsole();
 
 //services
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(hubObtions =>
+{
+    hubObtions.EnableDetailedErrors = true;
+});
 builder.Services.AddHttpClient<INhlApiService, NhlApiService>(client => client.BaseAddress = new Uri("https://api-web.nhle.com/v1/"));
 builder.Services
     .Configure<ApplicationOptions>(options => builder.Configuration.Bind(ApplicationOptions.SectionName, options))

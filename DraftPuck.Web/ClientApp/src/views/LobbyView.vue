@@ -26,7 +26,13 @@ import PeriodType from '@/enums/periodType'
 import { initializeApp } from 'firebase/app'
 import { getToken, getMessaging, onMessage } from 'firebase/messaging'
 import UserService from '@/services/UserService'
-import { Exception } from 'sass'
+import type { ILogger, LogLevel } from '@microsoft/signalr'
+
+class SignalRLogger implements ILogger {
+  log(_: LogLevel, message: string) {
+    sendDebugMessage(message, 2)
+  }
+}
 
 //const
 type View = 'feed' | 'game' | 'lobby' | 'chat'
@@ -200,12 +206,6 @@ async function updateUserFcmToken(token?: string) {
   await UserService.updateFcmRegistrationToken(currentUserId.value!, { token })
 }
 
-async function requestNotificationPermission() {
-  await Notification.requestPermission()
-  notificationPermissionsGranted.value = Notification.permission === 'granted'
-  initializeFirebase()
-}
-
 async function initializeFirebase() {
   if (!notificationsSupported || !notificationPermissionsGranted.value) {
     await updateUserFcmToken()
@@ -291,7 +291,7 @@ async function pollForUpdates(game: Game, attempts: number = 1) {
   if (!isSuccess && !tryAgainIfFailure) {
     debugMessage = `${msgPrefix} Stopping updates after ${MAX_ATTEMPTS} failed attempts.`
   } else if (!isSuccess) {
-    const nextAttempt = attempts+1
+    const nextAttempt = attempts + 1
     if (DEBOUNCE_ENABLED) interval *= nextAttempt
     debugMessage = `${msgPrefix} Failed to update on attempt #${attempts}. (Trying again in ${interval / 1000} seconds)`
     timers.value.push(window.setTimeout(() => pollForUpdates(game, nextAttempt), interval))
@@ -305,7 +305,7 @@ async function pollForUpdates(game: Game, attempts: number = 1) {
 async function initializeHubConnection() {
   hubConnection = new SignalR.HubConnectionBuilder()
     .withUrl(HUB_URL, SignalR.HttpTransportType.ServerSentEvents)
-    .configureLogging(SignalR.LogLevel.Error)
+    .configureLogging(new SignalRLogger())
     .withAutomaticReconnect()
     .build()
 
