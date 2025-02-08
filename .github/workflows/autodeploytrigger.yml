@@ -58,6 +58,8 @@ jobs:
               --replace-env-vars \
                 DRAFTPUCK_ConnectionStrings__DefaultConnection=secretref:sql-connection-string \
                 DRAFTPUCK_APPLICATION__BASEPATH=https://draftpuck.com \
+                DRAFTPUCK_LOGGING__LOGLEVEL__Microsoft.AspNetCore.SignalR=Debug \
+                DRAFTPUCK_LOGGING__LOGLEVEL__Microsoft.AspNetCore.Http.Connections=Debug \
                 DRAFTPUCK_FIREBASE__Type=service_account \
                 DRAFTPUCK_FIREBASE__ProjectId=draftpuck-prod \
                 DRAFTPUCK_FIREBASE__PrivateKeyId=1dc7f7f85c30fe3490407aa39341f50261b3cb111 \
