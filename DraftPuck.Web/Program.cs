@@ -8,6 +8,7 @@ using System.Text.Json.Serialization;
 using DraftPuck.Shared.Interfaces;
 using DraftPuck.Infrastructure.Firebase;
 using DraftPuck.Infrastructure.Application;
+using Microsoft.AspNetCore.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,9 +30,10 @@ builder.Services.AddMvc(options =>
 builder.Logging.AddConsole();
 
 //services
-builder.Services.AddSignalR(hubObtions =>
+builder.Services.AddSignalR(options =>
 {
-    hubObtions.EnableDetailedErrors = true;
+    options.EnableDetailedErrors = true;
+    options.ClientTimeoutInterval = TimeSpan.FromMinutes(30);
 });
 builder.Services.AddHttpClient<INhlApiService, NhlApiService>(client => client.BaseAddress = new Uri("https://api-web.nhle.com/v1/"));
 builder.Services
