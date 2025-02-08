@@ -14,10 +14,10 @@ public class LobbyHub : Hub
         await Groups.AddToGroupAsync(Context.ConnectionId, lobbyCode);
     }
 
-    public override Task OnDisconnectedAsync(Exception exception)
+    public override Task OnDisconnectedAsync(Exception? exception)
     {
         if (CurrentConnections.Remove(Context.ConnectionId, out var member))
-            Console.WriteLine($"{member.Name} has disconnected. (Reason: {exception.Message})");
+            Console.WriteLine($"{member.Name} has disconnected. (Reason: {exception?.Message ?? "None"})");
         return base.OnDisconnectedAsync(exception);
     }
 }
