@@ -20,7 +20,8 @@ const isDirty = ref(false)
 const notificationSettings = ref<UserNotificationPreferencesRequestModel>({
   drinkReceivedNotificationPreference: currentUser.value!.drinkReceivedNotificationPreference,
   drinkAwardedNotificationPreference: currentUser.value!.drinkAwardedNotificationPreference,
-  chatNotificationPreference: currentUser.value!.chatNotificationPreference
+  chatNotificationPreference: currentUser.value!.chatNotificationPreference,
+  pickingStartedNotificationPreference: currentUser.value!.pickingStartedNotificationPreference
 })
 const isSaving = ref(false)
 
@@ -113,6 +114,15 @@ async function enableAndSave() {
 
               <input type="radio" id="rdChatMessage2" v-model="notificationSettings.chatNotificationPreference" :value="2" />
               <label for="rdChatMessage2">Always notify me.</label>
+            </div>
+
+            <div class="question">
+              <span class="question-text">📌 When picking becomes available for a new game...</span>
+              <input type="radio" id="rdPickingStarted0" v-model="notificationSettings.pickingStartedNotificationPreference" :value="0" />
+              <label for="rdPickingStarted0">Do not notify me.</label>
+
+              <input type="radio" id="rdPickingStarted2" v-model="notificationSettings.pickingStartedNotificationPreference" :value="2" />
+              <label for="rdPickingStarted2">Always notify me.</label>
             </div>
           </div>
         </div>

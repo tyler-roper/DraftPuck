@@ -367,6 +367,17 @@ public class LobbyService : ILobbyService
         await HandleChatNotifications(lobby, lobbyMember, message);
     }
 
+    public async Task<List<Lobby>> GetAllLobbies()
+    {
+        return await _dbContext.Lobbies
+                    .Include(l => l.LobbyMembers.Where(lm => !lm.IsRemoved))
+                        .ThenInclude(lm => lm.LobbyMemberPicks.Where(lmp => lmp.IsActive))
+                            .ThenInclude(lmp => lmp.Drinks)
+                    .Include(l => l.LobbyMembers.Where(lm => !lm.IsRemoved))
+                        .ThenInclude(lm => lm.Messages.Where(m => !m.IsDeleted))
+        .ToListAsync();
+    }
+
     private async Task HandleChatNotifications(Lobby lobby, LobbyMember sender, string message)
     {
         var lobbyUserIds = lobby.LobbyMembers

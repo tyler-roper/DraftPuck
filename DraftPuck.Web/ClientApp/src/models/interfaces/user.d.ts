@@ -6,4 +6,5 @@ interface User {
   drinkReceivedNotificationPreference: NotificationPreference
   drinkAwardedNotificationPreference: NotificationPreference
   chatNotificationPreference: NotificationPreference
+  pickingStartedNotificationPreference: NotificationPreference
 }

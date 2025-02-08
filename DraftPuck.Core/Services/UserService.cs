@@ -42,6 +42,7 @@ public class UserService : IUserService
         user.DrinkReceivedNotificationPreference = model.DrinkReceivedNotificationPreference;
         user.DrinkAwardedNotificationPreference = model.DrinkAwardedNotificationPreference;
         user.ChatNotificationPreference = model.ChatNotificationPreference;
+        user.PickingStartedNotificationPreference = model.PickingStartedNotificationPreference;
         await _dbContext.SaveChangesAsync();
         return user;
     }

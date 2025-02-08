@@ -1,6 +1,4 @@
-﻿using DraftPuck.Shared.Models;
-
-namespace DraftPuck.Core.Services.Interfaces;
+﻿namespace DraftPuck.Core.Services.Interfaces;
 
 public interface ILobbyService
 {
@@ -33,4 +31,6 @@ public interface ILobbyService
     public Task Broadcast(string joinCode, string message);
 
     public Task SendMessage(Guid userId, string joinCode, string message);
+
+    public Task<List<Lobby>> GetAllLobbies();
 }

@@ -2,4 +2,5 @@ interface UserNotificationPreferencesRequestModel {
   drinkReceivedNotificationPreference: NotificationPreference
   drinkAwardedNotificationPreference: NotificationPreference
   chatNotificationPreference: NotificationPreference
+  pickingStartedNotificationPreference: NotificationPreference
 }
