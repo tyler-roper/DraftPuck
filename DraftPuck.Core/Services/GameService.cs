@@ -413,8 +413,14 @@ public class GameService : IGameService
 
     private async Task NotifyIfNewPicksAreAvailable()
     {
+        var PICK_TIME_MINUTES_BEFORE_GAME = 30;
         var cachedGames = _gameCache.GetAllGames();
-        var gamesToSendNotificationsFor = cachedGames.Where(game => game.DateTime.AddMinutes(-30).Minute == DateTime.UtcNow.Minute);
+        var gamesToSendNotificationsFor = cachedGames.Where(game =>
+        {
+            var timeDiff = game.DateTime - DateTime.UtcNow;
+            return timeDiff.TotalMinutes < PICK_TIME_MINUTES_BEFORE_GAME && timeDiff.TotalMinutes > (PICK_TIME_MINUTES_BEFORE_GAME-1);
+        });
+
         if (!gamesToSendNotificationsFor.Any()) return;
 
         var currentActiveLobbies = await _lobbyService.GetAllLobbies();
