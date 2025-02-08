@@ -317,7 +317,7 @@ async function initializeHubConnection() {
   try {
     await hubConnection.start()
     sendDebugMessage(`Hub connection started. (State: ${hubConnection.state})`, 2)
-    await hubConnection.invoke('JoinLobby', joinCode.value)
+    await hubConnection.invoke('JoinLobby', joinCode.value, currentLobbyMember.value)
     sendDebugMessage(`Hub connection "Join Lobby" invoked. (State: ${hubConnection.state})`, 2)
   } catch (err) {
     logError(err as string)
