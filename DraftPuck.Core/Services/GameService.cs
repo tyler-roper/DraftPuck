@@ -34,7 +34,6 @@ public class GameService : IGameService
         if (cachedGames.Count == 0 || (DateTime.UtcNow.Minute == 0 && DateTime.UtcNow.Second <= 10))
         {
             await CheckScheduleAsync(cachedGames);
-            return;
         }
 
         foreach (var game in cachedGames)
