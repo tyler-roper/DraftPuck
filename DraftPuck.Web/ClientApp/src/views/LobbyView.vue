@@ -214,8 +214,7 @@ function setView(view: View) {
 
 function initializeActivityChecker() {
   if (checkActivityTimer.value) window.clearInterval(checkActivityTimer.value)
-
-  checkActivityTimer.value = window.setInterval(checkActivity, 1000)
+  checkActivityTimer.value = window.setInterval(checkActivity, 3000)
 }
 
 async function checkActivity() {
@@ -227,9 +226,7 @@ async function checkActivity() {
 }
 
 async function refreshConnection() {
-  await initializeHubConnection()
-  await getLobby()
-  lastLobbyRetrieval.value = new Date()
+  await Promise.all([getLobby(), initializeHubConnection()])
 
   if (lobby.value) {
     await getLobbyEvents(lobby.value.id)
@@ -485,6 +482,7 @@ function getLobbyMemberInfo(name?: string): Partial<LobbyMember> | undefined {
 
 async function getLobby() {
   if (!joinCode.value) return
+  lastLobbyRetrieval.value = new Date()
   await getLobbyFromStore(joinCode.value)
   sendDebugMessage(`Got lobby ${joinCode.value}.`, 2)
 }
