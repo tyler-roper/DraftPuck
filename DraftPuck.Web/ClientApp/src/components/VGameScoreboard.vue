@@ -187,7 +187,6 @@ function setIsBotPicking(team: GameTeam, value: boolean) {
 async function makeBotPick(bot: Bot, team: GameTeam) {
   const style = bot.botPickStyle
   const availablePlayers = team.roster.filter((player) => !pickedPlayers.value[player.id] && player.position !== 'G')
-
   const botPickStrategies = {
     [BotPickStyle.Best]: {
       preferredRange: [0, 0],
@@ -207,7 +206,7 @@ async function makeBotPick(bot: Bot, team: GameTeam) {
     },
     [BotPickStyle.Worst]: {
       preferredRange: [team.roster.length - 1, team.roster.length - 1],
-      fallbackStrategy: BotFallbackPickStrategy.WorstAboveRange
+      fallbackStrategy: BotFallbackPickStrategy.WorstAvailable
     },
     [BotPickStyle.Random]: {
       preferredRange: [0, team.roster.length - 1],
@@ -218,7 +217,8 @@ async function makeBotPick(bot: Bot, team: GameTeam) {
   const [rangeStart, rangeEnd] = botPickStrategies[style].preferredRange
   const fallbackStrategy = botPickStrategies[style].fallbackStrategy
 
-  const preferredPlayers = team.roster.slice(rangeStart, rangeEnd + 1).filter((p) => availablePlayers.includes(p))
+  const availablePlayerIds = availablePlayers.map(ap => ap.id);
+  const preferredPlayers = team.roster.slice(rangeStart, rangeEnd + 1).filter((p) => availablePlayerIds.includes(p.id))
   if (preferredPlayers.length) return await pick(preferredPlayers.random().id, team.id, bot.id)
 
   if (fallbackStrategy === BotFallbackPickStrategy.BestAvailable) return await pick(availablePlayers[0].id, team.id, bot.id)
@@ -230,7 +230,7 @@ async function makeBotPick(bot: Bot, team: GameTeam) {
   }
 
   if (fallbackStrategy === BotFallbackPickStrategy.WorstAboveRange) {
-    const availableAboveRange = team.roster.slice(0, rangeStart + 1)
+    const availableAboveRange = team.roster.slice(0, rangeStart + 1).filter((p) => availablePlayers.includes(p))
     if (availableAboveRange.length) return await pick(availableAboveRange[availableAboveRange.length - 1].id, team.id, bot.id)
     return await pick(availablePlayers[0].id, team.id, bot.id)
   }
