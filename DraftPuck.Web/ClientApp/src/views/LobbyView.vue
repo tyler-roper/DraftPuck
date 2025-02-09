@@ -29,8 +29,14 @@ import UserService from '@/services/UserService'
 import type { ILogger, LogLevel } from '@microsoft/signalr'
 
 class SignalRLogger implements ILogger {
+  logLevel = 0
+
+  constructor(_logLevel: number) {
+    this.logLevel = _logLevel
+  }
+
   log(_: LogLevel, message: string) {
-    sendDebugMessage(message, 2)
+    sendDebugMessage(message, this.logLevel)
   }
 }
 
@@ -94,7 +100,7 @@ const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 const { lobby, currentUserId, events, systemMessages } = storeToRefs(store)
-const { getLobby, getLobbyEvents, addLobbyEvent, addMessageToStore, sendDebugMessage, sendSystemMessage, setDebugging } = store
+const { getLobby: getLobbyFromStore, getLobbyEvents, addLobbyEvent, addMessageToStore, sendDebugMessage, sendSystemMessage, setDebugging } = store
 const joinCode = ref(route.params.joinCode as string)
 const games = ref<Game[]>([])
 const isInstructionsVisible = ref(false)
@@ -112,7 +118,7 @@ const vChat = ref<InstanceType<typeof VChat> | null>(null)
 const shouldAnimateFeed = ref(false)
 const feedAnimationTimer = ref<number>()
 const checkActivityTimer = ref<number>()
-const lastActivity = ref<Date>(new Date())
+const lastLobbyRetrieval = ref<Date>(new Date())
 const isInitialLoad = ref(true)
 const notificationPermissionsGranted = ref(Notification.permission === 'granted')
 const notificationsSupported = ref('Notification' in window)
@@ -161,7 +167,7 @@ const messages = computed(() => {
 ;(async function onCreated() {
   try {
     isLoading.value = true
-    await getLobby(joinCode.value)
+    await getLobby()
     if (!lobby.value) return (isInvalidLobby.value = true)
 
     if (!currentLobbyMember.value) {
@@ -174,7 +180,7 @@ const messages = computed(() => {
       if (!name) return router.push({ name: 'Home' })
 
       await LobbyService.joinLobbyByCode(joinCode.value, name)
-      await getLobby(joinCode.value)
+      await getLobby()
     }
 
     if (!currentLobbyMember.value) return router.push({ name: 'Home' })
@@ -207,27 +213,28 @@ function setView(view: View) {
 }
 
 function initializeActivityChecker() {
-  window.onclick = () => (lastActivity.value = new Date())
-  window.onmousemove = () => (lastActivity.value = new Date())
-  window.onscroll = () => (lastActivity.value = new Date())
-
   if (checkActivityTimer.value) window.clearInterval(checkActivityTimer.value)
 
-  window.setInterval(checkActivity, 10000)
+  checkActivityTimer.value = window.setInterval(checkActivity, 1000)
 }
 
 async function checkActivity() {
-  const secondsOfInactivity = Math.abs(differenceInSeconds(new Date(), lastActivity.value))
-  if (secondsOfInactivity > 300) refreshConnection(secondsOfInactivity)
+  const secondsSinceLastLobbyRetrieval = Math.abs(differenceInSeconds(new Date(), lastLobbyRetrieval.value))
+  if (secondsSinceLastLobbyRetrieval > 300) {
+    sendDebugMessage(`Refreshing connection after ${secondsSinceLastLobbyRetrieval} seconds since last retrieval...`, 2)
+    refreshConnection()
+  }
 }
 
-async function refreshConnection(secondsOfInactivity: number) {
-  sendDebugMessage(`Refreshing connection after ${secondsOfInactivity} seconds of inactivity...`, 2)
+async function refreshConnection() {
   await initializeHubConnection()
-  await getLobby(joinCode.value)
+  await getLobby()
+  lastLobbyRetrieval.value = new Date()
 
-  if (lobby.value)
+  if (lobby.value) {
     await getLobbyEvents(lobby.value.id)
+    sendDebugMessage('Got lobby events.', 2)
+  }
 }
 
 async function updateUserFcmToken(token?: string) {
@@ -335,7 +342,7 @@ async function initializeHubConnection() {
 
   hubConnection = new SignalR.HubConnectionBuilder()
     .withUrl(HUB_URL, SignalR.HttpTransportType.ServerSentEvents)
-    .configureLogging(new SignalRLogger())
+    .configureLogging(new SignalRLogger(1))
     .withAutomaticReconnect()
     .build()
 
@@ -397,7 +404,7 @@ async function dispatchLobbyEvent(lobbyEvent: LobbyEvent) {
   sendDebugMessage(JSON.stringify(lobbyEvent, undefined, 4), 2)
 
   if (lobbyEvent.lobbyEventType != LobbyEventType.NewPick || lobbyEvent.lobbyMemberId !== currentLobbyMemberValue.id) {
-    await getLobby(joinCode.value)
+    await getLobby()
     if (!lobby.value) return
   }
 
@@ -474,6 +481,12 @@ function getLobbyMemberInfo(name?: string): Partial<LobbyMember> | undefined {
   if (!lobbyMember) return
   const { messages, picks, ...lobbyMemberInfo } = lobbyMember
   return lobbyMemberInfo
+}
+
+async function getLobby() {
+  if (!joinCode.value) return
+  await getLobbyFromStore(joinCode.value)
+  sendDebugMessage(`Got lobby ${joinCode.value}.`, 2)
 }
 
 //watch
