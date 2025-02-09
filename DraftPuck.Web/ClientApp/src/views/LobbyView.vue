@@ -5,7 +5,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import * as SignalR from '@microsoft/signalr'
-import { compareAsc, addHours, isWithinInterval } from 'date-fns'
+import { compareAsc, addHours, isWithinInterval, differenceInMinutes, differenceInSeconds } from 'date-fns'
 import GameService from '@/services/GameService'
 import LobbyEventType from '@/enums/lobbyEventType'
 import { parseAllDates } from '@/helpers/dateHelpers'
@@ -111,6 +111,8 @@ const unseenMentionsCount = ref(0)
 const vChat = ref<InstanceType<typeof VChat> | null>(null)
 const shouldAnimateFeed = ref(false)
 const feedAnimationTimer = ref<number>()
+const checkActivityTimer = ref<number>()
+const lastActivity = ref<Date>(new Date())
 const isInitialLoad = ref(true)
 const notificationPermissionsGranted = ref(Notification.permission === 'granted')
 const notificationsSupported = ref('Notification' in window)
@@ -160,7 +162,7 @@ const messages = computed(() => {
   try {
     isLoading.value = true
     await getLobby(joinCode.value)
-    if (!lobby.value) throw 'Lobby not found'
+    if (!lobby.value) return isInvalidLobby.value = true
 
     if (!currentLobbyMember.value) {
       let name: string | null = ''
@@ -183,6 +185,8 @@ const messages = computed(() => {
     await initializeFirebase()
     await setGames()
 
+    initializeActivityChecker()
+
     setTimeout(() => {}, 100)
 
     mappedEvents.value = events.value.map(replaceTemplatedStrings)
@@ -200,6 +204,24 @@ const isGameStale = (game: Game) => isGameOver(game)
 
 function setView(view: View) {
   currentView.value = view
+}
+
+function initializeActivityChecker() {
+  window.onclick = () => lastActivity.value = new Date()
+  window.onmousemove = () => lastActivity.value = new Date()
+  window.onscroll = () => lastActivity.value = new Date()
+
+  if (checkActivityTimer.value) window.clearInterval(checkActivityTimer.value)
+
+  window.setInterval(checkActivity, 10000)
+}
+
+function checkActivity() {
+  const secondsOfInactivity = differenceInSeconds(lastActivity.value, new Date())
+  if (secondsOfInactivity > 300) {
+    sendDebugMessage(`Connection restarting after ${secondsOfInactivity} seconds of inactivity...`, 2)
+    initializeHubConnection()
+  }
 }
 
 async function updateUserFcmToken(token?: string) {
@@ -303,6 +325,8 @@ async function pollForUpdates(game: Game, attempts: number = 1) {
 }
 
 async function initializeHubConnection() {
+  if (hubConnection) await hubConnection.stop()
+
   hubConnection = new SignalR.HubConnectionBuilder()
     .withUrl(HUB_URL, SignalR.HttpTransportType.ServerSentEvents)
     .configureLogging(new SignalRLogger())

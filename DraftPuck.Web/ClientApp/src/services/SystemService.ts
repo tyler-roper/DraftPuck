@@ -11,10 +11,12 @@ class SystemService {
 
   public async reportError(error: any, info: string): Promise<void> {
     const errorObj = {
-      message: error.message ?? "",
-      stack: error.stack ?? ""
+      message: error.message ?? '',
+      stack: error.stack ?? ''
     }
-    return this._http.post('', { error: errorObj, info })
+    try {
+      this._http.post('', { error: errorObj, info })
+    } catch { }
   }
 }
 
