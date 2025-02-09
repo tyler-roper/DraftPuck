@@ -57,7 +57,10 @@ const pickedPlayers = computed(
 )
 const currentUser = computed(() => lobby.value!.members.find((m) => m.userId === currentUserId.value))
 const currentUserCanPick = computed(
-  () => gameIsPickable.value && isPickingStarted.value && (currentUserHasPicksForTeam(game.value.awayTeam) || currentUserHasPicksForTeam(game.value.homeTeam))
+  () =>
+    gameIsPickable.value &&
+    isPickingStarted.value &&
+    (currentUserHasPicksForTeam(game.value.awayTeam) || currentUserHasPicksForTeam(game.value.homeTeam))
 )
 const pickTimeFormatted = computed(() => format(pickTime.value, 'p'))
 
@@ -140,10 +143,13 @@ async function pick(playerId: number, teamId: number, lobbyMemberId?: string) {
   const existingPick = picks.find((p) => p.gameId === game.value.id && p.playerId === playerId)
 
   if (existingPick) {
-    const member = lobby.value.members.find((m) => m.picks.includes(existingPick))
-    let name = member ? `<strong>${member.name}</strong> has` : 'Someone has'
-    if (member?.userId === currentUserId.value) name = 'You have'
-    toast.error(`Oops! ${name} already picked this player.`)
+    const picker = lobby.value.members.find((lm) => lm.id === lobbyMemberId)
+    if (picker != undefined && picker.userId === currentUserId.value) {
+      const member = lobby.value.members.find((m) => m.picks.includes(existingPick))
+      let name = member ? `<strong>${member.name}</strong> has` : 'Someone has'
+      if (member?.userId === currentUserId.value) name = 'You have'
+      toast.error(`Oops! ${name} already picked this player.`)
+    }
     return
   }
 
