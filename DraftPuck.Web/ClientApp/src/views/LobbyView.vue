@@ -162,7 +162,7 @@ const messages = computed(() => {
   try {
     isLoading.value = true
     await getLobby(joinCode.value)
-    if (!lobby.value) return isInvalidLobby.value = true
+    if (!lobby.value) return (isInvalidLobby.value = true)
 
     if (!currentLobbyMember.value) {
       let name: string | null = ''
@@ -207,21 +207,27 @@ function setView(view: View) {
 }
 
 function initializeActivityChecker() {
-  window.onclick = () => lastActivity.value = new Date()
-  window.onmousemove = () => lastActivity.value = new Date()
-  window.onscroll = () => lastActivity.value = new Date()
+  window.onclick = () => (lastActivity.value = new Date())
+  window.onmousemove = () => (lastActivity.value = new Date())
+  window.onscroll = () => (lastActivity.value = new Date())
 
   if (checkActivityTimer.value) window.clearInterval(checkActivityTimer.value)
 
   window.setInterval(checkActivity, 10000)
 }
 
-function checkActivity() {
-  const secondsOfInactivity = differenceInSeconds(lastActivity.value, new Date())
-  if (secondsOfInactivity > 300) {
-    sendDebugMessage(`Connection restarting after ${secondsOfInactivity} seconds of inactivity...`, 2)
-    initializeHubConnection()
-  }
+async function checkActivity() {
+  const secondsOfInactivity = Math.abs(differenceInSeconds(new Date(), lastActivity.value))
+  if (secondsOfInactivity > 300) refreshConnection(secondsOfInactivity)
+}
+
+async function refreshConnection(secondsOfInactivity: number) {
+  sendDebugMessage(`Refreshing connection after ${secondsOfInactivity} seconds of inactivity...`, 2)
+  await initializeHubConnection()
+  await getLobby(joinCode.value)
+
+  if (lobby.value)
+    await getLobbyEvents(lobby.value.id)
 }
 
 async function updateUserFcmToken(token?: string) {
