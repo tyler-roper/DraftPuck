@@ -168,10 +168,10 @@ function isValidCreateLobby() {
     return false
   }
 
-  if (settings.value.gameIds.length === 0) {
-    toast.error('No games selected!')
-    return false
-  }
+  //if (settings.value.gameIds.length === 0) {
+  //  toast.error('No games selected!')
+  //  return false
+  //}
 
   if (settings.value.bots.some((b) => b.name.trim() === '')) {
     toast.error('Bots must have a name.')

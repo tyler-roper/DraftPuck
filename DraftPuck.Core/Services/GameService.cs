@@ -1,7 +1,5 @@
 ﻿using DraftPuck.Infrastructure.Database;
 using DraftPuck.Shared.Interfaces;
-using DraftPuck.Shared.Models;
-using FirebaseAdmin.Messaging;
 
 namespace DraftPuck.Core.Services;
 
