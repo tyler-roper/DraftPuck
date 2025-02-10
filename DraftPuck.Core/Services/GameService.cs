@@ -162,6 +162,8 @@ public class GameService : IGameService
 
     private async Task HandleDrinkAwardedNotifications(Lobby lobby, LobbyMember recipient)
     {
+        if (recipient.IsBot) return; //don't send notifications when bots are awarded a drink, since they give them out immediately
+
         var lobbyUserIds = lobby.LobbyMembers
            .Where(lm => !lm.IsBot)
            .Select(lm => lm.UserId);
