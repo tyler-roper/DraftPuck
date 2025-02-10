@@ -136,7 +136,7 @@ const isChatView = computed(() => currentView.value === 'chat')
 
 const is4Nations = computed(() => {
   const today = new Date()
-  const firstDay = new Date(2025, 1, 12)
+  const firstDay = new Date(2025, 1, 10)
   const lastDay = new Date(2025, 1, 20)
   const paddingHours = 12
   const start = addHours(firstDay, -1 * paddingHours)
