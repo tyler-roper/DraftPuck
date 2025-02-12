@@ -5,7 +5,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import * as SignalR from '@microsoft/signalr'
-import { compareAsc, addHours, isWithinInterval, differenceInMinutes, differenceInSeconds } from 'date-fns'
+import { compareAsc, addHours, isWithinInterval, differenceInSeconds } from 'date-fns'
 import GameService from '@/services/GameService'
 import LobbyEventType from '@/enums/lobbyEventType'
 import { parseAllDates } from '@/helpers/dateHelpers'
@@ -192,9 +192,6 @@ const messages = computed(() => {
     await setGames()
 
     initializeActivityChecker()
-
-    setTimeout(() => {}, 100)
-
     mappedEvents.value = events.value.map(replaceTemplatedStrings)
   } catch (e) {
     logError(e as string)
@@ -510,11 +507,11 @@ watch(
         </router-link>
 
         <a
-          class="d-flex pt-1 text-primary fw-bold text-decoration-none align-items-center"
+          class="d-flex ms-auto me-sm-5 me-3 pt-1 text-white fw-bold text-decoration-none align-items-center"
           role="button"
           @click="isNotificationSettingsVisible = true"
         >
-          <i class="fi fi-sr-settings d-block fs-5" style="line-height: 20px"></i>
+          <i class="fi fi-rr-settings d-block fs-3" style="line-height: 20px"></i>
           <span class="d-none d-sm-block text-uppercase ms-2" style="margin-top: -2px">Notifications</span>
         </a>
 
