@@ -28,20 +28,28 @@ public class GameService : IGameService
 
     public async Task CheckGamesAsync()
     {
-        var cachedGames = _gameCache.GetAllGames();
-        if (cachedGames.Count == 0 || (DateTime.UtcNow.Minute == 0 && DateTime.UtcNow.Second <= 10))
+        try
         {
-            await CheckScheduleAsync(cachedGames);
-        }
+            var cachedGames = _gameCache.GetAllGames();
+            if (cachedGames.Count == 0 || (DateTime.UtcNow.Minute == 0 && DateTime.UtcNow.Second <= 10))
+            {
+                await CheckScheduleAsync(cachedGames);
+            }
 
-        foreach (var game in cachedGames)
+            foreach (var game in cachedGames)
+            {
+                await UpdateGameAsync(game);
+            }
+
+            //check once per minute
+            if (DateTime.UtcNow.Second < 10)
+                await NotifyIfNewPicksAreAvailable();
+        } catch (Exception e)
         {
-            await UpdateGameAsync(game);
+            Console.WriteLine("Failed to check games: " + e.Message);
+            if (e.StackTrace != null)
+                Console.WriteLine(e.StackTrace);
         }
-
-        //check once per minute
-        if (DateTime.UtcNow.Second < 10)
-            await NotifyIfNewPicksAreAvailable();
     }
 
     public Game GetGameById(int id)
@@ -75,6 +83,14 @@ public class GameService : IGameService
         if (updatedGame.PlayerSummaries.Any() && !existingHomeRoster.Any() && !existingAwayRoster.Any())
         {
             var playersWithStats = await FetchPlayerStatsAsync(updatedGame.PlayerSummaries);
+
+            //Player Summaries Team ID represents current game (e.g. Team USA), but Player Stats Team ID represents NHL team,
+            //so we need to overwrite the Team ID for each player with their current game team
+            playersWithStats.ForEach(player =>
+            {
+                player.TeamId = updatedGame.PlayerSummaries.First(ps => ps.Id == player.Id).TeamId;
+            });
+
             existingHomeRoster = playersWithStats.Where(player => player.TeamId == cachedGame.HomeTeam.Id).ToList();
             existingAwayRoster = playersWithStats.Where(player => player.TeamId == cachedGame.AwayTeam.Id).ToList();
         }
