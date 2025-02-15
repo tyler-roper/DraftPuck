@@ -17,6 +17,7 @@ export interface Props {
   player: Player
   isForPicking?: boolean
   isSelected?: boolean
+  selectedPlayerCount: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -44,14 +45,14 @@ const isPlayerPickableByCurrentMember = computed(() => {
   const team = playerTeam.value
   const picksPerTeam = lobby.value!.picksPerTeam
   const picksAlreadyMadeForTeam = currentMember.value.picks.filter((pick) => pick.teamId === team.id).length
-  const hasPicksAvailableForTeam = picksAlreadyMadeForTeam < picksPerTeam
+  const hasPicksAvailableForTeam = (picksAlreadyMadeForTeam+props.selectedPlayerCount) < picksPerTeam
 
   return isGamePickable && !isPlayerPicked.value && hasPicksAvailableForTeam
 })
 
 const playerTeam = computed(() => (game.value.homeTeam.roster.some((p) => p.id === player.value.id) ? game.value.homeTeam : game.value.awayTeam))
 const currentMember = computed(() => lobby.value!.members.find((member) => member.userId === currentUserId.value)!)
-const isFaded = computed(() => (isForPicking.value && !isPlayerPickableByCurrentMember.value) || (game.value.gameState === GameState.Final))
+const isFaded = computed(() => (isForPicking.value && !isPlayerPickableByCurrentMember.value && !isSelected.value) || (game.value.gameState === GameState.Final))
 const isPlayerPicked = computed(() => lobby.value!.members.flatMap((member) => member.picks).some((pick) => pick.playerId === player.value.id))
 const isPlayerPickedByCurrentMember = computed(() => currentMember.value.picks.some((pick) => pick.playerId === player.value.id))
 const isPlayerPickedBySomeoneElse = computed(() => isPlayerPicked.value && !isPlayerPickedByCurrentMember.value)
@@ -90,7 +91,7 @@ const gameTime = computed(() => {
 const emit = defineEmits(['onSelected'])
 
 function trySelect() {
-  if (!isPlayerPickableByCurrentMember.value) return
+  if (!isPlayerPickableByCurrentMember.value && !isSelected.value) return
   emit('onSelected', player.value)
 }
 // #endregion

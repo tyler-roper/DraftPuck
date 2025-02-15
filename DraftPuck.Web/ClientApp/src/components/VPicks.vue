@@ -227,7 +227,7 @@ watch(lobby, async (newValue, oldValue) => {
     <template v-if="selectedGame === undefined">
       <div v-if="currentMember.picks.length > 0" class="p-2 fs-5 fw-bolder text-stone-0 bg-stone-900">MY PICKS</div>
       <div class="flex-grow-1" style="overflow-y: scroll">
-        <VPick v-for="{ game, player } in currentMemberPlayerAndGamePicks" :key="player.id" :player="player" :game="game" />
+        <VPick v-for="{ game, player } in currentMemberPlayerAndGamePicks" :key="player.id" :player="player" :game="game" :selected-player-count="0" />
 
         <template v-if="currentMember.picks.length === 0">
           <span class="text-center p-5 fs-1 text-stone-000 d-block text-uppercase"
@@ -316,6 +316,7 @@ watch(lobby, async (newValue, oldValue) => {
           :game="selectedGame"
           :is-for-picking="true"
           :is-selected="isPlayerSelected(player)"
+          :selected-player-count="selectedPlayers.length"
           @on-selected="togglePlayerSelection"
         />
       </div>
