@@ -9,4 +9,5 @@ interface Player {
     goals: number;
     assists: number;
     points: number;
+    headshot: string;
 }

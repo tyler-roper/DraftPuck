@@ -75,7 +75,7 @@ public class TeamProfile : Profile
     public TeamProfile()
     {
         CreateMap<NhlTeamSummary, Team>()
-            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name.Default))
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.CommonName.Default))
             .ForMember(dest => dest.Location, opt => opt.MapFrom(src => MapperHelpers.MapLocation(src.PlaceName)))
             .ForMember(dest => dest.Abbreviation, opt => opt.MapFrom(src => src.Abbrev))
             .Include<NhlTeamSummary, GameTeam>();

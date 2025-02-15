@@ -173,15 +173,15 @@ function isValidCreateLobby() {
     return false
   }
 
-  if (gameCount.value === 0) {
-   toast.error('No games remaining!')
-   return false
-  }
+  // if (gameCount.value === 0) {
+  //  toast.error('No games remaining!')
+  //  return false
+  // }
 
-  if (settings.value.gameIds.length === 0) {
-   toast.error('No games selected!')
-   return false
-  }
+  // if (settings.value.gameIds.length === 0) {
+  //  toast.error('No games selected!')
+  //  return false
+  // }
 
   if (settings.value.bots.some((b) => b.name.trim() === '')) {
     toast.error('Bots must have a name.')
@@ -329,7 +329,7 @@ watch(
             <VSwitch v-model="isPlayAllGames" id="chkIsPlayAllGames" name="chkIsPlayAllGames" size="lg" switch>Play All Games</VSwitch>
             <div class="pt-2" v-if="!isPlayAllGames">
               <table class="fs-6 w-100">
-                <tr v-for="game in gameSummaries" :idx="game.id" :class="{ 'opacity-75': !gameIsSelected(game) }">
+                <tr v-for="game in gameSummaries" :key="game.id" :class="{ 'opacity-75': !gameIsSelected(game) }">
                   <td class="pe-2">
                     <input class="form-check-input" v-model="settings.gameIds" :id="'chkGame' + game.id" type="checkbox" :value="game.id" checked />
                   </td>

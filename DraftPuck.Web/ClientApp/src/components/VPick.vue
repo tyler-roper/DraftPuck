@@ -1,0 +1,219 @@
+<script setup lang="ts">
+// #region imports
+import { addMinutes, format } from 'date-fns'
+import { computed } from 'vue'
+import TeamColors from '@/models/teamColorLookup'
+import { getOrdinal } from '@/helpers/gameHelpers'
+import GameState from '@/enums/gameState'
+import PeriodType from '@/enums/periodType'
+import PlayType from '@/enums/playType'
+import { useLobbyStore } from '@/stores/lobby'
+import { storeToRefs } from 'pinia'
+// #endregion
+
+// #region props
+export interface Props {
+  game: Game
+  player: Player
+  isForPicking?: boolean
+  isSelected?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  isForPicking: false,
+  isSelected: false
+})
+
+//aliasing props
+const game = computed(() => props.game)
+const player = computed(() => props.player)
+const isForPicking = computed(() => props.isForPicking)
+const isSelected = computed(() => props.isSelected)
+// #endregion
+
+// #region refs
+const store = useLobbyStore()
+const { lobby, currentUserId } = storeToRefs(store)
+// #endregion
+
+// #region computed
+const isPlayerPickableByCurrentMember = computed(() => {
+  const isGameStartingWithin30Minutes = game.value.gameState === GameState.Upcoming && game.value.dateTime <= addMinutes(new Date(), 30)
+  const isGamePickable = game.value.gameState === GameState.Live || isGameStartingWithin30Minutes
+
+  const team = playerTeam.value
+  const picksPerTeam = lobby.value!.picksPerTeam
+  const picksAlreadyMadeForTeam = currentMember.value.picks.filter((pick) => pick.teamId === team.id).length
+  const hasPicksAvailableForTeam = picksAlreadyMadeForTeam < picksPerTeam
+
+  return isGamePickable && !isPlayerPicked.value && hasPicksAvailableForTeam
+})
+
+const playerTeam = computed(() => (game.value.homeTeam.roster.some((p) => p.id === player.value.id) ? game.value.homeTeam : game.value.awayTeam))
+const currentMember = computed(() => lobby.value!.members.find((member) => member.userId === currentUserId.value)!)
+const isFaded = computed(() => (isForPicking.value && !isPlayerPickableByCurrentMember.value) || (game.value.gameState === GameState.Final))
+const isPlayerPicked = computed(() => lobby.value!.members.flatMap((member) => member.picks).some((pick) => pick.playerId === player.value.id))
+const isPlayerPickedByCurrentMember = computed(() => currentMember.value.picks.some((pick) => pick.playerId === player.value.id))
+const isPlayerPickedBySomeoneElse = computed(() => isPlayerPicked.value && !isPlayerPickedByCurrentMember.value)
+const pickedByMember = computed(() => lobby.value!.members.find((member) => member.picks.some((pick) => pick.playerId === player.value.id)))
+
+const goalString = computed(() => {
+  const goalCount = game.value.plays.reduce((count, play) => {
+    if (play.type === PlayType.Goal && play.primaryPlayerId === player.value.id) count += 1
+    return count
+  }, 0)
+  return `${goalCount} ${goalCount === 1 ? 'Goal' : 'Goals'}`
+})
+
+const gameTime = computed(() => {
+  let time = format(game.value.dateTime, 'p')
+
+  if (game.value.gameState === GameState.Upcoming) return time
+
+  const ordinal = getOrdinal(game.value.period, game.value.periodType)
+
+  if (game.value.gameState === GameState.Live) {
+    if (game.value.periodType === PeriodType.Shootout) time = 'SO'
+    else {
+      time = `${game.value.timeRemainingInPeriod} - ${ordinal}`
+    }
+  } else if (game.value.gameState === GameState.Final) {
+    time = 'Final'
+    if (game.value.period > 3) time += ` (${ordinal})`
+  }
+
+  return time
+})
+// #endregion
+
+// #region emitters
+const emit = defineEmits(['onSelected'])
+
+function trySelect() {
+  if (!isPlayerPickableByCurrentMember.value) return
+  emit('onSelected', player.value)
+}
+// #endregion
+</script>
+
+<template>
+  <div class="bg-stone-100" @click="trySelect">
+    <div
+      class="player-container"
+      :class="{ 'o-75': isFaded, selected: isSelected }"
+      :style="{ 'border-left-color': isPlayerPickableByCurrentMember || isPlayerPickedByCurrentMember || game.gameState === GameState.Final ? TeamColors[playerTeam.id] : '' }"
+    >
+      <div>
+        <img :src="player.headshot" class="headshot" />
+      </div>
+
+      <div class="player-info flex-grow-1 d-flex">
+        <div class="player-and-team">
+          <div class="name fs-6">
+            <span class="position-badge fs-8 me-1">{{ player.position }}</span>
+            <span
+              class="d-block"
+              :class="{ 'text-stone-600': isPlayerPickedBySomeoneElse, 'text-blue': isPlayerPickedByCurrentMember && isForPicking }"
+            >
+              {{ player.firstName }} {{ player.lastName }}
+            </span>
+          </div>
+          <div class="team">
+            <span class="text-stone-500">
+              <span v-if="!isForPicking || game.gameState === GameState.Final">{{ playerTeam.location }} {{ playerTeam.name }}</span>
+
+              <span v-else>
+                <template v-if="isPlayerPicked">
+                  <span v-if="isPlayerPickedByCurrentMember" class="text-blue text-uppercase fw-bold">My Pick</span>
+                  <span v-else>
+                    Picked by <span class="text-danger">{{ pickedByMember!.name }}</span>
+                  </span>
+                </template>
+
+                <template v-else-if="isSelected">
+                  <span class="text-stone-0">Selected, Not Locked In</span>
+                </template>
+
+                <template v-else>
+                  <span class="text-success">Available</span>
+                </template>
+              </span>
+            </span>
+          </div>
+        </div>
+
+        <div class="ms-auto text-stone-900" :class="{ 'text-stone-0': isSelected }">
+          <span class="fs-6 fw-bold d-block text-end">{{ goalString }}</span>
+          <span class="fs-7" v-if="isForPicking">
+            <span class="text-stone-400 me-1" :class="{ 'text-stone-300': isSelected }">Season:</span>
+            <span>{{ player.goals }} Goals</span>
+          </span>
+          <div class="text-end fs-7" v-else>
+            <span>{{ gameTime }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped lang="scss">
+@import '@/assets/scss/custom-colors.scss';
+
+.player-container {
+  width: 100%;
+  display: flex;
+  border-bottom: 1px solid map-get($custom-colors, 'stone-200');
+  align-items: center;
+  border-left: 10px solid map-get($custom-colors, 'stone-600');
+}
+
+.player-container.selected {
+  background-color: map-get($custom-colors, 'blue');
+  border-left: 10px solid map-get($custom-colors, 'blue');
+  position: relative;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 1);
+  border-bottom: 1px solid transparent;
+}
+
+.player-container > * {
+  padding: 0.5rem;
+}
+
+.player-container .position-badge {
+  color: map-get($custom-colors, 'stone-0');
+  background: map-get($custom-colors, 'stone-400');
+  display: block;
+  padding: 1px 5px 0px;
+  border-radius: 5px;
+}
+
+.player-container .name {
+  color: map-get($custom-colors, 'stone-900');
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+}
+
+.player-container.selected .name {
+  color: map-get($custom-colors, 'stone-0');
+}
+
+img.headshot {
+  display: block;
+  width: 50px;
+  height: 50px;
+  background: map-get($custom-colors, 'stone-200');
+  border-radius: 100%;
+}
+
+img.team-logo {
+  width: 25px;
+  height: 25px;
+}
+
+.team {
+  display: flex;
+  align-items: center;
+}
+</style>

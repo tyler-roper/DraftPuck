@@ -12,4 +12,5 @@ public class Player
     public int Goals { get; set; }
     public int Assists { get; set; }
     public int Points { get; set; }
+    public string Headshot { get; set; } = null!;
 }
