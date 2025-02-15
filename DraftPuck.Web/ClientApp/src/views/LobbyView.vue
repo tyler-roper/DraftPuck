@@ -16,6 +16,7 @@ import VInstructionsModal from '@/components/VInstructionsModal.vue'
 import VGameScoreboards from '@/components/VGameScoreboards.vue'
 import VLobbyOverview from '@/components/VLobbyOverview.vue'
 import VFeed from '@/components/VFeed.vue'
+import VPicks from '@/components/VPicks.vue'
 import MessageViewModel from '@/models/messageViewModel'
 import VChat from '@/components/VChat.vue'
 import VNotificationSettingsModal from '@/components/VNotificationSettingsModal.vue'
@@ -41,7 +42,7 @@ class SignalRLogger implements ILogger {
 }
 
 //const
-type View = 'feed' | 'game' | 'lobby' | 'chat'
+type View = 'feed' | 'game' | 'lobby' | 'chat' | 'picks'
 const LOCAL_STORAGE_KEY = 'latestLobby'
 const ACTIVE_GAME_POLLING_INTERVAL_MS = 10000
 const INACTIVE_GAME_POLLING_INTERVAL_MS = 60000
@@ -109,7 +110,7 @@ const isInvalidLobby = ref(false)
 const isLoading = ref(false)
 const mappedEvents = ref<LobbyEvent[]>([])
 const timers = ref<Number[]>([])
-const currentView = ref<View>('lobby')
+const currentView = ref<View>('picks')
 const pendingDrinks = ref<LobbyEvent[]>([])
 const currentDrink = ref<LobbyEvent>()
 const unseenMessageCount = ref(0)
@@ -131,6 +132,7 @@ const currentLobbyMember = computed(() => lobby.value?.members.find((m) => m.use
 const loadingMessage = computed(() => LoadingMessages.random())
 const isLobbyView = computed(() => currentView.value === 'lobby')
 const isFeedView = computed(() => currentView.value === 'feed')
+const isPicksView = computed(() => currentView.value === 'picks')
 const isGameView = computed(() => currentView.value === 'game')
 const isChatView = computed(() => currentView.value === 'chat')
 
@@ -236,7 +238,7 @@ async function updateUserFcmToken(token?: string) {
 }
 
 async function initializeFirebase() {
-  if (!notificationsSupported || !notificationPermissionsGranted.value) {
+  if (!notificationsSupported.value || !notificationPermissionsGranted.value) {
     await updateUserFcmToken()
     return
   }
@@ -527,11 +529,12 @@ watch(
 
           <div
             class="feed flex-shrink-0 d-flex flex-column"
-            :class="{ 'hide-mobile': !isFeedView && !isLobbyView && !isChatView }"
+            :class="{ 'hide-mobile': !isFeedView && !isLobbyView && !isChatView && !isPicksView }"
             style="width: 400px"
           >
             <VLobbyOverview ref="overview" class="lobby-overview v-lobby-overview flex-grow-1" :class="{ 'hide-mobile': !isLobbyView }" />
             <VFeed class="flex-grow-1 v-feed" :items="feedItems" :class="{ 'hide-mobile': !isFeedView, animate: shouldAnimateFeed }" />
+            <VPicks class="flex-grow-1 v-picks" :games="games" :class="{ 'hide-mobile': !isPicksView }" />
             <VChat
               ref="vChat"
               :messages="messages"
@@ -562,6 +565,10 @@ watch(
         <a role="button" class="text-center p-2 text-white" :class="{ active: isFeedView }" @click="setView('feed')">
           <i class="fi fi-rr-list"></i><br />
           <span>FEED</span>
+        </a>
+        <a role="button" class="text-center p-2 text-white" :class="{ active: isPicksView }" @click="setView('picks')">
+          <i class="fi fi-rs-hockey-mask"></i><br />
+          <span>PICKS</span>
         </a>
         <a role="button" class="text-center p-2 text-white" :class="{ active: isGameView }" @click="setView('game')">
           <i class="fi fi-rr-hockey-puck"></i><br />

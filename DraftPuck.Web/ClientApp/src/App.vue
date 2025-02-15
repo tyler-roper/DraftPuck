@@ -9,11 +9,11 @@ const { setCurrentUserId } = useLobbyStore()
 const { initUser } = useUserStore()
 
 ;(async function onCreated() {
-  window.addEventListener('unhandledrejection', function(event) {
-    try {
-      SystemService.reportError(event.promise, event.reason)
-    } catch {}
- });
+  // window.addEventListener('unhandledrejection', function (event) {
+  //   try {
+  //     SystemService.reportError(event.promise, event.reason)
+  //   } catch {}
+  // })
 
   enableRefreshOniOS()
   const user = await initUser()
@@ -32,8 +32,6 @@ function enableRefreshOniOS() {
     })
   }
 }
-
-
 </script>
 
 <template>
