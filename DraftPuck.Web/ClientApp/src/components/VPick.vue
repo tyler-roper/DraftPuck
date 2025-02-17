@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// #region imports
+//#region imports
 import { addMinutes, format } from 'date-fns'
 import { computed } from 'vue'
 import TeamColors from '@/models/teamColorLookup'
@@ -9,9 +9,9 @@ import PeriodType from '@/enums/periodType'
 import PlayType from '@/enums/playType'
 import { useLobbyStore } from '@/stores/lobby'
 import { storeToRefs } from 'pinia'
-// #endregion
+//#endregion
 
-// #region props
+//#region props
 export interface Props {
   game: Game
   player: Player
@@ -30,14 +30,14 @@ const game = computed(() => props.game)
 const player = computed(() => props.player)
 const isForPicking = computed(() => props.isForPicking)
 const isSelected = computed(() => props.isSelected)
-// #endregion
+//#endregion
 
-// #region refs
+//#region refs
 const store = useLobbyStore()
 const { lobby, currentUserId, currentSystemTime } = storeToRefs(store)
-// #endregion
+//#endregion
 
-// #region computed
+//#region computed
 const isPlayerPickableByCurrentMember = computed(() => {
   const isGameStartingWithin30Minutes = game.value.gameState === GameState.Upcoming && game.value.dateTime <= addMinutes(currentSystemTime.value, 30)
   const isGamePickable = game.value.gameState === GameState.Live || isGameStartingWithin30Minutes
@@ -86,16 +86,16 @@ const gameTime = computed(() => {
 
   return time
 })
-// #endregion
+//#endregion
 
-// #region emitters
+//#region emitters
 const emit = defineEmits(['onSelected'])
 
 function trySelect() {
   if (!isPlayerPickableByCurrentMember.value && !isSelected.value) return
   emit('onSelected', player.value)
 }
-// #endregion
+//#endregion
 </script>
 
 <template>

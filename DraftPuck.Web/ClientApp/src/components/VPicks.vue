@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// #region imports
+//#region imports
 import { useLobbyStore } from '@/stores/lobby'
 import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
@@ -10,9 +10,9 @@ import { useToast } from 'vue-toastification'
 import PickRequest from '@/models/pickRequest'
 import VScoresRibbon from './VScoresRibbon.vue'
 import GameState from '@/enums/gameState'
-// #endregion
+//#endregion
 
-// #region props
+//#region props
 const props = defineProps<{
   games: Game[]
 }>()
@@ -26,9 +26,9 @@ const games = computed(() =>
     return compareAsc(a.dateTime, b.dateTime)
   })
 )
-// #endregion
+//#endregion
 
-// #region refs
+//#region refs
 const toast = useToast()
 const store = useLobbyStore()
 
@@ -41,9 +41,9 @@ const { lobby, currentUserId, currentSystemTime } = storeToRefs(store)
 const { pickPlayer, removePick } = store
 const selectedPlayers = ref<Player[]>([])
 const justLockedIn = ref(false)
-// #endregion
+//#endregion
 
-// #region computed
+//#region computed
 const currentMember = computed(() => lobby.value!.members.find((m) => m.userId === currentUserId.value)!)
 
 const currentMemberPlayerAndGamePicks = computed(() =>
@@ -85,16 +85,16 @@ const selectedTeamRosterSorted = computed(() => {
     return Number(pickedPlayerIds.includes(b.id)) - Number(pickedPlayerIds.includes(a.id))
   })
 })
-// #endregion
+//#endregion
 
-// #region hooks
+//#region hooks
 ;(async function onCreated() {
   getGameCountdowns()
   countdownTimer.value = window.setInterval(getGameCountdowns, 1000)
 })()
-// #endregion
+//#endregion
 
-// #region methods
+//#region methods
 function getGameCountdowns() {
   gameCountdowns.value = games.value.reduce<Record<number, { asString: string; asMilliseconds: number }>>((acc, game) => {
     const pickTime = addMinutes(game.dateTime, -30)
@@ -182,9 +182,9 @@ function checkIfSelectedPlayerWasPicked() {
 
   if (oldSelectedPlayersCount > newSelectedPlayersCount) toast.error('Sorry, someone picked one of your selections!')
 }
-// #endregion
+//#endregion
 
-// #region helpers
+//#region helpers
 function isPlayerSelected(player: Player) {
   return selectedPlayers.value.includes(player)
 }
@@ -220,9 +220,9 @@ function getLightLogo(team: GameTeam) {
   if (team.abbreviation !== 'TBL') return getLogo(team)
   return `/img/logos/${team.abbreviation}_LIGHT.png`
 }
-// #endregion
+//#endregion
 
-// #region watchers
+//#region watchers
 watch(lobby, async (newValue, oldValue) => {
   if (!newValue || !oldValue) return
   const oldPickCount = oldValue.members.reduce((count, member) => count + member.picks.length, 0)
@@ -230,7 +230,7 @@ watch(lobby, async (newValue, oldValue) => {
 
   if (oldPickCount !== newPickCount) checkIfSelectedPlayerWasPicked()
 })
-// #endregion
+//#endregion
 </script>
 
 <template>

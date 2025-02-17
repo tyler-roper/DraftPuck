@@ -1,22 +1,22 @@
 <script setup lang="ts">
-// #region imports
+//#region imports
 import VScore from '@/components/VScore.vue'
-// #endregion
+//#endregion
 
-// #region props
+//#region props
 defineProps<{
   games: Game[],
   selectedGame?: Game
 }>()
-// #endregion
+//#endregion
 
-// #region emitters
+//#region emitters
 const emit = defineEmits(['onScoreClicked'])
 
 function onScoreClicked(game: Game) {
   emit('onScoreClicked', game)
 }
-// #endregion
+//#endregion
 </script>
 
 <template>
