@@ -37,9 +37,10 @@ const selectedTeam = ref<GameTeam>()
 const teamRosterContainer = ref<HTMLDivElement | null>(null)
 const gameCountdowns = ref<Record<number, { asString: string; asMilliseconds: number }>>()
 const countdownTimer = ref<number>()
-const { lobby, currentUserId } = storeToRefs(store)
+const { lobby, currentUserId, currentSystemTime } = storeToRefs(store)
 const { pickPlayer, removePick } = store
 const selectedPlayers = ref<Player[]>([])
+const justLockedIn = ref(false)
 // #endregion
 
 // #region computed
@@ -70,10 +71,19 @@ const isSelectedGameOver = computed(() => selectedGame.value!.gameState === Game
 
 const gamePickableStatusForCurrentMember = computed(() => {
   if (isSelectedGameLocked.value) return GamePickableStatus.Locked
-  if (!isSelectedGameStarted.value && selectedGame.value!.dateTime > addMinutes(new Date(), 30)) return GamePickableStatus.Upcoming
+  if (!isSelectedGameStarted.value && selectedGame.value!.dateTime > addMinutes(currentSystemTime.value, 30)) return GamePickableStatus.Upcoming
   if (isSelectedGameOver.value) return GamePickableStatus.GameComplete
 
   return currentUserHasPicksForGame(selectedGame.value!) ? GamePickableStatus.PicksAvailable : GamePickableStatus.PicksMade
+})
+
+const selectedTeamRosterSorted = computed(() => {
+  if (selectedTeam.value === undefined) return []
+
+  return [...selectedTeam.value!.roster].sort((a, b) => {
+    const pickedPlayerIds = currentMember.value.picks.map(({ playerId }) => playerId)
+    return Number(pickedPlayerIds.includes(b.id)) - Number(pickedPlayerIds.includes(a.id))
+  })
 })
 // #endregion
 
@@ -88,13 +98,13 @@ const gamePickableStatusForCurrentMember = computed(() => {
 function getGameCountdowns() {
   gameCountdowns.value = games.value.reduce<Record<number, { asString: string; asMilliseconds: number }>>((acc, game) => {
     const pickTime = addMinutes(game.dateTime, -30)
-    const duration = intervalToDuration({ start: pickTime, end: new Date() })
+    const duration = intervalToDuration({ start: pickTime, end: currentSystemTime.value })
     const lessThanOneMinute = duration.hours === 0 && duration.minutes == 0
     acc[game.id] = {
       asString: lessThanOneMinute
         ? formatDuration(duration, { format: ['seconds'], zero: true })
         : formatDuration(duration, { format: ['hours', 'minutes'] }),
-      asMilliseconds: differenceInMilliseconds(pickTime, new Date())
+      asMilliseconds: differenceInMilliseconds(pickTime, currentSystemTime.value)
     }
 
     return acc
@@ -155,6 +165,11 @@ async function lockIn() {
   })
 
   selectedPlayers.value = []
+
+  const picksLeftForThisTeam = getPicksRemainingByMemberAndTeam(currentMember.value, selectedTeam.value!)
+  if (picksLeftForThisTeam === 0) justLockedIn.value = true
+
+  window.setTimeout(() => (justLockedIn.value = false), 5000)
 }
 
 function checkIfSelectedPlayerWasPicked() {
@@ -175,7 +190,7 @@ function isPlayerSelected(player: Player) {
 }
 
 function currentUserHasPicksForGame(game: Game) {
-  const isGameStartingWithin30Minutes = game.gameState === GameState.Upcoming && addMinutes(game.dateTime, -30) < new Date()
+  const isGameStartingWithin30Minutes = game.gameState === GameState.Upcoming && addMinutes(game.dateTime, -30) < currentSystemTime.value
   const isGamePickable = game.gameState === GameState.Live || isGameStartingWithin30Minutes
 
   const picksPerTeam = lobby.value!.picksPerTeam
@@ -220,14 +235,20 @@ watch(lobby, async (newValue, oldValue) => {
 
 <template>
   <!-- SCORES RIBBON -->
-  <div style="overflow-y: scroll" class="d-flex flex-column">
+  <div style="overflow: hidden" class="d-flex flex-column">
     <VScoresRibbon :games="games" :selected-game="selectedGame" @on-score-clicked="selectGame" />
 
     <!-- MY PICKS -->
     <template v-if="selectedGame === undefined">
       <div v-if="currentMember.picks.length > 0" class="p-2 fs-5 fw-bolder text-stone-0 bg-stone-900">MY PICKS</div>
       <div class="flex-grow-1" style="overflow-y: scroll">
-        <VPick v-for="{ game, player } in currentMemberPlayerAndGamePicks" :key="player.id" :player="player" :game="game" :selected-player-count="0" />
+        <VPick
+          v-for="{ game, player } in currentMemberPlayerAndGamePicks"
+          :key="player.id"
+          :player="player"
+          :game="game"
+          :selected-player-count="0"
+        />
 
         <template v-if="currentMember.picks.length === 0">
           <span class="text-center p-5 fs-1 text-stone-000 d-block text-uppercase"
@@ -235,10 +256,7 @@ watch(lobby, async (newValue, oldValue) => {
           >
           <div class="text-center p-4" v-if="firstPickableGame !== undefined && currentUserHasPicksForGame(firstPickableGame)">
             <span class="fs-4 text-stone-0 fw-bold d-block mb-2">What are you waiting for?</span>
-            <button
-              @click="selectGame(firstPickableGame)"
-              class="py-2 px-4 gradient-button fw-bold fs-1 h-100 text-uppercase emphasized"
-            >
+            <button @click="selectGame(firstPickableGame)" class="py-2 px-4 gradient-button fw-bold fs-1 h-100 text-uppercase emphasized">
               Make Picks Now
             </button>
           </div>
@@ -310,7 +328,7 @@ watch(lobby, async (newValue, oldValue) => {
       <!-- ROSTER -->
       <div v-if="selectedTeam?.roster.length" ref="teamRosterContainer" class="flex-grow-1" style="overflow-y: scroll">
         <VPick
-          v-for="player in selectedTeam!.roster"
+          v-for="player in selectedTeamRosterSorted"
           :key="player.id"
           :player="player"
           :game="selectedGame"
@@ -321,7 +339,11 @@ watch(lobby, async (newValue, oldValue) => {
         />
       </div>
 
-      <div v-else class=" bg-stone-900 flex-grow-1 d-flex align-items-center justify-content-center text-center p-5 fw-bold text-stone-700" style="font-size: 40px">
+      <div
+        v-else
+        class="bg-stone-900 flex-grow-1 d-flex align-items-center justify-content-center text-center p-5 fw-bold text-stone-700"
+        style="font-size: 40px"
+      >
         <span class="d-block">
           <i class="fi fi-sr-user-time" style="font-size: 100px"></i>
           <span class="d-block mt-n4">No Rosters Yet</span>
@@ -329,7 +351,12 @@ watch(lobby, async (newValue, oldValue) => {
       </div>
 
       <!-- LOCK IN -->
-      <div class="lock-in shadow" v-for="(picksRemaining, idx) in [getPicksRemainingByMemberAndTeam(currentMember, selectedTeam!)]" :key="idx">
+      <div
+        class="lock-in shadow"
+        :class="{ 'just-locked-in': justLockedIn }"
+        v-for="(picksRemaining, idx) in [getPicksRemainingByMemberAndTeam(currentMember, selectedTeam!)]"
+        :key="idx"
+      >
         <template v-if="gamePickableStatusForCurrentMember === GamePickableStatus.Upcoming">
           <div class="text-center fs-4 flex-grow-1 py-2 text-uppercase text-stone-300 d-flex justify-content-center align-items-center">
             <span class="text-stone-600">Picks in</span>
@@ -395,6 +422,10 @@ watch(lobby, async (newValue, oldValue) => {
   justify-content: space-between;
 }
 
+.lock-in.just-locked-in {
+  animation: puff-in-center 0.7s cubic-bezier(1, 0, 0, 1) both;
+}
+
 .lock-in button,
 .gradient-button {
   transition: 0.3s;
@@ -423,6 +454,19 @@ watch(lobby, async (newValue, oldValue) => {
   100% {
     box-shadow: 0 0 3px map-get($custom-colors, 'amber-300');
     transform: translateY(0);
+  }
+}
+
+@keyframes puff-in-center {
+  0% {
+    transform: scale(5) translateY(-100px);
+    filter: blur(4px);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    filter: blur(0px);
+    opacity: 1;
   }
 }
 </style>

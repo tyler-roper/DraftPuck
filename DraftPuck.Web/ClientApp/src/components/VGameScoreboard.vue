@@ -26,7 +26,7 @@ const game = computed(() => props.game)
 const toast = useToast()
 const store = useLobbyStore()
 
-const { lobby, currentUserId, isLobbyAdmin } = storeToRefs(store)
+const { lobby, currentUserId, isLobbyAdmin, currentSystemTime } = storeToRefs(store)
 const { pickPlayer, removePick } = store
 
 const isPickingStarted = ref(false)
@@ -116,10 +116,10 @@ function makeBotAutoPicksIfAvailable() {
 }
 
 function updateTimeUntilPicking() {
-  isPickingStarted.value = pickTime.value <= new Date()
+  isPickingStarted.value = pickTime.value <= currentSystemTime.value
   if (isPickingStarted.value) return window.clearInterval(pickingStartingTimer.value)
 
-  const duration = intervalToDuration({ start: pickTime.value, end: new Date() })
+  const duration = intervalToDuration({ start: pickTime.value, end: currentSystemTime.value })
   const lessThanOneMinute = duration.hours === 0 && duration.minutes == 0
   timeUntilPicking.value = lessThanOneMinute
     ? formatDuration(duration, { format: ['seconds'], zero: true })

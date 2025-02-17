@@ -1,36 +1,20 @@
-﻿using DraftPuck.Infrastructure.Database;
+﻿using DraftPuck.Infrastructure.Application;
+using DraftPuck.Infrastructure.Database;
 using DraftPuck.Shared.Interfaces;
+using Microsoft.Extensions.Options;
 
 namespace DraftPuck.Core.Services;
 
-public class GameService : IGameService
+public class GameService(INhlService nhlApi, IGameCache gameCache, DraftPuckContext dbContext, ILobbyService lobbyService, ILobbyEventService lobbyEventService, IMapper mapper, IFirebaseService firebaseService, IOptions<ApplicationOptions> appConfig) : IGameService
 {
-    private readonly INhlService _nhlService;
-    private readonly IGameCache _gameCache;
-    private readonly DraftPuckContext _dbContext;
-    private readonly ILobbyService _lobbyService;
-    private readonly ILobbyEventService _lobbyEventService;
-    private readonly IMapper _mapper;
-    private readonly IFirebaseService _firebaseService;
-    private static readonly Random _random = new();
-
-
-    public GameService(INhlService nhlApi, IGameCache gameCache, DraftPuckContext dbContext, ILobbyService lobbyService, ILobbyEventService lobbyEventService, IMapper mapper, IFirebaseService firebaseService)
-    {
-        _nhlService = nhlApi;
-        _gameCache = gameCache;
-        _dbContext = dbContext;
-        _lobbyService = lobbyService;
-        _lobbyEventService = lobbyEventService;
-        _mapper = mapper;
-        _firebaseService = firebaseService;
-    }
+    private static readonly Random random = new();
+    private readonly ApplicationOptions _appConfig = appConfig.Value;
 
     public async Task CheckGamesAsync()
     {
         try
         {
-            var cachedGames = _gameCache.GetAllGames();
+            var cachedGames = gameCache.GetAllGames();
             if (cachedGames.Count == 0 || (DateTime.UtcNow.Minute == 0 && DateTime.UtcNow.Second <= 10))
             {
                 await CheckScheduleAsync(cachedGames);
@@ -44,7 +28,8 @@ public class GameService : IGameService
             //check once per minute
             if (DateTime.UtcNow.Second < 10)
                 await NotifyIfNewPicksAreAvailable();
-        } catch (Exception e)
+        }
+        catch (Exception e)
         {
             Console.WriteLine("Failed to check games: " + e.Message);
             if (e.StackTrace != null)
@@ -54,18 +39,18 @@ public class GameService : IGameService
 
     public Game GetGameById(int id)
     {
-        return _gameCache.GetGameById(id)!;
+        return gameCache.GetGameById(id)!;
     }
 
     public List<Game> GetAllGames()
     {
-        return _gameCache.GetAllGames();
+        return gameCache.GetAllGames();
     }
 
     public List<GameSummary> GetAllGameSummaries()
     {
-        var games = _gameCache.GetAllGames();
-        return _mapper.Map<List<GameSummary>>(games);
+        var games = gameCache.GetAllGames();
+        return mapper.Map<List<GameSummary>>(games);
     }
 
     private async Task UpdateGameAsync(Game cachedGame)
@@ -78,7 +63,7 @@ public class GameService : IGameService
         var existingHomeRoster = cachedGame.HomeTeam.Roster;
         var existingAwayRoster = cachedGame.AwayTeam.Roster;
 
-        var updatedGame = await _nhlService.GetGameAsync(cachedGame.Id);
+        var updatedGame = await nhlApi.GetGameAsync(cachedGame.Id);
 
         if (updatedGame.PlayerSummaries.Any() && !existingHomeRoster.Any() && !existingAwayRoster.Any())
         {
@@ -100,12 +85,14 @@ public class GameService : IGameService
         cachedGame.HomeTeam.Roster = existingHomeRoster;
         cachedGame.AwayTeam.Roster = existingAwayRoster;
 
-        SetPlayDateTimes(cachedGame, updatedGame);
+        SetPlayDateTimes(updatedGame, cachedGame);
+
+        HandleTestMode(updatedGame);
 
         var goalsBeforeUpdate = GetGoalSummaries(cachedGame);
         var goalsAfterUpdate = GetGoalSummaries(updatedGame);
 
-        _gameCache.UpdateGame(updatedGame);
+        gameCache.UpdateGame(updatedGame);
 
         await HandleScoringUpdatesAsync(goalsBeforeUpdate, goalsAfterUpdate, updatedGame);
     }
@@ -134,7 +121,7 @@ public class GameService : IGameService
             return;
         }
 
-        var picksToReward = await _dbContext
+        var picksToReward = await dbContext
             .LobbyMemberPicks
             .Include(pick => pick.Drinks)
             .Include(pick => pick.LobbyMember)
@@ -154,21 +141,21 @@ public class GameService : IGameService
                 EventId = play.Id
             };
 
-            _dbContext.Drinks.Add(drink);
-            await _dbContext.SaveChangesAsync();
+            dbContext.Drinks.Add(drink);
+            await dbContext.SaveChangesAsync();
 
-            await _lobbyEventService.SendDrinkAwardedEvent(pickToReward.LobbyMember.Lobby, pickToReward.LobbyMember, gameId, play.Id, scorerId.Value, play.PrimaryTeamId!.Value);
+            await lobbyEventService.SendDrinkAwardedEvent(pickToReward.LobbyMember.Lobby, pickToReward.LobbyMember, gameId, play.Id, scorerId.Value, play.PrimaryTeamId!.Value);
             await HandleDrinkAwardedNotifications(pickToReward.LobbyMember.Lobby, pickToReward.LobbyMember);
 
             if (pickToReward.LobbyMember.IsBot)
             {
                 var members = pickToReward.LobbyMember.Lobby.LobbyMembers.Where(member => !member.IsBot && !member.IsRemoved).ToList();
-                var randomIndex = _random.Next(members.Count);
+                var randomIndex = random.Next(members.Count);
                 var recipient = members[randomIndex];
 
                 if (recipient != null)
                 {
-                    await _lobbyService.AssignDrink(pickToReward.LobbyMember.UserId, recipient.Lobby.JoinCode, drink.Id, recipient.Id);
+                    await lobbyService.AssignDrink(pickToReward.LobbyMember.UserId, recipient.Lobby.JoinCode, drink.Id, recipient.Id);
                 }
             }
         }
@@ -182,7 +169,7 @@ public class GameService : IGameService
            .Where(lm => !lm.IsBot)
            .Select(lm => lm.UserId);
 
-        var lobbyUsers = _dbContext.Users.Where(u => lobbyUserIds.Contains(u.Id)).ToList();
+        var lobbyUsers = dbContext.Users.Where(u => lobbyUserIds.Contains(u.Id)).ToList();
         await Parallel.ForEachAsync(lobbyUsers, async (user, _) =>
         {
             if (user.FcmRegistrationToken == null || user.DrinkAwardedNotificationPreference == NotificationPreference.None) return; //notifications disabled
@@ -195,12 +182,12 @@ public class GameService : IGameService
             if (!isRecipient && user.DrinkAwardedNotificationPreference == NotificationPreference.All)
             {
                 var data = new Dictionary<string, string> { { "lobbyEventType", LobbyEventType.DrinkAwarded.ToString() }, { "isRelevant", "false" } };
-                await _firebaseService.SendPushNotification(lobby.JoinCode, title, text, user.FcmRegistrationToken, data);
+                await firebaseService.SendPushNotification(lobby.JoinCode, title, text, user.FcmRegistrationToken, data);
             }
             else if (isRecipient)
             {
                 var data = new Dictionary<string, string> { { "lobbyEventType", LobbyEventType.DrinkAwarded.ToString() }, { "isRelevant", "true" } };
-                await _firebaseService.SendPushNotification(lobby.JoinCode, "🚨 GOAL 🚨", text, user.FcmRegistrationToken, data);
+                await firebaseService.SendPushNotification(lobby.JoinCode, "🚨 GOAL 🚨", text, user.FcmRegistrationToken, data);
             }
         });
     }
@@ -213,9 +200,9 @@ public class GameService : IGameService
 
     private async Task HandleScorerChangeAsync(int gameId, Play play, Player newScorer, Player oldScorer)
     {
-        await _lobbyEventService.SendGoalChangedEvent(gameId, newScorer.Id, oldScorer.Id, play.PrimaryTeamId!.Value);
+        await lobbyEventService.SendGoalChangedEvent(gameId, newScorer.Id, oldScorer.Id, play.PrimaryTeamId!.Value);
 
-        var affectedDrinks = await _dbContext.Drinks
+        var affectedDrinks = await dbContext.Drinks
             .Include(d => d.RecipientLobbyMember)
             .Include(d => d.LobbyMemberPick)
                 .ThenInclude(lmp => lmp.LobbyMember)
@@ -232,21 +219,21 @@ public class GameService : IGameService
         {
             if (drink.RecipientLobbyMember != null && !drink.RecipientLobbyMember.IsRemoved)
             {
-                await _lobbyEventService.SendDrinkInvalidatedEvent(drink.LobbyMemberPick.LobbyMember.Lobby, drink.LobbyMemberPick.LobbyMember, drink.RecipientLobbyMember, gameId, play.Id, oldScorer.Id);
+                await lobbyEventService.SendDrinkInvalidatedEvent(drink.LobbyMemberPick.LobbyMember.Lobby, drink.LobbyMemberPick.LobbyMember, drink.RecipientLobbyMember, gameId, play.Id, oldScorer.Id);
             }
             else if (drink.LobbyMemberPick.IsActive)
             {
-                await _lobbyEventService.SendDrinkRemovedEvent(drink.LobbyMemberPick.LobbyMember.Lobby, drink.LobbyMemberPick.LobbyMember);
-                _dbContext.Drinks.Remove(drink);
+                await lobbyEventService.SendDrinkRemovedEvent(drink.LobbyMemberPick.LobbyMember.Lobby, drink.LobbyMemberPick.LobbyMember);
+                dbContext.Drinks.Remove(drink);
             }
         }
 
-        await _dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync();
     }
 
     private async Task HandleGoalRemovedAsync(int gameId, int eventId, Player scorer)
     {
-        var affectedDrinks = await _dbContext.Drinks
+        var affectedDrinks = await dbContext.Drinks
             .Include(d => d.RecipientLobbyMember)
             .Include(d => d.LobbyMemberPick)
                 .ThenInclude(lmp => lmp.LobbyMember)
@@ -263,35 +250,35 @@ public class GameService : IGameService
         {
             if (drink.RecipientLobbyMember != null && !drink.RecipientLobbyMember.IsRemoved)
             {
-                await _lobbyEventService.SendGoalRemovedEvent(gameId, scorer.Id);
-                await _lobbyEventService.SendDrinkInvalidatedEvent(drink.LobbyMemberPick.LobbyMember.Lobby, drink.LobbyMemberPick.LobbyMember, drink.RecipientLobbyMember, gameId, eventId, scorer.Id);
+                await lobbyEventService.SendGoalRemovedEvent(gameId, scorer.Id);
+                await lobbyEventService.SendDrinkInvalidatedEvent(drink.LobbyMemberPick.LobbyMember.Lobby, drink.LobbyMemberPick.LobbyMember, drink.RecipientLobbyMember, gameId, eventId, scorer.Id);
             }
             else if (drink.LobbyMemberPick.IsActive)
             {
-                await _lobbyEventService.SendGoalRemovedEvent(gameId, scorer.Id);
-                await _lobbyEventService.SendDrinkRemovedEvent(drink.LobbyMemberPick.LobbyMember.Lobby, drink.LobbyMemberPick.LobbyMember);
-                _dbContext.Drinks.Remove(drink);
+                await lobbyEventService.SendGoalRemovedEvent(gameId, scorer.Id);
+                await lobbyEventService.SendDrinkRemovedEvent(drink.LobbyMemberPick.LobbyMember.Lobby, drink.LobbyMemberPick.LobbyMember);
+                dbContext.Drinks.Remove(drink);
             }
         }
 
-        await _dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync();
     }
 
-    private static bool ShouldUpdateGame(Game game)
+    private bool ShouldUpdateGame(Game game)
     {
-        return game.GameState == GameState.Live || game.DateTime <= DateTime.UtcNow.AddHours(1);
+        return game.GameState == GameState.Live || game.DateTime <= _appConfig.CurrentTimeUtc.AddHours(1);
     }
 
     private async Task CheckScheduleAsync(List<Game> cachedGames)
     {
-        var schedule = await _nhlService.GetScheduleByDateAsync(DateTime.UtcNow.AddHours(-4));
+        var schedule = await nhlApi.GetScheduleByDateAsync(_appConfig.CurrentTimeUtc.AddHours(-4));
 
         //Remove old games
         foreach (var cachedGame in cachedGames)
         {
             if (!schedule.Games.Select(g => g.Id).Contains(cachedGame.Id))
             {
-                _gameCache.RemoveGame(cachedGame);
+                gameCache.RemoveGame(cachedGame);
             }
         }
 
@@ -302,11 +289,16 @@ public class GameService : IGameService
 
         var getGamesNotYetCached = schedule.Games
             .Where(scheduledGame => !cachedGames.Select(g => g.Id).Contains(scheduledGame.Id))
-            .Select(game => _nhlService.GetGameAsync(game.Id));
+            .Select(game => nhlApi.GetGameAsync(game.Id));
 
         (await Task.WhenAll(getGamesNotYetCached))
             .ToList()
-            .ForEach(_gameCache.AddGame);
+            .ForEach(game =>
+            {
+                SetPlayDateTimes(game);
+                HandleTestMode(game);
+                gameCache.AddGame(game);
+            });
     }
 
     private async Task<List<Player>> FetchPlayerStatsAsync(List<PlayerSummary> playerSummaries)
@@ -314,7 +306,7 @@ public class GameService : IGameService
         List<Task<Player>> playerTasks = new();
         foreach (var playerSummary in playerSummaries)
         {
-            playerTasks.Add(_nhlService.GetPlayerAsync(playerSummary.Id));
+            playerTasks.Add(nhlApi.GetPlayerAsync(playerSummary.Id));
         }
 
         await Task.WhenAll(playerTasks);
@@ -324,7 +316,7 @@ public class GameService : IGameService
             .ToList();
     }
 
-    private static void SetPlayDateTimes(Game cachedGame, Game updatedGame)
+    private static void SetPlayDateTimes(Game updatedGame, Game? cachedGame = null)
     {
         var FULL_PERIOD_DURATION = 40;
         var SHORT_PERIOD_DURATION = 7;
@@ -333,17 +325,15 @@ public class GameService : IGameService
 
         foreach (var play in updatedGame.Plays)
         {
-            var previousPlay = cachedGame.Plays.SingleOrDefault(p => p.Id == play.Id);
-            if (previousPlay == null)
+            if (cachedGame != null)
             {
-                play.DateTime = DateTime.UtcNow;
-                continue;
-            }
+                var previousPlay = cachedGame.Plays.SingleOrDefault(p => p.Id == play.Id);
 
-            if (previousPlay.DateTime != DateTime.MinValue)
-            {
-                play.DateTime = previousPlay.DateTime;
-                continue;
+                if (previousPlay != null && previousPlay.DateTime != DateTime.MinValue)
+                {
+                    play.DateTime = previousPlay.DateTime;
+                    continue;
+                }
             }
 
             var fullPeriodsCompleted = 0;
@@ -351,7 +341,7 @@ public class GameService : IGameService
             var shortPeriodsCompleted = 0;
             var shortIntermissionsCompleted = 0;
 
-            if (cachedGame.GameType == GameType.Playoffs)
+            if (updatedGame.GameType == GameType.Playoffs)
             {
                 fullPeriodsCompleted = play.Period - 1;
                 fullIntermissionsCompleted = fullPeriodsCompleted;
@@ -374,6 +364,42 @@ public class GameService : IGameService
             var timeWithOffset = updatedGame.DateTime.Add(offset);
             play.DateTime = timeWithOffset > DateTime.UtcNow ? DateTime.UtcNow : timeWithOffset;
         }
+    }
+
+    private void HandleTestMode(Game game)
+    {
+        if (!_appConfig.IsTestMode) return;
+
+        //Plays
+        game.Plays = game.Plays.Where(play => play.DateTime <= _appConfig.CurrentTimeUtc).ToList();
+
+        //Game State
+        var gameStarted = _appConfig.CurrentTimeUtc >= game.DateTime;
+        var gameEnded = game.Plays.Any(play => play.Type == PlayType.GameEnd);
+        if (!gameStarted) game.GameState = GameState.Upcoming;
+        else if (!gameEnded) game.GameState = GameState.Live;
+        else game.GameState = GameState.Final;
+
+        //Period/time
+        var mostRecentPlay = game.Plays.LastOrDefault();
+
+        game.MinutesRemainingInPeriod = mostRecentPlay != null ? MapMinutesRemaining(mostRecentPlay.TimeRemainingInPeriod) : 0;
+        game.SecondsRemainingInPeriod = mostRecentPlay != null ? MapSecondsRemaining(mostRecentPlay.TimeRemainingInPeriod) : 0;
+        game.Period = mostRecentPlay?.Period ?? 0;
+        game.PeriodType = mostRecentPlay?.PeriodType ?? PeriodType.Regulation;
+
+        //Score
+        game.HomeTeam.Score = game.Plays.Count(play => play.Type == PlayType.Goal && play.PrimaryTeamId == game.HomeTeam.Id);
+        game.AwayTeam.Score = game.Plays.Count(play => play.Type == PlayType.Goal && play.PrimaryTeamId == game.AwayTeam.Id);
+
+        //Goals by period
+        game.GoalsByPeriod = Enumerable.Range(0, game.Period).Select(n => new PeriodSummary()
+        {
+            AwayGoals = game.Plays.Count(play => play.Period == n + 1 && play.Type == PlayType.Goal && play.PrimaryTeamId == game.AwayTeam.Id),
+            HomeGoals = game.Plays.Count(play => play.Period == n + 1 && play.Type == PlayType.Goal && play.PrimaryTeamId == game.HomeTeam.Id),
+            Number = n + 1,
+            PeriodType = (n + 1) <= 3 ? PeriodType.Regulation : PeriodType.Overtime
+        }).ToList();
     }
 
     private async Task HandleScoringUpdatesAsync(Dictionary<int, GoalSummary> goalsBeforeUpdate, Dictionary<int, GoalSummary> goalsAfterUpdate, Game game)
@@ -429,25 +455,52 @@ public class GameService : IGameService
     private async Task NotifyIfNewPicksAreAvailable()
     {
         var PICK_TIME_MINUTES_BEFORE_GAME = 30;
-        var cachedGames = _gameCache.GetAllGames();
+        var cachedGames = gameCache.GetAllGames();
         var gamesToSendNotificationsFor = cachedGames.Where(game =>
         {
             var timeDiff = game.DateTime - DateTime.UtcNow;
-            return timeDiff.TotalMinutes < PICK_TIME_MINUTES_BEFORE_GAME && timeDiff.TotalMinutes > (PICK_TIME_MINUTES_BEFORE_GAME-1);
+            return timeDiff.TotalMinutes < PICK_TIME_MINUTES_BEFORE_GAME && timeDiff.TotalMinutes > (PICK_TIME_MINUTES_BEFORE_GAME - 1);
         });
 
         if (!gamesToSendNotificationsFor.Any()) return;
 
-        var currentActiveLobbies = await _lobbyService.GetAllLobbies();
+        var currentActiveLobbies = await lobbyService.GetAllLobbies();
         var lobbiesWithRelevantGames = currentActiveLobbies.Where(lobby => lobby.GameIds.Any(gameId => gamesToSendNotificationsFor.Select(game => game.Id).Contains(gameId)));
         var lobbyMembers = lobbiesWithRelevantGames.SelectMany(lobby => lobby.LobbyMembers);
         var lobbyUserIds = lobbyMembers.Select(lm => lm.UserId);
-        var lobbyUsers = await _dbContext.Users.Where(u => lobbyUserIds.Contains(u.Id) && u.PickingStartedNotificationPreference != NotificationPreference.None && u.FcmRegistrationToken != null).ToListAsync();
+        var lobbyUsers = await dbContext.Users.Where(u => lobbyUserIds.Contains(u.Id) && u.PickingStartedNotificationPreference != NotificationPreference.None && u.FcmRegistrationToken != null).ToListAsync();
 
         var usersByLobby = lobbiesWithRelevantGames.ToDictionary(l => l.JoinCode, l => lobbyUsers.Where(u => l.LobbyMembers.Select(lm => lm.UserId).Contains(u.Id)));
 
         foreach (var kvp in usersByLobby)
             foreach (var user in kvp.Value)
-                await _firebaseService.SendPushNotification(kvp.Key, "New picks available!", "30 minutes until gametime.", user.FcmRegistrationToken!);
+                await firebaseService.SendPushNotification(kvp.Key, "New picks available!", "30 minutes until gametime.", user.FcmRegistrationToken!);
+    }
+
+    public static PeriodType MapPeriodType(string periodType)
+    {
+        return periodType == "OT" ? PeriodType.Overtime : periodType == "SO" ? PeriodType.Shootout : PeriodType.Regulation;
+    }
+
+    public static int MapMinutesRemaining(string timeRemaining)
+    {
+        if (!timeRemaining.Contains(':'))
+        {
+            return 0;
+        }
+
+        var split = timeRemaining.Split(':');
+        return split.Length != 2 ? 0 : int.Parse(split[0]);
+    }
+
+    public static int MapSecondsRemaining(string timeRemaining)
+    {
+        if (!timeRemaining.Contains(':'))
+        {
+            return 0;
+        }
+
+        var split = timeRemaining.Split(':');
+        return split.Length != 2 ? 0 : int.Parse(split[1]);
     }
 }

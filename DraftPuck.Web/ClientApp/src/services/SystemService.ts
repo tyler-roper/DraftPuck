@@ -16,7 +16,13 @@ class SystemService {
     }
     try {
       this._http.post('', { error: errorObj, info })
-    } catch { }
+    } catch { 
+      console.error("Failed to report error.")
+    }
+  }
+
+  public async getSettings(): Promise<Date> {
+    return this._http.get('settings')
   }
 }
 

@@ -100,7 +100,7 @@ const store = useLobbyStore()
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
-const { lobby, currentUserId, events, systemMessages } = storeToRefs(store)
+const { lobby, currentUserId, events, systemMessages, appIsTestMode } = storeToRefs(store)
 const { getLobby: getLobbyFromStore, getLobbyEvents, addLobbyEvent, addMessageToStore, sendDebugMessage, sendSystemMessage, setDebugging } = store
 const joinCode = ref(route.params.joinCode as string)
 const games = ref<Game[]>([])
@@ -434,7 +434,7 @@ function getFeedItems() {
   const gameItems = games.value.flatMap((game) => {
     return game.plays.reduce((items: FeedItem[], play) => {
       const includedInFilters = desiredPlayTypes.includes(play.type)
-      const happenedAfterLobbyStarted = play.dateTime >= lobby.value!.created
+      const happenedAfterLobbyStarted = appIsTestMode.value ? true : play.dateTime >= lobby.value!.created
       const isShootoutGoal = play.type === PlayType.Goal && play.periodType === PeriodType.Shootout
       if (includedInFilters && happenedAfterLobbyStarted && !isShootoutGoal) {
         return [...items, FeedItem.fromPlay(game.id, { away: game.awayTeam, home: game.homeTeam }, play, game.playerSummaries)]
@@ -534,7 +534,7 @@ watch(
           >
             <VLobbyOverview ref="overview" class="lobby-overview v-lobby-overview flex-grow-1" :class="{ 'hide-mobile': !isLobbyView }" />
             <VFeed class="flex-grow-1 v-feed" :items="feedItems" :class="{ 'hide-mobile': !isFeedView, animate: shouldAnimateFeed }" />
-            <VPicks class="flex-grow-1 v-picks" :games="games" :class="{ 'hide-mobile': !isPicksView }" />
+            <VPicks class="flex-grow-1 v-picks d-sm-none" :games="games" :class="{ 'hide-mobile': !isPicksView }" />
             <VChat
               ref="vChat"
               :messages="messages"

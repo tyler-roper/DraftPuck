@@ -24,7 +24,7 @@ const props = withDefaults(
 
 // #region data
 const store = useLobbyStore()
-const { lobby, currentUserId } = storeToRefs(store)
+const { lobby, currentUserId, currentSystemTime } = storeToRefs(store)
 // #endregion
 
 // #region computed
@@ -49,7 +49,7 @@ const currentMemberHasMadeAllPicksForGame = computed(() => {
 
 const gamePickableStatusForCurrentMember = computed(() => {
   if (!isLobbyGame.value) return GamePickableStatus.Locked
-  if (!isGameStarted.value && game.value.dateTime > addMinutes(new Date(), 30)) return GamePickableStatus.Upcoming
+  if (!isGameStarted.value && game.value.dateTime > addMinutes(currentSystemTime.value, 30)) return GamePickableStatus.Upcoming
   if (isGameOver.value) return GamePickableStatus.GameComplete
 
   return currentMemberHasMadeAllPicksForGame.value ? GamePickableStatus.PicksAvailable : GamePickableStatus.PicksMade
