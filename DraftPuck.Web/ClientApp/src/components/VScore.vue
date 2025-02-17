@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// #region imports
+//#region imports
 import { computed } from 'vue'
 import { addMinutes, format } from 'date-fns'
 import GamePickableStatus from '@/enums/gamePickableStatus'
@@ -8,9 +8,9 @@ import { getOrdinal } from '@/helpers/gameHelpers'
 import PeriodType from '@/enums/periodType'
 import { storeToRefs } from 'pinia'
 import { useLobbyStore } from '@/stores/lobby'
-// #endregion
+//#endregion
 
-// #region props
+//#region props
 const props = withDefaults(
   defineProps<{
     game: Game
@@ -20,14 +20,14 @@ const props = withDefaults(
     isSelected: false
   }
 )
-// #endregion
+//#endregion
 
-// #region data
+//#region data
 const store = useLobbyStore()
 const { lobby, currentUserId, currentSystemTime } = storeToRefs(store)
-// #endregion
+//#endregion
 
-// #region computed
+//#region computed
 const game = computed(() => props.game)
 const currentMember = computed(() => lobby.value!.members.find((member) => member.userId === currentUserId.value)!)
 const isSelected = computed(() => props.isSelected)
@@ -117,17 +117,17 @@ const timeString = computed(() => {
 
   return time
 })
-// #endregion
+//#endregion
 
-// #region methods
+//#region methods
 
-// #endregion
+//#endregion
 
-// #region helpers
+//#region helpers
 const getLogo = (team: GameTeam) => `/img/logos/${team.abbreviation}.png`
 const getLightLogo = (team: GameTeam) => (team.abbreviation !== 'TBL' ? getLogo(team) : `/img/logos/${team.abbreviation}_LIGHT.png`)
 
-// #endregion
+//#endregion
 </script>
 
 <template>

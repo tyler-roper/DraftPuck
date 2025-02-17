@@ -180,7 +180,6 @@ export const useLobbyStore = defineStore('lobby', () => {
 
   //#region getters
   const isLobbyAdmin = computed(() => currentUserId.value === lobby.value?.createdBy)
-  const currentMember = computed(() => lobby.value?.members?.find((m) => m.id === currentUserId.value))
   //#endregion
 
   return {

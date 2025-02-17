@@ -21,7 +21,7 @@ class SystemService {
     }
   }
 
-  public async getSettings(): Promise<Date> {
+  public async getSettings(): Promise<SystemSettingsResponse> {
     return this._http.get('settings')
   }
 }
