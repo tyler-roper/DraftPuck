@@ -53,6 +53,8 @@ builder.Services
     .AddEndpointsApiExplorer()
     .AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
+ApplicationStartupInfo.Init();
+
 //kestrel
 builder.WebHost.UseKestrel();
 

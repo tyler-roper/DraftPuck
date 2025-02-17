@@ -2,9 +2,10 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import type Bot from '@/models/bot'
 import LobbyService from '@/services/LobbyService'
-import { compareAsc } from 'date-fns'
+import { addMilliseconds, compareAsc, differenceInMilliseconds } from 'date-fns'
 import type PickRequest from '@/models/pickRequest'
 import SystemMessageViewModel from '@/models/systemMessageViewModel'
+import SystemService from '@/services/SystemService'
 
 export const useLobbyStore = defineStore('lobby', () => {
   //#region state
@@ -13,9 +14,19 @@ export const useLobbyStore = defineStore('lobby', () => {
   const currentUserId = ref<string>()
   const systemMessages = ref<SystemMessageViewModel[]>([])
   const debugLevel = ref(0)
+
+  const appIsTestMode = ref(false)
+  const appStartupTime = ref(new Date())
+  const appTestModeStartTime = ref(new Date())
+  const currentSystemTime = ref(new Date())
   //#endregion
 
   //#region mutations
+  const setAppSettings = (appSettings: { appIsTestMode: boolean, appStartupTime: Date, appTestModeStartTime: Date }) => {
+    appIsTestMode.value = appSettings.appIsTestMode
+    appStartupTime.value = appSettings.appStartupTime
+    appTestModeStartTime.value = appSettings.appTestModeStartTime
+  }
   const setLobby = (_lobby: Lobby) => (lobby.value = _lobby)
   const setEvents = (_events: LobbyEvent[]) => (events.value = _events)
   const setCurrentUserId = (_currentUserId: string) => (currentUserId.value = _currentUserId)
@@ -89,6 +100,11 @@ export const useLobbyStore = defineStore('lobby', () => {
   function setDebugging(level: number = 1) {
     debugLevel.value = level
   }
+
+  function updateSystemTime() {
+    const millisecondsSinceStartup = differenceInMilliseconds(new Date(), appStartupTime.value);
+    currentSystemTime.value = addMilliseconds(appTestModeStartTime.value, millisecondsSinceStartup)
+  }
   //#endregion
 
   //#region actions
@@ -155,6 +171,11 @@ export const useLobbyStore = defineStore('lobby', () => {
     addMessageToStore(message)
     await LobbyService.sendMessage(lobby.value.joinCode, message)
   }
+
+  async function initAppSettings() {
+    const result = await SystemService.getSettings();
+    setAppSettings({ appIsTestMode: result.isTestMode, appStartupTime: result.startupTimeUtc, appTestModeStartTime: result.testModeStartDateTimeUtc})
+  }
   //#endregion
 
   //#region getters
@@ -168,6 +189,7 @@ export const useLobbyStore = defineStore('lobby', () => {
     currentUserId,
     systemMessages,
     debugLevel,
+    setAppSettings,
     setLobby,
     setEvents,
     setCurrentUserId,
@@ -190,8 +212,12 @@ export const useLobbyStore = defineStore('lobby', () => {
     addBot,
     sendMessage,
     isLobbyAdmin,
+    initAppSettings,
     sendDebugMessage,
     sendSystemMessage,
-    setDebugging
+    setDebugging,
+    currentSystemTime,
+    appIsTestMode,
+    updateSystemTime
   }
 })
