@@ -383,10 +383,14 @@ public class GameService(INhlService nhlApi, IGameCache gameCache, DraftPuckCont
         //Period/time
         var mostRecentPlay = game.Plays.LastOrDefault();
 
-        game.MinutesRemainingInPeriod = mostRecentPlay != null ? MapMinutesRemaining(mostRecentPlay.TimeRemainingInPeriod) : 0;
+        game.MinutesRemainingInPeriod = mostRecentPlay != null ? MapMinutesRemaining(mostRecentPlay.TimeRemainingInPeriod) : 20;
         game.SecondsRemainingInPeriod = mostRecentPlay != null ? MapSecondsRemaining(mostRecentPlay.TimeRemainingInPeriod) : 0;
-        game.Period = mostRecentPlay?.Period ?? 0;
-        game.PeriodType = mostRecentPlay?.PeriodType ?? PeriodType.Regulation;
+
+        if (game.GameState != GameState.Final)
+        {
+            game.Period = mostRecentPlay?.Period ?? 1;
+            game.PeriodType = mostRecentPlay?.PeriodType ?? PeriodType.Regulation;
+        }
 
         //Score
         game.HomeTeam.Score = game.Plays.Count(play => play.Type == PlayType.Goal && play.PrimaryTeamId == game.HomeTeam.Id);

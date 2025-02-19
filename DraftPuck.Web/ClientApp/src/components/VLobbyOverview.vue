@@ -147,7 +147,7 @@ function isCurrentMember(member: LobbyMember) {
             class="fi fi-sr-user me-2 d-block text-blue"
             style="margin-top: 2px; height: 1px"
           ></i>
-          <i v-if="member.isBot" class="fi fi-sr-pulse me-2 d-block text-stone-700" style="margin-top: 2px; height: 1px"></i>
+          <i v-if="member.isBot" class="fi fi-sr-user-robot me-2 d-block text-stone-700" style="margin-top: 2px; height: 1px"></i>
           <i v-if="lobby!.createdBy === member.userId" class="fi fi-sr-crown me-2 d-block text-amber-500" style="margin-top: 2px; height: 1px"></i>
 
           <span class="d-block" :class="{ 'fw-bold': currentUserId === member.userId }">{{ member.name }}</span>

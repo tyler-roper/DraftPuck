@@ -134,7 +134,7 @@ const getLightLogo = (team: GameTeam) => (team.abbreviation !== 'TBL' ? getLogo(
   <div class="game py-1 px-2" :class="{ 'o-50': !isLobbyGame || isGameOver, selected: isSelected, [gamePickableStatusForCurrentMemberAsString.toLowerCase()]: true }">
     <div class="game-time px-2 mb-1 fs-8 bg-stone-700 d-inline-block">{{ timeString }}</div>
     <div class="game-matchup">
-      <div class="d-flex justify-content-between align-items-center">
+      <div class="d-flex justify-content-between align-items-center" style="height: 24.5px">
         <div>
           <img :src="getLightLogo(game.awayTeam)" style="width: 25px" />
           <span>{{ game.awayTeam.abbreviation }}</span>
@@ -143,7 +143,7 @@ const getLightLogo = (team: GameTeam) => (team.abbreviation !== 'TBL' ? getLogo(
           <span class="fw-bold">{{ game.awayTeam.score }}</span>
         </div>
       </div>
-      <div class="d-flex justify-content-between align-items-center">
+      <div class="d-flex justify-content-between align-items-center" style="height: 24.5px">
         <div>
           <img :src="getLightLogo(game.homeTeam)" style="width: 25px" />
           <span>{{ game.homeTeam.abbreviation }}</span>

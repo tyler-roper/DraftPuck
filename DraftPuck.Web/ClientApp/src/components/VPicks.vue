@@ -37,23 +37,35 @@ const selectedTeam = ref<GameTeam>()
 const teamRosterContainer = ref<HTMLDivElement | null>(null)
 const gameCountdowns = ref<Record<number, { asString: string; asMilliseconds: number }>>()
 const countdownTimer = ref<number>()
-const { lobby, currentUserId, currentSystemTime } = storeToRefs(store)
+const { lobby, currentUserId, currentSystemTime, isLobbyAdmin } = storeToRefs(store)
 const { pickPlayer, removePick } = store
 const selectedPlayers = ref<Player[]>([])
 const justLockedIn = ref(false)
+const selectedMember = ref<LobbyMember>()
+const removingPlayer = ref<Player>()
 //#endregion
 
 //#region computed
 const currentMember = computed(() => lobby.value!.members.find((m) => m.userId === currentUserId.value)!)
 
-const currentMemberPlayerAndGamePicks = computed(() =>
-  currentMember.value.picks.reduce<{ game: Game; player: Player }[]>((acc, pick) => {
-    const game = games.value.find((g) => g.id === pick.gameId)
-    if (!game) return acc
-    const player = [...game.homeTeam.roster, ...game.awayTeam.roster].find((p) => p.id === pick.playerId)!
-    return [...acc, { game, player }]
-  }, [])
-)
+const selectedMemberPlayerAndGamePicks = computed(() => {
+  const member = selectedMember.value ?? currentMember.value
+  return member.picks
+    .reduce<{ game: Game; player: Player }[]>((acc, pick) => {
+      const game = games.value.find((g) => g.id === pick.gameId)
+      if (!game) return acc
+      const player = [...game.homeTeam.roster, ...game.awayTeam.roster].find((p) => p.id === pick.playerId)!
+      return [...acc, { game, player }]
+    }, [])
+    .sort((a, b) => {
+      const aState = a.game.gameState
+      const bState = b.game.gameState
+      return (
+        Number(bState === GameState.Live) - Number(aState === GameState.Live) ||
+        Number(bState === GameState.Upcoming) - Number(aState === GameState.Upcoming)
+      )
+    })
+})
 
 const nextUpcomingPicks = computed(() => {
   if (!gameCountdowns.value) return ''
@@ -64,7 +76,6 @@ const nextUpcomingPicks = computed(() => {
 })
 
 const firstPickableGame = computed(() => games.value.find(currentUserHasPicksForGame))
-
 const isSelectedGameLocked = computed(() => !lobby.value?.gameIds.includes(selectedGame.value!.id))
 const isSelectedGameStarted = computed(() => selectedGame.value!.gameState !== GameState.Upcoming)
 const isSelectedGameOver = computed(() => selectedGame.value!.gameState === GameState.Final)
@@ -121,7 +132,10 @@ async function selectGame(game?: Game) {
 
   if (selectedGame.value?.id === game.id) return
   selectedGame.value = game
-  selectedTeam.value = game.awayTeam
+  selectedTeam.value =
+    game.homeTeam.roster?.length && getPicksRemainingByMemberAndTeam(currentMember.value, game.awayTeam) > 0
+      ? selectedGame.value.awayTeam
+      : selectedGame.value.homeTeam
   selectedPlayers.value = []
 
   if (!teamRosterContainer.value) return
@@ -160,16 +174,28 @@ async function pick(playerId: number, teamId: number, lobbyMemberId?: string) {
 }
 
 async function lockIn() {
-  selectedPlayers.value.forEach((player) => {
-    pick(player.id, player.teamId, currentMember.value.id)
-  })
+  await Promise.all(selectedPlayers.value.map(({ id, teamId }) => pick(id, teamId, currentMember.value.id)))
 
   selectedPlayers.value = []
 
   const picksLeftForThisTeam = getPicksRemainingByMemberAndTeam(currentMember.value, selectedTeam.value!)
-  if (picksLeftForThisTeam === 0) justLockedIn.value = true
+  if (picksLeftForThisTeam === 0) {
+    justLockedIn.value = true
+    window.setTimeout(() => (justLockedIn.value = false), 700)
 
-  window.setTimeout(() => (justLockedIn.value = false), 5000)
+    if (firstPickableGame.value?.id === selectedGame.value?.id)
+      window.setTimeout(
+        () => selectTeam(selectedGame.value?.awayTeam === selectedTeam.value ? selectedGame.value!.homeTeam : selectedGame.value!.awayTeam),
+        1000
+      )
+    else if (firstPickableGame.value !== undefined) window.setTimeout(() => selectGame(firstPickableGame.value), 1000)
+    else {
+      window.setTimeout(() => {
+        selectGame(undefined)
+        toast.success("You've finished making all of your picks (for now).")
+      }, 1000)
+    }
+  }
 }
 
 function checkIfSelectedPlayerWasPicked() {
@@ -182,9 +208,44 @@ function checkIfSelectedPlayerWasPicked() {
 
   if (oldSelectedPlayersCount > newSelectedPlayersCount) toast.error('Sorry, someone picked one of your selections!')
 }
+
+function selectMember(member?: LobbyMember) {
+  if (member === undefined || member.id === currentMember.value.id) {
+    selectedMember.value = undefined
+    return
+  }
+
+  selectedMember.value = member
+}
+
+async function unpick(game: Game, player: Player) {
+  if (!canRemovePlayer(game, player)) return
+  const pick = lobby.value!.members.flatMap((m) => m.picks).find((p) => p.playerId === player.id)
+  await removePick(pick!.id)
+}
 //#endregion
 
 //#region helpers
+function canRemovePlayer(game: Game, player: Player) {
+  //not picked
+  const pick = lobby.value?.members.flatMap((m) => m.picks).find((p) => p.playerId === player.id)
+  if (!pick) return false
+
+  if (isLobbyAdmin.value) return true
+
+  //game started
+  if (game.gameState !== GameState.Upcoming) return false
+
+  //not current member's pick
+  if (pick.lobbyMemberId !== currentMember.value.id) return false
+
+  return true
+}
+
+function isRemovingPlayer(player: Player) {
+  return removingPlayer.value && removingPlayer.value.id === player.id
+}
+
 function isPlayerSelected(player: Player) {
   return selectedPlayers.value.includes(player)
 }
@@ -201,6 +262,12 @@ function currentUserHasPicksForGame(game: Game) {
 function togglePlayerSelection(player: Player) {
   if (!isPlayerSelected(player)) return selectedPlayers.value.push(player)
   selectedPlayers.value = selectedPlayers.value.filter((p) => p !== player)
+}
+
+function togglePlayerRemoving(game: Game, player: Player) {
+  if (!canRemovePlayer(game, player)) return
+  if (!isRemovingPlayer(player)) return (removingPlayer.value = player)
+  removingPlayer.value = undefined
 }
 
 function getPicksRemainingByMemberAndTeam(member: LobbyMember, team: GameTeam) {
@@ -240,21 +307,71 @@ watch(lobby, async (newValue, oldValue) => {
 
     <!-- MY PICKS -->
     <template v-if="selectedGame === undefined">
-      <div v-if="currentMember.picks.length > 0" class="p-2 fs-5 fw-bolder text-stone-0 bg-stone-900">MY PICKS</div>
+      <div>
+        <div
+          v-if="currentMember.picks.length > 0"
+          class="p-2 fs-5 fw-bolder text-stone-0 bg-stone-900 d-flex justify-content-between align-items-center"
+        >
+          <div class="d-block dropdown">
+            <a role="button" class="text-white text-decoration-none" data-bs-toggle="dropdown">
+              <span v-if="selectedMember === undefined" class="d-block fs-7">MY</span>
+              <span v-if="selectedMember !== undefined" class="d-block fs-7">{{ selectedMember.name }}&apos;s</span>
+              <span class="d-block mt-n2">PICKS<i class="fi fi-sr-caret-down fs-3 position-relative" style="top: 4px"></i></span>
+            </a>
+            <div class="dropdown-menu">
+              <a
+                v-for="member in lobby!.members.sort((a, b) => Number(b.id === currentMember.id) - Number(a.id === currentMember.id))"
+                :key="member.id"
+                class="dropdown-item py-2"
+                role="button"
+                @click="selectMember(member)"
+              >
+                <span class="position-relative" style="top: 2px">
+                  <i v-if="member.id === currentMember.id" class="fi fi-sr-user me-2 text-primary"></i>
+                  <i v-else-if="member.isBot" class="fi fi-sr-user-robot me-2 text-stone-400"></i>
+                  <i v-else class="fi fi-sr-user me-2 text-blue"></i>
+                </span>
+                <span class="ms-1" :class="{'text-primary': member.id === currentMember.id, 'fw-bold': member.id === selectedMember?.id}">{{ member.id === currentMember.id ? 'Me' : member.name }}</span>
+              </a>
+            </div>
+          </div>
+          <a
+            v-if="firstPickableGame !== undefined"
+            @click="selectGame(firstPickableGame)"
+            role="button"
+            class="fs-6 text-primary text-decoration-none"
+            >Make Picks Now
+          </a>
+          <div
+            v-if="selectedMember === undefined && firstPickableGame === undefined"
+            class="ms-auto fs-7 text-stone-0 fw-normal text-decoration-none"
+          >
+            <span class="d-block text-end"
+              ><i class="text-success fi fi-sr-check-circle position-relative pe-2" style="top: 2px"></i>All Picks Made</span
+            >
+            <span v-if="nextUpcomingPicks !== ''" class="fs-8 text-stone-300 fw-normal text-decoration-none d-block"
+              >(More available in {{ nextUpcomingPicks }})</span
+            >
+          </div>
+        </div>
+      </div>
       <div class="flex-grow-1" style="overflow-y: scroll">
         <VPick
-          v-for="{ game, player } in currentMemberPlayerAndGamePicks"
+          v-for="{ game, player } in selectedMemberPlayerAndGamePicks"
           :key="player.id"
           :player="player"
           :game="game"
           :selected-player-count="0"
+          :is-removing="isRemovingPlayer(player)"
+          @click="togglePlayerRemoving(game, player)"
+          @on-unpicked="unpick(game, player)"
         />
 
         <template v-if="currentMember.picks.length === 0">
           <span class="text-center p-5 fs-1 text-stone-000 d-block text-uppercase"
             >Welcome to<br /><span class="d-inline-block mt-n3 text-primary fw-bold" style="font-size: 50px">Draftpuck</span></span
           >
-          <div class="text-center p-4" v-if="firstPickableGame !== undefined && currentUserHasPicksForGame(firstPickableGame)">
+          <div class="text-center p-4" v-if="firstPickableGame !== undefined">
             <span class="fs-4 text-stone-0 fw-bold d-block mb-2">What are you waiting for?</span>
             <button @click="selectGame(firstPickableGame)" class="py-2 px-4 gradient-button fw-bold fs-1 h-100 text-uppercase emphasized">
               Make Picks Now
@@ -287,8 +404,10 @@ watch(lobby, async (newValue, oldValue) => {
     <!-- GAME SELECTED -->
     <template v-if="selectedGame !== undefined">
       <!-- BREADCRUMB -->
-      <div class="p-2 top-breadcrumb bg-stone-900">
-        <a role="button" @click="selectGame()" class="fw-bold text-primary text-decoration-none"><i class="fi fi-sr-caret-left"></i>My Picks</a>
+      <div class="p-2 top-breadcrumb bg-stone-900 d-flex justify-content-between">
+        <a role="button" @click="selectGame()" class="fw-bold text-primary text-decoration-none d-block"
+          ><i class="fi fi-sr-caret-left"></i>My Picks</a
+        >
       </div>
 
       <!-- CONTENT BOX -->

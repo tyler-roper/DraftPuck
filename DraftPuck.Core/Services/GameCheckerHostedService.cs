@@ -28,7 +28,7 @@ public class GameCheckerHostedService : IHostedService
                 async _ => await CheckGames(cancellationToken),
                 null,
                 TimeSpan.Zero,
-                TimeSpan.FromSeconds(10)
+                TimeSpan.FromSeconds(30)
             );
         }
 
