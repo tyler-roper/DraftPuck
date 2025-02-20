@@ -158,14 +158,14 @@ async function scrollToBottom() {
 async function focus() {
   messageInput.value?.focus()
   scrollToBottom()
-  
-  if (isIos)
-    setTimeout(() => document.body.style.paddingBottom = `${document.documentElement.clientHeight - window.visualViewport!.height}px`, 300)
+}
+
+function handleIphoneKeyboard() {
+  setTimeout(() => (document.body.style.paddingBottom = `${document.documentElement.clientHeight - window.visualViewport!.height}px`), 1)
 }
 
 async function focusOut() {
-  if (isIos)
-    setTimeout(() => document.body.style.paddingBottom = '0px', 300)
+  setTimeout(() => (document.body.style.paddingBottom = '0px'), 1)
 }
 
 //watchers
@@ -215,7 +215,8 @@ defineExpose({ focus })
         placeholder="Send a message"
         @input="resizeMessageInput"
         @keydown.enter="onEnterKeydown"
-        @focusout="focusOut()"
+        @focus="handleIphoneKeyboard"
+        @focusout="focusOut"
       ></textarea>
       <!-- </SmartSuggest> -->
       <div class="d-flex align-items-center justify-content-end">
