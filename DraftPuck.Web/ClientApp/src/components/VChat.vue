@@ -50,7 +50,9 @@ onMounted(async () => {
   const isIOS = /(iPad|iPhone|iPod)/.test(window.navigator.userAgent)
 
   if (isIOS) {
+    alert('ios')
     window.addEventListener('keyboardWillShow', (event) => {
+      alert('keyboard show')
       //@ts-ignore
       const keyboardHeight = event.keyboardHeight || 300 //Default height if event doesn't provide
       document.body.style.paddingBottom = `${keyboardHeight}px`
