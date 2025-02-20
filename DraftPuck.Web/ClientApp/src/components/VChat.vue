@@ -161,11 +161,11 @@ async function focus() {
 }
 
 function handleIphoneKeyboard() {
-  setTimeout(() => (document.body.style.paddingBottom = `${document.documentElement.clientHeight - window.visualViewport!.height}px`), 1)
+  setTimeout(() => (document.body.style.paddingBottom = `${document.documentElement.clientHeight - window.visualViewport!.height}px`), 200)
 }
 
 async function focusOut() {
-  setTimeout(() => (document.body.style.paddingBottom = '0px'), 1)
+  setTimeout(() => (document.body.style.paddingBottom = '0px'), 200)
 }
 
 //watchers
