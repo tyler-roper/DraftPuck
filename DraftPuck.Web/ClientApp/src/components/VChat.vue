@@ -34,6 +34,7 @@ const error = ref<string>()
 const lastSentMessage = ref(new Date(-1))
 const isLockedToBottom = ref(true)
 const errorTimer = ref<number>()
+const keyboardSize = ref<number>()
 // const isSmartSuggestOpen = ref(false)
 // const userMentionTrigger: Trigger = {
 //   char: '@',
@@ -49,24 +50,11 @@ onMounted(async () => {
 
   const isIOS = /(iPad|iPhone|iPod)/.test(window.navigator.userAgent)
 
-  if (isIOS) {
-    alert('ios')
-    window.addEventListener('keyboardDidShow', (event) => {
-      alert('keyboard show')
-      //@ts-ignore
-      const keyboardHeight = event.keyboardHeight || 300 //Default height if event doesn't provide
-      document.body.style.paddingBottom = `${keyboardHeight}px`
-    })
-    window.addEventListener('keyboardDidHide', () => {
-      document.body.style.paddingBottom = '0px'
-    })
-    window.addEventListener('orientationchange', () => {
-      //Recalculate and adjust on orientation change
-      //You might need to trigger a keyboardWillShow/Hide event here, depending on the behavior.
-      //For example, if you use setTimeout, this ensures the recalculation happens after the orientation change completes.
-      setTimeout(() => {
-        window.dispatchEvent(new Event('keyboardDidShow'))
-      }, 200)
+  if (isIOS && 'virtualKeyboard' in navigator) {
+    //@ts-ignore
+    navigator.virtualKeyboard.addEventListener('geometrychange', (event) => {
+      const { height } = event.target.boundingRect
+      document.body.style.paddingBottom = `${height}px`
     })
   }
 })
