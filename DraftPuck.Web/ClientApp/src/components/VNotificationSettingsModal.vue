@@ -15,7 +15,7 @@ const isNotificationSupported = 'Notification' in window
 
 //data
 const showSafari = ref(true)
-const isNotificationsEnabled = ref(Notification.permission === 'granted')
+const isNotificationsEnabled = ref(isNotificationSupported && Notification.permission === 'granted')
 const isDirty = ref(false)
 const notificationSettings = ref<UserNotificationPreferencesRequestModel>({
   drinkReceivedNotificationPreference: currentUser.value!.drinkReceivedNotificationPreference,
@@ -127,14 +127,14 @@ async function enableAndSave() {
           </div>
         </div>
         <VButton
-          v-if="isNotificationSupported && isNotificationsEnabled"
+          v-if="isNotificationsEnabled"
           class="btn btn-primary fw-bold w-100 p-3 mt-4"
           @click="save"
           :is-loading="isSaving"
           >Save Settings</VButton
         >
         <VButton
-          v-if="isNotificationSupported && !isNotificationsEnabled"
+          v-if="!isNotificationsEnabled"
           class="btn btn-primary fw-bold w-100 p-3 mt-4"
           :is-loading="isSaving"
           @click="enableAndSave"
