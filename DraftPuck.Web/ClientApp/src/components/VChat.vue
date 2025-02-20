@@ -50,11 +50,11 @@ onMounted(async () => {
 
   const isIOS = /(iPad|iPhone|iPod)/.test(window.navigator.userAgent)
 
-  if (isIOS && 'virtualKeyboard' in navigator) {
+  if (isIOS) {
     //@ts-ignore
-    navigator.virtualKeyboard.addEventListener('geometrychange', (event) => {
-      const { height } = event.target.boundingRect
-      document.body.style.paddingBottom = `${height}px`
+    window.addEventListener('resize', () => {
+      const height = document.documentElement.clientHeight
+      document.body.style.paddingBottom = `${height - window.visualViewport!.height}px`
     })
   }
 })

@@ -23,12 +23,12 @@ app.use(router)
 app.use(Toast, { position: POSITION.BOTTOM_CENTER })
 app.component('VPopper', Popper)
 
-//if (import.meta.env.PROD) {
-  // app.config.errorHandler = function (err, _vm, info) {
-  //   try {
-  //     SystemService.reportError(err, info)
-  //   } catch {}
-  // }
-//}
+if (import.meta.env.PROD) {
+ app.config.errorHandler = function (err, _vm, info) {
+   try {
+     window.alert(err + " | " + info)
+   } catch {}
+ }
+}
 
 app.mount('#app')
