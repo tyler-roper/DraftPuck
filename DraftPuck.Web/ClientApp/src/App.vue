@@ -5,19 +5,24 @@ import { useLobbyStore } from '@/stores/lobby'
 import PullToRefresh from 'pulltorefreshjs'
 import { storeToRefs } from 'pinia'
 import { format } from 'date-fns'
+import { ref } from 'vue'
 const lobbyStore = useLobbyStore()
 
 const { appIsTestMode, currentSystemTime } = storeToRefs(lobbyStore)
 const { setCurrentUserId, initAppSettings, updateSystemTime } = lobbyStore
 const { initUser } = useUserStore()
 
+const hasUser = ref(false)
+
 ;(async function onCreated() {
   const user = await initUser()
-  if (user) setCurrentUserId(user.id)
-  
-  await initAppSettings();
-  if (appIsTestMode)
-    window.setInterval(updateSystemTime, 1000)
+  if (user) {
+    hasUser.value = true
+    setCurrentUserId(user.id)
+  }
+
+  await initAppSettings()
+  if (appIsTestMode) window.setInterval(updateSystemTime, 1000)
 
   enableRefreshOniOS()
 })()
@@ -39,9 +44,11 @@ function enableRefreshOniOS() {
 <template>
   <div id="app">
     <div class="system-timer" v-if="appIsTestMode">
-       {{ format(currentSystemTime, 'Pp') }}
+      {{ format(currentSystemTime, 'Pp') }}
     </div>
-    <RouterView />
+    <template v-if="hasUser">
+      <RouterView />
+    </template>
   </div>
 </template>
 
