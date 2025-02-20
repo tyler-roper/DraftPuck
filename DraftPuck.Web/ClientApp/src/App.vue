@@ -12,13 +12,14 @@ const { setCurrentUserId, initAppSettings, updateSystemTime } = lobbyStore
 const { initUser } = useUserStore()
 
 ;(async function onCreated() {
+  const user = await initUser()
+  if (user) setCurrentUserId(user.id)
+  
   await initAppSettings();
   if (appIsTestMode)
     window.setInterval(updateSystemTime, 1000)
 
   enableRefreshOniOS()
-  const user = await initUser()
-  if (user) setCurrentUserId(user.id)
 })()
 
 function enableRefreshOniOS() {
