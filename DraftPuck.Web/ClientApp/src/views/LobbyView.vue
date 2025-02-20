@@ -15,6 +15,7 @@ import LoadingMessages from '@/models/loadingMessages'
 import VInstructionsModal from '@/components/VInstructionsModal.vue'
 import VGameScoreboards from '@/components/VGameScoreboards.vue'
 import VLobbyOverview from '@/components/VLobbyOverview.vue'
+import VScoresRibbon from '@/components/VScoresRibbon.vue'
 import VFeed from '@/components/VFeed.vue'
 import VPicks from '@/components/VPicks.vue'
 import MessageViewModel from '@/models/messageViewModel'
@@ -123,6 +124,7 @@ const lastLobbyRetrieval = ref<Date>(new Date())
 const isInitialLoad = ref(true)
 const notificationPermissionsGranted = ref(Notification.permission === 'granted')
 const notificationsSupported = ref('Notification' in window)
+const selectedGame = ref<Game>()
 
 let hubConnection: SignalR.HubConnection
 
@@ -135,6 +137,16 @@ const isFeedView = computed(() => currentView.value === 'feed')
 const isPicksView = computed(() => currentView.value === 'picks')
 const isGameView = computed(() => currentView.value === 'game')
 const isChatView = computed(() => currentView.value === 'chat')
+const sortedGames = computed(() =>
+  !games.value ? [] : [...games.value].sort((a, b) => {
+    if (a.gameState === GameState.Final) return 1
+    if (b.gameState === GameState.Final) return -1
+    if (lobby.value?.gameIds.includes(a.id) && !lobby.value?.gameIds.includes(b.id)) return -1
+    if (!lobby.value?.gameIds.includes(a.id) && lobby.value?.gameIds.includes(b.id)) return 1
+    return compareAsc(a.dateTime, b.dateTime)
+  })
+)
+
 
 const is4Nations = computed(() => {
   const today = new Date()
@@ -486,6 +498,32 @@ async function getLobby() {
   sendDebugMessage(`Got lobby ${joinCode.value}.`, 2)
 }
 
+async function copyInvite() {
+  const code = lobby.value!.joinCode
+  try {
+    await navigator.clipboard.writeText(`Join my DRAFTPUCK lobby! Code: ${code}\n\nhttps://draftpuck.com/lobby/${code}`)
+    toast.success('Copied invite to clipboard!')
+  } catch {
+    toast.error('Cannot copy')
+  }
+}
+
+async function selectGame(game: Game) {
+  if (!isPicksView.value)
+    setView('picks')
+
+  await nextTick()
+
+  if (game === undefined) {
+    selectedGame.value = undefined
+    return
+  }
+
+  if (selectedGame.value?.id === game.id) return
+
+  selectedGame.value = game
+}
+
 //watch
 watch(
   () => feedItems.value.length,
@@ -509,6 +547,16 @@ watch(
         </router-link>
 
         <a
+          @click="copyInvite"
+          role="button"
+          class="d-block ms-auto bg-primary text-stone-900 px-2 rounded text-decoration-none fs-7 ms-1 d-flex align-items-center"
+          v-if="lobby?.joinCode !== undefined"
+        >
+          <span class="fs-5 me-1 fw-bold" style="letter-spacing: 3px">{{ lobby?.joinCode }}</span>
+          <i class="fi fi-sr-share d-block mb-n1 d-block"></i>
+        </a>
+
+        <a
           class="d-flex ms-auto me-sm-5 me-3 pt-1 text-white fw-bold text-decoration-none align-items-center"
           role="button"
           @click="isNotificationSettingsVisible = true"
@@ -525,16 +573,17 @@ watch(
 
       <div class="d-flex flex-grow-1 overflow-hidden bg-stone-800">
         <template v-if="!isLoading">
-          <VGameScoreboards class="full-scoreboard flex-grow-1" :class="{ 'hide-mobile': !isGameView }" :games="games" style="overflow: auto" />
+          <VGameScoreboards class="full-scoreboard flex-grow-1" :class="{ 'hide-mobile': !isGameView }" :games="sortedGames" style="overflow: auto" />
 
           <div
             class="feed flex-shrink-0 d-flex flex-column"
             :class="{ 'hide-mobile': !isFeedView && !isLobbyView && !isChatView && !isPicksView }"
             style="width: 400px"
           >
+            <VScoresRibbon class="d-sm-none" :games="sortedGames" :selected-game="selectedGame" @on-score-clicked="selectGame" />
             <VLobbyOverview ref="overview" class="lobby-overview v-lobby-overview flex-grow-1" :class="{ 'hide-mobile': !isLobbyView }" />
             <VFeed class="flex-grow-1 v-feed" :items="feedItems" :class="{ 'hide-mobile': !isFeedView, animate: shouldAnimateFeed }" />
-            <VPicks class="flex-grow-1 v-picks d-sm-none" :games="games" :class="{ 'hide-mobile': !isPicksView }" />
+            <VPicks ref="vPicks" @select-game="selectGame" class="flex-grow-1 v-picks d-sm-none" :selected-game="selectedGame" :games="sortedGames" :class="{ 'hide-mobile': !isPicksView }" />
             <VChat
               ref="vChat"
               :messages="messages"
@@ -570,7 +619,7 @@ watch(
           <i class="fi fi-rs-hockey-mask"></i><br />
           <span>PICKS</span>
         </a>
-        <a role="button" class="text-center p-2 text-white" :class="{ active: isGameView }" @click="setView('game')">
+        <a role="button" class="text-center p-2 text-white d-none" :class="{ active: isGameView }" @click="setView('game')">
           <i class="fi fi-rr-hockey-puck"></i><br />
           <span>SCORES</span>
         </a>

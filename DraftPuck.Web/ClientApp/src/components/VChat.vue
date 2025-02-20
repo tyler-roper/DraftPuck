@@ -46,6 +46,27 @@ onMounted(async () => {
 
   if (!messagesContainer.value) return
   messagesContainer.value.addEventListener('scroll', onChatScroll)
+
+  const isIOS = /(iPad|iPhone|iPod)/.test(window.navigator.userAgent)
+
+  if (isIOS) {
+    window.addEventListener('keyboardWillShow', (event) => {
+      //@ts-ignore
+      const keyboardHeight = event.keyboardHeight || 300 //Default height if event doesn't provide
+      document.body.style.paddingBottom = `${keyboardHeight}px`
+    })
+    window.addEventListener('keyboardWillHide', () => {
+      document.body.style.paddingBottom = '0px'
+    })
+    window.addEventListener('orientationchange', () => {
+      //Recalculate and adjust on orientation change
+      //You might need to trigger a keyboardWillShow/Hide event here, depending on the behavior.
+      //For example, if you use setTimeout, this ensures the recalculation happens after the orientation change completes.
+      setTimeout(() => {
+        window.dispatchEvent(new Event('keyboardWillShow'))
+      }, 200)
+    })
+  }
 })
 
 function processCommand(message: string) {
@@ -199,14 +220,14 @@ defineExpose({ focus })
         >Back to bottom <i class="fi fi-rr-arrow-down"></i
       ></a>
       <!-- <SmartSuggest :triggers="[userMentionTrigger]" @open="isSmartSuggestOpen=true" @close="isSmartSuggestOpen=false"> -->
-        <textarea
-          v-model="message"
-          maxlength="500"
-          ref="messageInput"
-          placeholder="Send a message"
-          @input="resizeMessageInput"
-          @keydown.enter="onEnterKeydown"
-        ></textarea>
+      <textarea
+        v-model="message"
+        maxlength="500"
+        ref="messageInput"
+        placeholder="Send a message"
+        @input="resizeMessageInput"
+        @keydown.enter="onEnterKeydown"
+      ></textarea>
       <!-- </SmartSuggest> -->
       <div class="d-flex align-items-center justify-content-end">
         <span class="d-block text-danger me-2 fw-bold">{{ error }}</span>

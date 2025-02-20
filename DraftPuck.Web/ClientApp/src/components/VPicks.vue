@@ -4,35 +4,26 @@ import { useLobbyStore } from '@/stores/lobby'
 import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import VPick from '@/components/VPick.vue'
-import { addMinutes, compareAsc, differenceInMilliseconds, formatDuration, intervalToDuration } from 'date-fns'
+import { addMinutes, differenceInMilliseconds, formatDuration, intervalToDuration } from 'date-fns'
 import GamePickableStatus from '@/enums/gamePickableStatus'
 import { useToast } from 'vue-toastification'
 import PickRequest from '@/models/pickRequest'
-import VScoresRibbon from './VScoresRibbon.vue'
 import GameState from '@/enums/gameState'
 //#endregion
 
 //#region props
 const props = defineProps<{
   games: Game[]
+  selectedGame?: Game
 }>()
 
-const games = computed(() =>
-  [...props.games].sort((a, b) => {
-    if (a.gameState === GameState.Final) return 1
-    if (b.gameState === GameState.Final) return -1
-    if (lobby.value?.gameIds.includes(a.id) && !lobby.value?.gameIds.includes(b.id)) return -1
-    if (!lobby.value?.gameIds.includes(a.id) && lobby.value?.gameIds.includes(b.id)) return 1
-    return compareAsc(a.dateTime, b.dateTime)
-  })
-)
+const games = computed(() => props.games)
 //#endregion
 
 //#region refs
 const toast = useToast()
 const store = useLobbyStore()
 
-const selectedGame = ref<Game>()
 const selectedTeam = ref<GameTeam>()
 const teamRosterContainer = ref<HTMLDivElement | null>(null)
 const gameCountdowns = ref<Record<number, { asString: string; asMilliseconds: number }>>()
@@ -46,6 +37,7 @@ const removingPlayer = ref<Player>()
 //#endregion
 
 //#region computed
+const selectedGame = computed(() => props.selectedGame)
 const currentMember = computed(() => lobby.value!.members.find((m) => m.userId === currentUserId.value)!)
 
 const selectedMemberPlayerAndGamePicks = computed(() => {
@@ -122,26 +114,6 @@ function getGameCountdowns() {
   }, {})
 }
 
-async function selectGame(game?: Game) {
-  if (game === undefined) {
-    selectedGame.value = undefined
-    selectedTeam.value = undefined
-    selectedPlayers.value = []
-    return
-  }
-
-  if (selectedGame.value?.id === game.id) return
-  selectedGame.value = game
-  selectedTeam.value =
-    game.homeTeam.roster?.length && getPicksRemainingByMemberAndTeam(currentMember.value, game.awayTeam) > 0
-      ? selectedGame.value.awayTeam
-      : selectedGame.value.homeTeam
-  selectedPlayers.value = []
-
-  if (!teamRosterContainer.value) return
-  teamRosterContainer.value.scrollTop = 0
-}
-
 function selectTeam(team: GameTeam) {
   if (team === selectedTeam.value) return
   selectedTeam.value = team
@@ -183,9 +155,9 @@ async function lockIn() {
     justLockedIn.value = true
     window.setTimeout(() => (justLockedIn.value = false), 700)
 
-    if (firstPickableGame.value?.id === selectedGame.value?.id)
+    if (currentUserHasPicksForGame(selectedGame.value!))
       window.setTimeout(
-        () => selectTeam(selectedGame.value?.awayTeam === selectedTeam.value ? selectedGame.value!.homeTeam : selectedGame.value!.awayTeam),
+        () => selectTeam(selectedGame.value!.awayTeam.id === selectedTeam.value!.id ? selectedGame.value!.homeTeam : selectedGame.value!.awayTeam),
         1000
       )
     else if (firstPickableGame.value !== undefined) window.setTimeout(() => selectGame(firstPickableGame.value), 1000)
@@ -297,14 +269,37 @@ watch(lobby, async (newValue, oldValue) => {
 
   if (oldPickCount !== newPickCount) checkIfSelectedPlayerWasPicked()
 })
+
+watch(selectedGame, async (newGame, oldGame) => {
+  if (newGame === undefined) {
+    selectedTeam.value = undefined
+    selectedPlayers.value = []
+    return
+  }
+
+  if (oldGame?.id === newGame.id) return
+  selectedTeam.value =
+    newGame.homeTeam.roster?.length && getPicksRemainingByMemberAndTeam(currentMember.value, newGame.awayTeam) > 0
+      ? newGame.awayTeam
+      : newGame.homeTeam
+  selectedPlayers.value = []
+
+  if (!teamRosterContainer.value) return
+  teamRosterContainer.value.scrollTop = 0
+})
+//#endregion
+
+//#region emits
+const emit = defineEmits(['selectGame'])
+function selectGame(game?: Game) {
+  emit('selectGame', game)
+}
 //#endregion
 </script>
 
 <template>
   <!-- SCORES RIBBON -->
   <div style="overflow: hidden" class="d-flex flex-column">
-    <VScoresRibbon :games="games" :selected-game="selectedGame" @on-score-clicked="selectGame" />
-
     <!-- MY PICKS -->
     <template v-if="selectedGame === undefined">
       <div>
@@ -331,7 +326,9 @@ watch(lobby, async (newValue, oldValue) => {
                   <i v-else-if="member.isBot" class="fi fi-sr-user-robot me-2 text-stone-400"></i>
                   <i v-else class="fi fi-sr-user me-2 text-blue"></i>
                 </span>
-                <span class="ms-1" :class="{'text-primary': member.id === currentMember.id, 'fw-bold': member.id === selectedMember?.id}">{{ member.id === currentMember.id ? 'Me' : member.name }}</span>
+                <span class="ms-1" :class="{ 'text-primary': member.id === currentMember.id, 'fw-bold': member.id === selectedMember?.id }">{{
+                  member.id === currentMember.id ? 'Me' : member.name
+                }}</span>
               </a>
             </div>
           </div>
@@ -349,9 +346,9 @@ watch(lobby, async (newValue, oldValue) => {
             <span class="d-block text-end"
               ><i class="text-success fi fi-sr-check-circle position-relative pe-2" style="top: 2px"></i>All Picks Made</span
             >
-            <span v-if="nextUpcomingPicks !== ''" class="fs-8 text-stone-300 fw-normal text-decoration-none d-block"
-              >(More available in {{ nextUpcomingPicks }})</span
-            >
+            <span v-if="nextUpcomingPicks !== ''" class="fs-8 text-stone-300 fw-normal text-decoration-none d-block">
+              (More available in {{ nextUpcomingPicks }})
+            </span>
           </div>
         </div>
       </div>
