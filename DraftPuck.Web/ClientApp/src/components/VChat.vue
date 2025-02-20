@@ -55,6 +55,7 @@ onMounted(async () => {
     window.addEventListener('resize', () => {
       const height = document.documentElement.clientHeight
       document.body.style.paddingBottom = `${height - window.visualViewport!.height}px`
+      window.alert(height + ", " + document.body.style.paddingBottom)
     })
   }
 })
