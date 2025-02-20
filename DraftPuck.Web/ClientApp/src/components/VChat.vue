@@ -34,7 +34,7 @@ const error = ref<string>()
 const lastSentMessage = ref(new Date(-1))
 const isLockedToBottom = ref(true)
 const errorTimer = ref<number>()
-const keyboardSize = ref<number>()
+const isIos = /(iPad|iPhone|iPod)/.test(window.navigator.userAgent)
 // const isSmartSuggestOpen = ref(false)
 // const userMentionTrigger: Trigger = {
 //   char: '@',
@@ -47,17 +47,6 @@ onMounted(async () => {
 
   if (!messagesContainer.value) return
   messagesContainer.value.addEventListener('scroll', onChatScroll)
-
-  const isIOS = /(iPad|iPhone|iPod)/.test(window.navigator.userAgent)
-
-  if (isIOS) {
-    //@ts-ignore
-    window.addEventListener('resize', () => {
-      const height = document.documentElement.clientHeight
-      document.body.style.paddingBottom = `${height - window.visualViewport!.height}px`
-      window.alert(height + ", " + document.body.style.paddingBottom)
-    })
-  }
 })
 
 function processCommand(message: string) {
@@ -169,6 +158,14 @@ async function scrollToBottom() {
 async function focus() {
   messageInput.value?.focus()
   scrollToBottom()
+  await nextTick()
+  
+  alert(document.documentElement.clientHeight + ", " + window.visualViewport?.height)
+}
+
+async function focusOut() {
+  await nextTick()
+  alert(document.documentElement.clientHeight + ", " + window.visualViewport?.height)
 }
 
 //watchers
@@ -218,6 +215,7 @@ defineExpose({ focus })
         placeholder="Send a message"
         @input="resizeMessageInput"
         @keydown.enter="onEnterKeydown"
+        @focusout="focusOut()"
       ></textarea>
       <!-- </SmartSuggest> -->
       <div class="d-flex align-items-center justify-content-end">
