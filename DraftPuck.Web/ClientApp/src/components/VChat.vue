@@ -158,14 +158,14 @@ async function scrollToBottom() {
 async function focus() {
   messageInput.value?.focus()
   scrollToBottom()
-  await nextTick()
   
-  alert(document.documentElement.clientHeight + ", " + window.visualViewport?.height)
+  if (isIos)
+    setTimeout(() => document.body.style.paddingBottom = `${document.documentElement.clientHeight - window.visualViewport!.height}px`, 300)
 }
 
 async function focusOut() {
-  await nextTick()
-  alert(document.documentElement.clientHeight + ", " + window.visualViewport?.height)
+  if (isIos)
+    setTimeout(() => document.body.style.paddingBottom = '0px', 300)
 }
 
 //watchers

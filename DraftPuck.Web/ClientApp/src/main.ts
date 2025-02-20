@@ -23,14 +23,14 @@ app.use(router)
 app.use(Toast, { position: POSITION.BOTTOM_CENTER })
 app.component('VPopper', Popper)
 
-if (import.meta.env.PROD) {
-  window.onerror = function (msg, url, line, col, error) {
-    window.alert(`${msg} | ${url} | ${line} | ${col} | ${error}`)
-  }
+// if (import.meta.env.PROD) {
+//   window.onerror = function (msg, url, line, col, error) {
+//     window.alert(`${msg} | ${url} | ${line} | ${col} | ${error}`)
+//   }
 
-  app.config.errorHandler = function (err, _vm, info) {
-    window.alert(err + ' | ' + info)
-  }
-}
+//   app.config.errorHandler = function (err, _vm, info) {
+//     window.alert(err + ' | ' + info)
+//   }
+// }
 
 app.mount('#app')
