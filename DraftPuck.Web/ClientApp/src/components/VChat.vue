@@ -161,7 +161,10 @@ async function focus() {
 }
 
 function handleIphoneKeyboard() {
-  setTimeout(() => (document.body.style.paddingBottom = `${document.documentElement.clientHeight - window.visualViewport!.height}px`), 200)
+  setTimeout(() => {
+    document.body.style.paddingBottom = `${document.documentElement.clientHeight - window.visualViewport!.height}px`
+    document.body.scrollTop = document.documentElement.scrollTop = 0
+  }, 200)
 }
 
 async function focusOut() {
