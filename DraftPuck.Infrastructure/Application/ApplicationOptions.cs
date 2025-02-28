@@ -8,4 +8,5 @@ public class ApplicationOptions
     public DateTime TestModeStartDateTimeUtc { get; set; } = DateTime.UtcNow;
     public static TimeSpan TimeSinceStartup => DateTime.UtcNow - ApplicationStartupInfo.StartupTimeUtc;
     public DateTime CurrentTimeUtc => IsTestMode ? TestModeStartDateTimeUtc.Add(TimeSinceStartup) : DateTime.UtcNow;
+    public static int GameCheckFrequencyInSeconds => 10;
 }

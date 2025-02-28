@@ -1,6 +1,8 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using DraftPuck.Infrastructure.Application;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace DraftPuck.Core.Services;
 
@@ -28,7 +30,7 @@ public class GameCheckerHostedService : IHostedService
                 async _ => await CheckGames(cancellationToken),
                 null,
                 TimeSpan.Zero,
-                TimeSpan.FromSeconds(30)
+                TimeSpan.FromSeconds(ApplicationOptions.GameCheckFrequencyInSeconds)
             );
         }
 

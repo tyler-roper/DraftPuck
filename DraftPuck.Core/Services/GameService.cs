@@ -15,7 +15,7 @@ public class GameService(INhlService nhlApi, IGameCache gameCache, DraftPuckCont
         try
         {
             var cachedGames = gameCache.GetAllGames();
-            if (cachedGames.Count == 0 || (DateTime.UtcNow.Minute == 0 && DateTime.UtcNow.Second <= 10))
+            if (cachedGames.Count == 0 || (DateTime.UtcNow.Minute == 0 && DateTime.UtcNow.Second <= ApplicationOptions.GameCheckFrequencyInSeconds))
             {
                 await CheckScheduleAsync(cachedGames);
             }
@@ -26,7 +26,7 @@ public class GameService(INhlService nhlApi, IGameCache gameCache, DraftPuckCont
             }
 
             //check once per minute
-            if (DateTime.UtcNow.Second < 10)
+            if (DateTime.UtcNow.Second <= ApplicationOptions.GameCheckFrequencyInSeconds)
                 await NotifyIfNewPicksAreAvailable();
         }
         catch (Exception e)
