@@ -102,6 +102,11 @@ export const useLobbyStore = defineStore('lobby', () => {
   }
 
   function updateSystemTime() {
+    if (!appIsTestMode.value) {
+      currentSystemTime.value = new Date()
+      return
+    }
+    
     const millisecondsSinceStartup = differenceInMilliseconds(new Date(), appStartupTime.value);
     currentSystemTime.value = addMilliseconds(appTestModeStartTime.value, millisecondsSinceStartup)
   }

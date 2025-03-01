@@ -61,9 +61,11 @@ const selectedMemberPlayerAndGamePicks = computed(() => {
 
 const nextUpcomingPicks = computed(() => {
   if (!gameCountdowns.value) return ''
-  const upcomingGames = Object.values(gameCountdowns.value).filter((gc) => gc.asMilliseconds > 0)
-  if (upcomingGames.length) return upcomingGames.reduce((prev, curr) => (prev.asMilliseconds < curr.asMilliseconds ? prev : curr)).asString
+  const upcomingGames = Object.entries(gameCountdowns.value)
+    .filter(([key,value]) => value.asMilliseconds > 0 && lobby.value?.gameIds.includes(Number(key)))
+    .map(([_,v]) => v)
 
+  if (upcomingGames.length) return upcomingGames.reduce((prev, curr) => (prev.asMilliseconds < curr.asMilliseconds ? prev : curr)).asString
   return ''
 })
 

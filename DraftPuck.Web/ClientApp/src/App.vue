@@ -8,7 +8,7 @@ import { format } from 'date-fns'
 import { ref } from 'vue'
 const lobbyStore = useLobbyStore()
 
-const { appIsTestMode, currentSystemTime } = storeToRefs(lobbyStore)
+const { currentSystemTime } = storeToRefs(lobbyStore)
 const { setCurrentUserId, initAppSettings, updateSystemTime } = lobbyStore
 const { initUser } = useUserStore()
 
@@ -22,7 +22,7 @@ const hasUser = ref(false)
   }
 
   await initAppSettings()
-  if (appIsTestMode) window.setInterval(updateSystemTime, 1000)
+  window.setInterval(updateSystemTime, 1000)
 
   enableRefreshOniOS()
 })()
