@@ -50,8 +50,7 @@ const isPlayerPickableByCurrentMember = computed(() => {
   const picksAlreadyMadeForTeam = currentMember.value.picks.filter((pick) => pick.teamId === team.id).length
   const hasPicksAvailableForTeam = picksAlreadyMadeForTeam + props.selectedPlayerCount < picksPerTeam
 
-  console.log(currentMember.value.picks)
-  return isGamePickable && !isPlayerPicked.value && hasPicksAvailableForTeam
+  return !isGameLocked.value && isGamePickable && !isPlayerPicked.value && hasPicksAvailableForTeam
 })
 
 const playerTeam = computed(() => (game.value.homeTeam.roster.some((p) => p.id === player.value.id) ? game.value.homeTeam : game.value.awayTeam))
@@ -61,6 +60,7 @@ const isFaded = computed(
     (isForPicking.value && !isPlayerPickableByCurrentMember.value && !isSelected.value && !isPlayerPickedByCurrentMember.value) ||
     game.value.gameState === GameState.Final
 )
+const isGameLocked = computed(() => !lobby.value?.gameIds.includes(game.value.id))
 const isPlayerPicked = computed(() => lobby.value!.members.flatMap((member) => member.picks).some((pick) => pick.playerId === player.value.id))
 const isPlayerPickedByCurrentMember = computed(() => currentMember.value.picks.some((pick) => pick.playerId === player.value.id))
 const isPlayerPickedBySomeoneElse = computed(() => isPlayerPicked.value && !isPlayerPickedByCurrentMember.value)
@@ -153,6 +153,10 @@ function trySelect() {
 
                 <template v-else-if="isSelected">
                   <span class="text-stone-0">Selected, Not Locked In</span>
+                </template>
+
+                <template v-else-if="isGameLocked">
+                  <span class="text-stone-600">Locked</span>
                 </template>
 
                 <template v-else>

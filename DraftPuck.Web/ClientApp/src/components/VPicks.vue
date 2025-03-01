@@ -227,10 +227,11 @@ function isPlayerSelected(player: Player) {
 function currentUserHasPicksForGame(game: Game) {
   const isGameStartingWithin30Minutes = game.gameState === GameState.Upcoming && addMinutes(game.dateTime, -30) < currentSystemTime.value
   const isGamePickable = game.gameState === GameState.Live || isGameStartingWithin30Minutes
+  const isGameLocked = !lobby.value?.gameIds.includes(game.id)
 
   const picksPerTeam = lobby.value!.picksPerTeam
   const picksAlreadyMadeForGame = currentMember.value.picks.filter((pick) => pick.gameId === game.id).length
-  return isGamePickable && picksAlreadyMadeForGame < picksPerTeam * 2
+  return !isGameLocked && isGamePickable && picksAlreadyMadeForGame < picksPerTeam * 2
 }
 
 function togglePlayerSelection(player: Player) {
