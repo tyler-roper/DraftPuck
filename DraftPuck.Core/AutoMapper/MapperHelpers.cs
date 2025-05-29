@@ -3,7 +3,7 @@ using System.Globalization;
 
 namespace DraftPuck.Core.AutoMapper;
 
-public static class MapperHelpers
+public static class MapperHelpers 
 {
     public static GameState MapGameState(string gameState)
     {
