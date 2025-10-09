@@ -84,7 +84,7 @@ onMounted(async () => {
     await nextTick()
     nameInput.value?.focus()
     return
-  }
+  } 
 })
 
 function addBot() {
