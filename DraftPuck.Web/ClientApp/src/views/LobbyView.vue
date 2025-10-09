@@ -58,6 +58,9 @@ const lobbyEventHandlers: { [k: string]: (lobbyEvent: LobbyEvent) => void } = {
   },
   onDrinkAwarded: function (lobbyEvent: LobbyEvent) {
     if (lobbyEvent.lobbyMemberId === currentLobbyMember.value?.id) notifyCurrentUserOfCorrectPick(lobbyEvent)
+  },
+  onUserJoined: function (lobbyEvent: LobbyEvent) {
+    if (lobbyEvent.lobbyMemberId !== currentLobbyMember.value?.id) notifyCurrentUserOfUserJoined(lobbyEvent)
   }
 }
 
@@ -437,6 +440,13 @@ function notifyCurrentUserOfCorrectPick(lobbyEvent: LobbyEvent) {
   const playerMsg = player ? ` for a goal by ${player.firstName} ${player.lastName}` : ''
   const msg = `Give out a drink${playerMsg}!`
   toast.success(msg)
+}
+
+function notifyCurrentUserOfUserJoined(lobbyEvent: LobbyEvent) {
+  const lobbyMember = lobby.value!.members.find(lm => lm.id === lobbyEvent.lobbyMemberId)
+  if (!lobbyMember) return
+
+  toast(`${lobbyMember.name} has joined the lobby.`)
 }
 
 function getFeedItems() {
