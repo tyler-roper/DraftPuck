@@ -1,8 +1,10 @@
 ﻿using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
 using Azure.Storage.Queues;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using System.ComponentModel;
 
 namespace DraftPuck.Infrastructure.AzureStorage;
 
@@ -71,6 +73,9 @@ public static class AzureStorageServiceCollectionExtensions
         var client = new BlobServiceClient(connectionString);
         var containerClient = client.GetBlobContainerClient(containerName);
         containerClient.CreateIfNotExists();
+
+        if (options.UseDevelopmentStorage)
+            containerClient.SetAccessPolicy(PublicAccessType.Blob);
 
         return containerClient;
     }
