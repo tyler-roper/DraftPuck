@@ -1,0 +1,60 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UserSecretsId>a471e140-49cf-4214-96cc-d87252676d5b</UserSecretsId>
+		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)'=='Debug'">
+		<DockerfileBuildArguments>--build-arg BUILD_CONFIGURATION=Debug --build-arg ASPNETCORE_URLS=https://+:17000/</DockerfileBuildArguments>
+		<DockerfileRunEnvironmentFiles>../env.development.list</DockerfileRunEnvironmentFiles>
+		<DockerfileFastModeStage>final</DockerfileFastModeStage>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<TypeScriptToolsVersion>4.1</TypeScriptToolsVersion>
+		<DockerComposeProjectPath>..\docker-compose.dcproj</DockerComposeProjectPath>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <Compile Remove="ClientApp_Old\**" />
+	  <Content Remove="ClientApp_Old\**" />
+	  <EmbeddedResource Remove="ClientApp_Old\**" />
+	  <None Remove="ClientApp_Old\**" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="AutoMapper" Version="15.0.1" />
+		<PackageReference Include="Azure.Storage.Queues" Version="12.24.0" />
+		<PackageReference Include="MediatR" Version="13.0.0" />
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.20" />
+		<PackageReference Include="Microsoft.AspNetCore.SpaServices" Version="3.1.32" />
+		<PackageReference Include="Microsoft.AspNetCore.SpaServices.Extensions" Version="7.0.1" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.21" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.21">
+		  <PrivateAssets>all</PrivateAssets>
+		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.21" />
+		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
+		<PackageReference Include="Scrutor" Version="6.1.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Include="..\.editorconfig" Link=".editorconfig" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\DraftPuck.Application\DraftPuck.Application.csproj" />
+		<ProjectReference Include="..\DraftPuck.Infrastructure\DraftPuck.Infrastructure.csproj" />
+	</ItemGroup>
+
+	<Target Name="ReleaseBuildWeb" BeforeTargets="BeforeBuild" Condition="'$(Configuration)' == 'Release' And '$(MSBuildProjectName)' == 'DraftPuck.Web' And '$(SkipClientBuild)' != 'true'">
+		<Message Text="npm run build:release" />
+		<Exec Command="npm run build:release" WorkingDirectory="$(ProjectDir)ClientApp" />
+	</Target>
+
+</Project>

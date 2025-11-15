@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    command: "azurite --loose --blobHost 0.0.0.0 --blobPort 10000 --queueHost 0.0.0.0 --queuePort 10001 --location /workspace --debug /workspace/debug.log"
+    ports:
+      - 10000:10000
+      - 10001:10001
+      - 10002:10002
+    volumes:
+      - ./azurite:/workspace
+
+  draftpuck.web:
+    build:
+      context: . 
+      dockerfile: DraftPuck.Web/Dockerfile
+      args:
+        - BUILD_CONFIGURATION=Debug
+    container_name: draftpuck-web
+    ports:
+      - "17000:17000" 
+    depends_on:
+      - azurite
+      - redis
+    env_file:
+      - ./env.development.list
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+      - ${APPDATA}/ASP.NET/https:/root/.aspnet/https:ro 
+
+  draftpuck.worker:
+    build:
+      context: .
+      dockerfile: DraftPuck.Worker/Dockerfile
+      args:
+        - BUILD_CONFIGURATION=Debug
+    container_name: draftpuck-worker
+    depends_on:
+      - azurite
+      - redis
+    env_file:
+      - ./env.development.list
+
+  redis:
+    image: redis:latest
+    container_name: draftpuck-redis
+    ports:
+      - "6379:6379" 
+    volumes:
+      - redis_data:/data 
+    restart: always
+
+volumes:
+  redis_data:

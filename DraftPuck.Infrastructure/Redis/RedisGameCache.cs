@@ -1,0 +1,131 @@
+﻿using DraftPuck.Application.Features.Games;
+using StackExchange.Redis;
+using System.Text.Json;
+
+namespace DraftPuck.Infrastructure.Redis;
+
+public class RedisGameCache(IDatabase redisDb) : IGameCache
+{
+    private const string GamePrefix = "game:";
+    private const string NextRunPrefix = "nextRun:";
+    private const string PregameAlertTriggeredPrefix = "pregameAlertTriggered:";
+    private const string UserPicksThrottlePrefix = "userPicksThrottle:";
+    private const string UserGamePicksNotifiedPrefix = "userGamePicksNotified:";
+
+    public async Task<GameDto?> GetGameByIdAsync(int id)
+    {
+        var key = $"{GamePrefix}{id}";
+        var json = await redisDb.StringGetAsync(key);
+
+        if (json.IsNullOrEmpty) return null;
+
+        return JsonSerializer.Deserialize<GameDto>(json!) ?? null;
+    }
+
+    public async Task<List<GameDto>> GetAllGamesAsync()
+    {
+        var server = redisDb.Multiplexer.GetServers().FirstOrDefault();
+        if (server == null) return [];
+
+        var keys = server.Keys(pattern: $"{GamePrefix}*").ToArray();
+        if (keys.Length == 0) return [];
+
+        var values = await redisDb.StringGetAsync(keys);
+        var games = new List<GameDto>();
+
+        foreach (var value in values)
+        {
+            if (value.IsNullOrEmpty) continue;
+            var game = JsonSerializer.Deserialize<GameDto>(value!) ?? throw new InvalidOperationException("Failed to deserialize cached game data.");
+            games.Add(game);
+        }
+
+        return games;
+    }
+
+    public async Task RemoveGameAsync(GameDto game)
+        => await RemoveGameAsync(game.Id);
+
+
+    public async Task RemoveGameAsync(int id)
+    {
+        var key = $"{GamePrefix}{id}";
+        var nextRunKey = $"{NextRunPrefix}{id}";
+        var pregameTriggerKey = $"{PregameAlertTriggeredPrefix}{id}";
+        await redisDb.KeyDeleteAsync([key, nextRunKey, pregameTriggerKey]);
+    }
+
+    public async Task AddGameAsync(GameDto game) => await UpdateGameAsync(game);
+
+    public async Task UpdateGameAsync(GameDto game)
+    {
+        var key = $"{GamePrefix}{game.Id}";
+        var json = JsonSerializer.Serialize(game);
+        await redisDb.StringSetAsync(key, json, expiry: TimeSpan.FromDays(1));
+    }
+
+    public async Task<DateTime?> GetNextRunAsync(int gameId)
+    {
+        var key = $"{NextRunPrefix}{gameId}";
+        var value = await redisDb.StringGetAsync(key);
+
+        if (value.IsNullOrEmpty)
+            return null;
+
+        if (DateTime.TryParse(value!, out var nextRun))
+            return nextRun;
+
+        return null;
+    }
+
+    public async Task SetNextRunAsync(int gameId, DateTime nextRun)
+    {
+        var key = $"{NextRunPrefix}{gameId}";
+        await redisDb.StringSetAsync(key, nextRun.ToString("O"), expiry: TimeSpan.FromDays(1));
+    }
+
+    public async Task RemoveNextRunAsync(int gameId)
+    {
+        var key = $"{NextRunPrefix}{gameId}";
+        await redisDb.KeyDeleteAsync(key);
+    }
+
+    public async Task<bool> HasPreGameAlertTriggeredAsync(int gameId)
+    {
+        var key = $"{PregameAlertTriggeredPrefix}{gameId}";
+        return await redisDb.KeyExistsAsync(key);
+    }
+
+    public async Task SetPreGameAlertTriggeredAsync(int gameId)
+    {
+        var key = $"{PregameAlertTriggeredPrefix}{gameId}";
+        await redisDb.StringSetAsync(key, "1", expiry: TimeSpan.FromDays(1));
+    }
+
+    public async Task<bool> HasUserBeenNotifiedRecentlyAsync(Guid userId)
+    {
+        var key = $"{UserPicksThrottlePrefix}{userId}";
+        return await redisDb.KeyExistsAsync(key);
+    }
+
+    public async Task MarkUserAsNotifiedAsync(Guid userId)
+    {
+        var key = $"{UserPicksThrottlePrefix}{userId}";
+        await redisDb.StringSetAsync(key, "1", expiry: TimeSpan.FromMinutes(15));
+    }
+
+    public async Task<bool> HasUserBeenNotifiedForGameAsync(Guid userId, int gameId)
+    {
+        var key = $"{UserGamePicksNotifiedPrefix}{userId}:{gameId}";
+        return await redisDb.KeyExistsAsync(key);
+    }
+
+    public async Task MarkUserNotifiedForGameAsync(Guid userId, int gameId, DateTime utcNow, DateTime gameStartUtc)
+    {
+        var key = $"{UserGamePicksNotifiedPrefix}{userId}:{gameId}";
+        var expiry = gameStartUtc - utcNow + TimeSpan.FromHours(1);
+        if (expiry < TimeSpan.Zero)
+            expiry = TimeSpan.FromHours(1);
+        await redisDb.StringSetAsync(key, "1", expiry);
+    }
+}
