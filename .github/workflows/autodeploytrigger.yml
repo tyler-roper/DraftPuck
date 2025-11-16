@@ -1,16 +1,12 @@
-name: Trigger auto deployment for DraftPuck
+name: Build and update ACR
 
-# When this action will be executed
 on:
-  # Automatically trigger it when detected changes in repo
   push:
-    branches: 
-      [ master ]
+    branches:
+      - main
     paths:
       - "DraftPuck.**/**"
       - ".github/workflows/autodeploytrigger.yml"
-
-  # Allow mannually trigger
   workflow_dispatch:
 
 jobs:
@@ -18,80 +14,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout to the branch
-        uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-
-      - name: Log in to container registry
-        uses: docker/login-action@v1
+      - name: Log in to Azure Container Registry
+        uses: docker/login-action@v3
         with:
-          registry: brewpuck.azurecr.io
-          username: ${{ secrets.BREWPUCK_REGISTRY_USERNAME }}
-          password: ${{ secrets.BREWPUCK_REGISTRY_PASSWORD }}
+          registry: ${{ secrets.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
 
-      - name: Build and push container image to registry
-        uses: docker/build-push-action@v2
+      - name: Build and push Web App image
+        uses: docker/build-push-action@v5
         with:
+          context: DraftPuck.Web
           push: true
-          tags: brewpuck.azurecr.io/draftpuck-web:${{ github.sha }}
+          tags: ${{ secrets.ACR_LOGIN_SERVER }}/draftpuck-web:${{ github.sha }}
           file: DraftPuck.Web/Dockerfile
-          context: .
 
-      - name: Build and push PROCESSOR Function image
-        uses: docker/build-push-action@v2
+      - name: Build and push Worker Function image
+        uses: docker/build-push-action@v5
         with:
+          context: DraftPuck.Worker
           push: true
-          tags: brewpuck.azurecr.io/draftpuck-processor:${{ github.sha }}
-          file: DraftPuck.Processor/Dockerfile 
-          context: .
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-
-    steps:
-      - name: Azure Login
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.BREWPUCK_AZURE_CREDENTIALS }}
-
-      - name: Deploy Web API to containerapp
-        uses: azure/CLI@v1
-        with:
-          inlineScript: |
-            az config set extension.use_dynamic_install=yes_without_prompt
-            az containerapp registry set -n brewpuck -g BrewPuck --server brewpuck.azurecr.io --username  ${{ secrets.BREWPUCK_REGISTRY_USERNAME }} --password ${{ secrets.BREWPUCK_REGISTRY_PASSWORD }}
-            az containerapp update -n brewpuck -g BrewPuck \
-              --image brewpuck.azurecr.io/brewpuck:${{ github.sha }} \
-              --replace-env-vars \
-                DRAFTPUCK_ConnectionStrings__DefaultConnection=secretref:sql-connection-string \
-                DRAFTPUCK_APPLICATION__BASEPATH=https://draftpuck.com \
-                DRAFTPUCK_LOGGING__LOGLEVEL__Microsoft.AspNetCore.SignalR=Debug \
-                DRAFTPUCK_LOGGING__LOGLEVEL__Microsoft.AspNetCore.Http.Connections=Debug \
-                DRAFTPUCK_FIREBASE__Type=service_account \
-                DRAFTPUCK_FIREBASE__ProjectId=draftpuck-prod \
-                DRAFTPUCK_FIREBASE__PrivateKeyId=1dc7f7f85c30fe3490407aa39341f50261b3cb111 \
-                DRAFTPUCK_FIREBASE__PrivateKey=secretref:firebase-private-key \
-                DRAFTPUCK_FIREBASE__ClientEmail=firebase-adminsdk-fbsvc@draftpuck-prod.iam.gserviceaccount.com \
-                DRAFTPUCK_FIREBASE__ClientId=105690771817979847891 \
-                DRAFTPUCK_FIREBASE__AuthUri=https://accounts.google.com/o/oauth2/auth \
-                DRAFTPUCK_FIREBASE__TokenUri=https://oauth2.googleapis.com/token \
-                DRAFTPUCK_FIREBASE__AuthProviderX509CertUrl=https://www.googleapis.com/oauth2/v1/certs \
-                DRAFTPUCK_FIREBASE__ClientX509CertUrl=https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40draftpuck-prod.iam.gserviceaccount.com \
-                DRAFTPUCK_FIREBASE__UniverseDomain=googleapis.com
-
-      - name: Deploy Processor Function to containerapp
-        uses: azure/CLI@v1
-        with:
-          inlineScript: |
-            az config set extension.use_dynamic_install=yes_without_prompt
-            az containerapp registry set -n brewpuck-processor -g BrewPuck --server brewpuck.azurecr.io --username ${{ secrets.BREWPUCK_REGISTRY_USERNAME }} --password ${{ secrets.BREWPUCK_REGISTRY_PASSWORD }}
-
-            az containerapp update -n brewpuck-processor -g BrewPuck \
-              --image brewpuck.azurecr.io/draftpuck-processor:${{ github.sha }} \
-              --replace-env-vars \
-                ConnectionStrings__DefaultConnection=secretref:sql-connection-string \
-                AzureWebJobsStorage=secretref:azure-webjobs-storage-connection
-                
+          tags: ${{ secrets.ACR_LOGIN_SERVER }}/draftpuck-worker:${{ github.sha }}
+          file: DraftPuck.Worker/Dockerfile
