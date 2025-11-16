@@ -21,6 +21,14 @@ export default defineConfig(({ mode }) => {
       splitVendorChunkPlugin(),
       fcm(isDev)
     ],
+    css: {
+      preprocessorOptions: {
+        scss: {
+          api: 'modern-compiler',
+          silenceDeprecations: ['legacy-js-api', 'import', 'global-builtin', 'color-functions']
+        }
+      }
+    },
     server: {
       host: 'localhost',
       port: 17010,

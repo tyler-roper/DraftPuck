@@ -18,8 +18,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DraftPuck.Shared", "DraftPu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DraftPuck.Infrastructure", "DraftPuck.Infrastructure\DraftPuck.Infrastructure.csproj", "{217F3C85-7DC8-4629-8F68-5DDE83041071}"
 EndProject
-Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{81DDED9D-158B-E303-5F62-77A2896D2A5A}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DraftPuck.Worker", "DraftPuck.Worker\DraftPuck.Worker.csproj", "{DF4D3E75-5A70-4479-BE88-683987AEF6E4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DraftPuck.Application", "DraftPuck.Application\DraftPuck.Application.csproj", "{62972906-7164-4EB0-9E48-A7A260502900}"

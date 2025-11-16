@@ -1,4 +1,5 @@
-﻿using DraftPuck.Application.Features.Games;
+﻿using DraftPuck.Application.Common.Exceptions;
+using DraftPuck.Application.Features.Games;
 using StackExchange.Redis;
 using System.Text.Json;
 
@@ -6,7 +7,7 @@ namespace DraftPuck.Infrastructure.Redis;
 
 public class RedisGameCache(IDatabase redisDb) : IGameCache
 {
-    private const string GamePrefix = "game:";
+    private const string GamePrefix = "{game}:";
     private const string NextRunPrefix = "nextRun:";
     private const string PregameAlertTriggeredPrefix = "pregameAlertTriggered:";
     private const string UserPicksThrottlePrefix = "userPicksThrottle:";
@@ -24,28 +25,37 @@ public class RedisGameCache(IDatabase redisDb) : IGameCache
 
     public async Task<List<GameDto>> GetAllGamesAsync()
     {
-        var server = redisDb.Multiplexer.GetServers().FirstOrDefault();
+        var endpoint = redisDb.Multiplexer.GetEndPoints().FirstOrDefault();
+        if (endpoint == null) return [];
+
+        var server = redisDb.Multiplexer.GetServer(endpoint);
         if (server == null) return [];
 
-        var keys = server.Keys(pattern: $"{GamePrefix}*").ToArray();
+        var keys = server.Keys(pattern: $"{GamePrefix}*", database: 0).ToArray();
         if (keys.Length == 0) return [];
 
-        var values = await redisDb.StringGetAsync(keys);
-        var games = new List<GameDto>();
-
-        foreach (var value in values)
+        try
         {
-            if (value.IsNullOrEmpty) continue;
-            var game = JsonSerializer.Deserialize<GameDto>(value!) ?? throw new InvalidOperationException("Failed to deserialize cached game data.");
-            games.Add(game);
-        }
+            var values = await redisDb.StringGetAsync(keys);
+            var games = new List<GameDto>();
 
-        return games;
+            foreach (var value in values)
+            {
+                if (value.IsNullOrEmpty) continue;
+                var game = JsonSerializer.Deserialize<GameDto>(value!) ?? throw new InvalidOperationException("Failed to deserialize cached game data.");
+                games.Add(game);
+            }
+
+            return games;
+        }
+        catch (Exception ex)
+        {
+            throw new BadRequestException(ex.Message);
+        }
     }
 
     public async Task RemoveGameAsync(GameDto game)
         => await RemoveGameAsync(game.Id);
-
 
     public async Task RemoveGameAsync(int id)
     {
