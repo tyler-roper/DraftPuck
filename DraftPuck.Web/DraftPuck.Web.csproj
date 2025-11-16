@@ -52,7 +52,7 @@
 		<ProjectReference Include="..\DraftPuck.Infrastructure\DraftPuck.Infrastructure.csproj" />
 	</ItemGroup>
 
-	<Target Name="ReleaseBuildWeb" BeforeTargets="BeforeBuild" Condition="'$(Configuration)' == 'Release' And '$(MSBuildProjectName)' == 'DraftPuck.Web' And '$(SkipClientBuild)' != 'true'">
+	<Target Name="ReleaseBuildWeb" BeforeTargets="BeforeBuild" Condition="'$(Configuration)' == 'Release'">
 		<Message Text="npm run build:release" />
 		<Exec Command="npm run build:release" WorkingDirectory="$(ProjectDir)ClientApp" />
 	</Target>
