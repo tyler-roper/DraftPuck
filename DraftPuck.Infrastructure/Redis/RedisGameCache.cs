@@ -25,25 +25,59 @@ public class RedisGameCache(IDatabase redisDb) : IGameCache
 
     public async Task<List<GameDto>> GetAllGamesAsync()
     {
-        var endpoint = redisDb.Multiplexer.GetEndPoints().FirstOrDefault();
-        if (endpoint == null) return [];
+        var endpoints = redisDb.Multiplexer.GetEndPoints();
+        if (endpoints == null || endpoints.Length == 0)
+            return [];
 
-        var server = redisDb.Multiplexer.GetServer(endpoint);
-        if (server == null) return [];
+        var allKeys = new HashSet<RedisKey>();
 
-        var keys = server.Keys(pattern: $"{GamePrefix}*", database: 0).ToArray();
-        if (keys.Length == 0) return [];
+        foreach (var endpoint in endpoints)
+        {
+            IServer? server = null;
+
+            try
+            {
+                server = redisDb.Multiplexer.GetServer(endpoint);
+            }
+            catch
+            {
+                continue;
+            }
+
+            if (server == null || !server.IsConnected)
+                continue;
+
+            try
+            {
+                var keys = server
+                    .KeysAsync(database: 0, pattern: $"{GamePrefix}*")
+                    .ConfigureAwait(false);
+
+                await foreach (var key in keys)
+                    allKeys.Add(key);
+            }
+            catch
+            {
+                continue;
+            }
+        }
+
+        if (allKeys.Count == 0)
+            return [];
 
         try
         {
-            var values = await redisDb.StringGetAsync(keys);
-            var games = new List<GameDto>();
+            var values = await redisDb.StringGetAsync([..allKeys]);
+            var games = new List<GameDto>(values.Length);
 
             foreach (var value in values)
             {
                 if (value.IsNullOrEmpty) continue;
-                var game = JsonSerializer.Deserialize<GameDto>(value!) ?? throw new InvalidOperationException("Failed to deserialize cached game data.");
-                games.Add(game);
+
+                var game = JsonSerializer.Deserialize<GameDto>(value!);
+
+                if (game != null)
+                    games.Add(game);
             }
 
             return games;
@@ -53,6 +87,7 @@ public class RedisGameCache(IDatabase redisDb) : IGameCache
             throw new BadRequestException(ex.Message);
         }
     }
+
 
     public async Task RemoveGameAsync(GameDto game)
         => await RemoveGameAsync(game.Id);
