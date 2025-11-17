@@ -20,9 +20,16 @@ DRAFTPUCK_APPLICATION__TestModeStartDateTimeUtc=<UTC Date>
 
 ## Running Locally
 
-* Use Docker Compose to start Web API, Worker, Redis, and Azurite
-* Ensure `.env` variables are correctly set
-* Check logs for errors in backend and worker
+* Recommended: **Use Docker Compose** to build the Web, Worker, Redis, and Azurite"
+```
+cd path\to\DraftPuck
+docker compose up
+```
+
+**or**
+
+* **Run the Web project independently** in Visual Studio by selecting `DraftPuck.Web` as the startup project, and selecting the **Docker** launch profile
+***(Note: You will have to run Azurite and Redis separately for most things to work)***
 
 ## Tips
 
