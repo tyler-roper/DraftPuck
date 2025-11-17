@@ -11,7 +11,7 @@ public class UseRefreshTokenCommandHandler(IDbContext dbContext, ITokenService t
         var userEntity = await GetUserByRefreshToken(request.RefreshToken, cancellationToken);
         var refreshTokenEntity = userEntity.RefreshTokens.Single(x => x.Token == request.RefreshToken);
 
-        if (refreshTokenEntity.AntiCsrfToken.ToString() != request.AntiCsrfTokenHeader)
+        if (request.AntiCsrfTokenHeader == null || refreshTokenEntity.AntiCsrfToken.ToString() != request.AntiCsrfTokenHeader)
             throw new UnauthorizedException("Invalid CSRF token.");
 
         if (!refreshTokenEntity.IsValid)

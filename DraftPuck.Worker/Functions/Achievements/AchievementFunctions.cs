@@ -12,7 +12,7 @@ public class AchievementFunctions(ILogger<AchievementFunctions> logger, IMediato
 {
 
     [Function(nameof(AchievementFunctions))]
-    public async Task ProcessCheckAchievementMessage([QueueTrigger("achievement-check-queue", Connection = "AzureWebJobsStorage")] QueueMessage queueMessage)
+    public async Task ProcessCheckAchievementMessage([QueueTrigger("achievement-check-queue")] QueueMessage queueMessage)
     {
         var messageString = queueMessage.Body.ToString();
 

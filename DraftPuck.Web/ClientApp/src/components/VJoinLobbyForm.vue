@@ -53,6 +53,7 @@ async function joinLobby(e: Event) {
 
     if (existingMember && currentUser.value!.id !== existingMember.userId) {
       toast.error("Nickname already in use")
+      isJoiningLobby.value = false
       return
     }
 

@@ -19,21 +19,35 @@
 
 ## Environment Variables
 
-Copy sample file:
+Copy sample files:
 
 ```bash
 cp env.development.list.sample env.development.list
+cp env.web.development.list.sample env.development.list
+cp CreateCertificate.ps1.sample CreateCertificate.ps1
 ```
 
-Update:
+Update `env.web.development.list`:
 
 ```
-DRAFTPUCK_ASPNETCORE_Kestrel__Certificates__Default__Password=<PFX_PASSWORD>
+// The PFX_PASSWORD can be any string you choose
+ASPNETCORE_Kestrel__Certificates__Default__Password=<PFX_PASSWORD>
+```
+
+Update `env.development.list`:
+
+```
 DRAFTPUCK_ConnectionStrings__DefaultConnection="Server=localhost;Database=DraftPuck;User Id=sa;Password=<SA_PASSWORD>;"
-DRAFTPUCK_AUTH__JWTKEY=<GUID>
+DRAFTPUCK_AUTH__JWTKEY=<JWT_KEY> // The JWT_KEY can be any string you choose (generating a GUID is recommended)
 ```
 
-Run certificate script:
+Update `CreateCertificate.ps1`, using the same `PFX_PASSWORD` from `env.web.development.list`:
+
+```powershell
+$certificatePassword = "<PFX_PASSWORD>"
+```
+
+Now run the certificate script:
 
 ```powershell
 .\CreateCertificate.ps1

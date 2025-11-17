@@ -1,6 +1,9 @@
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /opt/app
 
+COPY ./DraftPuck.Web/entrypoint.sh .
+RUN chmod +x /opt/app/entrypoint.sh
+
 FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine3.21 AS build
 LABEL BUILD_IMAGE=true
 
@@ -35,4 +38,4 @@ COPY --from=build /app/publish .
 ENV ASPNETCORE_URLS=http://+:17000/
 EXPOSE 17000
 
-ENTRYPOINT ["dotnet", "DraftPuck.Web.dll"]
+ENTRYPOINT ["/opt/app/entrypoint.sh", "dotnet", "DraftPuck.Web.dll"]

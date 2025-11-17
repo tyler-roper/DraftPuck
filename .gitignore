@@ -18,6 +18,12 @@ mono_crash.*
 
 # Configurations
 env.development.list
+env.web.development.list
+CreateCertificate.ps1
+
+# Client Configurations
+.env.release
+.env.development
 
 # Build results
 [Dd]ebug/
@@ -403,7 +409,4 @@ FodyWeavers.xsd
 
 # Azurite / Redis
 azurite/
-
-# Client App Environment Files
-.env.release
-.env.development
+redis/

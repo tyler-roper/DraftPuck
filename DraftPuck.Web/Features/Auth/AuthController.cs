@@ -44,7 +44,7 @@ public class AuthController(IMediator mediator) : BaseController()
             var refreshToken = Request.Cookies[RefreshTokenName];
 
             if (refreshToken == null)
-                return Unauthorized();
+                throw new UnauthorizedException("Refresh token is null.");
 
             var command = new UseRefreshTokenCommand
             {
@@ -57,9 +57,9 @@ public class AuthController(IMediator mediator) : BaseController()
             SetTokenCookie(response.RefreshToken);
             return Ok(response);
         }
-        catch
+        catch (Exception ex)
         {
-            return Unauthorized();
+            throw new UnauthorizedException(ex.Message, ex);
         }
     }
 

@@ -4,20 +4,11 @@ using Azure.Storage.Queues;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using System.ComponentModel;
 
 namespace DraftPuck.Infrastructure.AzureStorage;
 
 public static class AzureStorageServiceCollectionExtensions
 {
-    private static readonly string DevelopmentConnectionString =
-        $"DefaultEndpointsProtocol=http;" +
-        "AccountName=devstoreaccount1;" +
-        "AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;" +
-        "BlobEndpoint=http://host.docker.internal:10000/devstoreaccount1;" +
-        "QueueEndpoint=http://host.docker.internal:10001/devstoreaccount1;" +
-        "TableEndpoint=http://host.docker.internal:10002/devstoreaccount1;";
-
     public static IServiceCollection AddQueueServices(this IServiceCollection services, IConfiguration config)
     {
         services.Configure<AzureStorageOptions>(config.GetSection(AzureStorageOptions.SectionName));
@@ -26,11 +17,10 @@ public static class AzureStorageServiceCollectionExtensions
         services.AddSingleton<IAchievementQueueService>(sp =>
         {
             var options = sp.GetRequiredService<IOptions<AzureStorageOptions>>().Value;
-            var connectionString = options.UseDevelopmentStorage
-                ? DevelopmentConnectionString
-                : options.ConnectionString;
+            if (string.IsNullOrEmpty(options.ConnectionString))
+                throw new InvalidOperationException("Azure Storage connection string is required but missing.");
 
-            var client = new QueueClient(connectionString, options.AchievementQueueName, new() { MessageEncoding = QueueMessageEncoding.Base64 });
+            var client = new QueueClient(options.ConnectionString, options.AchievementQueueName, new() { MessageEncoding = QueueMessageEncoding.Base64 });
             client.CreateIfNotExists();
 
             return new AchievementQueueService(client);
@@ -40,11 +30,10 @@ public static class AzureStorageServiceCollectionExtensions
         services.AddSingleton<INhlQueueService>(sp =>
         {
             var options = sp.GetRequiredService<IOptions<AzureStorageOptions>>().Value;
-            var connectionString = options.UseDevelopmentStorage
-                ? DevelopmentConnectionString
-                : options.ConnectionString;
+            if (string.IsNullOrEmpty(options.ConnectionString))
+                throw new InvalidOperationException("Azure Storage connection string is required but missing.");
 
-            var client = new QueueClient(connectionString, options.NhlQueueName, new() { MessageEncoding = QueueMessageEncoding.Base64 });
+            var client = new QueueClient(options.ConnectionString, options.NhlQueueName, new() { MessageEncoding = QueueMessageEncoding.Base64 });
             client.CreateIfNotExists();
             return new NhlQueueService(client);
         });
@@ -58,7 +47,9 @@ public static class AzureStorageServiceCollectionExtensions
         services.AddSingleton<IAvatarStorageService>(sp =>
         {
             var options = sp.GetRequiredService<IOptions<AzureStorageOptions>>().Value;
-            return new AvatarStorageService(GetContainerClient(options, options.AvatarStorageContainer));
+            var containerClient = GetContainerClient(options, options.AvatarStorageContainer);
+            containerClient.SetAccessPolicy(PublicAccessType.Blob);
+            return new AvatarStorageService(containerClient);
         });
 
         return services;
@@ -66,17 +57,12 @@ public static class AzureStorageServiceCollectionExtensions
 
     private static BlobContainerClient GetContainerClient(AzureStorageOptions options, string containerName)
     {
-        var connectionString = options.UseDevelopmentStorage
-            ? DevelopmentConnectionString
-            : options.ConnectionString;
+        if (string.IsNullOrEmpty(options.ConnectionString))
+            throw new InvalidOperationException("Azure Storage connection string is required but missing.");
 
-        var client = new BlobServiceClient(connectionString);
+        var client = new BlobServiceClient(options.ConnectionString);
         var containerClient = client.GetBlobContainerClient(containerName);
         containerClient.CreateIfNotExists();
-
-        if (options.UseDevelopmentStorage)
-            containerClient.SetAccessPolicy(PublicAccessType.Blob);
-
         return containerClient;
     }
 }

@@ -14,6 +14,7 @@ export interface IHttpService {
 
 const apiBasePath = `/api/`
 const csrfHeaderKey = 'CSRF-Token'
+const refreshTokenUrl = `/${apiBasePath}auth/refreshTokens/use`
 
 export default class HttpService implements IHttpService {
   private _axios: AxiosInstance
@@ -38,10 +39,9 @@ export default class HttpService implements IHttpService {
       },
       async function (error) {
         const originalRequest = error.config
-        const refreshTokenUrl = '/api/auth/refreshTokens/use'
 
-        if (error.response.status === 401 && originalRequest.url !== refreshTokenUrl && !originalRequest._retry) {
-          originalRequest._retry = true
+        if (error.response.status === 401 && originalRequest.url !== refreshTokenUrl && !originalRequest._hasBeenRetried) {
+          originalRequest._hasBeenRetried = true
           const authenticationResponse = await axiosInstance.post<any, { data: AuthResponse }>(refreshTokenUrl)
           TokenService.storeTokens(authenticationResponse.data)
           return axiosInstance(originalRequest)
@@ -102,10 +102,12 @@ export default class HttpService implements IHttpService {
   setHeaders(config: InternalAxiosRequestConfig) {
     config.headers['Accept'] = 'application/json'
     config.headers['Content-Type'] = 'application/json'
-    
+
     const { jwt, csrf } = TokenService.getTokens()
 
-    if (jwt) config.headers['Authorization'] = `Bearer ${jwt}`
+    if (jwt && config.url !== refreshTokenUrl)
+      config.headers['Authorization'] = `Bearer ${jwt}`
+
     if (csrf) config.headers[csrfHeaderKey] = csrf
   }
 }
