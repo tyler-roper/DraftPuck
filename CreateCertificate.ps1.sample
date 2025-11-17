@@ -1,0 +1,10 @@
+$certificateName = "DraftPuck.pfx"
+$certificatePassword = "<PFX_PASSWORD>"
+$appDataPath = "$env:USERPROFILE\AppData\Roaming\ASP.NET\Https"
+$userAspNetPath = "$env:USERPROFILE\.aspnet\https"
+
+Remove-Item "$appDataPath\$certificateName" -ErrorAction Ignore
+Remove-Item "$userAspNetPath\$certificateName" -ErrorAction Ignore
+dotnet dev-certs https --trust
+dotnet dev-certs https -ep "$appdatapath\$certificatename" -p $certificatepassword
+dotnet dev-certs https -ep "$useraspnetpath\$certificatename" -p $certificatepassword
