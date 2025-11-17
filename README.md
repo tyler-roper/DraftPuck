@@ -39,10 +39,9 @@ Visit: `https://localhost:17010`
 DraftPuck uses a Clean Architecture structure:
 - **Web** — API + Vue 3 SPA
 - **Application** — business logic, commands/queries, MediatR
-- **Infrastructure** — SQL Server, Redis, Blob storage, integrations
-- **Shared** — cross-cutting helpers and abstractions
-- **Worker** — background processing, queues, notifications
-Full details in [`docs/architecture.md`](./docs/architecture.md)
+- **Infrastructure** — SQL Server, Redis, Blob storage, extneral integrations
+- **Shared** — cross-cutting domain objects, helpers, extensions
+- **Worker** — background processing (fetching/caching NHL data, awarding achievements, deactivating stale lobbies)
 
 ---
 
