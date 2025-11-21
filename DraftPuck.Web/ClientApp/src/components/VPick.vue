@@ -135,7 +135,9 @@ function trySelect() {
         <div class="player-and-team">
           <div class="name fs-6">
             <span class="position-badge fs-8 me-1">{{ player.position }}</span>
-            <span class="d-block" :class="{ 'text-stone-600': isPlayerPickedBySomeoneElse && !isRemoving }"> {{ player.firstName }} {{ player.lastName }} </span>
+            <span class="d-block" :class="{ 'text-stone-600': isPlayerPickedBySomeoneElse && !isRemoving }">
+              {{ player.firstName }} {{ player.lastName }}
+            </span>
           </div>
           <div class="team">
             <span class="text-stone-500">
@@ -186,7 +188,11 @@ function trySelect() {
         </div>
 
         <div v-if="isRemoving" class="ms-auto text-stone-900 d-flex align-items-center">
-          <a role="button" class="d-block fs-4 text-stone-0 text-decoration-none text-uppercase fw-bold py-2 px-3 bg-dark-red rounded" @click="emit('onUnpicked')">
+          <a
+            role="button"
+            class="d-block fs-4 text-stone-0 text-decoration-none text-uppercase fw-bold py-2 px-3 bg-dark-red rounded"
+            @click="emit('onUnpicked')"
+          >
             <i class="fi fi-sr-trash-undo pe-2 position-relative" style="top: 3px"></i>
             <span>Unpick</span>
           </a>

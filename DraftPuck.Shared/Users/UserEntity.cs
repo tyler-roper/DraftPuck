@@ -22,6 +22,8 @@ public partial class UserEntity
     public NotificationPreference PickingStartedNotificationPreference { get; set; } = NotificationPreference.None;
     [JsonIgnore]
     public string? PasswordHash { get; set; }
+    public string? DiscordUserId { get; set; }
+    public DateTime? DiscordUserLinkedDate { get; set; }
 
     public ICollection<UserBannerEntity> UserBanners { get; set; } = [];
     public ICollection<UserTitleEntity> UserTitles { get; set; } = [];

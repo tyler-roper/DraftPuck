@@ -40,7 +40,7 @@ const emailInput = ref<HTMLInputElement | null>(null)
 
 onMounted(async () => {
   await userStore.initialize()
-  if (userStore.isLoggedIn) router.replace("/")
+  if (userStore.isLoggedIn) router.replace('/')
   await nextTick()
   emailInput.value?.focus()
 })
@@ -56,9 +56,7 @@ async function login(e: Event) {
     await userStore.login(form.value.email, form.value.password)
 
     if (userStore.isLoggedIn) {
-      const url = lobbyCode.value
-        ? router.resolve(`/lobby/${lobbyCode.value}`)
-        : router.resolve(currentRoute.query.redirect?.toString() || '/')
+      const url = lobbyCode.value ? router.resolve(`/lobby/${lobbyCode.value}`) : router.resolve(currentRoute.query.redirect?.toString() || '/')
       router.replace(url)
       toast.success(`Welcome back, ${userStore.currentUser!.nickname}!`)
     } else throw new Error('Invalid login.')
@@ -116,10 +114,10 @@ async function login(e: Event) {
         <div class="col text-center">
           <router-link v-if="!lobbyCode" :to="{ name: 'Home' }" class="text-white">
             <span>Continue as Guest</span>
-            <VIcon icon="caret-right" class="ms-1"/>
+            <VIcon icon="caret-right" class="ms-1" />
           </router-link>
           <router-link v-else :to="{ name: 'Lobby', params: { joinCode: lobbyCode } }" class="text-white">
-            <VIcon icon="caret-left" class="me-1"/>
+            <VIcon icon="caret-left" class="me-1" />
             <span>Return to lobby</span>
           </router-link>
         </div>

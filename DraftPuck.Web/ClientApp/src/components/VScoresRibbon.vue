@@ -5,7 +5,7 @@ import VScore from '@/components/VScore.vue'
 
 //#region props
 defineProps<{
-  games: Game[],
+  games: Game[]
   selectedGame?: Game
 }>()
 //#endregion

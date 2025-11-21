@@ -25,7 +25,7 @@ export const useLobbyStore = defineStore('lobby', () => {
   //#endregion
 
   //#region mutations
-  const setAppSettings = (appSettings: { appIsTestMode: boolean, appStartupTime: Date, appTestModeStartTime: Date }) => {
+  const setAppSettings = (appSettings: { appIsTestMode: boolean; appStartupTime: Date; appTestModeStartTime: Date }) => {
     appIsTestMode.value = appSettings.appIsTestMode
     appStartupTime.value = appSettings.appStartupTime
     appTestModeStartTime.value = appSettings.appTestModeStartTime
@@ -108,8 +108,8 @@ export const useLobbyStore = defineStore('lobby', () => {
       currentSystemTime.value = new Date()
       return
     }
-    
-    const millisecondsSinceStartup = differenceInMilliseconds(new Date(), appStartupTime.value);
+
+    const millisecondsSinceStartup = differenceInMilliseconds(new Date(), appStartupTime.value)
     currentSystemTime.value = addMilliseconds(appTestModeStartTime.value, millisecondsSinceStartup)
   }
   //#endregion
@@ -180,8 +180,8 @@ export const useLobbyStore = defineStore('lobby', () => {
   }
 
   async function initAppSettings() {
-    const result = await SystemService.getSettings();
-    setAppSettings({ appIsTestMode: result.isTestMode, appStartupTime: result.startupTimeUtc, appTestModeStartTime: result.testModeStartDateTimeUtc})
+    const result = await SystemService.getSettings()
+    setAppSettings({ appIsTestMode: result.isTestMode, appStartupTime: result.startupTimeUtc, appTestModeStartTime: result.testModeStartDateTimeUtc })
   }
   //#endregion
 

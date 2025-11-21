@@ -12,7 +12,7 @@ const stopPropagation = (e: Event) => e.stopPropagation()
   <div class="modal-overlay" @click="close">
     <div class="dp-modal" @click="stopPropagation">
       <div class="modal-header">
-        <span class='d-block'>How To Play</span>
+        <span class="d-block">How To Play</span>
         <a role="button" class="text-uppercase text-primary text-decoration-none" @click="close">Close</a>
       </div>
       <div class="modal-body">

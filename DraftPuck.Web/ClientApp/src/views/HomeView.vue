@@ -8,7 +8,6 @@ import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
 import VUser from '@/components/VUser.vue'
 
-
 //#region data
 const userStore = useUserStore()
 const { isLoggedIn } = storeToRefs(userStore)
@@ -31,9 +30,9 @@ const view = ref<View>('join')
       <VCreateLobbyForm v-if="view === 'create'" class="mt-3" />
     </div>
     <div v-if="!isLoggedIn" class="text-center mt-3">
-      <router-link :to="{name: 'Login'}" class="fw-bold">Log in</router-link>
+      <router-link :to="{ name: 'Login' }" class="fw-bold">Log in</router-link>
       <span class="d-inline-block mx-2">or</span>
-      <router-link :to="{name: 'Join'}" class="fw-bold">join now for free</router-link>
+      <router-link :to="{ name: 'Join' }" class="fw-bold">join now for free</router-link>
       <span>!</span>
     </div>
   </SplashLayout>

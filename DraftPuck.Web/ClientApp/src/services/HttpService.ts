@@ -14,7 +14,7 @@ export interface IHttpService {
 
 const apiBasePath = `/api/`
 const csrfHeaderKey = 'CSRF-Token'
-const refreshTokenUrl = `/${apiBasePath}auth/refreshTokens/use`
+const refreshTokenUrl = `${apiBasePath}auth/refreshTokens/use`
 
 export default class HttpService implements IHttpService {
   private _axios: AxiosInstance
@@ -105,8 +105,7 @@ export default class HttpService implements IHttpService {
 
     const { jwt, csrf } = TokenService.getTokens()
 
-    if (jwt && config.url !== refreshTokenUrl)
-      config.headers['Authorization'] = `Bearer ${jwt}`
+    if (jwt && config.url !== refreshTokenUrl) config.headers['Authorization'] = `Bearer ${jwt}`
 
     if (csrf) config.headers[csrfHeaderKey] = csrf
   }

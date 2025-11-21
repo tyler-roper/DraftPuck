@@ -2,6 +2,7 @@ using DraftPuck.Application;
 using DraftPuck.Infrastructure;
 using DraftPuck.Infrastructure.Auth;
 using DraftPuck.Infrastructure.Persistence;
+using DraftPuck.Shared.Discord;
 using DraftPuck.Web.Features.Lobbies;
 using DraftPuck.Web.Filters;
 using DraftPuck.Web.Hubs;
@@ -39,6 +40,7 @@ try
 {
     builder.Services
         .Configure<ApplicationOptions>(options => builder.Configuration.Bind(ApplicationOptions.SectionName, options))
+        .Configure<DiscordOptions>(options => builder.Configuration.Bind(DiscordOptions.SectionName, options))
         .AddHttpContextAccessor()
         .AddInfrastructure(builder.Configuration)
         .AddScoped<IClientEventService, LobbyClientEventService>()
@@ -93,13 +95,17 @@ var app = builder.Build();
 
 MigrateDatabase(app);
 
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts()
+       .UseHttpsRedirection();
+}
+
 app
     .UseRouting()
     .UseAuthentication()
     .UseAuthorization()
     .UseStaticFiles()
-    .UseHsts()
-    .UseHttpsRedirection()
     .UseWebSockets()
     .UseEndpoints(endpoints =>
     {
@@ -112,10 +118,9 @@ app
         routes.MapSpaFallbackRoute("spa-routes", new { controller = "App", action = "Index" });
     });
 
+
 if (app.Environment.IsDevelopment())
-{
     app.UseSpa(spa => spa.UseProxyToSpaDevelopmentServer("https://localhost:17010"));
-}
 
 app.Run();
 

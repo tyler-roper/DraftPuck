@@ -58,7 +58,7 @@ export default class FeedItem {
     const homeAbbreviation = teams.home.abbreviation
     const awayAbbreviation = teams.away.abbreviation
 
-    const player = players.find(p => p.id === play.primaryPlayerId)
+    const player = players.find((p) => p.id === play.primaryPlayerId)
 
     let title = PlayType[play.type].replace(/([a-z])([A-Z])/g, '$1 $2')
     let subtext = `${play.timeInPeriod} ${getOrdinal(play.period, play.periodType)}`
@@ -73,8 +73,7 @@ export default class FeedItem {
       const scoringTeamAbbreviation = play.primaryTeamId! === teams.home.id ? homeAbbreviation : awayAbbreviation
 
       if (scoringTeamAbbreviation) {
-        if (play.type === PlayType.Goal && scoringTeamAbbreviation.toLowerCase() === 'tbl')
-          images = [`${scoringTeamAbbreviation}_LIGHT.png`]
+        if (play.type === PlayType.Goal && scoringTeamAbbreviation.toLowerCase() === 'tbl') images = [`${scoringTeamAbbreviation}_LIGHT.png`]
         else images = [`${scoringTeamAbbreviation}.png`]
       }
     }
@@ -96,10 +95,8 @@ export default class FeedItem {
     }
 
     if (play.type === PlayType.Penalty) {
-      if (player && play.penalty)
-        text = `${player.firstName} ${player.lastName} - ${play.penalty}`
-      else
-        text = "Waiting for details..."
+      if (player && play.penalty) text = `${player.firstName} ${player.lastName} - ${play.penalty}`
+      else text = 'Waiting for details...'
     }
 
     if (play.type === PlayType.Challenge) {
@@ -114,12 +111,9 @@ export default class FeedItem {
     //set subtext
     if (play.type === PlayType.PeriodStart || play.type === PlayType.PeriodEnd) {
       subtext = ''
-      text = play.type === PlayType.PeriodStart
-        ? 'Start of '
-        : 'End of '
+      text = play.type === PlayType.PeriodStart ? 'Start of ' : 'End of '
       text += getOrdinal(play.period, play.periodType)
-      if (play.period <= 3)
-        text += ' Period'
+      if (play.period <= 3) text += ' Period'
     }
 
     if (play.type === PlayType.GameEnd) {

@@ -17,29 +17,29 @@ interface SuccessMessage {
 
 const avatarToasts = [
   "Lookin' good!",
-  "New look!",
-  "Fresh!",
-  "Bingo!",
+  'New look!',
+  'Fresh!',
+  'Bingo!',
   "Lookin' sharp!",
-  "Did you get a haircut?",
+  'Did you get a haircut?',
   "Lookin' fly!",
-  "Glow up!",
-  "Snazzy!",
-  "Million bucks!",
-  "Hot in here!"
-];
+  'Glow up!',
+  'Snazzy!',
+  'Million bucks!',
+  'Hot in here!'
+]
 
 const avatarDiscardToasts = [
-  "Good choice...",
-  "Yeah, not your best.",
+  'Good choice...',
+  'Yeah, not your best.',
   "Gonna be a 'No' from me.",
-  "Change is scary.",
-  "Smart move.",
-  "In with the old...",
+  'Change is scary.',
+  'Smart move.',
+  'In with the old...',
   "I wasn't gonna say it...",
   "I wasn't feelin' it either.",
-  "Probably for the best.",
-  "Good riddance."
+  'Probably for the best.',
+  'Good riddance.'
 ]
 
 //#region data
@@ -115,17 +115,15 @@ async function save() {
   try {
     isSaving.value = true
     await userStore.updateUser({ avatarData: userPreview.value.avatarPath })
-    toast.success("Successfully updated your avatar!", { timeout: 2000 })
+    toast.success('Successfully updated your avatar!', { timeout: 2000 })
     router.replace(`/u/${currentUser.value!.nickname}`)
   } catch (e) {
     console.error(`Failed to update avatar: ${e}`)
   } finally {
-    isSaving.value = false;
+    isSaving.value = false
   }
 }
 //#endregion
-
-
 </script>
 
 <template>
@@ -134,11 +132,11 @@ async function save() {
       <div class="d-flex justify-content-center mt-n5 position-relative">
         <VUser display="avatar" :user="userPreview" :show-menu-on-click="false" :avatar-size-in-px="180" />
         <div v-if="isUploading" class="loading-overlay">
-          <VIcon icon="hourglass" prefix="sr" class="text-stone-0 hourglass"/>
+          <VIcon icon="hourglass" prefix="sr" class="text-stone-0 hourglass" />
         </div>
         <div class="notifications">
           <transition-group name="fade-up" tag="div" class="notifications">
-            <div v-for="msg in messages" :key="msg.id" class="success-message" :class="{'is-error': msg.isError }">
+            <div v-for="msg in messages" :key="msg.id" class="success-message" :class="{ 'is-error': msg.isError }">
               {{ msg.text }}
             </div>
           </transition-group>
@@ -147,7 +145,9 @@ async function save() {
       <div class="mt-4">
         <div class="text-center">
           <label for="imageUpload">
-            <a role="button" class="btn border border-stone-400 bg-stone-9000" :class="{'o-50': isUploading || isSaving }" style="width: 155px;">{{ !isUploading ? "Upload New Avatar" : "Uploading..." }}</a>
+            <a role="button" class="btn border border-stone-400 bg-stone-9000" :class="{ 'o-50': isUploading || isSaving }" style="width: 155px">{{
+              !isUploading ? 'Upload New Avatar' : 'Uploading...'
+            }}</a>
           </label>
           <input id="imageUpload" type="file" accept="image/png, image/jpeg" @change="newImage" :disabled="isUploading || isSaving" />
         </div>
@@ -191,7 +191,7 @@ input[type='file'] {
   position: absolute;
   z-index: 2;
   top: -40px;
-  left: 50%;;
+  left: 50%;
   font-size: 16px;
   transform: translateX(-50%) translateY(-20px);
   text-align: center;
@@ -205,7 +205,7 @@ input[type='file'] {
   animation-name: fadeUp;
   animation-duration: 1.25s;
   animation-fill-mode: forwards;
-  animation-timing-function: cubic-bezier(0.23,1,0.32,1);
+  animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .fade-up-leave-active {
@@ -214,7 +214,7 @@ input[type='file'] {
 }
 
 .hourglass {
-  animation: spin 2s forwards cubic-bezier(0.68,-0.55,0.27,1.55) infinite;
+  animation: spin 2s forwards cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
   font-size: 70px;
   opacity: 0.9;
 }

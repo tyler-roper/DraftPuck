@@ -215,9 +215,8 @@ public partial class DraftPuckContext : DbContext, IDbContext
             entity.Property(e => e.IsAdmin).HasDefaultValueSql("((0))");
             entity.Property(e => e.IsGuest).HasDefaultValueSql("((1))");
             entity.Property(e => e.AvatarPath).HasMaxLength(1000);
-            entity.Property(e => e.Email).HasMaxLength(500);
             entity.Property(e => e.Email).HasMaxLength(255);
-            entity.Property(e => e.Email).HasMaxLength(255);
+            entity.Property(e => e.DiscordUserId).HasMaxLength(25);
         });
 
         OnModelCreatingPartial(modelBuilder);

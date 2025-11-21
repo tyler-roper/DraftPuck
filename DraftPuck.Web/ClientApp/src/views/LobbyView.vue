@@ -30,7 +30,7 @@ import { getToken, getMessaging, onMessage } from 'firebase/messaging'
 import type { ILogger, LogLevel } from '@microsoft/signalr'
 import VUser from '@/components/VUser.vue'
 import { useUserStore } from '@/stores/user'
-import { env } from '@/env';
+import { env } from '@/env'
 
 class SignalRLogger implements ILogger {
   logLevel = 0
@@ -432,9 +432,7 @@ async function dispatchLobbyEvent(lobbyEvent: LobbyEvent) {
     [LobbyEventType.UserRemoved, LobbyEventType.UserLeft].includes(lobbyEvent.lobbyEventType) &&
     lobbyEvent.lobbyMemberId === currentLobbyMemberValue.id
   ) {
-    const text = lobbyEvent.lobbyEventType === LobbyEventType.UserRemoved
-      ? "You were removed from the lobby."
-      : "You left the lobby."
+    const text = lobbyEvent.lobbyEventType === LobbyEventType.UserRemoved ? 'You were removed from the lobby.' : 'You left the lobby.'
 
     toast.error(text)
     router.replace('/')

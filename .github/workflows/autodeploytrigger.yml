@@ -39,3 +39,11 @@ jobs:
           push: true
           tags: ${{ secrets.ACR_LOGIN_SERVER }}/draftpuck-worker:${{ github.sha }}
           file: DraftPuck.Worker/Dockerfile
+
+      - name: Build and push Discord Bot
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.ACR_LOGIN_SERVER }}/draftpuck-discord-bot:${{ github.sha }}
+          file: DraftPuck.DiscordBot/Dockerfile

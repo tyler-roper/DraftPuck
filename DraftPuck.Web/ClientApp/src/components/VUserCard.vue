@@ -49,7 +49,7 @@ const { currentUser: user, isAdmin, isLoggedIn } = storeToRefs(userStore)
     map-get($custom-colors, 'stone-800') 74px,
     map-get($custom-colors, 'stone-900') 100%
   );
-  box-shadow: 0 0 15px rgba(0,0,0,0.4);
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
 }
 
 .user > .settings,

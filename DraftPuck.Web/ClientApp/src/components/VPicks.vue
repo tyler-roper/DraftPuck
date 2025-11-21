@@ -39,7 +39,9 @@ const removingPlayer = ref<Player>()
 //#region computed
 const selectedGame = computed(() => props.selectedGame)
 const currentMember = computed(() => lobby.value!.members.find((m) => m.userId === currentUserId.value)!)
-const selectedTeam = computed(() => selectedTeamId.value === selectedGame.value?.homeTeam.id ? selectedGame.value?.homeTeam : selectedGame.value?.awayTeam);
+const selectedTeam = computed(() =>
+  selectedTeamId.value === selectedGame.value?.homeTeam.id ? selectedGame.value?.homeTeam : selectedGame.value?.awayTeam
+)
 
 const selectedMemberPlayerAndGamePicks = computed(() => {
   const member = selectedMember.value ?? currentMember.value
@@ -63,8 +65,8 @@ const selectedMemberPlayerAndGamePicks = computed(() => {
 const nextUpcomingPicks = computed(() => {
   if (!gameCountdowns.value) return ''
   const upcomingGames = Object.entries(gameCountdowns.value)
-    .filter(([key,value]) => value.asMilliseconds > 0 && lobby.value?.gameIds.includes(Number(key)))
-    .map(([_,v]) => v)
+    .filter(([key, value]) => value.asMilliseconds > 0 && lobby.value?.gameIds.includes(Number(key)))
+    .map(([_, v]) => v)
 
   if (upcomingGames.length) return upcomingGames.reduce((prev, curr) => (prev.asMilliseconds < curr.asMilliseconds ? prev : curr)).asString
   return ''
@@ -87,11 +89,11 @@ const selectedTeamRosterSorted = computed(() => {
   if (selectedTeam.value === undefined) return []
 
   return [...selectedTeam.value!.roster]
-  .filter(p => p.position.toLocaleLowerCase() !== "g")
-  .sort((a, b) => {
-    const pickedPlayerIds = currentMember.value.picks.map(({ playerId }) => playerId)
-    return Number(pickedPlayerIds.includes(b.id)) - Number(pickedPlayerIds.includes(a.id))
-  })
+    .filter((p) => p.position.toLocaleLowerCase() !== 'g')
+    .sort((a, b) => {
+      const pickedPlayerIds = currentMember.value.picks.map(({ playerId }) => playerId)
+      return Number(pickedPlayerIds.includes(b.id)) - Number(pickedPlayerIds.includes(a.id))
+    })
 })
 //#endregion
 
@@ -229,7 +231,8 @@ function isPlayerSelected(player: Player) {
 
 function currentUserHasPicksForGame(game: Game) {
   const isGameStartingWithin30Minutes = game.gameState === GameState.Upcoming && addMinutes(game.dateTime, -30) < currentSystemTime.value
-  const isGamePickable = game.awayTeam.roster.length + game.homeTeam.roster.length > 0 && (game.gameState === GameState.Live || isGameStartingWithin30Minutes)
+  const isGamePickable =
+    game.awayTeam.roster.length + game.homeTeam.roster.length > 0 && (game.gameState === GameState.Live || isGameStartingWithin30Minutes)
   const isGameLocked = !lobby.value?.gameIds.includes(game.id)
 
   const picksPerTeam = lobby.value!.picksPerTeam

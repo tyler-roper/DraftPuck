@@ -1,8 +1,7 @@
 enum PeriodType {
-    Regulation,
-    Overtime,
-    Shootout
-  }
-  
-  export default PeriodType
-  
+  Regulation,
+  Overtime,
+  Shootout
+}
+
+export default PeriodType

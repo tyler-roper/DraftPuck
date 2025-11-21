@@ -1,4 +1,4 @@
 interface Schedule {
-    date: Date
-    games: GameSummary[]
+  date: Date
+  games: GameSummary[]
 }

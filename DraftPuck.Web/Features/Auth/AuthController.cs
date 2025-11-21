@@ -36,6 +36,7 @@ public class AuthController(IMediator mediator) : BaseController()
         return NoContent();
     }
 
+    [AllowAnonymous]
     [HttpPost("refreshTokens/use")]
     public async Task<IActionResult> UseRefreshToken()
     {

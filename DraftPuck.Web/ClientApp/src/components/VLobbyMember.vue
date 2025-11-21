@@ -49,22 +49,18 @@ const iconClass = computed(() => ({
 
 const isLoggedIn = computed(() => member.value.isGuest === false)
 const bannerStyle = computed(() => {
-  return member.value.isGuest !== false
-    ? {}
-    : { 'background-image': `url(${member.value.banner?.imagePath})` }
+  return member.value.isGuest !== false ? {} : { 'background-image': `url(${member.value.banner?.imagePath})` }
 })
 
 const avatarStyle = computed(() => {
-  return member.value.isGuest !== false && member.value.avatarPath
-    ? {}
-    : { 'background-image': `url(${member.value.avatarPath})` }
+  return member.value.isGuest !== false && member.value.avatarPath ? {} : { 'background-image': `url(${member.value.avatarPath})` }
 })
 
 const memberTitle = computed(() => {
   if (member.value.isBot === true) return `Strategy: ${BotPickStyle[member.value.botPickStyle]}`
   if (member.value.isGuest === true) {
-    if (isCurrentMember.value === true) return "You (Guest)"
-    else return "Guest"
+    if (isCurrentMember.value === true) return 'You (Guest)'
+    else return 'Guest'
   }
   return member.value.title?.text
 })
@@ -96,15 +92,15 @@ async function giveDrink(recipient: LobbyMember) {
 }
 
 async function leaveLobby() {
-  const isConfirmed = confirm("Leaving this lobby will forfeit all of your picks. Are you sure?");
+  const isConfirmed = confirm('Leaving this lobby will forfeit all of your picks. Are you sure?')
   if (!isConfirmed) return
 
   try {
     await LobbyService.leaveLobby(lobby.value!.joinCode)
-    toast.success(`Left lobby ${lobby.value!.joinCode}.`, { timeout: 2000 });
-    router.push({name: 'Home' })
+    toast.success(`Left lobby ${lobby.value!.joinCode}.`, { timeout: 2000 })
+    router.push({ name: 'Home' })
   } catch (e) {
-    console.error("Failed to leave lobby:", e);
+    console.error('Failed to leave lobby:', e)
   }
 }
 </script>
@@ -233,8 +229,6 @@ async function leaveLobby() {
   color: map-get($custom-colors, 'stone-0');
   font-size: 18px !important;
 }
-
-
 
 .title.is-logged-in {
   text-shadow:

@@ -1,5 +1,5 @@
 interface SystemSettingsResponse {
-    isTestMode: boolean
-    startupTimeUtc: Date
-    testModeStartDateTimeUtc: Date
+  isTestMode: boolean
+  startupTimeUtc: Date
+  testModeStartDateTimeUtc: Date
 }

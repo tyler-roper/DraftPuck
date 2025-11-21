@@ -11,12 +11,12 @@ const props = withDefaults(
 </script>
 
 <template>
-    <i :class="`fi fi-${props.prefix}-${props.icon}`"></i>
+  <i :class="`fi fi-${props.prefix}-${props.icon}`"></i>
 </template>
 
 <style scoped>
-  i.fi::before {
-    display: inline-block;
-    transform: translateY(15%)
-  }
+i.fi::before {
+  display: inline-block;
+  transform: translateY(15%);
+}
 </style>

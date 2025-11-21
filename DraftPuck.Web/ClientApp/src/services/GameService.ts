@@ -10,9 +10,9 @@ class NhlApiService {
   }
 
   public async getAllGameSummaries(): Promise<GameSummary[]> {
-      return this._http.get('summaries')
+    return this._http.get('summaries')
   }
-  
+
   public async getGame(gameId: number): Promise<Game> {
     return this._http.get(`${gameId}`)
   }

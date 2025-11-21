@@ -46,7 +46,7 @@ const close = () => {
 }
 async function enableAndSave() {
   isSaving.value = true
-  const waitingNotice = toast("Waiting on permissions...")
+  const waitingNotice = toast('Waiting on permissions...')
   await Notification.requestPermission()
   toast.dismiss(waitingNotice)
 
@@ -126,19 +126,10 @@ async function enableAndSave() {
             </div>
           </div>
         </div>
-        <VButton
-          v-if="isNotificationsEnabled"
-          class="btn btn-primary fw-bold w-100 p-3 mt-4"
-          @click="save"
-          :is-loading="isSaving"
+        <VButton v-if="isNotificationsEnabled" class="btn btn-primary fw-bold w-100 p-3 mt-4" @click="save" :is-loading="isSaving"
           >Save Settings</VButton
         >
-        <VButton
-          v-if="!isNotificationsEnabled"
-          class="btn btn-primary fw-bold w-100 p-3 mt-4"
-          :is-loading="isSaving"
-          @click="enableAndSave"
-        >
+        <VButton v-if="!isNotificationsEnabled" class="btn btn-primary fw-bold w-100 p-3 mt-4" :is-loading="isSaving" @click="enableAndSave">
           Save &amp; Enable Notifications
         </VButton>
         <button v-if="!isNotificationSupported" class="btn btn-stone-900 text-stone-0 fw-bold w-100 p-3 mt-4" @click="close">Close</button>
