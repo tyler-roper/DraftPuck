@@ -1,0 +1,11 @@
+﻿global using AutoMapper;
+global using DraftPuck.Application.Common.Interfaces;
+global using DraftPuck.Shared.Achievements;
+global using DraftPuck.Shared.Banners;
+global using DraftPuck.Shared.Games;
+global using DraftPuck.Shared.Lobbies;
+global using DraftPuck.Shared.System;
+global using DraftPuck.Shared.Users;
+global using MediatR;
+global using Microsoft.EntityFrameworkCore;
+global using Microsoft.Extensions.Logging;
