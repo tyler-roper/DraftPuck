@@ -271,6 +271,7 @@ async function initializeFirebase() {
   }
 
   const vapidKey = window.env.VITE_FIREBASE_VAPID_KEY
+  const vapidKey = env.VITE_FIREBASE_VAPID_KEY
   const firebaseConfig = {
     apiKey: env.VITE_FIREBASE_API_KEY,
     authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,

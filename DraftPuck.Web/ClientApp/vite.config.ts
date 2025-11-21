@@ -1,13 +1,16 @@
 import { fileURLToPath, URL } from 'node:url'
-import { defineConfig, splitVendorChunkPlugin } from 'vite'
+import { defineConfig, loadEnv, splitVendorChunkPlugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 import move from './scripts/vite-plugin-move'
 import fcm from './scripts/vite-plugin-fcm-sw'
+import fs from 'fs'
+import os from 'os'
 
 export default defineConfig(({ mode }) => {
   const isDev = mode === 'development'
   const fileNamePattern = !isDev ? '[name]-[hash]' : '[name]'
+  const httpsConfig = configureHttps(mode)
 
   const config = {
     plugins: [
@@ -33,6 +36,7 @@ export default defineConfig(({ mode }) => {
       host: 'localhost',
       port: 17010,
       watch: { usePolling: false },
+      https: httpsConfig || true,
       proxy: {
         '/api': {
           target: 'https://localhost:17000',
@@ -80,3 +84,36 @@ export default defineConfig(({ mode }) => {
 
   return config
 })
+
+function configureHttps(mode: string) {
+  loadEnv(mode, process.cwd(), '') // Load environment variables
+  const certificateName = "DraftPuck.pfx"
+  const certificatePassword = "f9aaa3fd-2580-4aa6-8e32-ad0208c40666" 
+
+  // Determine the correct paths based on the OS
+  const homeDir = os.userInfo().homedir;
+  const appDataPath = os.platform() === 'win32' 
+      ? resolve(homeDir, 'AppData/Roaming/ASP.NET/Https', certificateName)
+      : resolve(homeDir, '.aspnet/https', certificateName);
+
+  const certPath = [
+    appDataPath,
+    resolve(homeDir, '.aspnet/https', certificateName)
+  ].find(p => fs.existsSync(p));
+
+  if (!certPath) {
+    console.warn(`
+      🚨 WARNING: Local HTTPS certificate not found at expected ASP.NET locations:
+      ${appDataPath}
+      ${resolve(homeDir, '.aspnet/https', certificateName)}
+      Please ensure you run 'dotnet dev-certs https -ep <path> -p <password>' to export the certificate.
+    `);
+  }
+
+  return certPath 
+    ? {
+        pfx: fs.readFileSync(certPath), // Read the binary PFX file content
+        passphrase: certificatePassword
+      }
+    : null;
+}
