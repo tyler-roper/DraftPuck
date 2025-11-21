@@ -24,7 +24,7 @@ const bannerPath = computed(() => `url(${profileUser.value?.banner.imagePath})`)
 const allAchievements = ref<Array<Achievement>>([])
 const achievementCompletionPercentage = computed(() => {
   if ((currentUser.value?.achievements?.length ?? 0) === 0) return 0
-  return Math.floor(allAchievements.value.length / currentUser.value!.achievements.length)
+  return Math.floor(currentUser.value!.achievements.length / allAchievements.value.length)
 })
 //#endregion
 

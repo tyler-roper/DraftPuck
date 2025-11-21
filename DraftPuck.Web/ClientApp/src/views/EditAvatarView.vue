@@ -52,6 +52,7 @@ const messages = ref<SuccessMessage[]>([])
 const isSaving = ref(false)
 const toast = useToast()
 const router = useRouter()
+const imageUpload = ref<HTMLInputElement>()
 
 let nextId = 1
 //#endregion
@@ -99,6 +100,8 @@ function newImage(e: Event) {
 
 function discard() {
   addMessage(avatarDiscardToasts.random())
+  if (imageUpload.value)
+    imageUpload.value.value = '';
   userPreview.value.avatarPath = currentUser.value!.avatarPath
 }
 
@@ -149,7 +152,7 @@ async function save() {
               !isUploading ? 'Upload New Avatar' : 'Uploading...'
             }}</a>
           </label>
-          <input id="imageUpload" type="file" accept="image/png, image/jpeg" @change="newImage" :disabled="isUploading || isSaving" />
+          <input id="imageUpload" ref="imageUpload" type="file" accept="image/png, image/jpeg" @change="newImage" :disabled="isUploading || isSaving" />
         </div>
       </div>
       <div class="mt-4 fs-7 text-center text-stone-400">
