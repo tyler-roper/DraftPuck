@@ -4,7 +4,7 @@ withDefaults(
     showHeaderText?: boolean
     showFlavorText?: boolean
     increaseContrast?: boolean
-    alignToBottom?: boolean,
+    alignToBottom?: boolean
     padding?: number
   }>(),
   {
@@ -29,10 +29,10 @@ withDefaults(
           <span class="d-block text-white">Pour One</span>
         </div>
         <p class="mt-4 rubik fs-6 fw-bold text-center text-stone-200" v-if="showFlavorText">
-          Draft NHL players in real time. If they score, your friends drink.<br><br>Fantasy hockey - <i>real punishment</i>.
+          Draft NHL players in real time. If they score, your friends drink.<br /><br />Fantasy hockey - <i>real punishment</i>.
         </p>
       </div>
-      <div :class="{'mt-auto': alignToBottom}">
+      <div :class="{ 'mt-auto': alignToBottom }">
         <slot></slot>
       </div>
     </div>

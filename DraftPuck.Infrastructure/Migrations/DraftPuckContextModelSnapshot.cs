@@ -521,6 +521,13 @@ namespace DraftPuck.Infrastructure.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("(getutcdate())");
 
+                    b.Property<string>("DiscordUserId")
+                        .HasMaxLength(25)
+                        .HasColumnType("nvarchar(25)");
+
+                    b.Property<DateTime?>("DiscordUserLinkedDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("DrinkAwardedNotificationPreference")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")

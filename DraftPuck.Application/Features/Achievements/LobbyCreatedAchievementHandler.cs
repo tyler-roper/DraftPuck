@@ -10,6 +10,6 @@ public class LobbyCreatedAchievementHandler(IAchievementQueueService queueServic
             UserId = creatorUserId,
             TriggerType = AchievementTriggerType.LobbyCreated,
             QueuedTimeUtc = DateTime.UtcNow
-        });
+        }, ct: cancellationToken);
     }
 }

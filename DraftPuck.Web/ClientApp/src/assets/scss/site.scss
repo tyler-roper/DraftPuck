@@ -284,8 +284,8 @@ input[type='date'].date-input--has-value::-webkit-datetime-edit-year-field {
   transition: all 0.2s;
 }
 
-.input:not([type='radio']):not([type=checkbox]):focus-within,
-input:not([type='radio']):not([type=checkbox]):focus,
+.input:not([type='radio']):not([type='checkbox']):focus-within,
+input:not([type='radio']):not([type='checkbox']):focus,
 textarea:focus,
 select:focus,
 select.form-control:focus {
@@ -338,7 +338,7 @@ select.form-control.dark:focus {
 .input-icon + select.form-control,
 .input-icon + select.form-control {
   padding-left: 40px !important;
-  border-radius: 8px  !important;
+  border-radius: 8px !important;
 }
 
 .input-group.small-input .input-icon + input,
@@ -381,7 +381,7 @@ select.form-control.dark:focus {
 }
 
 .input,
-input:not([type='radio']):not([type=checkbox]),
+input:not([type='radio']):not([type='checkbox']),
 textarea,
 select,
 select.form-control {
@@ -395,7 +395,7 @@ select.form-control {
 }
 
 .input-group.small-input input,
-.input-group.small-input input:not([type='radio']):not([type=checkbox]),
+.input-group.small-input input:not([type='radio']):not([type='checkbox']),
 .input-group.small-input textarea {
   padding: 5px 10px;
 }
@@ -406,7 +406,7 @@ select.form-control {
 }
 
 .input:not(.is-invalid),
-input:not(.is-invalid):not([type='radio']):not([type=checkbox]),
+input:not(.is-invalid):not([type='radio']):not([type='checkbox']),
 textarea:not(.is-invalid),
 select:not(.is-invalid),
 select:not(.is-invalid).form-control {
@@ -414,15 +414,15 @@ select:not(.is-invalid).form-control {
 }
 
 .input.borderless:not(.is-invalid),
-input.borderless:not(.is-invalid):not([type='radio']):not([type=checkbox]),
+input.borderless:not(.is-invalid):not([type='radio']):not([type='checkbox']),
 textarea.borderless:not(.is-invalid),
 select.borderless:not(.is-invalid),
 select.borderless:not(.is-invalid).form-control {
-  border: 2px solid transparent;  
+  border: 2px solid transparent;
 }
 
 .input.dark,
-input:not([type='radio']):not([type=checkbox]).dark,
+input:not([type='radio']):not([type='checkbox']).dark,
 textarea.dark,
 select.dark,
 select.form-control.dark {

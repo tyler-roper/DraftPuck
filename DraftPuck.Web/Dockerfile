@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /opt/app
 
-COPY ./DraftPuck.Web/entrypoint.sh .
+COPY ./DraftPuck.Web/entrypoint.sh /opt/app/entrypoint.sh
 RUN chmod +x /opt/app/entrypoint.sh
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine3.21 AS build

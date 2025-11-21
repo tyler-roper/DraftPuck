@@ -217,7 +217,7 @@ async function makeBotPick(bot: Bot, team: GameTeam) {
   const [rangeStart, rangeEnd] = botPickStrategies[style].preferredRange
   const fallbackStrategy = botPickStrategies[style].fallbackStrategy
 
-  const availablePlayerIds = availablePlayers.map(ap => ap.id);
+  const availablePlayerIds = availablePlayers.map((ap) => ap.id)
   const preferredPlayers = team.roster.slice(rangeStart, rangeEnd + 1).filter((p) => availablePlayerIds.includes(p.id))
   if (preferredPlayers.length) return await pick(preferredPlayers.random().id, team.id, bot.id)
 

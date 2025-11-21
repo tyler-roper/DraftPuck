@@ -26,7 +26,6 @@ export const useUserStore = defineStore('user', () => {
   //#region actions
   let initPromise: Promise<User | undefined> | null = null
 
-
   async function initialize() {
     if (isReady.value) return currentUser.value
     if (initPromise) return initPromise
@@ -60,7 +59,7 @@ export const useUserStore = defineStore('user', () => {
       TokenService.storeTokens(authResponse)
       setCurrentUser(authResponse.user)
     } else {
-      throw new Error("Could not set current user.");
+      throw new Error('Could not set current user.')
     }
   }
 
@@ -83,7 +82,7 @@ export const useUserStore = defineStore('user', () => {
   const logout = async () => {
     await AuthService.logout()
     TokenService.clearTokens()
-    await initUser();
+    await initUser()
   }
 
   const updateUser = async (request: UpdateUserRequest) => {

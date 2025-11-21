@@ -1,7 +1,7 @@
 <script setup lang="ts">
 export interface Props {
   isLoading?: boolean
-  showText?:boolean
+  showText?: boolean
   loadingText?: string
   type?: 'button' | 'submit' | 'reset'
 }

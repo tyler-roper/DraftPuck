@@ -9,4 +9,6 @@ public class ApplicationOptions
     public static TimeSpan TimeSinceStartup => DateTime.UtcNow - ApplicationStartupInfo.StartupTimeUtc;
     public DateTime CurrentTimeUtc => IsTestMode ? TestModeStartDateTimeUtc.Add(TimeSinceStartup) : DateTime.UtcNow;
     public static int GameCheckFrequencyInSeconds => 10;
+    public string? InternalApiKey { get; set; }
+    public string? InternalApiBasePath { get; set; }
 }

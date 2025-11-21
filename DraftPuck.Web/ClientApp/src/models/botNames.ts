@@ -24,8 +24,8 @@
   'Teemu Salami',
   'Fussy Pucker',
   'Wayne Botzky',
-  "Quinn Brews",
-  "ChatABV"
+  'Quinn Brews',
+  'ChatABV'
 ]
 
 export default BotNames

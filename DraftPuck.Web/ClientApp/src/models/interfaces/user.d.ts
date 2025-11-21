@@ -14,6 +14,8 @@ interface User {
   achievements: Array<UserAchievement>
   avatarPath?: string
   fcmRegistrationToken?: string
+  discordUserId?: string
+  discordUserLinkedDate?: Date
   drinkReceivedNotificationPreference: NotificationPreference
   drinkAwardedNotificationPreference: NotificationPreference
   chatNotificationPreference: NotificationPreference

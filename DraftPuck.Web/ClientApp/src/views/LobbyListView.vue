@@ -69,7 +69,7 @@ onMounted(async () => {
         <VIcon icon="empty-set" style="font-size: 150px" class="text-stone-500" />
         <span class="d-block text-uppercase fs-1 fw-bold">WOOPS!</span>
         <span class="d-block my-4 fs-3 text-stone-200">Looks like you haven't been in any lobbies yet.</span>
-        <span class="d-block fs-5 text-stone-400">What have you been doing...?<br>Get out there!</span>
+        <span class="d-block fs-5 text-stone-400">What have you been doing...?<br />Get out there!</span>
       </div>
     </div>
     <div v-else class="p-2">

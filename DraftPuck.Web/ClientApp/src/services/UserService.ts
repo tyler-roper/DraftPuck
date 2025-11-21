@@ -31,7 +31,7 @@ class UserService {
   }
 
   public async getLobbies(id: string): Promise<Array<UserLobbySummary>> {
-    return this._http.get(`${id}/lobbies`);
+    return this._http.get(`${id}/lobbies`)
   }
 }
 

@@ -71,7 +71,7 @@ const router = createRouter({
       name: 'Account',
       component: RouterView,
       children: [
-        { name: "AccountRedirect", path: '', redirect: { name: 'AccountSettings' } },
+        { name: 'AccountRedirect', path: '', redirect: { name: 'AccountSettings' } },
         {
           path: 'banner',
           name: 'Banner',
@@ -95,6 +95,12 @@ const router = createRouter({
           name: 'Avatar',
           component: () => import('@/views/EditAvatarView.vue'),
           meta: { requiresLogin }
+        },
+        {
+          path: 'discord',
+          name: 'Discord',
+          component: () => import('@/views/DiscordView.vue'),
+          meta: { requiresLogin }
         }
       ]
     },
@@ -109,24 +115,23 @@ const router = createRouter({
       name: 'Achievements',
       props: true,
       component: () => import('@/views/AchievementsView.vue')
-    },
+    }
   ]
 })
 
 router.beforeEach(async (to, _from, next) => {
   const userStore = useUserStore()
-  let initializePromise;
+  let initializePromise
 
-  if (!userStore.isReady && (to.meta.requiresLogin || to.meta.redirectIfLoggedIn))
-    initializePromise = userStore.initialize();
+  if (!userStore.isReady && (to.meta.requiresLogin || to.meta.redirectIfLoggedIn)) initializePromise = userStore.initialize()
 
   if (userStore.isLoggedIn && to.meta?.redirectIfLoggedIn === true) {
     next({ name: 'Home' })
     return
   }
-  
+
   if (to.meta.requiresLogin === true) {
-    await initializePromise;
+    await initializePromise
     if (!userStore.isLoggedIn) {
       next({ name: 'Login', query: { redirect: to.path } })
       return

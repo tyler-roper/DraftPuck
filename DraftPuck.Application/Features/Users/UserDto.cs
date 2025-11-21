@@ -20,7 +20,8 @@ public class UserDto
     public List<BannerDto> OwnedBanners { get; set; } = [];
     public List<TitleDto> OwnedTitles { get; set; } = [];
     public List<UserAchievementDto> Achievements { get; set; } = [];
-
+    public string? DiscordUserId { get; set; }
+    public DateTime? DiscordUserLinkedDate { get; set; }
     public string? AvatarPath { get; set; }
     public bool HasAvatar => !string.IsNullOrEmpty(AvatarPath);
     public NotificationPreference DrinkReceivedNotificationPreference { get; set; }

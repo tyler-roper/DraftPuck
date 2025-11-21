@@ -14,7 +14,7 @@ import { useRouter } from 'vue-router'
 //#region data
 const userStore = useUserStore()
 const { isLoggedIn, currentUser } = storeToRefs(userStore)
-const isNotLoggedIn = computed(() => !isLoggedIn.value )
+const isNotLoggedIn = computed(() => !isLoggedIn.value)
 const isJoiningLobby = ref(false)
 const toast = useToast()
 const router = useRouter()
@@ -52,15 +52,15 @@ async function joinLobby(e: Event) {
     const existingMember = lobby.members.find((m) => m.name.trim().toLowerCase() === form.value.nickname.trim().toLowerCase())
 
     if (existingMember && currentUser.value!.id !== existingMember.userId) {
-      toast.error("Nickname already in use")
+      toast.error('Nickname already in use')
       isJoiningLobby.value = false
       return
     }
 
     await LobbyService.joinLobbyByCode(form.value.code, form.value.nickname)
-    router.push({ name: 'Lobby', params: { joinCode: lobby.joinCode }})
+    router.push({ name: 'Lobby', params: { joinCode: lobby.joinCode } })
   } catch (e) {
-    toast.error("Lobby not found.")
+    toast.error('Lobby not found.')
     isJoiningLobby.value = false
   }
 }
@@ -126,7 +126,7 @@ async function joinLobby(e: Event) {
 </template>
 
 <style scoped lang="scss">
-.code-input::placeholder  {
-    text-transform: none !important;
+.code-input::placeholder {
+  text-transform: none !important;
 }
 </style>

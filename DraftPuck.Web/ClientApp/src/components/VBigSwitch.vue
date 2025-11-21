@@ -17,12 +17,12 @@ const value = computed({
 })
 
 const componentId = getCurrentInstance()?.uid
-const selectedIndex = computed(() => props.options.findIndex(o => o.value === value.value))
+const selectedIndex = computed(() => props.options.findIndex((o) => o.value === value.value))
 const sliderStyle = computed(() => {
-  const offset = selectedIndex.value * 100;
-  return { 
-    width: `calc(${100/props.options.length}% - 10px)`,
-    transform: `translateX(calc(${offset}% + ${offset/10}px))` 
+  const offset = selectedIndex.value * 100
+  return {
+    width: `calc(${100 / props.options.length}% - 10px)`,
+    transform: `translateX(calc(${offset}% + ${offset / 10}px))`
   }
 })
 </script>

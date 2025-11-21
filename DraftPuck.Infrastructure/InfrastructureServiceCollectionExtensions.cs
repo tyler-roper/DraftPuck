@@ -1,4 +1,5 @@
-﻿using DraftPuck.Application.Features.Games;
+﻿using DraftPuck.Application.Features.Discord;
+using DraftPuck.Application.Features.Games;
 using DraftPuck.Application.Features.Users;
 using DraftPuck.Infrastructure.Auth;
 using DraftPuck.Infrastructure.AutoMapper;
@@ -25,6 +26,7 @@ public static class InfrastructureServiceCollectionExtensions
             .AddQueueServices(configuration)
             .AddBlobStorageServices(configuration)
             .AddAutoMapperLicensed(configuration, typeof(UserMappingProfile).Assembly, typeof(GameMappingProfile).Assembly)
+            .AddSingleton<IOAuthCache, RedisOAuthCache>()
             .AddSingleton<IGameCache, RedisGameCache>()
             .AddTokenService(configuration);
     }

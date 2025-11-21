@@ -43,7 +43,7 @@ const itemIcon = computed(() => {
     [LobbyEventType.UserRemoved]: 'fi-sr-remove-user',
     [LobbyEventType.Broadcast]: 'fi-sr-megaphone',
     [LobbyEventType.UserLeft]: 'fi-sr-exit',
-    [LobbyEventType.UserPromoted]: 'fi-sr-crown'   
+    [LobbyEventType.UserPromoted]: 'fi-sr-crown'
   }
 
   return icons[props.item.subType as number]
@@ -57,8 +57,8 @@ function getLogo(img: string) {
 }
 
 function formatAsTime(date: Date | string) {
-    date = typeof date === 'string' ? parseISO(date) : date
-    return format(date, 'p')
+  date = typeof date === 'string' ? parseISO(date) : date
+  return format(date, 'p')
 }
 </script>
 

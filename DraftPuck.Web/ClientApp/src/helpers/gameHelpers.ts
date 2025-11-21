@@ -1,4 +1,4 @@
-import PeriodType from "@/enums/periodType"
+import PeriodType from '@/enums/periodType'
 
 export function getOrdinal(periodNumber: number, periodType: PeriodType) {
   if (periodType === PeriodType.Regulation) {

@@ -10,6 +10,6 @@ public class DrinkAwardedAchievementHandler(INhlQueueService queueService) : INo
             UserId = member.UserId,
             TriggerType = AchievementTriggerType.DrinkAwarded,
             QueuedTimeUtc = DateTime.UtcNow
-        });
+        }, ct: ct);
     }
 }

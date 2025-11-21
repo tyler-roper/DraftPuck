@@ -49,7 +49,11 @@ const currentMemberHasMadeAllPicksForGame = computed(() => {
 
 const gamePickableStatusForCurrentMember = computed(() => {
   if (!isLobbyGame.value) return GamePickableStatus.Locked
-  if ((!isGameStarted.value && game.value.dateTime > addMinutes(currentSystemTime.value, 30)) || (game.value.homeTeam.roster.length + game.value.awayTeam.roster.length === 0)) return GamePickableStatus.Upcoming
+  if (
+    (!isGameStarted.value && game.value.dateTime > addMinutes(currentSystemTime.value, 30)) ||
+    game.value.homeTeam.roster.length + game.value.awayTeam.roster.length === 0
+  )
+    return GamePickableStatus.Upcoming
   if (isGameOver.value) return GamePickableStatus.GameComplete
 
   return currentMemberHasMadeAllPicksForGame.value ? GamePickableStatus.PicksAvailable : GamePickableStatus.PicksMade
@@ -131,7 +135,10 @@ const getLightLogo = (team: GameTeam) => (team.abbreviation !== 'TBL' ? getLogo(
 </script>
 
 <template>
-  <div class="game py-1 px-2" :class="{ 'o-50': !isLobbyGame || isGameOver, selected: isSelected, [gamePickableStatusForCurrentMemberAsString.toLowerCase()]: true }">
+  <div
+    class="game py-1 px-2"
+    :class="{ 'o-50': !isLobbyGame || isGameOver, selected: isSelected, [gamePickableStatusForCurrentMemberAsString.toLowerCase()]: true }"
+  >
     <div class="game-time px-2 mb-1 fs-8 bg-stone-700 d-inline-block">{{ timeString }}</div>
     <div class="game-matchup">
       <div class="d-flex justify-content-between align-items-center" style="height: 24.5px">

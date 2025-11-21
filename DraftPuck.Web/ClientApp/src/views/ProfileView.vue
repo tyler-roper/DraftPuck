@@ -24,7 +24,7 @@ const bannerPath = computed(() => `url(${profileUser.value?.banner.imagePath})`)
 const allAchievements = ref<Array<Achievement>>([])
 const achievementCompletionPercentage = computed(() => {
   if ((currentUser.value?.achievements?.length ?? 0) === 0) return 0
-  return allAchievements.value.length / currentUser.value!.achievements.length
+  return Math.floor(allAchievements.value.length / currentUser.value!.achievements.length)
 })
 //#endregion
 
@@ -141,7 +141,12 @@ watch(
 
         <div class="profile-section">
           <span class="title">Achievements</span>
-          <router-link :to="{ name: 'Achievements', params: { username: props.username }, state: { user: JSON.stringify(profileUser) } }" role="button" class="achievement-container text-stone-0" replace>
+          <router-link
+            :to="{ name: 'Achievements', params: { username: props.username }, state: { user: JSON.stringify(profileUser) } }"
+            role="button"
+            class="achievement-container text-stone-0"
+            replace
+          >
             <div class="progress-container" :class="`achievement-progress-${achievementCompletionPercentage}`">
               <div class="earned">{{ achievementCompletionPercentage }}%</div>
             </div>
@@ -173,6 +178,11 @@ watch(
               <router-link class="profile-option" :to="{ name: 'Lobbies' }" replace>
                 <VIcon class="icon" prefix="rr" icon="hockey-puck" />
                 <span>Your Lobbies</span>
+                <VIcon class="caret" prefix="rr" icon="angle-right" />
+              </router-link>
+              <router-link class="profile-option" :to="{ name: 'Discord' }" replace>
+                <VIcon class="icon" prefix="brands" icon="discord" />
+                <span> {{ currentUser?.discordUserId ? 'Unlink' : 'Link' }} Discord</span>
                 <VIcon class="caret" prefix="rr" icon="angle-right" />
               </router-link>
               <a @click="logout" class="profile-option text-primary">

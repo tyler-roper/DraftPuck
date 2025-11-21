@@ -52,7 +52,7 @@ class LobbyService {
   public async changeName(code: string, newName: string): Promise<void> {
     return this._http.post(`${code}/changeName`, { newName })
   }
-  
+
   public async sendMessage(code: string, message: Message): Promise<void> {
     return this._http.post(`${code}/message`, message)
   }

@@ -47,16 +47,14 @@ const isClickable = computed(() => props.showMenuOnClick === true && isSelf.valu
 const loginPath = computed(() => (route.params.joinCode ? `/login?lobby=${route.params.joinCode}` : '/login'))
 const joinPath = computed(() => (route.params.joinCode ? `/join?lobby=${route.params.joinCode}` : '/join'))
 const fontSize = computed(() => {
-  const BASE_SIZE = 50
-  const BASE_DIVISOR = 1.35
-  const CORRECTION_FACTOR = 0.01
+  const size = props.avatarSizeInPx
+  const minRatio = 0.45
+  const maxRatio = 0.8
 
-  const currentSize = props.avatarSizeInPx
-  const dynamicDivisor = BASE_DIVISOR + (currentSize - BASE_SIZE) * CORRECTION_FACTOR
-  const constrainedDivisor = Math.max(1.2, Math.min(dynamicDivisor, 2.0))
-  const finalFontSize = currentSize / constrainedDivisor
+  const t = Math.min(size / 150, 1)
+  const ratio = minRatio + (maxRatio - minRatio) * t
 
-  return `${finalFontSize}px`
+  return `${size * ratio}px`
 })
 
 const loggedInUserLinks = ref<Array<UserLink>>([
@@ -72,7 +70,7 @@ const guestUserLinks = ref<Array<UserLink>>([
 
 const userLinks = computed(() => {
   if (isSelf.value !== true) return []
-  if (currentUser.value?.isGuest !== false) return guestUserLinks.value
+  if (currentUser.value && currentUser.value.isGuest !== false) return guestUserLinks.value
   return loggedInUserLinks.value
 })
 
@@ -126,20 +124,18 @@ async function userLinkClickHandler(userLink: UserLink) {
       </div>
     </button>
 
-    <div v-else-if="display === 'avatar'" class="position-relative">
-      <button
-        id="dropdownMenuButton"
-        class="btn avatar position-relative"
-        :style="{ width: `${avatarSizeInPx}px`, height: `${avatarSizeInPx}px`, 'background-image': avatarPath }"
-        :class="{ default: !user?.avatarPath, 'pointer-events-none': !isClickable }"
-        aria-haspopup="true"
-        aria-expanded="false"
-        :data-bs-toggle="showMenuOnClick && isSelf ? 'dropdown' : ''"
-      ></button>
-      <router-link v-if="showEditAvatar && isSelf" class="edit-badge" :to="{ name: 'Avatar' }" replace>
-        <VIcon icon="pencil" prefix="sr" class="text-stone-0 fs-6" />
-      </router-link>
-    </div>
+    <button
+      v-else-if="display === 'avatar'"
+      id="dropdownMenuButton"
+      class="btn avatar position-relative"
+      :style="{ width: `${avatarSizeInPx}px`, height: `${avatarSizeInPx}px`, 'background-image': avatarPath }"
+      :class="{ default: !user?.avatarPath, 'pointer-events-none': !isClickable }"
+      aria-haspopup="true"
+      aria-expanded="false"
+      :data-bs-toggle="showMenuOnClick && isSelf ? 'dropdown' : ''"
+    >
+      <i v-if="!user?.avatarPath" class="fi fi-sr-user"></i>
+    </button>
 
     <div class="dropdown-menu w-100" aria-labelledby="dropdownMenuButton">
       <a
@@ -153,6 +149,10 @@ async function userLinkClickHandler(userLink: UserLink) {
         <VIcon v-if="userLink.icon" class="me-2" :prefix="userLink.iconPrefix ?? 'rr'" :icon="userLink.icon" />{{ userLink.text }}</a
       >
     </div>
+
+    <router-link v-if="showEditAvatar && isSelf" class="edit-badge" :to="{ name: 'Avatar' }" replace>
+      <VIcon icon="pencil" prefix="sr" class="text-stone-0 fs-6" />
+    </router-link>
   </div>
 </template>
 
@@ -285,7 +285,7 @@ async function userLinkClickHandler(userLink: UserLink) {
   bottom: 0px;
   right: 5px;
   background-color: map-get($custom-colors, 'primary');
-  box-shadow: 0 0 10px rgba(0,0,0, 0.6);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
   border-radius: 50%;
   display: flex;
   align-items: center;

@@ -30,9 +30,7 @@ const currentMember = computed(() => lobby.value?.members.find((m) => m.userId =
 const bots = computed(() => lobby.value?.members.filter((m) => m.isBot) ?? [])
 const membersSorted = computed(() =>
   [...lobby.value!.members].sort((a, b) => {
-    return Number(isCurrentMember(b)) - Number(isCurrentMember(a)) 
-    || Number(isCreator(b)) - Number(isCreator(a))
-    || Number(a.isBot) - Number(b.isBot)
+    return Number(isCurrentMember(b)) - Number(isCurrentMember(a)) || Number(isCreator(b)) - Number(isCreator(a)) || Number(a.isBot) - Number(b.isBot)
   })
 )
 

@@ -56,18 +56,16 @@ async function createAccount(e: Event) {
     await userService.signUp(form.value)
     await userStore.login(form.value.email, form.value.password)
 
-    const url = lobbyCode.value
-      ? router.resolve(`/lobby/${lobbyCode.value}`)
-      : router.resolve(currentRoute.query.redirect?.toString() || '/')
+    const url = lobbyCode.value ? router.resolve(`/lobby/${lobbyCode.value}`) : router.resolve(currentRoute.query.redirect?.toString() || '/')
     return router.push(url)
   } catch (ex: unknown) {
-    console.error(ex);
-    let friendlyMessage = "Sorry, something went wrong.";
+    console.error(ex)
+    let friendlyMessage = 'Sorry, something went wrong.'
     if (typeof ex === 'object' && ex !== null && 'response' in ex) {
-        const axiosError = ex as any;
-        friendlyMessage = axiosError.response?.data?.title ?? friendlyMessage;
+      const axiosError = ex as any
+      friendlyMessage = axiosError.response?.data?.title ?? friendlyMessage
     }
-    toast.error(friendlyMessage);
+    toast.error(friendlyMessage)
   } finally {
     isCreatingAccount.value = false
   }
@@ -77,7 +75,7 @@ async function createAccount(e: Event) {
 <template>
   <SplashLayout :show-flavor-text="false" :increase-contrast="true">
     <p class="mb-4">
-      <b class="text-uppercase">Before you hop the boards</b><br>
+      <b class="text-uppercase">Before you hop the boards</b><br />
       We gotta know what name to put on your jersey...
     </p>
     <form @submit="createAccount">
@@ -148,7 +146,7 @@ async function createAccount(e: Event) {
     </form>
     <div class="row mt-4">
       <div class="col fs-7 text-center">
-        <router-link :to="{ name: 'Login', query: currentRoute.query }" >
+        <router-link :to="{ name: 'Login', query: currentRoute.query }">
           <VIcon prefix="br" icon="angle-left" class="me-2 ms-n2"></VIcon>
           Back to login
         </router-link>

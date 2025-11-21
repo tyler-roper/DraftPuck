@@ -19,28 +19,30 @@ const isSaving = ref(false)
 const toast = useToast()
 const router = useRouter()
 
-const genericBanners = computed(() => allBanners.value.filter(b => !b.achievementId))
-const genericTitles = computed(() => allTitles.value.filter(t => !t.achievementId))
-const isDirty = computed(() => userPreview.value.banner.id !== currentUser.value?.banner.id || userPreview.value.title.id !== currentUser.value?.title.id)
+const genericBanners = computed(() => allBanners.value.filter((b) => !b.achievementId))
+const genericTitles = computed(() => allTitles.value.filter((t) => !t.achievementId))
+const isDirty = computed(
+  () => userPreview.value.banner.id !== currentUser.value?.banner.id || userPreview.value.title.id !== currentUser.value?.title.id
+)
 
 const availableBanners = computed(() => {
-    if (!currentUser.value) return [];
-    const ownedIds = new Set(currentUser.value.ownedBanners.map((b) => b.id));
-    const uniqueGenericBanners = genericBanners.value.filter((gBanner) => !ownedIds.has(gBanner.id));
-    return [...uniqueGenericBanners, ...currentUser.value.ownedBanners];
-});
+  if (!currentUser.value) return []
+  const ownedIds = new Set(currentUser.value.ownedBanners.map((b) => b.id))
+  const uniqueGenericBanners = genericBanners.value.filter((gBanner) => !ownedIds.has(gBanner.id))
+  return [...uniqueGenericBanners, ...currentUser.value.ownedBanners]
+})
 
 const availableTitles = computed(() => {
-    if (!currentUser.value) return [];
-    const ownedIds = new Set(currentUser.value.ownedTitles.map((t) => t.id));
-    const uniqueGenericTitles = genericTitles.value.filter((gTitle) => !ownedIds.has(gTitle.id));
-    const combinedTitles = [...uniqueGenericTitles, ...currentUser.value.ownedTitles];
-    return combinedTitles.sort((a, b) => {
-        const nameA = a.text || ''; 
-        const nameB = b.text || '';
-        return nameA.localeCompare(nameB);
-    });
-});
+  if (!currentUser.value) return []
+  const ownedIds = new Set(currentUser.value.ownedTitles.map((t) => t.id))
+  const uniqueGenericTitles = genericTitles.value.filter((gTitle) => !ownedIds.has(gTitle.id))
+  const combinedTitles = [...uniqueGenericTitles, ...currentUser.value.ownedTitles]
+  return combinedTitles.sort((a, b) => {
+    const nameA = a.text || ''
+    const nameB = b.text || ''
+    return nameA.localeCompare(nameB)
+  })
+})
 
 //#endregion
 
@@ -65,10 +67,10 @@ async function save() {
   try {
     isSaving.value = true
     await userStore.updateUser({ bannerId: userPreview.value.banner.id, titleId: userPreview.value.title.id })
-    toast.success("Profile saved!", { timeout: 2000 })
+    toast.success('Profile saved!', { timeout: 2000 })
     router.replace(`/u/${currentUser.value!.nickname}`)
   } catch {
-    console.error("Unable to update user.")
+    console.error('Unable to update user.')
   } finally {
     isSaving.value = false
   }
@@ -130,7 +132,7 @@ async function save() {
         :class="{ selected: title.id === userPreview?.title.id }"
         :key="title.id"
       >
-        <div class="banner rounded-md">{{ title.text }} </div>
+        <div class="banner rounded-md">{{ title.text }}</div>
       </a>
       <a role="button" class="banner-container rounded-lg my-3" v-for="n in 15" :key="n">
         <div class="banner locked rounded-md bg-gradient">
@@ -176,7 +178,7 @@ a.view-tab.is-selected {
   font-size: 25px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: map-get($custom-colors, 'stone-0')
+  color: map-get($custom-colors, 'stone-0');
 }
 
 .banner-container {

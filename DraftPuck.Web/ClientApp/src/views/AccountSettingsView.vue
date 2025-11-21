@@ -37,15 +37,15 @@ async function updateAccount() {
 
     await userStore.updateUser(form)
     router.replace(`/u/${currentUser.value?.nickname}`)
-    toast.success("Profile updated!", { timeout: 2000 })
+    toast.success('Profile updated!', { timeout: 2000 })
   } catch (ex: unknown) {
-    console.error(ex);
-    let friendlyMessage = "Sorry, something went wrong.";
+    console.error(ex)
+    let friendlyMessage = 'Sorry, something went wrong.'
     if (typeof ex === 'object' && ex !== null && 'response' in ex) {
-        const axiosError = ex as any;
-        friendlyMessage = axiosError.response?.data?.title ?? friendlyMessage;
+      const axiosError = ex as any
+      friendlyMessage = axiosError.response?.data?.title ?? friendlyMessage
     }
-    toast.error(friendlyMessage);
+    toast.error(friendlyMessage)
   } finally {
     isUpdatingAccount.value = false
   }
@@ -83,7 +83,13 @@ const v$ = useVuelidate<UpdateUserRequest>(rules, form)
 </script>
 
 <template>
-  <ProfileSubsectionLayout title="Account Settings" @save="triggerFormSubmission" @discard="discard" :is-dirty="isDirty" :is-saving="isUpdatingAccount">
+  <ProfileSubsectionLayout
+    title="Account Settings"
+    @save="triggerFormSubmission"
+    @discard="discard"
+    :is-dirty="isDirty"
+    :is-saving="isUpdatingAccount"
+  >
     <div class="p-3">
       <form @submit="updateAccount" ref="formElement">
         <div class="profile-section mt-0">
@@ -162,9 +168,7 @@ const v$ = useVuelidate<UpdateUserRequest>(rules, form)
         </div>
         <div class="d-flex align-items-center text-stone-400 mt-3">
           <VIcon icon="info" class="fs-5 me-2" />
-          <span class="d-block"
-            >Make it strong! Or don't. We'll never know.</span
-          >
+          <span class="d-block">Make it strong! Or don't. We'll never know.</span>
         </div>
         <!-- <div class="hr"></div>
         <div class="profile-section">

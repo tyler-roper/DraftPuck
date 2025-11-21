@@ -1,8 +1,7 @@
 enum GameState {
-    Upcoming,
-    Live,
-    Final
-  }
-  
-  export default GameState
-  
+  Upcoming,
+  Live,
+  Final
+}
+
+export default GameState

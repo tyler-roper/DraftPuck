@@ -8,5 +8,6 @@ public enum AchievementTriggerType
     DrinkAssigned,
     DrinkAwarded,
     PickMade,
-    GoalScored
+    GoalScored,
+    DiscordServerJoined
 }
