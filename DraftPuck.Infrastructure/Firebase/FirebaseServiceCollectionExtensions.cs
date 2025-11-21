@@ -13,7 +13,7 @@ public static class FirebaseServiceCollectionExtensions
     {
         return services
             .Configure<FirebaseOptions>(configuration.GetSection(FirebaseOptions.SectionName))
-            .AddSingleton<FirebaseApp>(sp =>
+            .AddSingleton(sp =>
             {
                 var options = sp.GetRequiredService<IOptions<FirebaseOptions>>().Value;
                 return CreateFirebaseApp(options);
@@ -23,10 +23,17 @@ public static class FirebaseServiceCollectionExtensions
 
     private static FirebaseApp CreateFirebaseApp(FirebaseOptions options)
     {
-        var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(options.AsJson));
-        return FirebaseApp.Create(new AppOptions
+        try
         {
-            Credential = GoogleCredential.FromStream(stream)
-        });
+            var json = options.AsJson;
+            return FirebaseApp.Create(new AppOptions
+            {
+                Credential = GoogleCredential.FromJson(json)
+            });
+        } catch (Exception ex)
+        {
+            Console.WriteLine($"Could not initialize Firebase: {ex}");
+            throw;
+        }
     }
 }

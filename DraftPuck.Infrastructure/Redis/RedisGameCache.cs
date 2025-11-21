@@ -8,10 +8,10 @@ namespace DraftPuck.Infrastructure.Redis;
 public class RedisGameCache(IDatabase redisDb) : IGameCache
 {
     private const string GamePrefix = "{game}:";
-    private const string NextRunPrefix = "nextRun:";
-    private const string PregameAlertTriggeredPrefix = "pregameAlertTriggered:";
-    private const string UserPicksThrottlePrefix = "userPicksThrottle:";
-    private const string UserGamePicksNotifiedPrefix = "userGamePicksNotified:";
+    private const string NextRunPrefix = "{nextRun}:";
+    private const string PregameAlertTriggeredPrefix = "{pregameAlertTriggered}:";
+    private const string UserPicksThrottlePrefix = "{userPicksThrottle}:";
+    private const string UserGamePicksNotifiedPrefix = "{userGamePicksNotified}:";
 
     public async Task<GameDto?> GetGameByIdAsync(int id)
     {

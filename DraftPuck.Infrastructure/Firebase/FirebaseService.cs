@@ -1,9 +1,10 @@
 ﻿using DraftPuck.Shared.Firebase;
+using FirebaseAdmin;
 using FirebaseAdmin.Messaging;
 using Microsoft.Extensions.Options;
 
 namespace DraftPuck.Infrastructure.Firebase;
-public class FirebaseService(IOptions<ApplicationOptions> appConfig) : IPushNotificationService
+public class FirebaseService(IOptions<ApplicationOptions> appConfig, FirebaseApp firebaseApp) : IPushNotificationService
 {
 
     private readonly ApplicationOptions _appConfig = appConfig.Value;
@@ -42,7 +43,8 @@ public class FirebaseService(IOptions<ApplicationOptions> appConfig) : IPushNoti
 
         try
         {
-            await FirebaseMessaging.DefaultInstance.SendAsync(firebaseMessage);
+            var messaging = FirebaseMessaging.GetMessaging(firebaseApp);
+            await messaging.SendAsync(firebaseMessage);
         }
         catch (Exception ex)
         {
