@@ -27,7 +27,7 @@ const hasAchievement = ref(isLinked.value && currentUser.value?.achievements.som
 //#region hooks
 onMounted(async () => {
   if (isCallback) {
-    if (isSuccess.value) toast.success('Discord successfully linked!')
+    if (isSuccess.value) toast.success('Discord successfully linked!', { timeout: 2000 })
     else if (isFailure.value) toast.error('Sorry, something went wrong.')
 
     router.replace({ path: route.path })
