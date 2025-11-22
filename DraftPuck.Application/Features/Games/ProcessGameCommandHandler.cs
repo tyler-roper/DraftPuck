@@ -64,8 +64,8 @@ public class ProcessGameCommandHandler(IGameCache gameCache, IMediator mediator,
 
         cachedGame.HomeTeam.Roster = homeRoster;
         cachedGame.AwayTeam.Roster = awayRoster;
-        updatedGame.HomeTeam.Roster = homeRoster;
-        updatedGame.AwayTeam.Roster = awayRoster;
+        updatedGame.HomeTeam.Roster = [.. homeRoster.OrderByDescending(p => p.Goals)];
+        updatedGame.AwayTeam.Roster = [.. awayRoster.OrderByDescending(p => p.Goals)];
 
         GameProcessingHelpers.SetPlayDateTimes(updatedGame, _appConfig.CurrentTimeUtc, cachedGame);
         GameProcessingHelpers.HandleTestMode(updatedGame, _appConfig);

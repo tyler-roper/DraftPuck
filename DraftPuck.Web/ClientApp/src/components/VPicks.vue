@@ -94,13 +94,7 @@ const selectedTeamRosterSorted = computed(() => {
       const pickedPlayerIds = currentMember.value.picks.map(({ playerId }) => playerId)
       const isBPicked = pickedPlayerIds.includes(b.id)
       const isAPicked = pickedPlayerIds.includes(a.id)
-      const pickedSort = Number(isBPicked) - Number(isAPicked)
-
-      if (pickedSort !== 0) {
-        return pickedSort
-      }
-
-      return b.goals - a.goals
+      return Number(isBPicked) - Number(isAPicked)
     })
 })
   //#endregion
