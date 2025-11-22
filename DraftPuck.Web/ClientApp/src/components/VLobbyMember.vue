@@ -103,17 +103,17 @@ async function leaveLobby() {
     console.error('Failed to leave lobby:', e)
   }
 }
+
+function viewProfile() {
+  router.push(`/u/${member.value.name}`)
+}
 </script>
 
 <template>
   <div class="dropdown">
-    <a
-      role="button"
-      :style="bannerStyle"
+    <a role="button" :style="bannerStyle"
       :class="{ 'border-blue': isCurrentMember, 'border-danger': !isCurrentMember && !isBot }"
-      class="bg-stone-100 member-link text-stone-900 text-decoration-none d-flex fs-6 p-2"
-      data-bs-toggle="dropdown"
-    >
+      class="bg-stone-100 member-link text-stone-900 text-decoration-none d-flex fs-6 p-2" data-bs-toggle="dropdown">
       <div class="icon" :class="{ 'bg-blue': isCurrentMember }" :style="avatarStyle">
         <i v-if="!member.avatarPath || member.isGuest" class="fi me-2 d-block" :class="iconClass"></i>
       </div>
@@ -126,11 +126,8 @@ async function leaveLobby() {
       </div>
 
       <span class="d-flex ms-auto align-items-center" style="cursor: default">
-        <span
-          :class="{ 'bg-primary': pendingDrinksByMember.length > 0 }"
-          class="bg-white d-block text-center border border-stone-200 mx-1 rounded"
-          style="width: 50px"
-        >
+        <span :class="{ 'bg-primary': pendingDrinksByMember.length > 0 }"
+          class="bg-white d-block text-center border border-stone-200 mx-1 rounded" style="width: 50px">
           <span class="d-block fs-9 text-uppercase fw-bold">To Give</span>
           <span class="fw-bold">🍺 {{ pendingDrinksByMember.length }}</span>
         </span>
@@ -148,19 +145,26 @@ async function leaveLobby() {
 
       <ul class="dropdown-menu">
         <template v-if="isCurrentMember">
+          <li v-if="!isLoggedIn">
+            <a role="button" class="fw-bold dropdown-item" @click="changeName"><i
+                class="fi fi-rr-id-badge me-2"></i>Change Name</a>
+          </li>
           <li>
-            <a role="button" class="fw-bold dropdown-item" @click="changeName"><i class="fi fi-rr-id-badge me-2"></i>Change Name</a>
-            <a role="button" class="fw-bold dropdown-item text-danger" @click="leaveLobby"><i class="fi fi-rr-exit me-2"></i>Leave Lobby</a>
+            <a role="button" class="fw-bold dropdown-item text-danger" @click="leaveLobby"><i
+                class="fi fi-rr-exit me-2"></i>Leave Lobby</a>
           </li>
         </template>
         <template v-if="!isCurrentMember">
           <li v-if="pendingDrinksForCurrentMember.length > 0 && !member.isBot">
-            <a role="button" class="fw-bold dropdown-item text-blue" @click="giveDrink(member)"><span class="me-2">🍺</span>Give a drink!</a>
+            <a role="button" class="fw-bold dropdown-item text-blue" @click="giveDrink(member)"><span
+                class="me-2">🍺</span>Give a drink!</a>
+          </li>
+          <li v-if="!member.isBot && isLoggedIn">
+            <a role="button" class="fw-bold dropdown-item" @click="viewProfile">View Profile</a>
           </li>
           <li v-if="isLobbyAdmin">
-            <a role="button" class="fw-bold dropdown-item text-danger" @click="removeLobbyMember(member.id)"
-              ><i class="fi fi-sr-remove-user me-2"></i>Remove User</a
-            >
+            <a role="button" class="fw-bold dropdown-item text-danger" @click="removeLobbyMember(member.id)"><i
+                class="fi fi-sr-remove-user me-2"></i>Remove User</a>
           </li>
         </template>
       </ul>
@@ -170,6 +174,7 @@ async function leaveLobby() {
 
 <style scoped lang="scss">
 @import '@/assets/scss/custom-colors.scss';
+
 .member-link {
   width: 100%;
   display: flex;
@@ -242,5 +247,9 @@ async function leaveLobby() {
   font-weight: bold;
   text-align: left;
   color: map-get($custom-colors, 'stone-200') !important;
+}
+
+.dropdown-menu:empty {
+  display: none !important;
 }
 </style>
