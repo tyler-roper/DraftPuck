@@ -7,7 +7,7 @@ namespace DraftPuck.Infrastructure.Redis;
 
 public class RedisGameCache(IDatabase redisDb) : IGameCache
 {
-    private const string GamePrefix = "{game}:";
+    private const string GamePrefix = "game:";
     private const string NextRunPrefix = "nextRun:";
     private const string PregameAlertTriggeredPrefix = "pregameAlertTriggered:";
     private const string UserPicksThrottlePrefix = "userPicksThrottle:";
@@ -25,49 +25,28 @@ public class RedisGameCache(IDatabase redisDb) : IGameCache
 
     public async Task<List<GameDto>> GetAllGamesAsync()
     {
-        var endpoints = redisDb.Multiplexer.GetEndPoints();
-        if (endpoints == null || endpoints.Length == 0)
+        var endpoint = redisDb.Multiplexer.GetEndPoints().SingleOrDefault();
+
+        if (endpoint == null)
             return [];
 
-        var allKeys = new HashSet<RedisKey>();
+        var server = redisDb.Multiplexer.GetServer(endpoint);
+        var asyncKeys = server.KeysAsync(database: redisDb.Database, pattern: $"{GamePrefix}*");
+        var keysList = new List<RedisKey>();
 
-        foreach (var endpoint in endpoints)
+        await foreach (var key in asyncKeys)
         {
-            IServer? server = null;
-
-            try
-            {
-                server = redisDb.Multiplexer.GetServer(endpoint);
-            }
-            catch
-            {
-                continue;
-            }
-
-            if (server == null || !server.IsConnected)
-                continue;
-
-            try
-            {
-                var keys = server
-                    .KeysAsync(database: 0, pattern: $"{GamePrefix}*")
-                    .ConfigureAwait(false);
-
-                await foreach (var key in keys)
-                    allKeys.Add(key);
-            }
-            catch
-            {
-                continue;
-            }
+            keysList.Add(key);
         }
 
-        if (allKeys.Count == 0)
+        var keys = keysList.ToArray();
+
+        if (keys.Length == 0)
             return [];
 
         try
         {
-            var values = await redisDb.StringGetAsync([..allKeys]);
+            var values = await redisDb.StringGetAsync(keys);
             var games = new List<GameDto>(values.Length);
 
             foreach (var value in values)
@@ -88,7 +67,6 @@ public class RedisGameCache(IDatabase redisDb) : IGameCache
         }
     }
 
-
     public async Task RemoveGameAsync(GameDto game)
         => await RemoveGameAsync(game.Id);
 
@@ -97,6 +75,7 @@ public class RedisGameCache(IDatabase redisDb) : IGameCache
         var key = $"{GamePrefix}{id}";
         var nextRunKey = $"{NextRunPrefix}{id}";
         var pregameTriggerKey = $"{PregameAlertTriggeredPrefix}{id}";
+
         await redisDb.KeyDeleteAsync([key, nextRunKey, pregameTriggerKey]);
     }
 

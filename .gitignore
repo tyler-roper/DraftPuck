@@ -410,3 +410,4 @@ FodyWeavers.xsd
 # Azurite / Redis
 azurite/
 redis/
+DraftPuck.Web/ClientApp/public/env-sw.js
