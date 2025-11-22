@@ -1,6 +1,6 @@
 ﻿namespace DraftPuck.Application.Features.Achievements;
 
-public class DrinkAssignedAchievementHandler(INhlQueueService queueService) : INotificationHandler<DrinkAssignedNotification>
+public class DrinkAssignedAchievementHandler(IAchievementQueueService queueService) : INotificationHandler<DrinkAssignedNotification>
 {
     public async Task Handle(DrinkAssignedNotification notification, CancellationToken ct)
     {
