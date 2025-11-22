@@ -58,7 +58,7 @@ async function login(e: Event) {
     if (userStore.isLoggedIn) {
       const url = lobbyCode.value ? router.resolve(`/lobby/${lobbyCode.value}`) : router.resolve(currentRoute.query.redirect?.toString() || '/')
       router.replace(url)
-      toast.success(`Welcome back, ${userStore.currentUser!.nickname}!`)
+      toast.success(`Welcome back, ${userStore.currentUser!.nickname}!`, { timeout: 2000 })
     } else throw new Error('Invalid login.')
   } catch {
     toast.error("Login failed. Please make sure you've entered your email and password correctly.")

@@ -270,7 +270,7 @@ async function initializeFirebase() {
     return
   }
 
-  const vapidKey = window.env.VITE_FIREBASE_VAPID_KEY
+  const vapidKey = env.VITE_FIREBASE_VAPID_KEY
   const firebaseConfig = {
     apiKey: env.VITE_FIREBASE_API_KEY,
     authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -533,7 +533,7 @@ async function copyInvite() {
   const code = lobby.value!.joinCode
   try {
     await navigator.clipboard.writeText(`Join my DRAFTPUCK lobby! Code: ${code}\n\nhttps://draftpuck.com/lobby/${code}`)
-    toast.success('Copied invite to clipboard!')
+    toast.success('Copied invite to clipboard!', { timeout: 2000 })
   } catch {
     toast.error('Cannot copy')
   }

@@ -32,7 +32,7 @@ async function save() {
     await userStore.updateUser(notificationSettings.value)
     isSaving.value = false
     close()
-    toast.success('Preferences saved!')
+    toast.success('Preferences saved!', { timeout: 2000 })
   } catch {
     console.error('Error saving preferences.')
     isSaving.value = false
