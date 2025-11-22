@@ -36,8 +36,7 @@ export default defineConfig(({ mode }) => {
       host: 'localhost',
       port: 17010,
       watch: { usePolling: false },
-      https: configureHttps(env) || true, 
-      
+      https: isDev ? configureHttps(env) : false, 
       proxy: {
         '/api': {
           target: 'https://localhost:17000',
@@ -98,7 +97,7 @@ function configureHttps(env: Record<string, string>) {
         Please ensure '${passwordKey}' is defined in your .env.development file.
         Falling back to a standard self-signed certificate.
       `);
-      return null;
+      return true;
   }
 
   const homeDir = os.userInfo().homedir;
@@ -118,7 +117,7 @@ function configureHttps(env: Record<string, string>) {
         ${resolve(homeDir, '.aspnet/https', certificateName)}
         Run CreateCertificate.ps1 to create it.
       `);
-    return null;
+    return true;
   }
 
   return {
