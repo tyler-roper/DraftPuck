@@ -459,7 +459,7 @@ function notifyCurrentUserOfCorrectPick(lobbyEvent: LobbyEvent) {
 
   const playerMsg = player ? ` for a goal by ${player.firstName} ${player.lastName}` : ''
   const msg = `Give out a drink${playerMsg}!`
-  toast.success(msg)
+  toast.success(msg, { timeout: 2000 })
 }
 
 function notifyCurrentUserOfUserJoined(lobbyEvent: LobbyEvent) {
