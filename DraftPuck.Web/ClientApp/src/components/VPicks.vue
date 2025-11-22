@@ -171,7 +171,7 @@ async function lockIn() {
     else {
       window.setTimeout(() => {
         selectGame(undefined)
-        toast.success("You've finished making all of your picks (for now).")
+        toast.success("You've finished making all of your picks (for now).", { timeout: 2000 })
       }, 1000)
     }
   }
