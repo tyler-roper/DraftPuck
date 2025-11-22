@@ -34,6 +34,9 @@ public class UpdateUserCommandHandler(IDbContext dbContext, IMapper mapper, IUse
         if (request.DrinkReceivedNotificationPreference.HasValue)
             userToUpdate.DrinkReceivedNotificationPreference = request.DrinkReceivedNotificationPreference.Value;
 
+        if (request.DrinkAwardedNotificationPreference.HasValue)
+            userToUpdate.DrinkAwardedNotificationPreference = request.DrinkAwardedNotificationPreference.Value;
+
         if (request.ChatNotificationPreference.HasValue)
             userToUpdate.ChatNotificationPreference = request.ChatNotificationPreference.Value;
 

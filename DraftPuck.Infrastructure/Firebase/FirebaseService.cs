@@ -14,32 +14,22 @@ public class FirebaseService(IOptions<ApplicationOptions> appConfig, FirebaseApp
         var firebaseMessage = new Message()
         {
             Token = token,
-            Notification = new Notification()
+            Webpush = new WebpushConfig()
             {
-                Title = title,
-                Body = message,
-                ImageUrl = $"{_appConfig.BasePath}/img/icons/icon-192.png"
-            },
-            Android = new()
-            {
-                Notification = new()
+                Notification = new WebpushNotification()
                 {
-                    Icon = $"{_appConfig.BasePath}/img/icons/badge.png",
-                    ImageUrl = $"{_appConfig.BasePath}/img/icons/icon-192.png",
-                    Color = "#ffce00"
+                    Title = title,
+                    Body = message,
+                    Icon = $"{_appConfig.BasePath}/img/icons/icon-192.png",
+                    Badge = $"{_appConfig.BasePath}/img/icons/badge.png"
+                },
+                FcmOptions = new WebpushFcmOptions()
+                {
+                    Link = $"{_appConfig.BasePath}/lobby/{lobbyCode}"
                 }
-            }
+            },
+            Data = data
         };
-
-        if (_appConfig.BasePath.StartsWith("https://"))
-        {
-            firebaseMessage.Webpush = new WebpushConfig() { FcmOptions = new() { Link = $"{_appConfig.BasePath}/lobby/{lobbyCode}" } };
-        }
-
-        if (data != null)
-        {
-            firebaseMessage.Data = data;
-        }
 
         try
         {
