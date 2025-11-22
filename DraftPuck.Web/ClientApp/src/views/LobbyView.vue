@@ -459,7 +459,7 @@ function notifyCurrentUserOfCorrectPick(lobbyEvent: LobbyEvent) {
 
   const playerMsg = player ? ` for a goal by ${player.firstName} ${player.lastName}` : ''
   const msg = `Give out a drink${playerMsg}!`
-  toast.success(msg)
+  toast.success(msg, { timeout: 2000 })
 }
 
 function notifyCurrentUserOfUserJoined(lobbyEvent: LobbyEvent) {
@@ -533,7 +533,7 @@ async function copyInvite() {
   const code = lobby.value!.joinCode
   try {
     await navigator.clipboard.writeText(`Join my DRAFTPUCK lobby! Code: ${code}\n\nhttps://draftpuck.com/lobby/${code}`)
-    toast.success('Copied invite to clipboard!')
+    toast.success('Copied invite to clipboard!', { timeout: 2000 })
   } catch {
     toast.error('Cannot copy')
   }
