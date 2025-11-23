@@ -46,7 +46,7 @@ class LobbyService {
   }
 
   public async assignDrink(code: string, drinkId: string, recipientLobbyMemberId: string): Promise<Drink> {
-    return this._http.post(`${code}/drink/${drinkId}/assign?recipientLobbyMemberId=${recipientLobbyMemberId}`, null)
+    return this._http.post(`${code}/drink/${drinkId}/assign`, { recipientLobbyMemberId })
   }
 
   public async changeName(code: string, newName: string): Promise<void> {

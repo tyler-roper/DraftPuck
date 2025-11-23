@@ -156,7 +156,7 @@ async function scrollToBottom() {
 }
 
 async function focus() {
-  messageInput.value?.focus()
+  //messageInput.value?.focus()
   scrollToBottom()
 }
 
@@ -260,6 +260,12 @@ textarea {
   resize: none;
   overflow-y: hidden;
   height: 39px;
+  background-color: map-get($custom-colors, 'stone-0') !important;
+  color: map-get($custom-colors, 'stone-900') !important;
+}
+
+textarea:focus {
+    border: 1px solid map-get($custom-colors, 'stone-500') !important;
 }
 
 a.lock-to-bottom {

@@ -30,7 +30,7 @@
   52: '#041E42', //WPG
   54: '#C69214', //VGK
   55: '#051C2C', //SEA
-  59: '#6cace4', //UTA
+  68: '#6cace4', //UTA
   60: '#C8102E', //Canada
   62: '#6cace4', //Finland
   66: '#FFB81C', //Sweden

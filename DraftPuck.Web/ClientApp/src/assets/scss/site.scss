@@ -104,53 +104,6 @@ table.score-table > thead > tr > th:not(:first-child) {
   color: map-get($theme-colors, 'stone-900') !important;
 }
 
-.feed-item {
-  background-color: map-get($theme-colors, 'stone-100');
-}
-
-.feed-item.item-type-subtype-0,
-.feed-item.item-type-subtype-1,
-.feed-item.item-type-subtype-2,
-.feed-item.item-type-subtype-3,
-.feed-item.item-type-subtype-4,
-.feed-item.item-type-subtype-8,
-.feed-item.item-type-subtype-10,
-.feed-item.item-type-subtype-13 {
-  background-color: map-get($theme-colors, 'blue') !important;
-  color: white;
-}
-
-.feed-item.item-type-subtype-5 {
-  color: white;
-  background-image: linear-gradient(
-    to right,
-    rgb(245, 158, 11) 0,
-    rgb(245, 158, 11) 19%,
-    map-get($theme-colors, 'stone-900') 19%,
-    map-get($theme-colors, 'stone-900')
-  );
-  text-shadow: 0 0 5px black;
-}
-
-.feed-item.item-type-subtype-6,
-.feed-item.item-type-subtype-7,
-.feed-item.item-type-subtype-11,
-.feed-item.item-type-subtype-14,
-.feed-item.item-type-subtype-15 {
-  background-color: #ffb100;
-  color: white;
-}
-
-@keyframes down {
-  0% {
-    margin-top: -83px;
-  }
-
-  100% {
-    margin-top: 0;
-  }
-}
-
 .v-lobby-overview {
   max-height: 25%;
 }
@@ -158,11 +111,6 @@ table.score-table > thead > tr > th:not(:first-child) {
 .v-feed,
 .v-chat {
   max-height: calc(75% / 2);
-}
-
-.animate .feed-item:last-child {
-  animation-name: down;
-  animation-duration: 0.7s;
 }
 
 .team-icons img:nth-child(2) {
@@ -196,11 +144,6 @@ table.score-table > thead > tr > th:not(:first-child) {
   left: 0;
   top: 50%;
   transform: translate(-50px, -50%);
-}
-
-.feed-item {
-  min-height: 75px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .item-type-goal {
@@ -597,59 +540,6 @@ span.btn {
   }
 }
 
-@media only screen and (max-width: 1000px) {
-  .feed-item,
-  .feed-item.item-type-goal .event-text {
-    font-size: 12px !important;
-    position: relative;
-  }
-
-  .feed-item .team-icons {
-    margin: 0 !important;
-    padding: 5px !important;
-  }
-
-  .feed-item .team-icons img {
-    transform: translateY(-50%) !important;
-    position: absolute !important;
-    top: 50% !important;
-    left: 0px !important;
-    width: 60px !important;
-    height: 60px !important;
-  }
-
-  .feed-item .team-icons img:not(:only-child) {
-    width: 40px !important;
-    height: 40px !important;
-    left: 10px !important;
-  }
-
-  .feed-item .team-icons img:not(:only-child):first-child {
-    transform: translate(-10px, -65%) !important;
-  }
-
-  .feed-item .team-icons img:not(:only-child):nth-child(2) {
-    transform: translate(10px, -35%) !important;
-  }
-
-  .feed {
-    width: 300px !important;
-  }
-
-  .feed-item .header {
-    font-size: 10px !important;
-  }
-
-  .feed-item .divider {
-    margin: 0 5px !important;
-  }
-
-  .feed-item-content,
-  .feed-item .team-icons {
-    padding: 5px !important;
-  }
-}
-
 @media only screen and (max-width: 850px) {
   .score-table > tbody > tr > th:first-child,
   .score-table > thead > tr > th:first-child {
@@ -762,56 +652,5 @@ span.btn {
   .score-table > thead > tr > td:last-child {
     font-size: 10px !important;
     padding: 3px !important;
-  }
-
-  .feed-item,
-  .feed-item.item-type-goal .event-text {
-    font-size: 14px !important;
-    position: relative;
-  }
-
-  .feed-item.item-type-goal .event-text {
-    font-size: 16px !important;
-  }
-
-  .feed-item .team-icons {
-    margin: 0 !important;
-    padding: 5px !important;
-  }
-
-  .feed-item .team-icons img {
-    transform: translateY(-50%) !important;
-    position: absolute !important;
-    top: 50% !important;
-    left: 0px !important;
-    width: 60px !important;
-    height: 60px !important;
-  }
-
-  .feed-item .team-icons img:not(:only-child) {
-    width: 40px !important;
-    height: 40px !important;
-    left: 10px !important;
-  }
-
-  .feed-item .team-icons img:not(:only-child):first-child {
-    transform: translate(-10px, -65%) !important;
-  }
-
-  .feed-item .team-icons img:not(:only-child):nth-child(2) {
-    transform: translate(10px, -35%) !important;
-  }
-
-  .feed-item .header {
-    font-size: 13px !important;
-  }
-
-  .feed-item .divider {
-    margin: 0 5px !important;
-  }
-
-  .feed-item-content,
-  .feed-item .team-icons {
-    padding: 10px !important;
   }
 }

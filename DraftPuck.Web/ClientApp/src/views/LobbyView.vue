@@ -117,7 +117,7 @@ const isNotificationSettingsVisible = ref(false)
 const isInvalidLobby = ref(false)
 const isLoading = ref(true)
 const mappedEvents = ref<LobbyEvent[]>([])
-const timers = ref<Number[]>([])
+const timers = ref<number[]>([])
 const currentView = ref<View>('picks')
 const pendingDrinks = ref<LobbyEvent[]>([])
 const currentDrink = ref<LobbyEvent>()
@@ -148,12 +148,12 @@ const sortedGames = computed(() =>
   !games.value
     ? []
     : [...games.value].sort((a, b) => {
-        if (a.gameState === GameState.Final) return 1
-        if (b.gameState === GameState.Final) return -1
-        if (lobby.value?.gameIds.includes(a.id) && !lobby.value?.gameIds.includes(b.id)) return -1
-        if (!lobby.value?.gameIds.includes(a.id) && lobby.value?.gameIds.includes(b.id)) return 1
-        return compareAsc(a.dateTime, b.dateTime)
-      })
+      if (a.gameState === GameState.Final) return 1
+      if (b.gameState === GameState.Final) return -1
+      if (lobby.value?.gameIds.includes(a.id) && !lobby.value?.gameIds.includes(b.id)) return -1
+      if (!lobby.value?.gameIds.includes(a.id) && lobby.value?.gameIds.includes(b.id)) return 1
+      return compareAsc(a.dateTime, b.dateTime)
+    })
 )
 
 const is4Nations = computed(() => {
@@ -215,13 +215,11 @@ onMounted(async () => {
     if (!currentLobbyMember.value) return router.push({ name: 'Home' })
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ joinCode: joinCode.value, name: currentLobbyMember.value.name }))
 
-    await getLobbyEvents(lobby.value.id)
-    await initializeHubConnection()
+    await initializeLobbyConnection()
     await initializeFirebase()
-    await setGames()
 
-    initializeActivityChecker()
-    mappedEvents.value = events.value.map(replaceTemplatedStrings)
+    document.removeEventListener('visibilitychange', handleVisibilityChange)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
   } catch (e) {
     logError(e as string)
     isInvalidLobby.value = true
@@ -233,6 +231,13 @@ onMounted(async () => {
 const isGameInProgress = (game: Game) => game.gameState === GameState.Live
 const isGameOver = (game: Game) => game.gameState === GameState.Final
 const isGameStale = (game: Game) => isGameOver(game)
+
+function handleVisibilityChange() {
+  if (document.hidden)
+    pauseLobbyConnection()
+  else
+    initializeLobbyConnection()
+}
 
 function setView(view: View) {
   currentView.value = view
@@ -246,18 +251,34 @@ function initializeActivityChecker() {
 async function checkActivity() {
   const secondsSinceLastLobbyRetrieval = Math.abs(differenceInSeconds(new Date(), lastLobbyRetrieval.value))
   if (secondsSinceLastLobbyRetrieval > 300) {
-    sendDebugMessage(`Refreshing connection after ${secondsSinceLastLobbyRetrieval} seconds since last retrieval...`, 2)
-    refreshConnection()
+    sendDebugMessage(`${secondsSinceLastLobbyRetrieval} seconds since last retrieval.`, 2)
+    initializeLobbyConnection()
   }
 }
 
-async function refreshConnection() {
-  await Promise.all([getLobby(), initializeHubConnection()])
+async function initializeLobbyConnection() {
+  sendDebugMessage('Initializing lobby connection.', 2)
+  await Promise.all([getLobby(), initializeHubConnection(), setGames()])
 
   if (lobby.value) {
     await getLobbyEvents(lobby.value.id)
+    mappedEvents.value = events.value.map(replaceTemplatedStrings)
     sendDebugMessage('Got lobby events.', 2)
   }
+
+  initializeActivityChecker()
+}
+
+async function pauseLobbyConnection() {
+  sendDebugMessage('Pausing lobby connection.', 2)
+  // stop polling for game updates
+  timers.value.forEach(t => window.clearTimeout(t))
+
+  // disconnect hub
+  await hubConnection.stop();
+
+  // stop activity polling
+  if (checkActivityTimer.value) window.clearInterval(checkActivityTimer.value)
 }
 
 async function updateUserFcmToken(token?: string) {
@@ -306,6 +327,8 @@ function logError(error: string) {
 }
 
 async function setGames() {
+  timers.value.forEach(t => window.clearTimeout(t))
+
   sendDebugMessage(`Setting games...`, 1)
   games.value = await GameService.getAllGames()
   sendDebugMessage(`${games.value.length} games retrieved.`, 1)
@@ -568,34 +591,33 @@ watch(
 <template>
   <div class="d-flex overflow-hidden flex-column" style="height: 100%">
     <template v-if="!isInvalidLobby">
-      <VInstructionsModal v-if="isInstructionsVisible" :join-code="lobby?.joinCode" @close="isInstructionsVisible = false" />
+      <VInstructionsModal v-if="isInstructionsVisible" :join-code="lobby?.joinCode"
+        @close="isInstructionsVisible = false" />
       <VNotificationSettingsModal v-if="isNotificationSettingsVisible" @close="isNotificationSettingsVisible = false" />
-      <div class="bg-stone-900 px-sm-4 px-2 py-2 shadow position-relative d-flex align-items-center justify-content-between" style="z-index: 10">
-        <router-link :to="{ name: 'Home' }" class="banner-logo text-stone-0 text-decoration-none" style="cursor: pointer">
+      <div
+        class="bg-stone-900 px-sm-4 px-2 py-2 shadow position-relative d-flex align-items-center justify-content-between"
+        style="z-index: 10">
+        <router-link :to="{ name: 'Home' }" class="banner-logo text-stone-0 text-decoration-none"
+          style="cursor: pointer">
           <img v-if="!is4Nations" src="/img/logo-wide.png" />
           <img v-if="is4Nations" src="/img/logo-wide-4nations.png" />
         </router-link>
 
-        <a
-          @click="copyInvite"
-          role="button"
+        <a @click="copyInvite" role="button"
           class="d-block ms-auto bg-primary text-stone-900 px-2 rounded text-decoration-none fs-7 ms-1 d-flex align-items-center"
-          v-if="lobby?.joinCode !== undefined"
-        >
+          v-if="lobby?.joinCode !== undefined">
           <span class="fs-5 me-1 fw-bold" style="letter-spacing: 3px">{{ lobby?.joinCode }}</span>
           <i class="fi fi-sr-share d-block mb-n1 d-block"></i>
         </a>
 
-        <a
-          class="d-flex ms-auto me-sm-5 me-3 pt-1 text-white fw-bold text-decoration-none align-items-center"
-          role="button"
-          @click="isNotificationSettingsVisible = true"
-        >
+        <a class="d-flex ms-auto me-sm-5 me-3 pt-1 text-white fw-bold text-decoration-none align-items-center"
+          role="button" @click="isNotificationSettingsVisible = true">
           <i class="fi fi-rr-settings d-block fs-3" style="line-height: 20px"></i>
           <span class="d-none d-sm-block text-uppercase ms-2" style="margin-top: -2px">Notifications</span>
         </a>
 
-        <a class="d-flex pt-1 text-stone-0 fw-bold text-decoration-none align-items-center" role="button" @click="isInstructionsVisible = true">
+        <a class="d-flex pt-1 text-stone-0 fw-bold text-decoration-none align-items-center" role="button"
+          @click="isInstructionsVisible = true">
           <i class="fi fi-rr-question-square d-block fs-3" style="line-height: 20px"></i>
           <span class="d-none d-sm-block text-uppercase ms-2" style="margin-top: -2px">How To Play</span>
         </a>
@@ -605,31 +627,21 @@ watch(
 
       <div class="d-flex flex-grow-1 overflow-hidden bg-stone-800">
         <template v-if="!isLoading">
-          <VGameScoreboards class="full-scoreboard flex-grow-1" :class="{ 'hide-mobile': !isGameView }" :games="sortedGames" style="overflow: auto" />
+          <VGameScoreboards class="full-scoreboard flex-grow-1" :class="{ 'hide-mobile': !isGameView }"
+            :games="sortedGames" style="overflow: auto" />
 
-          <div
-            class="feed flex-shrink-0 d-flex flex-column"
-            :class="{ 'hide-mobile': !isFeedView && !isLobbyView && !isChatView && !isPicksView }"
-            style="width: 400px"
-          >
-            <VScoresRibbon class="d-sm-none" :games="sortedGames" :selected-game="selectedGame" @on-score-clicked="selectGame" />
-            <VLobbyOverview ref="overview" class="lobby-overview v-lobby-overview flex-grow-1" :class="{ 'hide-mobile': !isLobbyView }" />
-            <VFeed class="flex-grow-1 v-feed" :items="feedItems" :class="{ 'hide-mobile': !isFeedView, animate: shouldAnimateFeed }" />
-            <VPicks
-              ref="vPicks"
-              @select-game="selectGame"
-              class="flex-grow-1 v-picks d-sm-none"
-              :selected-game="selectedGame"
-              :games="sortedGames"
-              :class="{ 'hide-mobile': !isPicksView }"
-            />
-            <VChat
-              ref="vChat"
-              :messages="messages"
-              class="flex-grow-1 v-chat"
-              :class="{ 'hide-mobile': !isChatView }"
-              @command="handleCommand"
-            ></VChat>
+          <div class="feed flex-shrink-0 d-flex flex-column"
+            :class="{ 'hide-mobile': !isFeedView && !isLobbyView && !isChatView && !isPicksView }" style="width: 400px">
+            <VScoresRibbon class="d-sm-none" :games="sortedGames" :selected-game="selectedGame"
+              @on-score-clicked="selectGame" />
+            <VLobbyOverview ref="overview" class="lobby-overview v-lobby-overview flex-grow-1"
+              :class="{ 'hide-mobile': !isLobbyView }" />
+            <VFeed class="flex-grow-1 v-feed" :items="feedItems"
+              :class="{ 'hide-mobile': !isFeedView, animate: shouldAnimateFeed }" />
+            <VPicks ref="vPicks" @select-game="selectGame" class="flex-grow-1 v-picks d-sm-none"
+              :selected-game="selectedGame" :games="sortedGames" :class="{ 'hide-mobile': !isPicksView }" />
+            <VChat ref="vChat" :messages="messages" class="flex-grow-1 v-chat" :class="{ 'hide-mobile': !isChatView }"
+              @command="handleCommand"></VChat>
           </div>
         </template>
 
@@ -658,7 +670,8 @@ watch(
           <i class="fi fi-rs-hockey-mask"></i><br />
           <span>PICKS</span>
         </a>
-        <a role="button" class="text-center p-2 text-white d-none" :class="{ active: isGameView }" @click="setView('game')">
+        <a role="button" class="text-center p-2 text-white d-none" :class="{ active: isGameView }"
+          @click="setView('game')">
           <i class="fi fi-rr-hockey-puck"></i><br />
           <span>SCORES</span>
         </a>
@@ -678,7 +691,8 @@ watch(
     <template v-if="isInvalidLobby">
       <div style="width: 100%; height: 100%" class="d-flex align-items-center">
         <div class="mx-auto d-flex flex-column align-items-center">
-          <span class="text-center d-block mx-auto mt-3 fs-2 text-uppercase fw-bold">Sorry, this lobby is invalid.</span>
+          <span class="text-center d-block mx-auto mt-3 fs-2 text-uppercase fw-bold">Sorry, this lobby is
+            invalid.</span>
         </div>
       </div>
     </template>
@@ -744,23 +758,23 @@ watch(
   z-index: 10;
 }
 
-.bottom-nav > a {
+.bottom-nav>a {
   display: block;
   width: calc(100% / 3);
   text-decoration: none !important;
   position: relative;
 }
 
-.bottom-nav > a:not(.active):hover {
+.bottom-nav>a:not(.active):hover {
   background-color: map-get($custom-colors, 'stone-800') !important;
 }
 
-.bottom-nav > a.active {
+.bottom-nav>a.active {
   background-color: map-get($custom-colors, 'stone-300') !important;
   color: map-get($custom-colors, 'stone-900') !important;
 }
 
-.bottom-nav > a:not(:first-child) {
+.bottom-nav>a:not(:first-child) {
   border-left: 1px solid map-get($custom-colors, 'stone-800');
 }
 
