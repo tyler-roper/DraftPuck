@@ -5,6 +5,7 @@ import { getMessaging, getToken, onMessage } from 'firebase/messaging'
 import { useUserStore } from '@/stores/user'
 import { env } from '@/env'
 import { useToast } from 'vue-toastification'
+import VHtmlToast from '@/components/VHtmlToast.vue'
 
 export const useFirebaseStore = defineStore('firebase', () => {
   const isInitialized = ref(false)
@@ -42,7 +43,13 @@ export const useFirebaseStore = defineStore('firebase', () => {
         const body = payload.notification?.body;
 
         if (type === "Achievement") {
-          toast.success(`Achievement earned! ${title} — ${body}`);
+          toast({
+            component: VHtmlToast,
+            props: { title: `<span class='text-primary'>${title}</span>`, message: body },
+          }, {
+            toastClassName: 'bg-stone-900',
+            icon: 'fi fi-sr-trophy fs-3 text-primary'
+          })
           userStore.refreshUser()
         }
       });
