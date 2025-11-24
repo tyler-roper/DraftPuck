@@ -27,7 +27,7 @@ const { gitSha, appIsTestMode, currentSystemTime } = storeToRefs(systemStore)
           </div>
           <div class="profile-section">
             <span class="fw-bold">Test Mode</span>
-            <span class="d-block text-stone-400">{{ appIsTestMode ? 'Disabled' : 'Enabled' }}</span>
+            <span class="d-block text-stone-400">{{ appIsTestMode ? 'Enabled' : 'Disabled' }}</span>
           </div>
           <div class="profile-section">
             <span class="fw-bold">System Time</span>
