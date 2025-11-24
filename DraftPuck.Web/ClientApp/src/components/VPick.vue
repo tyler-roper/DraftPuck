@@ -9,6 +9,7 @@ import PeriodType from '@/enums/periodType'
 import PlayType from '@/enums/playType'
 import { useLobbyStore } from '@/stores/lobby'
 import { storeToRefs } from 'pinia'
+import { useSystemStore } from '@/stores/system'
 //#endregion
 
 //#region props
@@ -36,8 +37,11 @@ const isRemoving = computed(() => props.isRemoving)
 //#endregion
 
 //#region refs
+const systemStore = useSystemStore()
+const { currentSystemTime } = storeToRefs(systemStore)
+
 const store = useLobbyStore()
-const { lobby, currentUserId, currentSystemTime } = storeToRefs(store)
+const { lobby, currentUserId } = storeToRefs(store)
 //#endregion
 
 //#region computed

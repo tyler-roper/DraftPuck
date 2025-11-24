@@ -14,6 +14,7 @@ import GameState from '@/enums/gameState'
 import PeriodType from '@/enums/periodType'
 import PlayType from '@/enums/playType'
 import TeamSituation from '@/enums/teamSituation'
+import { useSystemStore } from '@/stores/system'
 
 const props = defineProps<{
   game: Game
@@ -24,10 +25,12 @@ const game = computed(() => props.game)
 
 //data
 const toast = useToast()
-const store = useLobbyStore()
+const lobbyStore = useLobbyStore()
+const systemStore = useSystemStore()
+const { currentSystemTime } = storeToRefs(systemStore)
 
-const { lobby, currentUserId, isLobbyAdmin, currentSystemTime } = storeToRefs(store)
-const { pickPlayer, removePick } = store
+const { lobby, currentUserId, isLobbyAdmin } = storeToRefs(lobbyStore)
+const { pickPlayer, removePick } = lobbyStore
 
 const isPickingStarted = ref(false)
 const pickingStartingTimer = ref<number>()

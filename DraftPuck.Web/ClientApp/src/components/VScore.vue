@@ -8,6 +8,7 @@ import { getOrdinal } from '@/helpers/gameHelpers'
 import PeriodType from '@/enums/periodType'
 import { storeToRefs } from 'pinia'
 import { useLobbyStore } from '@/stores/lobby'
+import { useSystemStore } from '@/stores/system'
 //#endregion
 
 //#region props
@@ -23,8 +24,11 @@ const props = withDefaults(
 //#endregion
 
 //#region data
+const systemStore = useSystemStore()
+const { currentSystemTime } = storeToRefs(systemStore)
+
 const store = useLobbyStore()
-const { lobby, currentUserId, currentSystemTime } = storeToRefs(store)
+const { lobby, currentUserId } = storeToRefs(store)
 //#endregion
 
 //#region computed
