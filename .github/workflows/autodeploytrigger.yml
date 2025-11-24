@@ -31,7 +31,8 @@ jobs:
           push: true
           tags: ${{ secrets.ACR_LOGIN_SERVER }}/draftpuck-web:${{ github.sha }}
           file: DraftPuck.Web/Dockerfile
-          build-args: GIT_SHA=${{ github.sha }}
+          build-args: |
+            GIT_SHA=${{ github.sha }}
 
       - name: Build and push Worker Function image
         uses: docker/build-push-action@v5
@@ -40,7 +41,8 @@ jobs:
           push: true
           tags: ${{ secrets.ACR_LOGIN_SERVER }}/draftpuck-worker:${{ github.sha }}
           file: DraftPuck.Worker/Dockerfile
-          build-args: GIT_SHA=${{ github.sha }}
+          build-args: |
+            GIT_SHA=${{ github.sha }}
 
       - name: Build and push Discord Bot
         uses: docker/build-push-action@v5
@@ -49,7 +51,8 @@ jobs:
           push: true
           tags: ${{ secrets.ACR_LOGIN_SERVER }}/draftpuck-discord-bot:${{ github.sha }}
           file: DraftPuck.DiscordBot/Dockerfile
-          build-args: GIT_SHA=${{ github.sha }}
+          build-args: |
+            GIT_SHA=${{ github.sha }}
 
       - name: Git SHA
-        run: echo "Git SHA for this build: ${{ steps.set_sha.outputs.git_sha }}"
+        run: echo "Git SHA for this build: ${{ github.sha }}"

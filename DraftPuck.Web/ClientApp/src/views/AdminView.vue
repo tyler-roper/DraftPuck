@@ -1,17 +1,12 @@
 <script setup lang="ts">
 import { useSystemStore } from '@/stores/system'
 import ProfileSubsectionLayout from '@/views/layouts/ProfileSubsectionLayout.vue'
-import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
-import { useRouter } from 'vue-router'
 import { format } from 'date-fns'
 import VIcon from '@/components/VIcon.vue'
 
 //#region data
-const userStore = useUserStore()
 const systemStore = useSystemStore()
-const router = useRouter()
-const { currentUser, isLoggedIn, isAdmin } = storeToRefs(userStore)
 const { gitSha, appIsTestMode, currentSystemTime } = storeToRefs(systemStore)
 
 //#endregion
