@@ -20,4 +20,5 @@ interface User {
   drinkAwardedNotificationPreference: NotificationPreference
   chatNotificationPreference: NotificationPreference
   pickingStartedNotificationPreference: NotificationPreference
+  achievementAwardedNotificationPreference?: NotificationPreference
 }

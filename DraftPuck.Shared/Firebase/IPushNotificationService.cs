@@ -1,5 +1,8 @@
-﻿namespace DraftPuck.Shared.Firebase;
+﻿using DraftPuck.Shared.Achievements;
+
+namespace DraftPuck.Shared.Firebase;
 public interface IPushNotificationService
 {
-    Task SendPushNotification(string lobbyCode, string title, string message, string token, Dictionary<string, string>? data = null);
+    Task SendAchievementNotification(string token, AchievementEntity achievement, CancellationToken ct);
+    Task SendLobbyEventNotification(string lobbyCode, string title, string message, string token, Dictionary<string, string>? data = null);
 }

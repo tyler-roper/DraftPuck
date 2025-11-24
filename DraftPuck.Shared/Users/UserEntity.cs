@@ -20,6 +20,7 @@ public partial class UserEntity
     public NotificationPreference DrinkAwardedNotificationPreference { get; set; } = NotificationPreference.None;
     public NotificationPreference ChatNotificationPreference { get; set; } = NotificationPreference.None;
     public NotificationPreference PickingStartedNotificationPreference { get; set; } = NotificationPreference.None;
+    public NotificationPreference AchievementAwardedNotificationPreference { get; set; } = NotificationPreference.None;
     [JsonIgnore]
     public string? PasswordHash { get; set; }
     public string? DiscordUserId { get; set; }

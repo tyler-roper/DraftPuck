@@ -4,11 +4,13 @@ import { initializeApp } from 'firebase/app'
 import { getMessaging, getToken, onMessage } from 'firebase/messaging'
 import { useUserStore } from '@/stores/user'
 import { env } from '@/env'
+import { useToast } from 'vue-toastification'
 
 export const useFirebaseStore = defineStore('firebase', () => {
   const isInitialized = ref(false)
   const notificationsSupported = ref('Notification' in window)
   const permissionGranted = ref(Notification.permission === 'granted')
+  const toast = useToast()
 
   async function initialize() {
     if (isInitialized.value) return
@@ -35,8 +37,14 @@ export const useFirebaseStore = defineStore('firebase', () => {
 
       // Handle foreground messages
       onMessage(messaging, (payload) => {
-        console.log('Foreground message:', payload)
-      })
+        const type = payload.data?.type;
+        const title = payload.notification?.title;
+        const body = payload.notification?.body;
+
+        if (type === "Achievement") {
+          toast.success(`Achievement earned! ${title} — ${body}`);
+        }
+      });
 
       const token = await getToken(messaging, {
         vapidKey: env.VITE_FIREBASE_VAPID_KEY,

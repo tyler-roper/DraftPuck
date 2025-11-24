@@ -24,12 +24,12 @@ public class MessageSentPushNotificationHandler(IPushNotificationService firebas
             if (!isMentioned && user.ChatNotificationPreference == NotificationPreference.All)
             {
                 var data = new Dictionary<string, string> { { "lobbyEventType", "chatMessage" }, { "isRelevant", "false" } };
-                await firebaseService.SendPushNotification(lobby.JoinCode, sender.Name, message.Message, user.FcmRegistrationToken!, data);
+                await firebaseService.SendLobbyEventNotification(lobby.JoinCode, sender.Name, message.Message, user.FcmRegistrationToken!, data);
             }
             else if (isMentioned && user.ChatNotificationPreference != NotificationPreference.None)
             {
                 var data = new Dictionary<string, string> { { "lobbyEventType", "chatMessage" }, { "isRelevant", "true" } };
-                await firebaseService.SendPushNotification(lobby.JoinCode, $"{sender.Name} mentioned you.", message.Message, user.FcmRegistrationToken!, data);
+                await firebaseService.SendLobbyEventNotification(lobby.JoinCode, $"{sender.Name} mentioned you.", message.Message, user.FcmRegistrationToken!, data);
             }
         });
     }

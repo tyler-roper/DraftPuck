@@ -12,6 +12,7 @@ public class UpdateNotificationPreferencesCommandHandler(IDbContext dbContext, I
         user.DrinkAwardedNotificationPreference = request.DrinkAwardedNotificationPreference;
         user.ChatNotificationPreference = request.ChatNotificationPreference;
         user.PickingStartedNotificationPreference = request.PickingStartedNotificationPreference;
+        user.AchievementAwardedNotificationPreference = request.AchievementAwardedNotificationPreference;
 
         await dbContext.SaveChangesAsync(cancellationToken);
         return mapper.Map<UserDto>(user);

@@ -6,5 +6,6 @@ public class UpdateNotificationPreferencesCommand : IRequest<UserDto>
     public NotificationPreference DrinkAwardedNotificationPreference { get; set; }
     public NotificationPreference ChatNotificationPreference { get; set; }
     public NotificationPreference PickingStartedNotificationPreference { get; set; }
+    public NotificationPreference AchievementAwardedNotificationPreference { get; set; }
     public Guid UserId { get; set; }
 }
