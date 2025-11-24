@@ -93,7 +93,7 @@ watch(
 </script>
 
 <template>
-  <div class="h-100 bg-dark-gradient">
+  <div class="h-100 bg-dark-gradient overflow-auto pb-4">
     <div v-if="notFound">User not found.</div>
     <div v-else-if="isLoading">
       <div class="header-background-placeholder bg-stone-700 placeholder placeholder-wave">
@@ -183,7 +183,12 @@ watch(
               </router-link>
               <router-link class="profile-option" :to="{ name: 'Discord' }" replace>
                 <VIcon class="icon" prefix="brands" icon="discord" />
-                <span> {{ currentUser?.discordUserId ? 'Unlink' : 'Link' }} Discord</span>
+                <span>{{ currentUser?.discordUserId ? 'Unlink' : 'Link' }} Discord</span>
+                <VIcon class="caret" prefix="rr" icon="angle-right" />
+              </router-link>
+              <router-link class="profile-option" :to="{ name: 'Admin' }" replace>
+                <VIcon class="icon" prefix="rr" icon="admin" />
+                <span>Admin</span>
                 <VIcon class="caret" prefix="rr" icon="angle-right" />
               </router-link>
               <a @click="logout" class="profile-option text-primary">
@@ -387,55 +392,5 @@ $color-track: map-get($custom-colors, 'stone-700');
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.profile-section {
-  margin-top: 20px;
-}
-
-.profile-section.placeholder {
-  width: 100%;
-  height: 100px;
-  opacity: 0.15;
-  margin-top: 60px;
-}
-
-.profile-section > .title {
-  display: block;
-  font-size: 18px;
-  font-weight: bold;
-  margin-bottom: 10px;
-}
-
-.profile-options-container {
-  border-radius: 10px;
-  border: 1px solid map-get($custom-colors, 'stone-600');
-  overflow: hidden;
-}
-
-.profile-option {
-  display: flex;
-  align-items: center;
-  padding: 10px 12px;
-  color: map-get($custom-colors, 'stone-0');
-}
-
-.profile-option > span {
-  font-size: 16px;
-  display: block;
-  letter-spacing: 0.3px;
-}
-
-.profile-option > .icon {
-  font-size: 24px;
-  margin: 0 15px 0 10px;
-}
-
-.profile-option > .caret {
-  margin-left: auto;
-}
-
-.profile-option:not(:first-child) {
-  border-top: 1px solid map-get($custom-colors, 'stone-700');
 }
 </style>

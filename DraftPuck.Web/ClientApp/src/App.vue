@@ -2,13 +2,13 @@
 import { onMounted } from 'vue'
 import { RouterView } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { useLobbyStore } from '@/stores/lobby'
 import { storeToRefs } from 'pinia'
 import { format } from 'date-fns'
-const lobbyStore = useLobbyStore()
+import { useSystemStore } from '@/stores/system'
+const systemStore = useSystemStore()
 
-const { appIsTestMode, currentSystemTime } = storeToRefs(lobbyStore)
-const { initAppSettings, updateSystemTime } = lobbyStore
+const { appIsTestMode, currentSystemTime } = storeToRefs(systemStore)
+const { initAppSettings, updateSystemTime } = systemStore
 const { initialize: initializeUser } = useUserStore()
 
 onMounted(async () => {

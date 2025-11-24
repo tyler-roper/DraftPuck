@@ -29,7 +29,7 @@ public class UseRefreshTokenCommandHandler(IDbContext dbContext, ITokenService t
         var userWithDetails = await userRepository.GetById(userEntity.Id, cancellationToken);
         var userDto = mapper.Map<UserDto>(userWithDetails);
 
-        var jwtToken = tokenService.GenerateJwtToken(userEntity.Id);
+        var jwtToken = tokenService.GenerateJwtToken(userEntity);
 
         return new AuthenticationResultDto
         {

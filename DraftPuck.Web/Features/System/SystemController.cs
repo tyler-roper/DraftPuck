@@ -7,7 +7,7 @@ namespace DraftPuck.Web.Features.System;
 public class SystemController(IMediator mediator) : BaseController()
 {
     [HttpGet("settings")]
-    public async Task<ActionResult<TestModeResponse>> GetSettings()
+    public async Task<ActionResult<SystemSettingsResponse>> GetSettings()
     {
         var query = new GetSystemSettingsQuery();
         var settings = await mediator.Send(query);

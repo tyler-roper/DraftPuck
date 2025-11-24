@@ -25,5 +25,9 @@ RUN dotnet publish "./DraftPuck.Worker.csproj" -c $BUILD_CONFIGURATION -o /app/p
 FROM base AS final
 WORKDIR /home/site/wwwroot
 COPY --from=publish /app/publish .
+
+ARG GIT_SHA
+ENV DRAFTPUCK_SYSTEM__GitSha=$GIT_SHA
+
 ENV AzureWebJobsScriptRoot=/home/site/wwwroot \
     AzureFunctionsJobHost__Logging__Console__IsEnabled=true

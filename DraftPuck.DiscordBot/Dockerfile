@@ -34,4 +34,8 @@ RUN dotnet publish "./DraftPuck.DiscordBot.csproj" -c $BUILD_CONFIGURATION -o /a
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+
+ARG GIT_SHA
+ENV DRAFTPUCK_SYSTEM__GitSha=$GIT_SHA
+
 ENTRYPOINT ["dotnet", "DraftPuck.DiscordBot.dll"]

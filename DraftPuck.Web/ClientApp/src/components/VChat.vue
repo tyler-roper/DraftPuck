@@ -265,7 +265,7 @@ textarea {
 }
 
 textarea:focus {
-    border: 1px solid map-get($custom-colors, 'stone-500') !important;
+  border: 1px solid map-get($custom-colors, 'stone-500') !important;
 }
 
 a.lock-to-bottom {

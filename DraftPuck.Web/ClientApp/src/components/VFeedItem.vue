@@ -28,32 +28,29 @@ const itemClass = computed(() => {
 
 const itemIcon = computed(() => {
   if (!isLobbyEvent.value) {
-    return { prefix: "", icon: "" };
+    return { prefix: '', icon: '' }
   }
 
-  const icons: Record<
-    number,
-    { prefix: string; icon: string }
-  > = {
-    [LobbyEventType.UserJoined]: { prefix: "sr", icon: "user-add" },
-    [LobbyEventType.UserRejoined]: { prefix: "sr", icon: "user-add" },
-    [LobbyEventType.NewPick]: { prefix: "rr", icon: "badge-check" },
-    [LobbyEventType.PickRemoved]: { prefix: "sr", icon: "undo" },
-    [LobbyEventType.DrinkAssigned]: { prefix: "sr", icon: "beer" },
-    [LobbyEventType.DrinkAwarded]: { prefix: "rr", icon: "beer" },
-    [LobbyEventType.GoalChanged]: { prefix: "rr", icon: "shuffle" },
-    [LobbyEventType.DrinkRevoked]: { prefix: "rr", icon: "comment-slash" },
-    [LobbyEventType.UserNameChanged]: { prefix: "rr", icon: "id-badge" },
-    [LobbyEventType.DrinkInvalidated]: { prefix: "rr", icon: "trash" },
-    [LobbyEventType.GoalRemoved]: { prefix: "sr", icon: "cross-circle" },
-    [LobbyEventType.UserRemoved]: { prefix: "sr", icon: "remove-user" },
-    [LobbyEventType.Broadcast]: { prefix: "sr", icon: "megaphone" },
-    [LobbyEventType.UserLeft]: { prefix: "sr", icon: "exit" },
-    [LobbyEventType.UserPromoted]: { prefix: "sr", icon: "crown" }
-  };
+  const icons: Record<number, { prefix: string; icon: string }> = {
+    [LobbyEventType.UserJoined]: { prefix: 'sr', icon: 'user-add' },
+    [LobbyEventType.UserRejoined]: { prefix: 'sr', icon: 'user-add' },
+    [LobbyEventType.NewPick]: { prefix: 'rr', icon: 'badge-check' },
+    [LobbyEventType.PickRemoved]: { prefix: 'sr', icon: 'undo' },
+    [LobbyEventType.DrinkAssigned]: { prefix: 'sr', icon: 'beer' },
+    [LobbyEventType.DrinkAwarded]: { prefix: 'rr', icon: 'beer' },
+    [LobbyEventType.GoalChanged]: { prefix: 'rr', icon: 'shuffle' },
+    [LobbyEventType.DrinkRevoked]: { prefix: 'rr', icon: 'comment-slash' },
+    [LobbyEventType.UserNameChanged]: { prefix: 'rr', icon: 'id-badge' },
+    [LobbyEventType.DrinkInvalidated]: { prefix: 'rr', icon: 'trash' },
+    [LobbyEventType.GoalRemoved]: { prefix: 'sr', icon: 'cross-circle' },
+    [LobbyEventType.UserRemoved]: { prefix: 'sr', icon: 'remove-user' },
+    [LobbyEventType.Broadcast]: { prefix: 'sr', icon: 'megaphone' },
+    [LobbyEventType.UserLeft]: { prefix: 'sr', icon: 'exit' },
+    [LobbyEventType.UserPromoted]: { prefix: 'sr', icon: 'crown' }
+  }
 
-  return icons[props.item.subType as number] ?? { prefix: "", icon: "" };
-});
+  return icons[props.item.subType as number] ?? { prefix: '', icon: '' }
+})
 
 const isLobbyEvent = computed(() => props.item.type === FeedItemType.LobbyEvent)
 
@@ -120,17 +117,17 @@ function formatAsTime(date: Date | string) {
   justify-content: center;
 }
 
-.logo-container>img {
+.logo-container > img {
   display: block;
 }
 
-.logo-container>img:only-child {
+.logo-container > img:only-child {
   width: 70px;
   margin: -15px 0;
   height: auto;
 }
 
-.logo-container>img:not(:only-child) {
+.logo-container > img:not(:only-child) {
   position: absolute;
   width: 45px;
   height: auto;
@@ -139,11 +136,11 @@ function formatAsTime(date: Date | string) {
   --offset: 10px;
 }
 
-.logo-container>img:not(:only-child):first-child {
+.logo-container > img:not(:only-child):first-child {
   transform: translate(calc(-50% + var(--offset)), calc(-50% + var(--offset)));
 }
 
-.logo-container>img:not(:only-child):last-child {
+.logo-container > img:not(:only-child):last-child {
   transform: translate(calc(-50% - var(--offset)), calc(-50% - var(--offset)));
 }
 
@@ -186,12 +183,14 @@ function formatAsTime(date: Date | string) {
   text-shadow: 0 0 5px black;
   color: white;
   background-size: 100% 400%;
-  background-image: linear-gradient(to top,
-      map-get($custom-colors, 'amber-500') 0%,
-      map-get($custom-colors, 'amber-400') 25%,
-      map-get($custom-colors, 'amber-500') 50%,
-      map-get($custom-colors, 'amber-400') 75%,
-      map-get($custom-colors, 'amber-500') 100%);
+  background-image: linear-gradient(
+    to top,
+    map-get($custom-colors, 'amber-500') 0%,
+    map-get($custom-colors, 'amber-400') 25%,
+    map-get($custom-colors, 'amber-500') 50%,
+    map-get($custom-colors, 'amber-400') 75%,
+    map-get($custom-colors, 'amber-500') 100%
+  );
   animation: gradient-shift 7s linear infinite;
   position: relative;
   overflow: hidden;

@@ -16,7 +16,7 @@ public class LoginCommandHandler(IDbContext dbContext, ITokenService tokenServic
         if (userEntity == null || !BCrypt.Net.BCrypt.Verify(request.Password, userEntity.PasswordHash))
             throw new UnauthorizedException("Invalid email or password.");
 
-        var jwtToken = tokenService.GenerateJwtToken(userEntity.Id);
+        var jwtToken = tokenService.GenerateJwtToken(userEntity);
         var refreshToken = tokenService.GenerateRefreshToken(request.IpAddress!);
 
         userEntity.RefreshTokens.Add(refreshToken);

@@ -2,17 +2,19 @@
 
 namespace DraftPuck.Application.Features.System;
 
-public class GetSystemSettingsQueryHandler(IOptions<ApplicationOptions> appConfig) : IRequestHandler<GetSystemSettingsQuery, TestModeResponse>
+public class GetSystemSettingsQueryHandler(IOptions<ApplicationOptions> appConfig, IOptions<SystemOptions> systemConfig) : IRequestHandler<GetSystemSettingsQuery, SystemSettingsResponse>
 {
     private readonly ApplicationOptions _appConfig = appConfig.Value;
+    private readonly SystemOptions _systemConfig = systemConfig.Value;
 
-    public Task<TestModeResponse> Handle(GetSystemSettingsQuery request, CancellationToken cancellationToken)
+    public Task<SystemSettingsResponse> Handle(GetSystemSettingsQuery request, CancellationToken cancellationToken)
     {
-        var response = new TestModeResponse
+        var response = new SystemSettingsResponse
         {
             IsTestMode = _appConfig.IsTestMode,
             TestModeStartDateTimeUtc = _appConfig.TestModeStartDateTimeUtc,
-            StartupTimeUtc = ApplicationStartupInfo.StartupTimeUtc
+            StartupTimeUtc = ApplicationStartupInfo.StartupTimeUtc,
+            GitSha = _systemConfig.GitSha
         };
 
         return Task.FromResult(response);
