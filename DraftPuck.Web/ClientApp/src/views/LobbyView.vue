@@ -146,8 +146,6 @@ const feedAnimationTimer = ref<number>()
 const checkActivityTimer = ref<number>()
 const lastLobbyRetrieval = ref<Date>(new Date())
 const isInitialLoad = ref(true)
-const notificationPermissionsGranted = ref('Notification' in window && Notification.permission === 'granted')
-const notificationsSupported = ref('Notification' in window)
 const selectedGame = ref<Game>()
 
 let hubConnection: SignalR.HubConnection
