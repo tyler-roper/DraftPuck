@@ -3,6 +3,7 @@ import { setPageMetaTags, setPageTitle } from '@/helpers/routerHelpers'
 import { useUserStore } from '@/stores/user'
 
 const requiresLogin = true
+const requiresAdmin = true
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -115,6 +116,12 @@ const router = createRouter({
       name: 'Achievements',
       props: true,
       component: () => import('@/views/AchievementsView.vue')
+    },
+    {
+      path: '/admin',
+      name: 'Admin',
+      component: () => import('@/views/AdminView.vue'),
+      meta: { requiresLogin, requiresAdmin }
     }
   ]
 })
@@ -132,8 +139,14 @@ router.beforeEach(async (to, _from, next) => {
 
   if (to.meta.requiresLogin === true) {
     await initializePromise
+
     if (!userStore.isLoggedIn) {
       next({ name: 'Login', query: { redirect: to.path } })
+      return
+    }
+
+    if (userStore.isLoggedIn && !userStore.isAdmin && to.meta.requiresAdmin) {
+      next({ name: 'Home' })
       return
     }
   }

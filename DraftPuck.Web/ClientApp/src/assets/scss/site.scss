@@ -448,6 +448,56 @@ span.btn {
   margin-top: auto;
 }
 
+.profile-section {
+  margin-top: 20px;
+}
+
+.profile-section.placeholder {
+  width: 100%;
+  height: 100px;
+  opacity: 0.15;
+  margin-top: 60px;
+}
+
+.profile-section>.title {
+  display: block;
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.profile-options-container {
+  border-radius: 10px;
+  border: 1px solid map-get($custom-colors, 'stone-600');
+  overflow: hidden;
+}
+
+.profile-option {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  color: map-get($custom-colors, 'stone-0');
+}
+
+.profile-option>span {
+  font-size: 16px;
+  display: block;
+  letter-spacing: 0.3px;
+}
+
+.profile-option>.icon {
+  font-size: 24px;
+  margin: 0 15px 0 10px;
+}
+
+.profile-option>.caret {
+  margin-left: auto;
+}
+
+.profile-option:not(:first-child) {
+  border-top: 1px solid map-get($custom-colors, 'stone-700');
+}
+
 @media only screen and (max-width: 1880px) {
   .score-table > tbody > tr > th:first-child {
     width: 150px !important;

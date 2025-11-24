@@ -35,6 +35,9 @@ FROM base AS final
 WORKDIR /opt/app
 COPY --from=build /app/publish .
 
+ARG GIT_SHA="Local"
+ENV DRAFTPUCK_SYSTEM__GitSha=$GIT_SHA
+
 ENV ASPNETCORE_URLS=http://+:17000/
 EXPOSE 17000
 

@@ -13,7 +13,7 @@ public static class FirebaseServiceCollectionExtensions
     {
         return services
             .Configure<FirebaseOptions>(configuration.GetSection(FirebaseOptions.SectionName))
-            .AddSingleton<FirebaseApp>(sp =>
+            .AddSingleton(sp =>
             {
                 var options = sp.GetRequiredService<IOptions<FirebaseOptions>>().Value;
                 return CreateFirebaseApp(options);
@@ -23,10 +23,10 @@ public static class FirebaseServiceCollectionExtensions
 
     private static FirebaseApp CreateFirebaseApp(FirebaseOptions options)
     {
-        var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(options.AsJson));
+        var json = options.AsJson;
         return FirebaseApp.Create(new AppOptions
         {
-            Credential = GoogleCredential.FromStream(stream)
+            Credential = GoogleCredential.FromJson(json)
         });
     }
 }

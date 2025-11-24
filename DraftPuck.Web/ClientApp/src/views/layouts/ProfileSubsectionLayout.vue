@@ -28,7 +28,7 @@ const emit = defineEmits(['discard', 'save'])
 </script>
 
 <template>
-  <div class="d-flex flex-column h-100 bg-dark-gradient">
+  <div class="d-flex flex-column h-100 bg-dark-gradient overflow-auto">
     <div class="text-center bg-stone-900">
       <div class="position-relative">
         <router-link :to="`/u/${currentUser!.nickname}`" class="back-link" replace>
@@ -71,4 +71,6 @@ const emit = defineEmits(['discard', 'save'])
 .bg-dark-gradient {
   background-image: linear-gradient(to bottom, map-get($custom-colors, 'stone-1000'), map-get($custom-colors, 'stone-800'));
 }
+
+.overflow-auto { overflow: auto }
 </style>

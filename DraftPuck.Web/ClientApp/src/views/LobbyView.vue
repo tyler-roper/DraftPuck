@@ -31,6 +31,7 @@ import type { ILogger, LogLevel } from '@microsoft/signalr'
 import VUser from '@/components/VUser.vue'
 import { useUserStore } from '@/stores/user'
 import { env } from '@/env'
+import { useSystemStore } from '@/stores/system'
 
 class SignalRLogger implements ILogger {
   logLevel = 0
@@ -103,12 +104,14 @@ const commands = computed<{ [command: string]: (...args: string[]) => void }>(()
 
 //data
 const userStore = useUserStore()
+const systemStore = useSystemStore()
 const { isLoggedIn, currentUser } = storeToRefs(userStore)
 const store = useLobbyStore()
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
-const { lobby, currentUserId, events, systemMessages, appIsTestMode } = storeToRefs(store)
+const { lobby, currentUserId, events, systemMessages } = storeToRefs(store)
+const { appIsTestMode } = storeToRefs(systemStore)
 const { getLobby: getLobbyFromStore, getLobbyEvents, addLobbyEvent, addMessageToStore, sendDebugMessage, sendSystemMessage, setDebugging } = store
 const joinCode = ref(route.params.joinCode as string)
 const games = ref<Game[]>([])

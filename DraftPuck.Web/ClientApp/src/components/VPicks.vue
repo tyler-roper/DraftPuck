@@ -9,6 +9,7 @@ import GamePickableStatus from '@/enums/gamePickableStatus'
 import { useToast } from 'vue-toastification'
 import PickRequest from '@/models/pickRequest'
 import GameState from '@/enums/gameState'
+import { useSystemStore } from '@/stores/system'
 //#endregion
 
 //#region props
@@ -22,14 +23,16 @@ const games = computed(() => props.games)
 
 //#region refs
 const toast = useToast()
-const store = useLobbyStore()
+const lobbyStore = useLobbyStore()
+const systemStore = useSystemStore()
 
 const selectedTeamId = ref<number>()
 const teamRosterContainer = ref<HTMLDivElement | null>(null)
 const gameCountdowns = ref<Record<number, { asString: string; asMilliseconds: number }>>()
 const countdownTimer = ref<number>()
-const { lobby, currentUserId, currentSystemTime, isLobbyAdmin } = storeToRefs(store)
-const { pickPlayer, removePick } = store
+const { lobby, currentUserId, isLobbyAdmin } = storeToRefs(lobbyStore)
+const { currentSystemTime } = storeToRefs(systemStore)
+const { pickPlayer, removePick } = lobbyStore
 const selectedPlayers = ref<Player[]>([])
 const justLockedIn = ref(false)
 const selectedMember = ref<LobbyMember>()

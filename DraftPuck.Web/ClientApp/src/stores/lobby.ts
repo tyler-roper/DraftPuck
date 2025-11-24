@@ -15,21 +15,11 @@ export const useLobbyStore = defineStore('lobby', () => {
   const systemMessages = ref<SystemMessageViewModel[]>([])
   const debugLevel = ref(0)
 
-  const appIsTestMode = ref(false)
-  const appStartupTime = ref(new Date())
-  const appTestModeStartTime = ref(new Date())
-  const currentSystemTime = ref(new Date())
-
   const userStore = useUserStore()
   const currentUserId = computed(() => userStore.currentUser?.id)
   //#endregion
 
   //#region mutations
-  const setAppSettings = (appSettings: { appIsTestMode: boolean; appStartupTime: Date; appTestModeStartTime: Date }) => {
-    appIsTestMode.value = appSettings.appIsTestMode
-    appStartupTime.value = appSettings.appStartupTime
-    appTestModeStartTime.value = appSettings.appTestModeStartTime
-  }
   const setLobby = (_lobby: Lobby) => (lobby.value = _lobby)
   const setEvents = (_events: LobbyEvent[]) => (events.value = _events)
 
@@ -103,15 +93,6 @@ export const useLobbyStore = defineStore('lobby', () => {
     debugLevel.value = level
   }
 
-  function updateSystemTime() {
-    if (!appIsTestMode.value) {
-      currentSystemTime.value = new Date()
-      return
-    }
-
-    const millisecondsSinceStartup = differenceInMilliseconds(new Date(), appStartupTime.value)
-    currentSystemTime.value = addMilliseconds(appTestModeStartTime.value, millisecondsSinceStartup)
-  }
   //#endregion
 
   //#region actions
@@ -178,11 +159,6 @@ export const useLobbyStore = defineStore('lobby', () => {
     addMessageToStore(message)
     await LobbyService.sendMessage(lobby.value.joinCode, message)
   }
-
-  async function initAppSettings() {
-    const result = await SystemService.getSettings()
-    setAppSettings({ appIsTestMode: result.isTestMode, appStartupTime: result.startupTimeUtc, appTestModeStartTime: result.testModeStartDateTimeUtc })
-  }
   //#endregion
 
   //#region getters
@@ -195,7 +171,6 @@ export const useLobbyStore = defineStore('lobby', () => {
     currentUserId,
     systemMessages,
     debugLevel,
-    setAppSettings,
     setLobby,
     setEvents,
     addPick,
@@ -217,12 +192,8 @@ export const useLobbyStore = defineStore('lobby', () => {
     addBot,
     sendMessage,
     isLobbyAdmin,
-    initAppSettings,
     sendDebugMessage,
     sendSystemMessage,
-    setDebugging,
-    currentSystemTime,
-    appIsTestMode,
-    updateSystemTime
+    setDebugging
   }
 })

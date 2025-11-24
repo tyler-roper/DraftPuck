@@ -6,16 +6,15 @@ using DraftPuck.Shared.Discord;
 using DraftPuck.Web.Features.Lobbies;
 using DraftPuck.Web.Filters;
 using DraftPuck.Web.Hubs;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
+using Microsoft.Extensions.Configuration;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration.AddEnvironmentVariables("DRAFTPUCK_");
 
+//services
 builder.Services
     .AddControllers(options => { options.Filters.Add<ApiExceptionFilterAttribute>(); })
     .AddJsonOptions(options =>
@@ -29,7 +28,7 @@ builder.Services.AddMvc(options =>
     options.EnableEndpointRouting = false;
 });
 
-//services
+
 builder.Services.AddSignalR(options =>
 {
     options.EnableDetailedErrors = true;
@@ -41,12 +40,14 @@ try
     builder.Services
         .Configure<ApplicationOptions>(options => builder.Configuration.Bind(ApplicationOptions.SectionName, options))
         .Configure<DiscordOptions>(options => builder.Configuration.Bind(DiscordOptions.SectionName, options))
+        .Configure<SystemOptions>(options => builder.Configuration.Bind(SystemOptions.SectionName, options))
         .AddHttpContextAccessor()
         .AddInfrastructure(builder.Configuration)
         .AddScoped<IClientEventService, LobbyClientEventService>()
         .AddEndpointsApiExplorer()
         .AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(LobbyEventCreatedHandler).Assembly))
-        .AddApplication();
+        .AddApplication()
+        .ConfigureAuth(builder.Configuration, builder.Environment);
 }
 catch (Exception ex)
 {
@@ -54,43 +55,10 @@ catch (Exception ex)
     throw;
 }
 
-builder.Services
-    .AddAuthentication(options =>
-    {
-        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    })
-    .AddJwtBearer(options =>
-    {
-        var authOptions = builder.Configuration.GetSection(AuthOptions.SectionName).Get<AuthOptions>();
-        var key = Encoding.UTF8.GetBytes(authOptions!.JwtKey!);
-
-        options.RequireHttpsMetadata = builder.Environment.IsProduction();
-        options.SaveToken = true;
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(key),
-            ValidateIssuer = true,
-            ValidIssuer = authOptions.Issuer,
-            ValidateAudience = true,
-            ValidAudience = authOptions.Audience,
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero
-        };
-
-        options.Events = new JwtBearerEvents
-        {
-            OnAuthenticationFailed = context =>
-            {
-                Console.WriteLine($"JWT authentication failed: {context.Exception.Message}");
-                return Task.CompletedTask;
-            }
-        };
-    });
-
 ApplicationStartupInfo.Init();
 builder.WebHost.UseKestrel();
+
+//app
 var app = builder.Build();
 
 MigrateDatabase(app);

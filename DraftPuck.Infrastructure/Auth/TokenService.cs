@@ -9,11 +9,16 @@ namespace DraftPuck.Infrastructure.Auth;
 
 public class TokenService(AuthOptions options) : ITokenService
 {
-    public string GenerateJwtToken(Guid userId)
+    public string GenerateJwtToken(UserEntity user)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.UTF8.GetBytes(options.JwtKey!);
-        var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, userId.ToString()) };
+        var claims = new List<Claim> {
+            new(ClaimTypes.NameIdentifier, user.Id.ToString())
+        };
+
+        if (user.IsAdmin)
+            claims.Add(new Claim(ClaimTypes.Role, "Admin"));
 
         var tokenDescriptor = new SecurityTokenDescriptor
         {
