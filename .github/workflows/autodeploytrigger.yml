@@ -55,4 +55,4 @@ jobs:
             GIT_SHA=${{ github.sha }}
 
       - name: Git SHA
-        run: echo "Git SHA for this build: ${{ github.sha }}"
+        run: "echo 'Git SHA for this build: ${{ github.sha }}'"
