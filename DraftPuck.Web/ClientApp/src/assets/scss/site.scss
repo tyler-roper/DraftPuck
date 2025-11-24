@@ -459,7 +459,7 @@ span.btn {
   margin-top: 60px;
 }
 
-.profile-section>.title {
+.profile-section > .title {
   display: block;
   font-size: 18px;
   font-weight: bold;
@@ -479,18 +479,18 @@ span.btn {
   color: map-get($custom-colors, 'stone-0');
 }
 
-.profile-option>span {
+.profile-option > span {
   font-size: 16px;
   display: block;
   letter-spacing: 0.3px;
 }
 
-.profile-option>.icon {
+.profile-option > .icon {
   font-size: 24px;
   margin: 0 15px 0 10px;
 }
 
-.profile-option>.caret {
+.profile-option > .caret {
   margin-left: auto;
 }
 

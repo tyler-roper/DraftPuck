@@ -120,8 +120,7 @@ watch(
 
       <div class="px-4 bg-gradient">
         <div class="profile-avatar d-flex align-items-center justify-content-center">
-          <VUser display="avatar" :user="profileUser" :show-menu-on-click="false" :avatar-size-in-px="130"
-            :show-edit-avatar="isSelf" />
+          <VUser display="avatar" :user="profileUser" :show-menu-on-click="false" :avatar-size-in-px="130" :show-edit-avatar="isSelf" />
         </div>
         <div class="text-center fs-1 fw-bold mt-2">{{ profileUser.nickname }}</div>
         <div class="text-center fs-7 text-stone-300 mt-n1 text-uppercase">{{ profileUser.title.text }}</div>
@@ -132,8 +131,7 @@ watch(
         <div class="profile-section my-4">
           <div class="title my-1 d-flex justify-content-between align-items-center">
             <span class="d-block">Banner &amp; Title</span>
-            <router-link :to="{ name: 'Banner' }" replace v-if="isSelf" role="button"
-              class="fw-normal fs-7 fw-bold text-uppercase">
+            <router-link :to="{ name: 'Banner' }" replace v-if="isSelf" role="button" class="fw-normal fs-7 fw-bold text-uppercase">
               <VIcon icon="pencil" class="me-2" />
               <span>Edit</span>
             </router-link>
@@ -146,7 +144,10 @@ watch(
           <span class="title">Achievements</span>
           <router-link
             :to="{ name: 'Achievements', params: { username: props.username }, state: { user: JSON.stringify(profileUser) } }"
-            role="button" class="achievement-container text-stone-0" replace>
+            role="button"
+            class="achievement-container text-stone-0"
+            replace
+          >
             <div class="progress-container" :class="`achievement-progress-${achievementCompletionPercentage}`">
               <div class="earned">{{ achievementCompletionPercentage }}%</div>
             </div>
@@ -213,13 +214,15 @@ $color-track: map-get($custom-colors, 'stone-700');
     $degrees: math.div($i, 100) * 360;
 
     .achievement-progress-#{$i} {
-      background: conic-gradient(from 180deg,
+      background: conic-gradient(
+        from 180deg,
         $color-progress 0deg,
         $color-progress #{$degrees}deg,
         white #{$degrees}deg,
         white #{$degrees + 4}deg,
         $color-track #{$degrees + 4}deg,
-        $color-track 360deg);
+        $color-track 360deg
+      );
     }
   }
 }
@@ -256,8 +259,8 @@ $color-track: map-get($custom-colors, 'stone-700');
   left: 0;
 }
 
-.header-background>a,
-.header-background-placeholder>a {
+.header-background > a,
+.header-background-placeholder > a {
   position: absolute;
   top: 13px;
   left: 20px;
@@ -304,7 +307,7 @@ $color-track: map-get($custom-colors, 'stone-700');
   flex-basis: 1;
 }
 
-.stat>.stat-icon {
+.stat > .stat-icon {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -313,19 +316,19 @@ $color-track: map-get($custom-colors, 'stone-700');
   line-height: 100px;
 }
 
-.stat>.stat-text {
+.stat > .stat-text {
   margin-top: -75px;
   text-align: center;
   position: relative;
 }
 
-.stat>.stat-text>span:first-child {
+.stat > .stat-text > span:first-child {
   display: block;
   font-weight: bold;
   font-size: 35px;
 }
 
-.stat>.stat-text>span:last-child {
+.stat > .stat-text > span:last-child {
   display: block;
   font-size: 12px;
   color: map-get($custom-colors, 'amber-500');
@@ -375,7 +378,7 @@ $color-track: map-get($custom-colors, 'stone-700');
   background-color: map-get($custom-colors, 'stone-900');
 }
 
-.progress-container>.earned {
+.progress-container > .earned {
   z-index: 2;
   background-color: map-get($custom-colors, 'stone-800');
   border-radius: 50%;

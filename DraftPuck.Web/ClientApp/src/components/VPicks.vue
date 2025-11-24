@@ -100,13 +100,13 @@ const selectedTeamRosterSorted = computed(() => {
       return Number(isBPicked) - Number(isAPicked)
     })
 })
-  //#endregion
+//#endregion
 
-  //#region hooks
-  ; (async function onCreated() {
-    getGameCountdowns()
-    countdownTimer.value = window.setInterval(getGameCountdowns, 1000)
-  })()
+//#region hooks
+;(async function onCreated() {
+  getGameCountdowns()
+  countdownTimer.value = window.setInterval(getGameCountdowns, 1000)
+})()
 //#endregion
 
 //#region methods
@@ -319,37 +319,49 @@ function selectGame(game?: Game) {
     <!-- MY PICKS -->
     <template v-if="selectedGame === undefined">
       <div>
-        <div v-if="currentMember.picks.length > 0"
-          class="p-2 fs-5 fw-bolder text-stone-0 bg-stone-900 d-flex justify-content-between align-items-center">
+        <div
+          v-if="currentMember.picks.length > 0"
+          class="p-2 fs-5 fw-bolder text-stone-0 bg-stone-900 d-flex justify-content-between align-items-center"
+        >
           <div class="d-block dropdown">
             <a role="button" class="text-white text-decoration-none" data-bs-toggle="dropdown">
               <span v-if="selectedMember === undefined" class="d-block fs-7">MY</span>
               <span v-if="selectedMember !== undefined" class="d-block fs-7">{{ selectedMember.name }}&apos;s</span>
-              <span class="d-block mt-n2">PICKS<i class="fi fi-sr-caret-down fs-3 position-relative"
-                  style="top: 4px"></i></span>
+              <span class="d-block mt-n2">PICKS<i class="fi fi-sr-caret-down fs-3 position-relative" style="top: 4px"></i></span>
             </a>
             <div class="dropdown-menu">
-              <a v-for="member in lobby!.members.sort((a, b) => Number(b.id === currentMember.id) - Number(a.id === currentMember.id))"
-                :key="member.id" class="dropdown-item py-2" role="button" @click="selectMember(member)">
+              <a
+                v-for="member in lobby!.members.sort((a, b) => Number(b.id === currentMember.id) - Number(a.id === currentMember.id))"
+                :key="member.id"
+                class="dropdown-item py-2"
+                role="button"
+                @click="selectMember(member)"
+              >
                 <span class="position-relative" style="top: 2px">
                   <i v-if="member.id === currentMember.id" class="fi fi-sr-user me-2 text-primary"></i>
                   <i v-else-if="member.isBot" class="fi fi-sr-user-robot me-2 text-stone-400"></i>
                   <i v-else class="fi fi-sr-user me-2 text-blue"></i>
                 </span>
-                <span class="ms-1"
-                  :class="{ 'text-primary': member.id === currentMember.id, 'fw-bold': member.id === selectedMember?.id }">{{
-                    member.id === currentMember.id ? 'Me' : member.name
-                  }}</span>
+                <span class="ms-1" :class="{ 'text-primary': member.id === currentMember.id, 'fw-bold': member.id === selectedMember?.id }">{{
+                  member.id === currentMember.id ? 'Me' : member.name
+                }}</span>
               </a>
             </div>
           </div>
-          <a v-if="firstPickableGame !== undefined" @click="selectGame(firstPickableGame)" role="button"
-            class="fs-6 text-primary text-decoration-none">Make Picks Now
+          <a
+            v-if="firstPickableGame !== undefined"
+            @click="selectGame(firstPickableGame)"
+            role="button"
+            class="fs-6 text-primary text-decoration-none"
+            >Make Picks Now
           </a>
-          <div v-if="selectedMember === undefined && firstPickableGame === undefined"
-            class="ms-auto fs-7 text-stone-0 fw-normal text-decoration-none">
-            <span class="d-block text-end"><i class="text-success fi fi-sr-check-circle position-relative pe-2"
-                style="top: 2px"></i>All Picks Made</span>
+          <div
+            v-if="selectedMember === undefined && firstPickableGame === undefined"
+            class="ms-auto fs-7 text-stone-0 fw-normal text-decoration-none"
+          >
+            <span class="d-block text-end"
+              ><i class="text-success fi fi-sr-check-circle position-relative pe-2" style="top: 2px"></i>All Picks Made</span
+            >
             <span v-if="nextUpcomingPicks !== ''" class="fs-8 text-stone-300 fw-normal text-decoration-none d-block">
               (More available in {{ nextUpcomingPicks }})
             </span>
@@ -357,17 +369,24 @@ function selectGame(game?: Game) {
         </div>
       </div>
       <div class="flex-grow-1" style="overflow-y: scroll">
-        <VPick v-for="{ game, player } in selectedMemberPlayerAndGamePicks" :key="player.id" :player="player"
-          :game="game" :selected-player-count="0" :is-removing="isRemovingPlayer(player)"
-          @click="togglePlayerRemoving(game, player)" @on-unpicked="unpick(game, player)" />
+        <VPick
+          v-for="{ game, player } in selectedMemberPlayerAndGamePicks"
+          :key="player.id"
+          :player="player"
+          :game="game"
+          :selected-player-count="0"
+          :is-removing="isRemovingPlayer(player)"
+          @click="togglePlayerRemoving(game, player)"
+          @on-unpicked="unpick(game, player)"
+        />
 
         <template v-if="currentMember.picks.length === 0">
-          <span class="text-center p-5 fs-1 text-stone-000 d-block text-uppercase">Welcome to<br /><span
-              class="d-inline-block mt-n3 text-primary fw-bold" style="font-size: 50px">Draftpuck</span></span>
+          <span class="text-center p-5 fs-1 text-stone-000 d-block text-uppercase"
+            >Welcome to<br /><span class="d-inline-block mt-n3 text-primary fw-bold" style="font-size: 50px">Draftpuck</span></span
+          >
           <div class="text-center p-4" v-if="firstPickableGame !== undefined">
             <span class="fs-4 text-stone-0 fw-bold d-block mb-2">What are you waiting for?</span>
-            <button @click="selectGame(firstPickableGame)"
-              class="py-2 px-4 gradient-button fw-bold fs-1 h-100 text-uppercase emphasized">
+            <button @click="selectGame(firstPickableGame)" class="py-2 px-4 gradient-button fw-bold fs-1 h-100 text-uppercase emphasized">
               Make Picks Now
             </button>
           </div>
@@ -379,10 +398,10 @@ function selectGame(game?: Game) {
             </div>
             <div class="mt-5">
               <span class="fs-5 text-primary d-block fw-bold">Need a reminder?</span>
-              <span class="fs-6 text-stone-300 d-block px-5">Click the <i
-                  class="fs-4 d-inline-block text-stone-0 fi fi-rr-settings mx-1"
-                  style="position: relative; top: 5px"></i> at the top of
-                the page to change notification settings.</span>
+              <span class="fs-6 text-stone-300 d-block px-5"
+                >Click the <i class="fs-4 d-inline-block text-stone-0 fi fi-rr-settings mx-1" style="position: relative; top: 5px"></i> at the top of
+                the page to change notification settings.</span
+              >
             </div>
           </div>
           <div v-else class="text-center p-4">
@@ -399,36 +418,38 @@ function selectGame(game?: Game) {
     <template v-if="selectedGame !== undefined">
       <!-- BREADCRUMB -->
       <div class="p-2 top-breadcrumb bg-stone-900 d-flex justify-content-between">
-        <a role="button" @click="selectGame()" class="fw-bold text-primary text-decoration-none d-block"><i
-            class="fi fi-sr-caret-left"></i>My Picks</a>
+        <a role="button" @click="selectGame()" class="fw-bold text-primary text-decoration-none d-block"
+          ><i class="fi fi-sr-caret-left"></i>My Picks</a
+        >
       </div>
 
       <!-- CONTENT BOX -->
       <div class="fs-5 d-flex justify-content-between">
         <!-- TEAM HEADERS -->
         <!-- AWAY -->
-        <div class="p-2 d-flex align-items-center w-50" @click="selectTeam(selectedGame.awayTeam)"
-          :class="{ 'o-75': selectedTeam?.id !== selectedGame.awayTeam.id, 'bg-stone-700': selectedTeam?.id === selectedGame.awayTeam.id }">
+        <div
+          class="p-2 d-flex align-items-center w-50"
+          @click="selectTeam(selectedGame.awayTeam)"
+          :class="{ 'o-75': selectedTeam?.id !== selectedGame.awayTeam.id, 'bg-stone-700': selectedTeam?.id === selectedGame.awayTeam.id }"
+        >
           <div>
             <img style="height: 25px" :src="getLightLogo(selectedGame.awayTeam)" class="d-block" />
           </div>
           <div class="text-uppercase fs-6">
-            <div v-if="selectedGame.awayTeam.location.length > 1" class="fs-7 text-stone-300">{{
-              selectedGame.awayTeam.location }}</div>
-            <div class="fw-bold" :class="{ 'mt-n2': selectedGame.awayTeam.location.length > 1 }">{{
-              selectedGame.awayTeam.name }}</div>
+            <div v-if="selectedGame.awayTeam.location.length > 1" class="fs-7 text-stone-300">{{ selectedGame.awayTeam.location }}</div>
+            <div class="fw-bold" :class="{ 'mt-n2': selectedGame.awayTeam.location.length > 1 }">{{ selectedGame.awayTeam.name }}</div>
           </div>
         </div>
 
         <!-- HOME -->
-        <div class="p-2 d-flex align-items-center text-end w-50 justify-content-end"
+        <div
+          class="p-2 d-flex align-items-center text-end w-50 justify-content-end"
           @click="selectTeam(selectedGame.homeTeam)"
-          :class="{ 'o-75': selectedTeam?.id !== selectedGame.homeTeam.id, 'bg-stone-700': selectedTeam?.id === selectedGame.homeTeam.id }">
+          :class="{ 'o-75': selectedTeam?.id !== selectedGame.homeTeam.id, 'bg-stone-700': selectedTeam?.id === selectedGame.homeTeam.id }"
+        >
           <div class="text-uppercase fs-6">
-            <div v-if="selectedGame.homeTeam.location.length > 1" class="fs-7 text-stone-300">{{
-              selectedGame.homeTeam.location }}</div>
-            <div class="fw-bold" :class="{ 'mt-n2': selectedGame.homeTeam.location.length > 1 }">{{
-              selectedGame.homeTeam.name }}</div>
+            <div v-if="selectedGame.homeTeam.location.length > 1" class="fs-7 text-stone-300">{{ selectedGame.homeTeam.location }}</div>
+            <div class="fw-bold" :class="{ 'mt-n2': selectedGame.homeTeam.location.length > 1 }">{{ selectedGame.homeTeam.name }}</div>
           </div>
           <div>
             <img style="height: 25px" :src="getLightLogo(selectedGame.homeTeam)" class="d-block" />
@@ -438,14 +459,23 @@ function selectGame(game?: Game) {
 
       <!-- ROSTER -->
       <div v-if="selectedTeam?.roster.length" ref="teamRosterContainer" class="flex-grow-1" style="overflow-y: scroll">
-        <VPick v-for="player in selectedTeamRosterSorted" :key="player.id" :player="player" :game="selectedGame"
-          :is-for-picking="true" :is-selected="isPlayerSelected(player)" :selected-player-count="selectedPlayers.length"
-          @on-selected="togglePlayerSelection" />
+        <VPick
+          v-for="player in selectedTeamRosterSorted"
+          :key="player.id"
+          :player="player"
+          :game="selectedGame"
+          :is-for-picking="true"
+          :is-selected="isPlayerSelected(player)"
+          :selected-player-count="selectedPlayers.length"
+          @on-selected="togglePlayerSelection"
+        />
       </div>
 
-      <div v-else
+      <div
+        v-else
         class="bg-stone-900 flex-grow-1 d-flex align-items-center justify-content-center text-center p-5 fw-bold text-stone-700"
-        style="font-size: 40px">
+        style="font-size: 40px"
+      >
         <span class="d-block">
           <i class="fi fi-sr-user-time" style="font-size: 100px"></i>
           <span class="d-block mt-n4">No Rosters Yet</span>
@@ -453,38 +483,43 @@ function selectGame(game?: Game) {
       </div>
 
       <!-- LOCK IN -->
-      <div class="lock-in shadow" :class="{ 'just-locked-in': justLockedIn }"
-        v-for="(picksRemaining, idx) in [getPicksRemainingByMemberAndTeam(currentMember, selectedTeam!)]" :key="idx">
+      <div
+        class="lock-in shadow"
+        :class="{ 'just-locked-in': justLockedIn }"
+        v-for="(picksRemaining, idx) in [getPicksRemainingByMemberAndTeam(currentMember, selectedTeam!)]"
+        :key="idx"
+      >
         <template v-if="gamePickableStatusForCurrentMember === GamePickableStatus.Upcoming">
-          <div
-            class="text-center fs-4 flex-grow-1 py-2 text-uppercase text-stone-300 d-flex justify-content-center align-items-center">
+          <div class="text-center fs-4 flex-grow-1 py-2 text-uppercase text-stone-300 d-flex justify-content-center align-items-center">
             <span class="text-stone-600">Picks in</span>
             <i class="fi fi-sr-alarm-clock d-block fs-1 me-2 ms-4 mb-n1 pt-1"></i>
             <span class="d-block fw-bold text-uppercase">{{ gameCountdowns![selectedGame.id].asString }}</span>
           </div>
         </template>
         <template v-else-if="gamePickableStatusForCurrentMember === GamePickableStatus.GameComplete">
-          <div
-            class="text-center fs-4 flex-grow-1 py-2 text-uppercase text-stone-600 d-flex justify-content-center align-items-center">
+          <div class="text-center fs-4 flex-grow-1 py-2 text-uppercase text-stone-600 d-flex justify-content-center align-items-center">
             <i class="fi fi-sr-time-check d-block fs-1 me-2 p-relative mb-n1 mt-1"></i>
             <span class="d-block fw-bold text-uppercase">Game Over</span>
           </div>
         </template>
         <template v-else-if="gamePickableStatusForCurrentMember === GamePickableStatus.Locked">
-          <div
-            class="text-center fs-4 flex-grow-1 py-2 text-uppercase text-stone-600 d-flex justify-content-center align-items-center">
+          <div class="text-center fs-4 flex-grow-1 py-2 text-uppercase text-stone-600 d-flex justify-content-center align-items-center">
             <i class="fi fi-sr-lock d-block fs-1 me-2"></i>
             <span class="d-block fw-bold text-uppercase">Game Locked</span>
           </div>
         </template>
         <template v-else>
-          <div v-if="picksRemaining <= 0 && selectedPlayers.length === 0"
-            class="text-center fs-4 flex-grow-1 py-2 text-uppercase text-primary d-flex justify-content-center align-items-center">
+          <div
+            v-if="picksRemaining <= 0 && selectedPlayers.length === 0"
+            class="text-center fs-4 flex-grow-1 py-2 text-uppercase text-primary d-flex justify-content-center align-items-center"
+          >
             <i class="fi fi-sr-lock d-block fs-1 me-2"></i>
             <span class="d-block fw-bold text-uppercase">Locked In!</span>
           </div>
-          <div v-if="picksRemaining > 0 || (picksRemaining === 0 && selectedPlayers.length > 0)"
-            class="text-uppercase d-flex align-items-center px-2">
+          <div
+            v-if="picksRemaining > 0 || (picksRemaining === 0 && selectedPlayers.length > 0)"
+            class="text-uppercase d-flex align-items-center px-2"
+          >
             <div class="fs-4">Picks Remaining:</div>
             <div class="py-2 ms-2 fs-1 fw-bold d-flex align-items-center">
               <img style="width: 33px; height: 37px" :src="getLightLogo(selectedTeam!)" />
@@ -492,8 +527,12 @@ function selectGame(game?: Game) {
             </div>
           </div>
           <div v-if="picksRemaining > 0 || (picksRemaining === 0 && selectedPlayers.length > 0)">
-            <button class="btn btn-primary fw-bold fs-3 h-100 rounded-0 text-uppercase"
-              :class="{ emphasized: !!selectedPlayers.length }" :disabled="!selectedPlayers.length" @click="lockIn()">
+            <button
+              class="btn btn-primary fw-bold fs-3 h-100 rounded-0 text-uppercase"
+              :class="{ emphasized: !!selectedPlayers.length }"
+              :disabled="!selectedPlayers.length"
+              @click="lockIn()"
+            >
               Lock In
             </button>
           </div>

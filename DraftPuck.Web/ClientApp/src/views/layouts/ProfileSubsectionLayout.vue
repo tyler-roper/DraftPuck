@@ -72,5 +72,7 @@ const emit = defineEmits(['discard', 'save'])
   background-image: linear-gradient(to bottom, map-get($custom-colors, 'stone-1000'), map-get($custom-colors, 'stone-800'));
 }
 
-.overflow-auto { overflow: auto }
+.overflow-auto {
+  overflow: auto;
+}
 </style>
