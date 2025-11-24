@@ -55,7 +55,7 @@ public static class LobbyEventTexts
             "Who ya got, {{name}}? {{playerBadge}}",
             "He shoots... he scores! {{name}} has been awarded a drink. {{playerBadge}}",
             "Hey {{name}} - give out a drink, bud! {{playerBadge}}",
-            "Someone tell {{name}} that their pick just scored.")
+            "Someone tell {{name}} that their pick just scored. {{playerBadge}}")
         },
         { LobbyEventType.DrinkAssigned, new("Drink Assigned",
             "{{senderName}} is making {{recipientName}} CHUG! CHUG! CHUG!",

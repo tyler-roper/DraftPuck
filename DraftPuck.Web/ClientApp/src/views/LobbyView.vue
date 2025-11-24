@@ -3,7 +3,7 @@ import { useLobbyStore } from '@/stores/lobby'
 import { storeToRefs } from 'pinia'
 import { computed, nextTick, ref, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useToast } from 'vue-toastification'
+import { TYPE, useToast } from 'vue-toastification'
 import * as SignalR from '@microsoft/signalr'
 import { compareAsc, addHours, isWithinInterval, differenceInSeconds } from 'date-fns'
 import GameService from '@/services/GameService'
@@ -25,13 +25,12 @@ import LobbyService from '@/services/LobbyService'
 import GameState from '@/enums/gameState'
 import PlayType from '@/enums/playType'
 import PeriodType from '@/enums/periodType'
-import { initializeApp } from 'firebase/app'
-import { getToken, getMessaging, onMessage } from 'firebase/messaging'
 import type { ILogger, LogLevel } from '@microsoft/signalr'
 import VUser from '@/components/VUser.vue'
 import { useUserStore } from '@/stores/user'
-import { env } from '@/env'
 import { useSystemStore } from '@/stores/system'
+import VHtmlToast from '@/components/VHtmlToast.vue'
+import type { ToastOptions } from 'vue-toastification/dist/types/types'
 
 class SignalRLogger implements ILogger {
   logLevel = 0
@@ -56,15 +55,30 @@ const HUB_URL = '/hub'
 const replaceTemplatedStrings = (lobbyEvent: LobbyEvent) => parseLobbyEventText(lobbyEvent, lobby.value!, games.value)
 
 const lobbyEventHandlers: { [k: string]: (lobbyEvent: LobbyEvent) => void } = {
-  onDrinkAssigned: function (lobbyEvent: LobbyEvent) {
-    if (lobbyEvent.lobbyMember2Id === currentLobbyMember.value?.id) notifyCurrentUserOfDrink(lobbyEvent)
-  },
-  onDrinkAwarded: function (lobbyEvent: LobbyEvent) {
-    if (lobbyEvent.lobbyMemberId === currentLobbyMember.value?.id) notifyCurrentUserOfCorrectPick(lobbyEvent)
-  },
-  onUserJoined: function (lobbyEvent: LobbyEvent) {
-    if (lobbyEvent.lobbyMemberId !== currentLobbyMember.value?.id) notifyCurrentUserOfUserJoined(lobbyEvent)
+  onDrinkAssigned: notifyDrinkAssigned,
+  onDrinkAwarded: notifyDrinkAwarded,
+  onUserJoined: notifyUserJoined
+}
+
+function notifyDrinkAssigned(lobbyEvent: LobbyEvent) {
+  var currentUserIsRecipient = lobbyEvent.lobbyMember2Id === currentLobbyMember.value?.id
+  if (!currentUserIsRecipient) {
+    lobbyEventToast(lobbyEvent)
+    return
   }
+
+  // "queue up" drink for current user
+  pendingDrinksForCurrentUser.value.push(lobbyEvent)
+  if (pendingDrinksForCurrentUser.value.length === 1) processNextDrinkForCurrentUser()
+}
+
+function notifyDrinkAwarded(lobbyEvent: LobbyEvent) {
+  var isCurrentLobbyMember = lobbyEvent.lobbyMemberId === currentLobbyMember.value?.id
+  lobbyEventToast(lobbyEvent, { type: isCurrentLobbyMember ? TYPE.SUCCESS : TYPE.INFO })
+}
+
+function notifyUserJoined(lobbyEvent: LobbyEvent) {
+  lobbyEventToast(lobbyEvent)
 }
 
 const commands = computed<{ [command: string]: (...args: string[]) => void }>(() => ({
@@ -122,7 +136,7 @@ const isLoading = ref(true)
 const mappedEvents = ref<LobbyEvent[]>([])
 const timers = ref<number[]>([])
 const currentView = ref<View>('picks')
-const pendingDrinks = ref<LobbyEvent[]>([])
+const pendingDrinksForCurrentUser = ref<LobbyEvent[]>([])
 const currentDrink = ref<LobbyEvent>()
 const unseenMessageCount = ref(0)
 const unseenMentionsCount = ref(0)
@@ -151,12 +165,12 @@ const sortedGames = computed(() =>
   !games.value
     ? []
     : [...games.value].sort((a, b) => {
-        if (a.gameState === GameState.Final) return 1
-        if (b.gameState === GameState.Final) return -1
-        if (lobby.value?.gameIds.includes(a.id) && !lobby.value?.gameIds.includes(b.id)) return -1
-        if (!lobby.value?.gameIds.includes(a.id) && lobby.value?.gameIds.includes(b.id)) return 1
-        return compareAsc(a.dateTime, b.dateTime)
-      })
+      if (a.gameState === GameState.Final) return 1
+      if (b.gameState === GameState.Final) return -1
+      if (lobby.value?.gameIds.includes(a.id) && !lobby.value?.gameIds.includes(b.id)) return -1
+      if (!lobby.value?.gameIds.includes(a.id) && lobby.value?.gameIds.includes(b.id)) return 1
+      return compareAsc(a.dateTime, b.dateTime)
+    })
 )
 
 const is4Nations = computed(() => {
@@ -219,7 +233,6 @@ onMounted(async () => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ joinCode: joinCode.value, name: currentLobbyMember.value.name }))
 
     await initializeLobbyConnection()
-    await initializeFirebase()
 
     document.removeEventListener('visibilitychange', handleVisibilityChange)
     document.addEventListener('visibilitychange', handleVisibilityChange)
@@ -238,6 +251,16 @@ const isGameStale = (game: Game) => isGameOver(game)
 function handleVisibilityChange() {
   if (document.hidden) pauseLobbyConnection()
   else initializeLobbyConnection()
+}
+
+function lobbyEventToast(lobbyEvent: LobbyEvent, options?: ToastOptions | undefined) {
+  return toast({
+    component: VHtmlToast,
+    props: { 
+      title: lobbyEvent.title,
+      message: replaceTemplatedStrings(lobbyEvent).text 
+    }
+  }, options)
 }
 
 function setView(view: View) {
@@ -280,45 +303,6 @@ async function pauseLobbyConnection() {
 
   // stop activity polling
   if (checkActivityTimer.value) window.clearInterval(checkActivityTimer.value)
-}
-
-async function updateUserFcmToken(token?: string) {
-  await userStore.updateUser({ fcmRegistrationToken: token ?? '' })
-}
-
-async function initializeFirebase() {
-  if (!notificationsSupported.value || !notificationPermissionsGranted.value) {
-    await updateUserFcmToken()
-    return
-  }
-
-  const vapidKey = env.VITE_FIREBASE_VAPID_KEY
-  const firebaseConfig = {
-    apiKey: env.VITE_FIREBASE_API_KEY,
-    authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
-    projectId: env.VITE_FIREBASE_PROJECT_ID,
-    storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-    appId: env.VITE_FIREBASE_APP_ID
-  }
-
-  try {
-    const app = initializeApp(firebaseConfig)
-    const messaging = getMessaging(app)
-
-    onMessage(messaging, ({ notification, data }) => {
-      if (!data || !notification) return
-      const isRelevant = data.isRelevant === 'true'
-
-      if (['DrinkAwarded', 'DrinkAssigned'].includes(data.lobbyEventType ?? '') && !isRelevant) toast(`${notification.title} | ${notification.body}`)
-    })
-
-    const token = await getToken(messaging, { vapidKey })
-    await updateUserFcmToken(token)
-  } catch (e) {
-    console.error(`Unable to initialize firebase`, e)
-    sendSystemMessage(`ERROR: Unable to initialize firebase: ${e}`)
-  }
 }
 
 function logError(error: string) {
@@ -424,18 +408,12 @@ function onNewMessage(message: Message) {
   }
 }
 
-function notifyCurrentUserOfDrink(lobbyEvent: LobbyEvent) {
-  pendingDrinks.value.push(lobbyEvent)
-
-  if (pendingDrinks.value.length === 1) processNextDrinkForCurrentUser()
-}
-
 function processNextDrinkForCurrentUser() {
-  if (pendingDrinks.value.length === 0) return
-  currentDrink.value = pendingDrinks.value[0]
+  if (pendingDrinksForCurrentUser.value.length === 0) return
+  currentDrink.value = pendingDrinksForCurrentUser.value[0]
 
   window.setTimeout(async () => {
-    pendingDrinks.value.splice(0, 1)
+    pendingDrinksForCurrentUser.value.splice(0, 1)
     currentDrink.value = undefined
     await nextTick()
     processNextDrinkForCurrentUser()
@@ -476,21 +454,6 @@ async function dispatchLobbyEvent(lobbyEvent: LobbyEvent) {
   const eventHandler = lobbyEventHandlers[`on${eventType}`]
 
   if (eventHandler) eventHandler(lobbyEvent)
-}
-
-function notifyCurrentUserOfCorrectPick(lobbyEvent: LobbyEvent) {
-  const player = games.value.flatMap((g) => Object.values(g.playerSummaries)).find((p) => p.id === lobbyEvent.playerId)
-
-  const playerMsg = player ? ` for a goal by ${player.firstName} ${player.lastName}` : ''
-  const msg = `Give out a drink${playerMsg}!`
-  toast.success(msg, { timeout: 2000 })
-}
-
-function notifyCurrentUserOfUserJoined(lobbyEvent: LobbyEvent) {
-  const lobbyMember = lobby.value!.members.find((lm) => lm.id === lobbyEvent.lobbyMemberId)
-  if (!lobbyMember) return
-
-  toast(`${lobbyMember.name} has joined the lobby.`)
 }
 
 function getFeedItems() {
@@ -592,34 +555,33 @@ watch(
 <template>
   <div class="d-flex overflow-hidden flex-column" style="height: 100%">
     <template v-if="!isInvalidLobby">
-      <VInstructionsModal v-if="isInstructionsVisible" :join-code="lobby?.joinCode" @close="isInstructionsVisible = false" />
+      <VInstructionsModal v-if="isInstructionsVisible" :join-code="lobby?.joinCode"
+        @close="isInstructionsVisible = false" />
       <VNotificationSettingsModal v-if="isNotificationSettingsVisible" @close="isNotificationSettingsVisible = false" />
-      <div class="bg-stone-900 px-sm-4 px-2 py-2 shadow position-relative d-flex align-items-center justify-content-between" style="z-index: 10">
-        <router-link :to="{ name: 'Home' }" class="banner-logo text-stone-0 text-decoration-none" style="cursor: pointer">
+      <div
+        class="bg-stone-900 px-sm-4 px-2 py-2 shadow position-relative d-flex align-items-center justify-content-between"
+        style="z-index: 10">
+        <router-link :to="{ name: 'Home' }" class="banner-logo text-stone-0 text-decoration-none"
+          style="cursor: pointer">
           <img v-if="!is4Nations" src="/img/logo-wide.png" />
           <img v-if="is4Nations" src="/img/logo-wide-4nations.png" />
         </router-link>
 
-        <a
-          @click="copyInvite"
-          role="button"
+        <a @click="copyInvite" role="button"
           class="d-block ms-auto bg-primary text-stone-900 px-2 rounded text-decoration-none fs-7 ms-1 d-flex align-items-center"
-          v-if="lobby?.joinCode !== undefined"
-        >
+          v-if="lobby?.joinCode !== undefined">
           <span class="fs-5 me-1 fw-bold" style="letter-spacing: 3px">{{ lobby?.joinCode }}</span>
           <i class="fi fi-sr-share d-block mb-n1 d-block"></i>
         </a>
 
-        <a
-          class="d-flex ms-auto me-sm-5 me-3 pt-1 text-white fw-bold text-decoration-none align-items-center"
-          role="button"
-          @click="isNotificationSettingsVisible = true"
-        >
+        <a class="d-flex ms-auto me-sm-5 me-3 pt-1 text-white fw-bold text-decoration-none align-items-center"
+          role="button" @click="isNotificationSettingsVisible = true">
           <i class="fi fi-rr-settings d-block fs-3" style="line-height: 20px"></i>
           <span class="d-none d-sm-block text-uppercase ms-2" style="margin-top: -2px">Notifications</span>
         </a>
 
-        <a class="d-flex pt-1 text-stone-0 fw-bold text-decoration-none align-items-center" role="button" @click="isInstructionsVisible = true">
+        <a class="d-flex pt-1 text-stone-0 fw-bold text-decoration-none align-items-center" role="button"
+          @click="isInstructionsVisible = true">
           <i class="fi fi-rr-question-square d-block fs-3" style="line-height: 20px"></i>
           <span class="d-none d-sm-block text-uppercase ms-2" style="margin-top: -2px">How To Play</span>
         </a>
@@ -629,31 +591,21 @@ watch(
 
       <div class="d-flex flex-grow-1 overflow-hidden bg-stone-800">
         <template v-if="!isLoading">
-          <VGameScoreboards class="full-scoreboard flex-grow-1" :class="{ 'hide-mobile': !isGameView }" :games="sortedGames" style="overflow: auto" />
+          <VGameScoreboards class="full-scoreboard flex-grow-1" :class="{ 'hide-mobile': !isGameView }"
+            :games="sortedGames" style="overflow: auto" />
 
-          <div
-            class="feed flex-shrink-0 d-flex flex-column"
-            :class="{ 'hide-mobile': !isFeedView && !isLobbyView && !isChatView && !isPicksView }"
-            style="width: 400px"
-          >
-            <VScoresRibbon class="d-sm-none" :games="sortedGames" :selected-game="selectedGame" @on-score-clicked="selectGame" />
-            <VLobbyOverview ref="overview" class="lobby-overview v-lobby-overview flex-grow-1" :class="{ 'hide-mobile': !isLobbyView }" />
-            <VFeed class="flex-grow-1 v-feed" :items="feedItems" :class="{ 'hide-mobile': !isFeedView, animate: shouldAnimateFeed }" />
-            <VPicks
-              ref="vPicks"
-              @select-game="selectGame"
-              class="flex-grow-1 v-picks d-sm-none"
-              :selected-game="selectedGame"
-              :games="sortedGames"
-              :class="{ 'hide-mobile': !isPicksView }"
-            />
-            <VChat
-              ref="vChat"
-              :messages="messages"
-              class="flex-grow-1 v-chat"
-              :class="{ 'hide-mobile': !isChatView }"
-              @command="handleCommand"
-            ></VChat>
+          <div class="feed flex-shrink-0 d-flex flex-column"
+            :class="{ 'hide-mobile': !isFeedView && !isLobbyView && !isChatView && !isPicksView }" style="width: 400px">
+            <VScoresRibbon class="d-sm-none" :games="sortedGames" :selected-game="selectedGame"
+              @on-score-clicked="selectGame" />
+            <VLobbyOverview ref="overview" class="lobby-overview v-lobby-overview flex-grow-1"
+              :class="{ 'hide-mobile': !isLobbyView }" />
+            <VFeed class="flex-grow-1 v-feed" :items="feedItems"
+              :class="{ 'hide-mobile': !isFeedView, animate: shouldAnimateFeed }" />
+            <VPicks ref="vPicks" @select-game="selectGame" class="flex-grow-1 v-picks d-sm-none"
+              :selected-game="selectedGame" :games="sortedGames" :class="{ 'hide-mobile': !isPicksView }" />
+            <VChat ref="vChat" :messages="messages" class="flex-grow-1 v-chat" :class="{ 'hide-mobile': !isChatView }"
+              @command="handleCommand"></VChat>
           </div>
         </template>
 
@@ -682,7 +634,8 @@ watch(
           <i class="fi fi-rs-hockey-mask"></i><br />
           <span>PICKS</span>
         </a>
-        <a role="button" class="text-center p-2 text-white d-none" :class="{ active: isGameView }" @click="setView('game')">
+        <a role="button" class="text-center p-2 text-white d-none" :class="{ active: isGameView }"
+          @click="setView('game')">
           <i class="fi fi-rr-hockey-puck"></i><br />
           <span>SCORES</span>
         </a>
@@ -702,7 +655,8 @@ watch(
     <template v-if="isInvalidLobby">
       <div style="width: 100%; height: 100%" class="d-flex align-items-center">
         <div class="mx-auto d-flex flex-column align-items-center">
-          <span class="text-center d-block mx-auto mt-3 fs-2 text-uppercase fw-bold">Sorry, this lobby is invalid.</span>
+          <span class="text-center d-block mx-auto mt-3 fs-2 text-uppercase fw-bold">Sorry, this lobby is
+            invalid.</span>
         </div>
       </div>
     </template>
@@ -768,23 +722,23 @@ watch(
   z-index: 10;
 }
 
-.bottom-nav > a {
+.bottom-nav>a {
   display: block;
   width: calc(100% / 3);
   text-decoration: none !important;
   position: relative;
 }
 
-.bottom-nav > a:not(.active):hover {
+.bottom-nav>a:not(.active):hover {
   background-color: map-get($custom-colors, 'stone-800') !important;
 }
 
-.bottom-nav > a.active {
+.bottom-nav>a.active {
   background-color: map-get($custom-colors, 'stone-300') !important;
   color: map-get($custom-colors, 'stone-900') !important;
 }
 
-.bottom-nav > a:not(:first-child) {
+.bottom-nav>a:not(:first-child) {
   border-left: 1px solid map-get($custom-colors, 'stone-800');
 }
 
