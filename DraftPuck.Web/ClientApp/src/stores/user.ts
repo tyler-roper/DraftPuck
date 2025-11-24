@@ -63,6 +63,14 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  const refreshUser = async () => {
+    if (!currentUser.value?.id) return
+    const user = await UserService.getUserById(currentUser.value.id)
+    if (!user) return
+
+    setCurrentUser(user)
+  }
+
   const preloadBannersAndTitles = async () => {
     const results = await Promise.all([BannerService.getAllBanners(), TitleService.getAllTitles()])
     banners.value = results[0]
@@ -103,6 +111,7 @@ export const useUserStore = defineStore('user', () => {
     logout,
     setCurrentUser,
     initialize,
-    updateUser
+    updateUser,
+    refreshUser
   }
 })

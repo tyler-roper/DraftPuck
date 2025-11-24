@@ -43,6 +43,7 @@ export const useFirebaseStore = defineStore('firebase', () => {
 
         if (type === "Achievement") {
           toast.success(`Achievement earned! ${title} — ${body}`);
+          userStore.refreshUser()
         }
       });
 
