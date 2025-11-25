@@ -27,7 +27,7 @@ const isDirty = computed(
 
 const availableBanners = computed(() => {
   if (!currentUser.value) return []
-  
+
   const merged = [
     ...currentUser.value.ownedBanners,
     ...genericBanners.value
@@ -91,24 +91,18 @@ async function save() {
 </script>
 
 <template>
-  <ProfileSubsectionLayout title="Banner & Title" :is-dirty="isDirty" @discard="discard" @save="save" :is-saving="isSaving">
+  <ProfileSubsectionLayout title="Banner & Title" :is-dirty="isDirty" @discard="discard" @save="save"
+    :is-saving="isSaving">
     <template #header>
       <div class="bg-stone-800 d-flex fs-6 text-uppercase fw-bold">
-        <a
-          role="button"
-          @click="currentView = 'banners'"
+        <a role="button" @click="currentView = 'banners'"
           class="view-tab d-flex align-items-center justify-content-center flex-grow-1 p-3"
-          :class="{ 'is-selected': currentView === 'banners' }"
-        >
+          :class="{ 'is-selected': currentView === 'banners' }">
           <VIcon :prefix="currentView === 'banners' ? 'sr' : 'rr'" icon="bookmark" class="me-2" />
           <span>Banners</span>
         </a>
-        <a
-          role="button"
-          @click="currentView = 'titles'"
-          class="view-tab flex-grow-1 text-center p-3"
-          :class="{ 'is-selected': currentView === 'titles' }"
-        >
+        <a role="button" @click="currentView = 'titles'" class="view-tab flex-grow-1 text-center p-3"
+          :class="{ 'is-selected': currentView === 'titles' }">
           <VIcon :prefix="currentView === 'titles' ? 'sr' : 'rr'" icon="comment-quote" class="me-2" />
           <span>Titles</span>
         </a>
@@ -116,17 +110,12 @@ async function save() {
     </template>
 
     <div v-if="currentView === 'banners'" class="p-3 my-n3">
-      <a
-        role="button"
-        @click="selectBanner(banner)"
-        class="banner-container rounded-lg my-3"
-        v-for="banner in availableBanners"
-        :class="{ selected: banner.id === userPreview?.banner.id }"
-        :key="banner.id"
-      >
+      <a role="button" @click="selectBanner(banner)" class="banner-container rounded-lg my-3"
+        v-for="banner in availableBanners" :class="{ selected: banner.id === userPreview?.banner.id }" :key="banner.id">
         <div class="banner rounded-md" :style="{ 'background-image': `url(${banner.imagePath})` }"></div>
       </a>
-      <a role="button" class="banner-container rounded-lg my-3" v-for="n in 15" :key="n">
+      <a role="button" class="banner-container rounded-lg my-3" v-for="n in (allBanners.length - availableBanners.length)"
+        :key="n">
         <div class="banner locked rounded-md bg-gradient">
           <div class="lock">
             <VIcon class="fs-2" prefix="sr" icon="lock" />
@@ -136,18 +125,13 @@ async function save() {
     </div>
 
     <div v-if="currentView === 'titles'" class="p-3 my-n3">
-      <a
-        role="button"
-        @click="selectTitle(title)"
-        class="banner-container rounded-lg my-3"
-        v-for="title in availableTitles"
-        :class="{ selected: title.id === userPreview?.title.id }"
-        :key="title.id"
-      >
-        <div class="banner rounded-md">{{ title.text }}</div>
+      <a role="button" @click="selectTitle(title)" class="banner-container rounded-lg my-3"
+        v-for="title in availableTitles" :class="{ selected: title.id === userPreview?.title.id }" :key="title.id">
+        <div class="banner title rounded-md">{{ title.text }}</div>
       </a>
-      <a role="button" class="banner-container rounded-lg my-3" v-for="n in 15" :key="n">
-        <div class="banner locked rounded-md bg-gradient">
+      <a role="button" class="banner-container rounded-lg my-3 p-0" v-for="n in (allTitles.length - availableTitles.length)"
+        :key="n">
+        <div class="banner title locked rounded-md bg-gradient">
           <div class="lock">
             <VIcon class="fs-2" prefix="sr" icon="lock" />
           </div>
@@ -163,6 +147,7 @@ async function save() {
 
 <style scoped lang="scss">
 @import '@/assets/scss/custom-colors.scss';
+
 .overflow-hidden {
   overflow: hidden;
 }
@@ -187,10 +172,15 @@ a.view-tab.is-selected {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 25px;
   text-transform: uppercase;
   letter-spacing: 1px;
   color: map-get($custom-colors, 'stone-0');
+}
+
+.banner.title {
+  padding: 10px;
+  font-size: 16px;
+  height: auto;
 }
 
 .banner-container {
@@ -206,10 +196,6 @@ a.view-tab.is-selected {
   box-shadow: 0 0 20px rgba(map-get($custom-colors, 'primary'), 0.5);
 }
 
-.banner.locked {
-  opacity: 0.7;
-}
-
 .banner.locked .lock {
   display: flex;
   align-items: center;
@@ -220,5 +206,10 @@ a.view-tab.is-selected {
   background-color: map-get($custom-colors, 'stone-900');
   border-radius: 50%;
   color: map-get($custom-colors, 'stone-0');
+}
+
+.banner.title.locked .lock {
+  width: 40px;
+  height: 40px;
 }
 </style>

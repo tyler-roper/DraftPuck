@@ -187,8 +187,6 @@ const v$ = useVuelidate<UpdateUserRequest>(rules, form)
 }
 
 .hr {
-  height: 1px;
-  background: map-get($custom-colors, 'stone-800');
   margin: 30px 0;
 }
 
