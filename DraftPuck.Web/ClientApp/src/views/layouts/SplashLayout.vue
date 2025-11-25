@@ -19,7 +19,7 @@ withDefaults(
 
 <template>
   <div class="page container-fluid" :class="{ 'increase-contrast': increaseContrast }">
-    <div class="content d-flex flex-column" :class="`p-${padding}`">
+    <div class="content d-flex flex-column h-100" :class="`p-${padding}`">
       <header class="p-5" :class="`m-n${padding}`">
         <img src="/img/logo.png" class="w-100" />
       </header>
@@ -32,7 +32,7 @@ withDefaults(
           Draft NHL players in real time. If they score, your friends drink.<br /><br />Fantasy hockey - <i>real punishment</i>.
         </p>
       </div>
-      <div :class="{ 'mt-auto': alignToBottom }">
+      <div class="flex-grow-1" :class="{ 'mt-auto': alignToBottom }">
         <slot></slot>
       </div>
     </div>

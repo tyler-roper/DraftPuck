@@ -230,8 +230,6 @@ $color-track: map-get($custom-colors, 'stone-700');
 @include generate-progress-classes();
 
 .hr {
-  height: 1px;
-  background: map-get($custom-colors, 'stone-800');
   margin-top: 20px;
 }
 

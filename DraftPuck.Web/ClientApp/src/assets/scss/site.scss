@@ -18,10 +18,10 @@ body {
   height: 100%;
 }
 
-table.score-table > tbody > tr > td,
-table.score-table > tbody > tr > th,
-table.score-table > thead > tr > td,
-table.score-table > thead > tr > th {
+table.score-table>tbody>tr>td,
+table.score-table>tbody>tr>th,
+table.score-table>thead>tr>td,
+table.score-table>thead>tr>th {
   padding: 10px 20px;
 }
 
@@ -30,20 +30,20 @@ table.score-table {
   width: 100%;
 }
 
-table.score-table > tbody > tr > th,
-table.score-table > thead > tr > th {
+table.score-table>tbody>tr>th,
+table.score-table>thead>tr>th {
   background-color: rgba(0, 0, 0, 0.02);
 }
 
-table.score-table > tbody > tr:nth-child(3) > td,
-table.score-table > thead > tr:nth-child(3) > td {
+table.score-table>tbody>tr:nth-child(3)>td,
+table.score-table>thead>tr:nth-child(3)>td {
   border-top: 1px solid rgba(0, 0, 0, 0.02);
 }
 
-table.score-table > tbody > tr > td:not(:first-child),
-table.score-table > tbody > tr > th:not(:first-child),
-table.score-table > thead > tr > td:not(:first-child),
-table.score-table > thead > tr > th:not(:first-child) {
+table.score-table>tbody>tr>td:not(:first-child),
+table.score-table>tbody>tr>th:not(:first-child),
+table.score-table>thead>tr>td:not(:first-child),
+table.score-table>thead>tr>th:not(:first-child) {
   border-left: 1px solid rgba(0, 0, 0, 0.02);
 }
 
@@ -51,20 +51,20 @@ table.score-table > thead > tr > th:not(:first-child) {
   border: 3px solid map-get($theme-colors, 'primary') !important;
 }
 
-.is-live:not(.is-critical) .score-table > tbody > tr > th:first-child,
-.is-live:not(.is-critical) .score-table > thead > tr > th:first-child {
+.is-live:not(.is-critical) .score-table>tbody>tr>th:first-child,
+.is-live:not(.is-critical) .score-table>thead>tr>th:first-child {
   color: map-get($theme-colors, 'stone-700') !important;
 }
 
-.is-live.is-critical .score-table > tbody > tr > th:first-child,
-.is-live.is-critical .score-table > thead > tr > th:first-child {
+.is-live.is-critical .score-table>tbody>tr>th:first-child,
+.is-live.is-critical .score-table>thead>tr>th:first-child {
   color: map-get($theme-colors, 'stone-700') !important;
   background-color: #ffb100 !important;
   position: relative;
 }
 
-.is-live.is-critical .score-table > tbody > tr > th:first-child::after,
-.is-live.is-critical .score-table > thead > tr > th:first-child::after {
+.is-live.is-critical .score-table>tbody>tr>th:first-child::after,
+.is-live.is-critical .score-table>thead>tr>th:first-child::after {
   content: 'Close game';
   display: inline-block;
   position: absolute;
@@ -88,7 +88,7 @@ table.score-table > thead > tr > th:not(:first-child) {
   max-width: 300px;
 }
 
-.banner-logo > img {
+.banner-logo>img {
   width: 100%;
 }
 
@@ -194,13 +194,13 @@ table.score-table > thead > tr > th:not(:first-child) {
   background: white;
 }
 
-select > option,
-select.dark > option {
+select>option,
+select.dark>option {
   background-color: map-get($theme-colors, 'stone-900');
   color: map-get($theme-colors, 'stone-0');
 }
 
-select.light > option {
+select.light>option {
   background-color: map-get($theme-colors, 'stone-0');
   color: map-get($theme-colors, 'stone-1000');
 }
@@ -261,7 +261,7 @@ select.form-control.dark:focus {
   padding: 0.55rem 0.75rem;
 }
 
-.input-group > :not(:first-child):not(.dropdown-menu):not(.valid-tooltip):not(.valid-feedback):not(.invalid-tooltip):not(.invalid-feedback) {
+.input-group> :not(:first-child):not(.dropdown-menu):not(.valid-tooltip):not(.valid-feedback):not(.invalid-tooltip):not(.invalid-feedback) {
   border-radius: 8px;
 }
 
@@ -270,26 +270,26 @@ select.form-control.dark:focus {
   padding: 0;
 }
 
-.input input:focus + label {
+.input input:focus+label {
   color: white !important;
 }
 
-.input-icon + input,
-.input-icon + .input,
-.input-icon + select,
-.input-icon + .select,
-.input-icon + select.form-control,
-.input-icon + select.form-control {
+.input-icon+input,
+.input-icon+.input,
+.input-icon+select,
+.input-icon+.select,
+.input-icon+select.form-control,
+.input-icon+select.form-control {
   padding-left: 40px !important;
   border-radius: 8px !important;
 }
 
-.input-group.small-input .input-icon + input,
-.input-group.small-input .input-icon + .input,
-.input-group.small-input .input-icon + select,
-.input-group.small-input .input-icon + .select,
-.input-group.small-input .input-icon + select.form-control,
-.input-group.small-input .input-icon + select.form-control {
+.input-group.small-input .input-icon+input,
+.input-group.small-input .input-icon+.input,
+.input-group.small-input .input-icon+select,
+.input-group.small-input .input-icon+.select,
+.input-group.small-input .input-icon+select.form-control,
+.input-group.small-input .input-icon+select.form-control {
   padding-left: 30px !important;
 }
 
@@ -372,7 +372,7 @@ select.form-control.dark {
   background-color: map-get($theme-colors, 'stone-900');
 }
 
-.input-group > select {
+.input-group>select {
   appearance: none;
 }
 
@@ -459,7 +459,7 @@ span.btn {
   margin-top: 60px;
 }
 
-.profile-section > .title {
+.profile-section>.title {
   display: block;
   font-size: 18px;
   font-weight: bold;
@@ -479,18 +479,18 @@ span.btn {
   color: map-get($custom-colors, 'stone-0');
 }
 
-.profile-option > span {
+.profile-option>span {
   font-size: 16px;
   display: block;
   letter-spacing: 0.3px;
 }
 
-.profile-option > .icon {
+.profile-option>.icon {
   font-size: 24px;
   margin: 0 15px 0 10px;
 }
 
-.profile-option > .caret {
+.profile-option>.caret {
   margin-left: auto;
 }
 
@@ -498,55 +498,62 @@ span.btn {
   border-top: 1px solid map-get($custom-colors, 'stone-700');
 }
 
+.hr {
+  height: 1px;
+  background: map-get($custom-colors, 'stone-800');
+}
+
 @media only screen and (max-width: 1880px) {
-  .score-table > tbody > tr > th:first-child {
+  .score-table>tbody>tr>th:first-child {
     width: 150px !important;
   }
 
-  .score-table > tbody > tr > .team-name {
+  .score-table>tbody>tr>.team-name {
     display: none;
   }
 
-  .score-table > tbody > tr > .team-abr {
+  .score-table>tbody>tr>.team-abr {
     display: block;
   }
 }
 
 @media only screen and (max-width: 1600px) {
-  .score-table > tbody > tr > td:last-child,
-  .score-table > thead > tr > td:last-child {
+
+  .score-table>tbody>tr>td:last-child,
+  .score-table>thead>tr>td:last-child {
     padding: 10px !important;
   }
 
-  .score-table > tbody > tr > .first-letter,
-  .score-table > thead > tr > .first-letter {
+  .score-table>tbody>tr>.first-letter,
+  .score-table>thead>tr>.first-letter {
     display: none;
   }
 }
 
 @media only screen and (max-width: 1400px) {
-  .score-table > tbody > tr > th:first-child,
-  .score-table > thead > tr > th:first-child {
+
+  .score-table>tbody>tr>th:first-child,
+  .score-table>thead>tr>th:first-child {
     width: 120px !important;
   }
 
-  .score-table > tbody > tr > td,
-  .score-table > tbody > tr > th,
-  .score-table > thead > tr > td,
-  .score-table > thead > tr > th {
+  .score-table>tbody>tr>td,
+  .score-table>tbody>tr>th,
+  .score-table>thead>tr>td,
+  .score-table>thead>tr>th {
     padding: 10px !important;
   }
 
-  .score-table > tbody > tr > td:first-child img,
-  .score-table > thead > tr > td:first-child img {
+  .score-table>tbody>tr>td:first-child img,
+  .score-table>thead>tr>td:first-child img {
     width: 30px !important;
     height: 30px !important;
   }
 
-  .score-table > tbody > tr > th:nth-child(n + 2):nth-child(-n + 5),
-  .score-table > tbody > tr > td:nth-child(n + 2):nth-child(-n + 5),
-  .score-table > thead > tr > th:nth-child(n + 2):nth-child(-n + 5),
-  .score-table > thead > tr > td:nth-child(n + 2):nth-child(-n + 5) {
+  .score-table>tbody>tr>th:nth-child(n + 2):nth-child(-n + 5),
+  .score-table>tbody>tr>td:nth-child(n + 2):nth-child(-n + 5),
+  .score-table>thead>tr>th:nth-child(n + 2):nth-child(-n + 5),
+  .score-table>thead>tr>td:nth-child(n + 2):nth-child(-n + 5) {
     width: auto !important;
   }
 
@@ -560,28 +567,28 @@ span.btn {
     width: 100% !important;
   }
 
-  .score-table > tbody > tr > th:first-child,
-  .score-table > thead > tr > th:first-child {
+  .score-table>tbody>tr>th:first-child,
+  .score-table>thead>tr>th:first-child {
     width: 150px !important;
   }
 
-  .score-table > tbody > tr > td,
-  .score-table > tbody > tr > th,
-  .score-table > thead > tr > td,
-  .score-table > thead > tr > th {
+  .score-table>tbody>tr>td,
+  .score-table>tbody>tr>th,
+  .score-table>thead>tr>td,
+  .score-table>thead>tr>th {
     padding: 10px 20px !important;
   }
 
-  .score-table > tbody > tr > td:first-child img,
-  .score-table > thead > tr > td:first-child img {
+  .score-table>tbody>tr>td:first-child img,
+  .score-table>thead>tr>td:first-child img {
     width: 50px !important;
     height: 50px !important;
   }
 
-  .score-table > tbody > tr > th:nth-child(n + 2):nth-child(-n + 5),
-  .score-table > tbody > tr > td:nth-child(n + 2):nth-child(-n + 5),
-  .score-table > thead > tr > th:nth-child(n + 2):nth-child(-n + 5),
-  .score-table > thead > tr > td:nth-child(n + 2):nth-child(-n + 5) {
+  .score-table>tbody>tr>th:nth-child(n + 2):nth-child(-n + 5),
+  .score-table>tbody>tr>td:nth-child(n + 2):nth-child(-n + 5),
+  .score-table>thead>tr>th:nth-child(n + 2):nth-child(-n + 5),
+  .score-table>thead>tr>td:nth-child(n + 2):nth-child(-n + 5) {
     width: 30px !important;
   }
 
@@ -591,57 +598,60 @@ span.btn {
 }
 
 @media only screen and (max-width: 850px) {
-  .score-table > tbody > tr > th:first-child,
-  .score-table > thead > tr > th:first-child {
+
+  .score-table>tbody>tr>th:first-child,
+  .score-table>thead>tr>th:first-child {
     width: 120px !important;
   }
 
-  .score-table > tbody > tr > td,
-  .score-table > tbody > tr > th,
-  .score-table > thead > tr > td,
-  .score-table > thead > tr > th {
+  .score-table>tbody>tr>td,
+  .score-table>tbody>tr>th,
+  .score-table>thead>tr>td,
+  .score-table>thead>tr>th {
     padding: 10px !important;
   }
 
-  .score-table > tbody > tr > td:first-child img,
-  .score-table > thead > tr > td:first-child img {
+  .score-table>tbody>tr>td:first-child img,
+  .score-table>thead>tr>td:first-child img {
     width: 30px !important;
     height: 30px !important;
   }
 
-  .score-table > tbody > tr > th:nth-child(n + 2):nth-child(-n + 5),
-  .score-table > tbody > tr > td:nth-child(n + 2):nth-child(-n + 5),
-  .score-table > thead > tr > th:nth-child(n + 2):nth-child(-n + 5),
-  .score-table > thead > tr > td:nth-child(n + 2):nth-child(-n + 5) {
+  .score-table>tbody>tr>th:nth-child(n + 2):nth-child(-n + 5),
+  .score-table>tbody>tr>td:nth-child(n + 2):nth-child(-n + 5),
+  .score-table>thead>tr>th:nth-child(n + 2):nth-child(-n + 5),
+  .score-table>thead>tr>td:nth-child(n + 2):nth-child(-n + 5) {
     width: auto !important;
   }
 }
 
 @media only screen and (max-width: 720px) {
-  .score-table > tbody > tr > th:nth-child(n + 2):nth-child(-n + 4),
-  .score-table > tbody > tr > td:nth-child(n + 2):nth-child(-n + 4),
-  .score-table > thead > tr > th:nth-child(n + 2):nth-child(-n + 4),
-  .score-table > thead > tr > td:nth-child(n + 2):nth-child(-n + 4) {
+
+  .score-table>tbody>tr>th:nth-child(n + 2):nth-child(-n + 4),
+  .score-table>tbody>tr>td:nth-child(n + 2):nth-child(-n + 4),
+  .score-table>thead>tr>th:nth-child(n + 2):nth-child(-n + 4),
+  .score-table>thead>tr>td:nth-child(n + 2):nth-child(-n + 4) {
     display: none !important;
   }
 }
 
 @media only screen and (max-width: 650px) {
-  .score-table > tbody > tr > th:nth-child(n + 2):nth-child(-n + 4),
-  .score-table > tbody > tr > td:nth-child(n + 2):nth-child(-n + 4),
-  .score-table > thead > tr > th:nth-child(n + 2):nth-child(-n + 4),
-  .score-table > thead > tr > td:nth-child(n + 2):nth-child(-n + 4) {
+
+  .score-table>tbody>tr>th:nth-child(n + 2):nth-child(-n + 4),
+  .score-table>tbody>tr>td:nth-child(n + 2):nth-child(-n + 4),
+  .score-table>thead>tr>th:nth-child(n + 2):nth-child(-n + 4),
+  .score-table>thead>tr>td:nth-child(n + 2):nth-child(-n + 4) {
     display: table-cell !important;
   }
 
-  .score-table > tbody > tr > th:last-child,
-  .score-table > tbody > tr > td:last-child,
-  .score-table > thead > tr > th:last-child,
-  .score-table > thead > tr > td:last-child {
+  .score-table>tbody>tr>th:last-child,
+  .score-table>tbody>tr>td:last-child,
+  .score-table>thead>tr>th:last-child,
+  .score-table>thead>tr>td:last-child {
     display: none !important;
   }
 
-  .full-scoreboard > div {
+  .full-scoreboard>div {
     margin: 0 !important;
     padding: 5px 0 !important;
   }
@@ -664,18 +674,18 @@ span.btn {
     display: none !important;
   }
 
-  .score-table > tbody > tr > th:nth-child(n + 2):nth-child(-n + 5),
-  .score-table > tbody > tr > td:nth-child(n + 2):nth-child(-n + 5),
-  .score-table > thead > tr > th:nth-child(n + 2):nth-child(-n + 5),
-  .score-table > thead > tr > td:nth-child(n + 2):nth-child(-n + 5) {
+  .score-table>tbody>tr>th:nth-child(n + 2):nth-child(-n + 5),
+  .score-table>tbody>tr>td:nth-child(n + 2):nth-child(-n + 5),
+  .score-table>thead>tr>th:nth-child(n + 2):nth-child(-n + 5),
+  .score-table>thead>tr>td:nth-child(n + 2):nth-child(-n + 5) {
     text-align: center !important;
     width: 30px !important;
   }
 
-  .score-table > tbody > tr > th:last-child,
-  .score-table > tbody > tr > td:last-child,
-  .score-table > thead > tr > th:last-child,
-  .score-table > thead > tr > td:last-child {
+  .score-table>tbody>tr>th:last-child,
+  .score-table>tbody>tr>td:last-child,
+  .score-table>thead>tr>th:last-child,
+  .score-table>thead>tr>td:last-child {
     display: table-cell !important;
   }
 
@@ -690,16 +700,17 @@ span.btn {
 }
 
 @media only screen and (max-width: 500px) {
+
   .v-chat,
   .v-feed,
   .v-lobby-overview {
     max-height: none;
   }
 
-  .score-table > tbody > tr > th:last-child,
-  .score-table > tbody > tr > td:last-child,
-  .score-table > thead > tr > th:last-child,
-  .score-table > thead > tr > td:last-child {
+  .score-table>tbody>tr>th:last-child,
+  .score-table>tbody>tr>td:last-child,
+  .score-table>thead>tr>th:last-child,
+  .score-table>thead>tr>td:last-child {
     font-size: 10px !important;
     padding: 3px !important;
   }
