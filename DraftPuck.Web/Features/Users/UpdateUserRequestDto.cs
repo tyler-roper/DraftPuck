@@ -11,6 +11,7 @@ public class UpdateUserRequestDto
     public NotificationPreference? DrinkAwardedNotificationPreference { get; set; }
     public NotificationPreference? ChatNotificationPreference { get; set; }
     public NotificationPreference? PickingStartedNotificationPreference { get; set; }
+    public NotificationPreference? AchievementAwardedNotificationPreference { get; set; }
     public Guid? BannerId { get; set; }
     public Guid? TitleId { get; set; }
     public string? Password { get; set; }

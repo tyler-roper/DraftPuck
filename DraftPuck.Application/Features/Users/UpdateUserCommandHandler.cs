@@ -43,6 +43,9 @@ public class UpdateUserCommandHandler(IDbContext dbContext, IMapper mapper, IUse
         if (request.PickingStartedNotificationPreference.HasValue)
             userToUpdate.PickingStartedNotificationPreference = request.PickingStartedNotificationPreference.Value;
 
+        if (request.AchievementAwardedNotificationPreference.HasValue)
+            userToUpdate.AchievementAwardedNotificationPreference = request.AchievementAwardedNotificationPreference.Value;
+
         if (request.BannerId.HasValue || request.TitleId.HasValue)
             await UpdateEquippedItems(userToUpdate, request.BannerId, request.TitleId, cancellationToken);
 

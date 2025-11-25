@@ -24,12 +24,12 @@ public class DrinkAssignedPushNotificationHandler(IPushNotificationService fireb
             if (!isRecipient && user.DrinkReceivedNotificationPreference == NotificationPreference.All)
             {
                 var data = new Dictionary<string, string> { { "lobbyEventType", "DrinkAssigned" }, { "isRelevant", "false" } };
-                await firebaseService.SendPushNotification(lobby.JoinCode, "Drink Assigned", text, user.FcmRegistrationToken!, data);
+                await firebaseService.SendLobbyEventNotification(lobby.JoinCode, "Drink Assigned", text, user.FcmRegistrationToken!, data);
             }
             else if (isRecipient && user.DrinkReceivedNotificationPreference != NotificationPreference.None)
             {
                 var data = new Dictionary<string, string> { { "lobbyEventType", "DrinkAssigned" }, { "isRelevant", "true" } };
-                await firebaseService.SendPushNotification(lobby.JoinCode, "🍺 DRINK 🍺", text, user.FcmRegistrationToken!, data);
+                await firebaseService.SendLobbyEventNotification(lobby.JoinCode, "🍺 DRINK 🍺", text, user.FcmRegistrationToken!, data);
             }
         });
     }

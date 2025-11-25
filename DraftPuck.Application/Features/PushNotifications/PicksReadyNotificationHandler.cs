@@ -39,7 +39,7 @@ public class PicksReadyNotificationHandler(IDbContext dbContext, IGameCache game
             if (userLobby == null)
                 continue;
 
-            await pushService.SendPushNotification(
+            await pushService.SendLobbyEventNotification(
                 userLobby.JoinCode,
                 "Time to pick players!",
                 "One or more games is about to start! Make your picks now.",

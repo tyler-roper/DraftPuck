@@ -13,6 +13,7 @@ public class UpdateUserCommand : IRequest<UserDto>
     public NotificationPreference? DrinkAwardedNotificationPreference { get; set; }
     public NotificationPreference? ChatNotificationPreference { get; set; }
     public NotificationPreference? PickingStartedNotificationPreference { get; set; }
+    public NotificationPreference? AchievementAwardedNotificationPreference { get; set; }
     public Guid? BannerId { get; set; }
     public Guid? TitleId { get; set; }
 }

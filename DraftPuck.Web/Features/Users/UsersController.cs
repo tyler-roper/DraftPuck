@@ -49,6 +49,7 @@ public class UsersController(IMediator mediator) : BaseController()
             DrinkAwardedNotificationPreference = request.DrinkAwardedNotificationPreference,
             ChatNotificationPreference = request.ChatNotificationPreference,
             PickingStartedNotificationPreference = request.PickingStartedNotificationPreference,
+            AchievementAwardedNotificationPreference = request.AchievementAwardedNotificationPreference,
             BannerId = request.BannerId,
             TitleId = request.TitleId,
             Password = request.Password,
