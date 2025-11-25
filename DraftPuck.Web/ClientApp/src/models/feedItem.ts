@@ -54,6 +54,15 @@ export default class FeedItem {
     return this.isPenalty || this.isGoal
   }
 
+  static camelCaseToTitleCase(camelCaseString: string) {
+    let result = camelCaseString.replace(/([A-Z])/g, ' $1');
+    result = result.trim().toLowerCase();
+    result = result.charAt(0).toUpperCase() + result.slice(1);
+    return result.replace(/\s+([a-z])/g, (_, p1) => {
+      return ' ' + p1.toUpperCase();
+    });
+  };
+
   static fromPlay(gameId: number, teams: { home: GameTeam; away: GameTeam }, play: Play, players: PlayerSummary[]) {
     const homeAbbreviation = teams.home.abbreviation
     const awayAbbreviation = teams.away.abbreviation
@@ -97,7 +106,7 @@ export default class FeedItem {
     }
 
     if (play.type === PlayType.Penalty) {
-      if (player && play.penalty) text = `${player.firstName} ${player.lastName} - ${play.penalty}`
+      if (player && play.penalty) text = `${player.firstName} ${player.lastName} - ${this.camelCaseToTitleCase(play.penalty)}`
       else text = 'Waiting for details...'
     }
 

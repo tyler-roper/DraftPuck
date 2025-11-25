@@ -64,7 +64,7 @@ async function enableAndSave() {
 <template>
   <div class="modal-overlay" @click="close">
     <div class="dp-modal" @click="stopPropagation">
-      <div class="modal-header">
+      <div class="modal-header justify-content-between">
         <span class="d-block">Notification Settings</span>
         <a v-if="!isSaving" role="button" class="text-uppercase text-primary text-decoration-none" @click="close">Close</a>
       </div>

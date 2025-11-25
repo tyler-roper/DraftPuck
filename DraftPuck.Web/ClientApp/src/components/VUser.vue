@@ -48,7 +48,7 @@ const loginPath = computed(() => (route.params.joinCode ? `/login?lobby=${route.
 const joinPath = computed(() => (route.params.joinCode ? `/join?lobby=${route.params.joinCode}` : '/join'))
 const fontSize = computed(() => {
   const size = props.avatarSizeInPx
-  const minRatio = 0.45
+  const minRatio = 0.6
   const maxRatio = 0.8
 
   const t = Math.min(size / 150, 1)

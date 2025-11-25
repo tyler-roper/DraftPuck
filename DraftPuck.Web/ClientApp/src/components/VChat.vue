@@ -3,9 +3,9 @@ import type MessageViewModel from '@/models/messageViewModel'
 import { addSeconds, format, parseISO } from 'date-fns'
 import { useLobbyStore } from '@/stores/lobby'
 import { storeToRefs } from 'pinia'
-import { ref, watch, nextTick, onMounted } from 'vue'
+import { ref, watch, nextTick, onMounted, computed } from 'vue'
 import type SystemMessageViewModel from '@/models/systemMessageViewModel'
-// import { SmartSuggest, Trigger } from 'vue-smart-suggest'
+import { SmartSuggest, type Trigger } from 'vue-smart-suggest'
 
 //const
 const SECONDS_BETWEEN_MESSAGES = 3
@@ -35,11 +35,13 @@ const lastSentMessage = ref(new Date(-1))
 const isLockedToBottom = ref(true)
 const errorTimer = ref<number>()
 const isIos = /(iPad|iPhone|iPod)/.test(window.navigator.userAgent)
-// const isSmartSuggestOpen = ref(false)
-// const userMentionTrigger: Trigger = {
-//   char: '@',
-//   items: lobby.value?.members.map(({ name }) => ({ value: `@${name}` })) ?? []
-// }
+const isSmartSuggestOpen = ref(false)
+const userMentionTrigger = computed<Trigger>(() => ({
+  char: '@',
+  items: lobby.value?.members
+    .filter(lm => lm.userId !== currentUserId.value && !lm.isBot)
+    .map(({ name }) => ({ value: `@${name}` })) ?? []
+}))
 
 //hooks/methods
 onMounted(async () => {
@@ -78,7 +80,7 @@ async function resizeMessageInput() {
 }
 
 function onEnterKeydown(e: KeyboardEvent) {
-  // if (isSmartSuggestOpen.value) return
+  if (isSmartSuggestOpen.value) return
   if (e.shiftKey) return
   sendMessage(e)
 }
@@ -212,7 +214,7 @@ defineExpose({ focus })
       <a role="button" v-if="!isLockedToBottom" class="d-block lock-to-bottom btn btn-stone-900" @click="scrollToBottom"
         >Back to bottom <i class="fi fi-rr-arrow-down"></i
       ></a>
-      <!-- <SmartSuggest :triggers="[userMentionTrigger]" @open="isSmartSuggestOpen=true" @close="isSmartSuggestOpen=false"> -->
+      <SmartSuggest :triggers="[userMentionTrigger]" @open="isSmartSuggestOpen=true" @close="isSmartSuggestOpen=false">
       <textarea
         v-model="message"
         maxlength="500"
@@ -223,7 +225,7 @@ defineExpose({ focus })
         @focus="handleIphoneKeyboard"
         @focusout="focusOut"
       ></textarea>
-      <!-- </SmartSuggest> -->
+      </SmartSuggest>
       <div class="d-flex align-items-center justify-content-end">
         <span class="d-block text-danger me-2 fw-bold">{{ error }}</span>
         <button class="d-block btn btn-primary fw-bold">Send</button>

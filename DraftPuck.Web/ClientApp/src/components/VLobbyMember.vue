@@ -124,9 +124,7 @@ function viewProfile() {
 
       <div class="d-block">
         <span class="name d-block fw-bold text-start" :class="{ 'is-logged-in': isLoggedIn }">{{ member.name }}</span>
-        <span class="title d-block text-stone-500 mt-n1 fs-7" :class="{ 'is-logged-in': isLoggedIn }">
-          {{ memberTitle }}
-        </span>
+        <span class="title d-inline-block text-stone-500 mt-n1 fs-7" :class="{ 'is-logged-in': isLoggedIn }">{{ memberTitle }}</span>
       </div>
 
       <span class="d-flex ms-auto align-items-center" style="cursor: default">
@@ -184,7 +182,6 @@ function viewProfile() {
   width: 100%;
   display: flex;
   align-items: center;
-  border-left: 10px solid map-get($custom-colors, 'stone-700');
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center;
@@ -230,6 +227,10 @@ function viewProfile() {
 .dropdown-item:hover,
 .dropdown-item:focus {
   background-color: map-get($custom-colors, 'stone-100');
+}
+
+.name {
+  height: 18px;
 }
 
 .name.is-logged-in {

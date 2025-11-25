@@ -9,6 +9,28 @@ public class ProcessGameCommandHandler(IGameCache gameCache, IMediator mediator,
 
     public async Task Handle(ProcessGameCommand request, CancellationToken ct)
     {
+        TimeSpan fallbackDelay = TimeSpan.FromMinutes(2);
+
+        try
+        {
+            await HandleInternal(request, ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex,
+                "Unhandled exception processing game {gameId}. Scheduling fallback retry.",
+                request.GameId);
+
+            await nhlQueue.SendMessageAsync(
+                new ProcessGameMessage(request.GameId, false),
+                fallbackDelay,
+                ct
+            );
+        }
+    }
+
+    private async Task HandleInternal(ProcessGameCommand request, CancellationToken ct)
+    {
         var updatedGame = await nhlClient.GetFullGameAsync(request.GameId);
         if (updatedGame == null) return;
 

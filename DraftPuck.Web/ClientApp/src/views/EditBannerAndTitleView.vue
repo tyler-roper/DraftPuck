@@ -27,21 +27,33 @@ const isDirty = computed(
 
 const availableBanners = computed(() => {
   if (!currentUser.value) return []
-  const ownedIds = new Set(currentUser.value.ownedBanners.map((b) => b.id))
-  const uniqueGenericBanners = genericBanners.value.filter((gBanner) => !ownedIds.has(gBanner.id))
-  return [...uniqueGenericBanners, ...currentUser.value.ownedBanners]
+  
+  const merged = [
+    ...currentUser.value.ownedBanners,
+    ...genericBanners.value
+  ]
+
+  // Deduplicate by ID
+  const byId = new Map()
+  merged.forEach(b => byId.set(b.id, b))
+
+  return Array.from(byId.values())
 })
 
 const availableTitles = computed(() => {
   if (!currentUser.value) return []
-  const ownedIds = new Set(currentUser.value.ownedTitles.map((t) => t.id))
-  const uniqueGenericTitles = genericTitles.value.filter((gTitle) => !ownedIds.has(gTitle.id))
-  const combinedTitles = [...uniqueGenericTitles, ...currentUser.value.ownedTitles]
-  return combinedTitles.sort((a, b) => {
-    const nameA = a.text || ''
-    const nameB = b.text || ''
-    return nameA.localeCompare(nameB)
-  })
+
+  const merged = [
+    ...currentUser.value.ownedTitles,
+    ...genericTitles.value
+  ]
+
+  const byId = new Map()
+  merged.forEach(t => byId.set(t.id, t))
+
+  return Array.from(byId.values()).sort((a, b) =>
+    (a.text || '').localeCompare(b.text || '')
+  )
 })
 
 //#endregion
