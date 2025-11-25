@@ -96,16 +96,16 @@ function getRandomBotName() {
         <button class="btn btn-primary text-uppercase fw-bold text-stone-900 py-0 px-1" @click="showAddBot">+ Add Bot</button>
       </div>
       <div class="p-2 bg-stone-900 d-flex justify-content-between" v-if="isLobbyAdmin && isAddingBot">
-        <div style="width: 40%">
+        <div>
           <input ref="botNameInput" v-model="botName" class="w-100" />
         </div>
-        <div style="width: 26%">
+        <div>
           <select v-model="botPickStyle" class="w-100">
             <option v-for="option in botPickStyleOptions" :value="option.value" :key="option.text">{{ option.text }}</option>
           </select>
         </div>
-        <div class="d-flex align-items-center justify-content-between" style="width: 33%">
-          <button class="btn btn-primary fw-bold" @click="tryAddBot">Add</button>
+        <div class="d-flex align-items-center justify-content-between">
+          <button class="btn btn-primary fw-bold me-2" @click="tryAddBot">Add</button>
           <a role="button" class="fw-bold text-stone-0" @click="cancelAddBot">Cancel</a>
         </div>
       </div>
@@ -114,15 +114,11 @@ function getRandomBotName() {
 </template>
 
 <style scoped lang="scss">
-input,
-select {
+input{
   padding: 6px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
 }
 
 select {
-  padding-top: 7px;
-  padding-bottom: 7px;
+  padding: 9px 6px;
 }
 </style>

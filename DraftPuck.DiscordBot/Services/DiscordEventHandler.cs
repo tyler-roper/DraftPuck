@@ -12,15 +12,12 @@ public class DiscordEventHandler(IInternalApiClient apiClient)
 
     public async Task OnMessageReceivedAsync(SocketMessage message, CancellationToken ct)
     {
-        Console.WriteLine("Message received...");
-
         if (message.Author.IsBot) return;
 
         if (message.Content.Trim().Equals("verify", StringComparison.OrdinalIgnoreCase))
         {
             try
             {
-                Console.WriteLine("Verifying...");
                 await message.Channel.SendMessageAsync($"Verifying Discord user {message.Author.Username}...");
                 await apiClient.SendDiscordServerJoinedNotification(message.Author.Id.ToString(), ct);
             } catch (Exception ex)

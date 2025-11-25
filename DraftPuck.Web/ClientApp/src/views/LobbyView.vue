@@ -230,7 +230,7 @@ onMounted(async () => {
     if (!currentLobbyMember.value) return router.push({ name: 'Home' })
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ joinCode: joinCode.value, name: currentLobbyMember.value.name }))
 
-    await initializeLobbyConnection()
+    await initializeLobbyConnection(true)
 
     document.removeEventListener('visibilitychange', handleVisibilityChange)
     document.addEventListener('visibilitychange', handleVisibilityChange)
@@ -278,9 +278,11 @@ async function checkActivity() {
   }
 }
 
-async function initializeLobbyConnection() {
+async function initializeLobbyConnection(skipLobbyRetrieval = false) {
   sendDebugMessage('Initializing lobby connection.', 2)
-  await Promise.all([getLobby(), initializeHubConnection(), setGames()])
+  const promises = [initializeHubConnection(), setGames()]
+  if (!skipLobbyRetrieval) promises.push(getLobby())
+  await Promise.all(promises)
 
   if (lobby.value) {
     await getLobbyEvents(lobby.value.id)
@@ -297,6 +299,7 @@ async function pauseLobbyConnection() {
   timers.value.forEach((t) => window.clearTimeout(t))
 
   // disconnect hub
+  console.log("STATE", hubConnection.state)
   await hubConnection.stop()
 
   // stop activity polling
@@ -368,7 +371,7 @@ async function pollForUpdates(game: Game, attempts: number = 1) {
 }
 
 async function initializeHubConnection() {
-  if (hubConnection) await hubConnection.stop()
+  if (hubConnection && hubConnection.state === SignalR.HubConnectionState.Connected) await hubConnection.stop()
 
   hubConnection = new SignalR.HubConnectionBuilder()
     .withUrl(HUB_URL, SignalR.HttpTransportType.ServerSentEvents)
@@ -376,6 +379,7 @@ async function initializeHubConnection() {
     .withAutomaticReconnect()
     .build()
 
+  hubConnection.onclose(() => console.log("Closing..."))
   hubConnection.on('LobbyEvent', dispatchLobbyEvent)
   hubConnection.on('Message', onNewMessage)
   hubConnection.on('LobbyStateChanged', getLobby)
