@@ -28,7 +28,7 @@ const achievementList = computed<Array<UserAchievement>>(() => {
       uniqueIdentifier: a.uniqueIdentifier,
       friendlyName: a.friendlyName,
       description: a.description,
-      dateEarned: currentUser.value?.achievements.find((ua) => ua.achievementId === a.id)?.dateEarned
+      dateEarned: user.value?.achievements.find((ua) => ua.achievementId === a.id)?.dateEarned
     }))
     .sort((a, b) => Number(!!b.dateEarned) - Number(!!a.dateEarned))
 })
