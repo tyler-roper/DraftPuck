@@ -1,4 +1,4 @@
-﻿using DraftPuck.Application.Features.Lobbies;
+﻿using DraftPuck.Application.Features.Admin.Lobbies;
 
 namespace DraftPuck.Web.Features.Admin.Lobbies;
 
@@ -14,6 +14,9 @@ public class LobbiesController(IMediator mediator) : AdminBaseController
         [FromQuery] int pageSize = 25,
         [FromQuery] bool includeRemovedUsers = false)
     {
+        if (dateFrom == null)
+            dateFrom = DateTime.UtcNow.AddDays(-1);
+
         var query = new GetAllLobbiesQuery()
         {
             DateFrom = dateFrom,

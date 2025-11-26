@@ -80,61 +80,61 @@ async function enableAndSave() {
         </div>
 
         <div v-if="isNotificationSupported">
-            <div class="notification-form-container">
-                <div class="question">
-                    <span class="question-text">🚨 When a drink is awarded...</span>
-                    <input type="radio" id="rdDrinkAwarded0" v-model="notificationSettings.drinkAwardedNotificationPreference" :value="0" />
-                    <label for="rdDrinkAwarded0">Do not notify me.</label>
+          <div class="notification-form-container">
+            <div class="question">
+              <span class="question-text">🚨 When a drink is awarded...</span>
+              <input type="radio" id="rdDrinkAwarded0" v-model="notificationSettings.drinkAwardedNotificationPreference" :value="0" />
+              <label for="rdDrinkAwarded0">Do not notify me.</label>
 
-                    <input type="radio" id="rdDrinkAwarded1" v-model="notificationSettings.drinkAwardedNotificationPreference" :value="1" />
-                    <label for="rdDrinkAwarded1">Notify me if it's mine.</label>
+              <input type="radio" id="rdDrinkAwarded1" v-model="notificationSettings.drinkAwardedNotificationPreference" :value="1" />
+              <label for="rdDrinkAwarded1">Notify me if it's mine.</label>
 
-                    <input type="radio" id="rdDrinkAwarded2" v-model="notificationSettings.drinkAwardedNotificationPreference" :value="2" />
-                    <label for="rdDrinkAwarded2">Always notify me.</label>
-                </div>
-
-                <div class="question">
-                    <span class="question-text">🍺 When a drink is assigned...</span>
-                    <input type="radio" id="rdDrinkAssigned0" v-model="notificationSettings.drinkReceivedNotificationPreference" :value="0" />
-                    <label for="rdDrinkAssigned0">Do not notify me.</label>
-
-                    <input type="radio" id="rdDrinkAssigned1" v-model="notificationSettings.drinkReceivedNotificationPreference" :value="1" />
-                    <label for="rdDrinkAssigned1">Notify me if it's assigned to me.</label>
-
-                    <input type="radio" id="rdDrinkAssigned2" v-model="notificationSettings.drinkReceivedNotificationPreference" :value="2" />
-                    <label for="rdDrinkAssigned2">Always notify me.</label>
-                </div>
-
-                <div class="question">
-                    <span class="question-text">💬 When there's a new message in chat...</span>
-                    <input type="radio" id="rdChatMessage0" v-model="notificationSettings.chatNotificationPreference" :value="0" />
-                    <label for="rdChatMessage0">Do not notify me.</label>
-
-                    <input type="radio" id="rdChatMessage1" v-model="notificationSettings.chatNotificationPreference" :value="1" />
-                    <label for="rdChatMessage1">Notify me if I'm mentioned.</label>
-
-                    <input type="radio" id="rdChatMessage2" v-model="notificationSettings.chatNotificationPreference" :value="2" />
-                    <label for="rdChatMessage2">Always notify me.</label>
-                </div>
-
-                <div class="question">
-                    <span class="question-text">📌 When picking becomes available for a new game...</span>
-                    <input type="radio" id="rdPickingStarted0" v-model="notificationSettings.pickingStartedNotificationPreference" :value="0" />
-                    <label for="rdPickingStarted0">Do not notify me.</label>
-
-                    <input type="radio" id="rdPickingStarted2" v-model="notificationSettings.pickingStartedNotificationPreference" :value="2" />
-                    <label for="rdPickingStarted2">Always notify me.</label>
-                </div>
-
-                <div class="question">
-                    <span class="question-text">🏆 When I earn a new achievement...</span>
-                    <input type="radio" id="rdAchievementAwarded0" v-model="notificationSettings.achievementAwardedNotificationPreference" :value="0" />
-                    <label for="rdAchievementAwarded0">Do not notify me.</label>
-
-                    <input type="radio" id="rdAchievementAwarded1" v-model="notificationSettings.achievementAwardedNotificationPreference" :value="2" />
-                    <label for="rdAchievementAwarded1">Always notify me.</label>
-                </div>
+              <input type="radio" id="rdDrinkAwarded2" v-model="notificationSettings.drinkAwardedNotificationPreference" :value="2" />
+              <label for="rdDrinkAwarded2">Always notify me.</label>
             </div>
+
+            <div class="question">
+              <span class="question-text">🍺 When a drink is assigned...</span>
+              <input type="radio" id="rdDrinkAssigned0" v-model="notificationSettings.drinkReceivedNotificationPreference" :value="0" />
+              <label for="rdDrinkAssigned0">Do not notify me.</label>
+
+              <input type="radio" id="rdDrinkAssigned1" v-model="notificationSettings.drinkReceivedNotificationPreference" :value="1" />
+              <label for="rdDrinkAssigned1">Notify me if it's assigned to me.</label>
+
+              <input type="radio" id="rdDrinkAssigned2" v-model="notificationSettings.drinkReceivedNotificationPreference" :value="2" />
+              <label for="rdDrinkAssigned2">Always notify me.</label>
+            </div>
+
+            <div class="question">
+              <span class="question-text">💬 When there's a new message in chat...</span>
+              <input type="radio" id="rdChatMessage0" v-model="notificationSettings.chatNotificationPreference" :value="0" />
+              <label for="rdChatMessage0">Do not notify me.</label>
+
+              <input type="radio" id="rdChatMessage1" v-model="notificationSettings.chatNotificationPreference" :value="1" />
+              <label for="rdChatMessage1">Notify me if I'm mentioned.</label>
+
+              <input type="radio" id="rdChatMessage2" v-model="notificationSettings.chatNotificationPreference" :value="2" />
+              <label for="rdChatMessage2">Always notify me.</label>
+            </div>
+
+            <div class="question">
+              <span class="question-text">📌 When picking becomes available for a new game...</span>
+              <input type="radio" id="rdPickingStarted0" v-model="notificationSettings.pickingStartedNotificationPreference" :value="0" />
+              <label for="rdPickingStarted0">Do not notify me.</label>
+
+              <input type="radio" id="rdPickingStarted2" v-model="notificationSettings.pickingStartedNotificationPreference" :value="2" />
+              <label for="rdPickingStarted2">Always notify me.</label>
+            </div>
+
+            <div class="question">
+              <span class="question-text">🏆 When I earn a new achievement...</span>
+              <input type="radio" id="rdAchievementAwarded0" v-model="notificationSettings.achievementAwardedNotificationPreference" :value="0" />
+              <label for="rdAchievementAwarded0">Do not notify me.</label>
+
+              <input type="radio" id="rdAchievementAwarded1" v-model="notificationSettings.achievementAwardedNotificationPreference" :value="2" />
+              <label for="rdAchievementAwarded1">Always notify me.</label>
+            </div>
+          </div>
         </div>
         <VButton v-if="isNotificationsEnabled" class="btn btn-primary fw-bold w-100 p-3 mt-4" @click="save" :is-loading="isSaving"
           >Save Settings</VButton

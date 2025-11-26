@@ -1,4 +1,11 @@
 ﻿using DraftPuck.Application.Features.Lobbies;
+using DraftPuck.Application.Features.Lobbies.Drinks;
+using DraftPuck.Application.Features.Lobbies.Events;
+using DraftPuck.Application.Features.Lobbies.Management;
+using DraftPuck.Application.Features.Lobbies.Members;
+using DraftPuck.Application.Features.Lobbies.Messages;
+using DraftPuck.Application.Features.Lobbies.Picks;
+using DraftPuck.Application.Features.Users;
 
 namespace DraftPuck.Web.Features.Lobbies;
 
@@ -19,6 +26,14 @@ public class LobbiesController(IMediator mediator) : BaseController()
 
         var lobbyDto = await mediator.Send(command);
         return Created($"/api/lobbies/{lobbyDto.Id}", lobbyDto);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetLobbiesForCurrentUser()
+    {
+        var query = new GetLobbiesByUserQuery() { UserId = CurrentUserId };
+        var lobbyDtos = await mediator.Send(query);
+        return Ok(lobbyDtos);
     }
 
     [HttpGet("{code}")]

@@ -114,7 +114,7 @@ function getRandomBotName() {
 </template>
 
 <style scoped lang="scss">
-input{
+input {
   padding: 6px;
 }
 

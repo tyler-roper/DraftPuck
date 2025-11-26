@@ -38,9 +38,7 @@ const isIos = /(iPad|iPhone|iPod)/.test(window.navigator.userAgent)
 const isSmartSuggestOpen = ref(false)
 const userMentionTrigger = computed<Trigger>(() => ({
   char: '@',
-  items: lobby.value?.members
-    .filter(lm => lm.userId !== currentUserId.value && !lm.isBot)
-    .map(({ name }) => ({ value: `@${name}` })) ?? []
+  items: lobby.value?.members.filter((lm) => lm.userId !== currentUserId.value && !lm.isBot).map(({ name }) => ({ value: `@${name}` })) ?? []
 }))
 
 //hooks/methods
@@ -214,17 +212,17 @@ defineExpose({ focus })
       <a role="button" v-if="!isLockedToBottom" class="d-block lock-to-bottom btn btn-stone-900" @click="scrollToBottom"
         >Back to bottom <i class="fi fi-rr-arrow-down"></i
       ></a>
-      <SmartSuggest :triggers="[userMentionTrigger]" @open="isSmartSuggestOpen=true" @close="isSmartSuggestOpen=false">
-      <textarea
-        v-model="message"
-        maxlength="500"
-        ref="messageInput"
-        placeholder="Send a message"
-        @input="resizeMessageInput"
-        @keydown.enter="onEnterKeydown"
-        @focus="handleIphoneKeyboard"
-        @focusout="focusOut"
-      ></textarea>
+      <SmartSuggest :triggers="[userMentionTrigger]" @open="isSmartSuggestOpen = true" @close="isSmartSuggestOpen = false">
+        <textarea
+          v-model="message"
+          maxlength="500"
+          ref="messageInput"
+          placeholder="Send a message"
+          @input="resizeMessageInput"
+          @keydown.enter="onEnterKeydown"
+          @focus="handleIphoneKeyboard"
+          @focusout="focusOut"
+        ></textarea>
       </SmartSuggest>
       <div class="d-flex align-items-center justify-content-end">
         <span class="d-block text-danger me-2 fw-bold">{{ error }}</span>

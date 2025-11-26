@@ -63,6 +63,12 @@ const loggedInUserLinks = ref<Array<UserLink>>([
   { action: logout, text: 'Logout', class: 'text-primary', iconPrefix: 'sr', icon: 'exit' }
 ])
 
+const adminUserLinks = computed<Array<UserLink>>(() => ([
+  ...loggedInUserLinks.value.filter(l => l.text !== 'Logout'),
+  { path: '/admin', text: 'Admin', iconPrefix: 'sr', icon: 'admin' },
+  { action: logout, text: 'Logout', class: 'text-primary', iconPrefix: 'sr', icon: 'exit' }
+]))
+
 const guestUserLinks = ref<Array<UserLink>>([
   { path: loginPath.value, text: 'Log In', iconPrefix: 'sr', icon: 'sign-in-alt' },
   { path: joinPath.value, text: 'Sign Up', iconPrefix: 'sr', icon: 'hockey-puck', class: 'text-primary' }
@@ -71,6 +77,7 @@ const guestUserLinks = ref<Array<UserLink>>([
 const userLinks = computed(() => {
   if (isSelf.value !== true) return []
   if (currentUser.value && currentUser.value.isGuest !== false) return guestUserLinks.value
+  if (currentUser.value && currentUser.value.isAdmin === true) return adminUserLinks.value
   return loggedInUserLinks.value
 })
 

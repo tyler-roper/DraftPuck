@@ -1,5 +1,5 @@
 ﻿using DraftPuck.Application.Features.Games;
-using DraftPuck.Application.Features.Lobbies;
+using DraftPuck.Application.Features.Lobbies.Management;
 using MediatR;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;

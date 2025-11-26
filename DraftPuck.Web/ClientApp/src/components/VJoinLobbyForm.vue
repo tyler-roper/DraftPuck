@@ -71,9 +71,7 @@ onMounted(() => {
   const latestLobbyRaw = localStorage.getItem('latestLobby')
   const latestLobby: { joinCode: string; name: string } | undefined = latestLobbyRaw ? JSON.parse(latestLobbyRaw) : undefined
   form.value.code = latestLobby?.joinCode ?? ''
-  form.value.nickname = isLoggedIn.value
-    ? userStore.currentUser!.nickname!
-    : userStore.currentUser?.nickname ?? latestLobby?.name ?? ''
+  form.value.nickname = isLoggedIn.value ? userStore.currentUser!.nickname! : (userStore.currentUser?.nickname ?? latestLobby?.name ?? '')
 })
 //#endregion
 
@@ -86,23 +84,37 @@ onMounted(() => {
       <div :class="isLoggedIn ? 'col-12' : 'col-4'">
         <label class="form-label" for="lobbyCode">Code</label>
         <VInputWrapper icon="key" prefix="sr">
-          <input type="text" id="lobbyCode" v-model="form.code" placeholder="Code" maxlength="4"
-            class="form-control text-uppercase code-input dark" :class="{ 'is-invalid': v$.code.$error }"
-            ref="lobbyCodeInput" />
+          <input
+            type="text"
+            id="lobbyCode"
+            v-model="form.code"
+            placeholder="Code"
+            maxlength="4"
+            class="form-control text-uppercase code-input dark"
+            :class="{ 'is-invalid': v$.code.$error }"
+            ref="lobbyCodeInput"
+          />
         </VInputWrapper>
       </div>
       <div v-if="!isLoggedIn" class="col-8">
         <label class="form-label" for="nickname">Nickname</label>
         <VInputWrapper icon="user" prefix="sr">
-          <input type="text" id="nickname" v-model="form.nickname" placeholder="Wayne Gretzky" maxlength="25"
-            class="form-control dark" :class="{ 'is-invalid': v$.nickname.$error }" ref="nicknameInput" />
+          <input
+            type="text"
+            id="nickname"
+            v-model="form.nickname"
+            placeholder="Wayne Gretzky"
+            maxlength="25"
+            class="form-control dark"
+            :class="{ 'is-invalid': v$.nickname.$error }"
+            ref="nicknameInput"
+          />
         </VInputWrapper>
       </div>
     </div>
     <div class="row mt-3">
       <div class="col">
-        <VButton class="btn btn-primary w-100" :is-loading="isJoiningLobby" type="submit"
-          loading-text="Joining Lobby...">Join Lobby</VButton>
+        <VButton class="btn btn-primary w-100" :is-loading="isJoiningLobby" type="submit" loading-text="Joining Lobby...">Join Lobby</VButton>
       </div>
     </div>
   </form>

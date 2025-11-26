@@ -17,6 +17,10 @@ class LobbyService {
     return this._http.post('', request)
   }
 
+  public async getLobbies(): Promise<Array<LobbySummary>> {
+    return this._http.get('')
+  }
+
   public async getLobbyByCode(code: string): Promise<Lobby> {
     return this._http.get('', code)
   }

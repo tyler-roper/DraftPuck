@@ -26,6 +26,9 @@ export default function fcmSwEnvPlugin(isDev: boolean) {
 
   const envSwOutputPath = path.resolve('public', './env-sw.js');
   fs.writeFileSync(envSwOutputPath, envSwCode);
+
+  const envOutputPath = path.resolve('public', './env.js');
+  fs.writeFileSync(envOutputPath, '');
   
   const srcDir = path.resolve(__dirname, '../src')
   const fcmSwCode = fs.readFileSync(`${srcDir}/firebase-messaging-sw.js`, 'utf8')
