@@ -15,15 +15,16 @@ const { gitSha, appIsTestMode, currentSystemTime } = storeToRefs(systemStore)
 <template>
   <ProfileSubsectionLayout title="Admin" :show-save="false">
     <div class="p-3">
+      <a href="https://draftpuck.com/test-page.html">TEST PAGE</a>
       <div class="profile-section">
         <span class="title">Account</span>
         <div class="profile-options-container">
-          <router-link class="profile-option" :to="{ name: 'AdminUsers' }" replace>
+          <router-link class="profile-option" :to="{ name: 'AdminUsers' }">
             <VIcon class="icon" prefix="rr" icon="users" />
             <span>Users</span>
             <VIcon class="caret" prefix="rr" icon="angle-right" />
           </router-link>
-          <router-link class="profile-option" :to="{ name: 'AdminLobbies' }" replace>
+          <router-link class="profile-option" :to="{ name: 'AdminLobbies' }">
             <VIcon class="icon" prefix="rr" icon="hockey-puck" />
             <span>Lobbies</span>
             <VIcon class="caret" prefix="rr" icon="angle-right" />
