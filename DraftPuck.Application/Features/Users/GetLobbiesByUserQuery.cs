@@ -2,7 +2,7 @@
 
 namespace DraftPuck.Application.Features.Users;
 
-public class GetLobbiesByUserQuery : IRequest<List<UserLobbySummaryDto>>
+public class GetLobbiesByUserQuery : IRequest<List<LobbySummaryDto>>
 {
     public Guid UserId { get; set; }
 }

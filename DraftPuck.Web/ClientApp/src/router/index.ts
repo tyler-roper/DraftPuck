@@ -76,84 +76,111 @@ const router = createRouter({
         {
           path: 'banner',
           name: 'Banner',
-          component: () => import('@/views/EditBannerAndTitleView.vue'),
+          component: () => import('@/views/account/EditBannerAndTitleView.vue'),
           meta: { requiresLogin }
         },
         {
           path: 'lobbies',
           name: 'Lobbies',
-          component: () => import('@/views/LobbyListView.vue'),
+          component: () => import('@/views/account/LobbyListView.vue'),
           meta: { requiresLogin }
         },
         {
           path: 'settings',
           name: 'Settings',
-          component: () => import('@/views/AccountSettingsView.vue'),
+          component: () => import('@/views/account/AccountSettingsView.vue'),
           meta: { requiresLogin }
         },
         {
           path: 'avatar',
           name: 'Avatar',
-          component: () => import('@/views/EditAvatarView.vue'),
+          component: () => import('@/views/account/EditAvatarView.vue'),
           meta: { requiresLogin }
         },
         {
           path: 'discord',
           name: 'Discord',
-          component: () => import('@/views/DiscordView.vue'),
+          component: () => import('@/views/account/DiscordView.vue'),
           meta: { requiresLogin }
         }
       ]
     },
     {
       path: '/u/:username',
-      name: 'Profile',
+      name: 'ProfileRoot',
       props: true,
-      component: () => import('@/views/ProfileView.vue')
-    },
-    {
-      path: '/u/:username/achievements',
-      name: 'Achievements',
-      props: true,
-      component: () => import('@/views/AchievementsView.vue')
+      component: RouterView,
+      children: [
+        {
+          path: '',
+          name: 'Profile',
+          props: true,
+          component: () => import('@/views/profile/ProfileView.vue')
+        },
+        {
+          path: 'achievements',
+          name: 'Achievements',
+          props: true,
+          component: () => import('@/views/profile/AchievementsView.vue')
+        }
+      ]
     },
     {
       path: '/admin',
-      name: 'Admin',
-      component: () => import('@/views/AdminView.vue'),
-      meta: { requiresLogin, requiresAdmin }
+      name: 'AdminRoot',
+      component: RouterView,
+      meta: { requiresAdmin },
+      children: [
+        {
+          path: '',
+          name: 'Admin',
+          component: () => import('@/views/admin/AdminView.vue')
+        },
+        {
+          path: 'users',
+          name: 'AdminUsers',
+          component: () => import('@/views/admin/UsersView.vue')
+        },
+        {
+          path: 'lobbies',
+          name: 'AdminLobbies',
+          component: () => import('@/views/admin/LobbiesView.vue')
+        }
+      ]
     }
   ]
 })
 
 router.beforeEach(async (to, _from, next) => {
   const userStore = useUserStore()
+  const requiresLogin = to.matched.some((r) => r.meta.requiresLogin || r.meta.requiresAdmin)
+  const requiresAdmin = to.matched.some((r) => r.meta.requiresAdmin)
+  const redirectIfLoggedIn = to.matched.some((r) => r.meta.redirectIfLoggedIn)
+
   let initializePromise
 
-  if (!userStore.isReady && (to.meta.requiresLogin || to.meta.redirectIfLoggedIn)) initializePromise = userStore.initialize()
-
-  if (userStore.isLoggedIn && to.meta?.redirectIfLoggedIn === true) {
-    next({ name: 'Home' })
-    return
+  if (!userStore.isReady && (requiresLogin || redirectIfLoggedIn)) {
+    initializePromise = userStore.initialize()
   }
 
-  if (to.meta.requiresLogin === true) {
-    await initializePromise
+  if (redirectIfLoggedIn && userStore.isLoggedIn) {
+    return next({ name: 'Home' })
+  }
+
+  if (requiresLogin) {
+    if (initializePromise) await initializePromise
 
     if (!userStore.isLoggedIn) {
-      next({ name: 'Login', query: { redirect: to.path } })
-      return
+      return next({ name: 'Login', query: { redirect: to.path } })
     }
+  }
 
-    if (userStore.isLoggedIn && !userStore.isAdmin && to.meta.requiresAdmin) {
-      next({ name: 'Home' })
-      return
-    }
+  if (requiresAdmin && !userStore.isAdmin) {
+    return next({ name: 'Home' })
   }
 
   setPageMetaTags((to.meta?.metaTags as MetaTag[]) ?? [], to.params)
   setPageTitle(to.meta?.title as string, to.params)
-
   next()
 })
 

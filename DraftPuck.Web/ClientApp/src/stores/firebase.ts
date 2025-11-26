@@ -38,24 +38,27 @@ export const useFirebaseStore = defineStore('firebase', () => {
 
       // Handle foreground messages
       onMessage(messaging, (payload) => {
-        const type = payload.data?.type;
-        const title = payload.notification?.title;
-        const body = payload.notification?.body;
+        const type = payload.data?.type
+        const title = payload.notification?.title
+        const body = payload.notification?.body
 
-        if (type === "Achievement") {
-          toast({
-            component: VHtmlToast,
-            props: { title: `<span class='text-primary'>${title}</span>`, message: body },
-          }, {
-            toastClassName: 'bg-stone-900',
-            icon: 'fi fi-sr-trophy fs-3 text-primary'
-          })
+        if (type === 'Achievement') {
+          toast(
+            {
+              component: VHtmlToast,
+              props: { title: `<span class='text-primary'>${title}</span>`, message: body }
+            },
+            {
+              toastClassName: 'bg-stone-900',
+              icon: 'fi fi-sr-trophy fs-3 text-primary'
+            }
+          )
           userStore.refreshUser()
         }
-      });
+      })
 
       const token = await getToken(messaging, {
-        vapidKey: env.VITE_FIREBASE_VAPID_KEY,
+        vapidKey: env.VITE_FIREBASE_VAPID_KEY
       })
 
       await userStore.updateUser({ fcmRegistrationToken: token })
@@ -73,6 +76,6 @@ export const useFirebaseStore = defineStore('firebase', () => {
     isInitialized,
     notificationsSupported,
     permissionGranted,
-    initialize,
+    initialize
   }
 })

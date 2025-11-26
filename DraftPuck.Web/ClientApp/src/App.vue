@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { onMounted, } from 'vue'
+import { onMounted } from 'vue'
 import { RouterView } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
@@ -12,7 +12,7 @@ const systemStore = useSystemStore()
 const { appIsTestMode, currentSystemTime } = storeToRefs(systemStore)
 const { initAppSettings, updateSystemTime } = systemStore
 const { initialize: initializeUser } = useUserStore()
-const { initialize: initializeFirebase} = useFirebaseStore()
+const { initialize: initializeFirebase } = useFirebaseStore()
 
 onMounted(async () => {
   initializeUser()

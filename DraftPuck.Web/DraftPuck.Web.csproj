@@ -19,13 +19,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="ClientApp_Old\**" />
-    <Content Remove="ClientApp_Old\**" />
-    <EmbeddedResource Remove="ClientApp_Old\**" />
-    <None Remove="ClientApp_Old\**" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="AutoMapper" Version="15.0.1" />
     <PackageReference Include="Azure.Storage.Queues" Version="12.24.0" />
     <PackageReference Include="MediatR" Version="13.0.0" />

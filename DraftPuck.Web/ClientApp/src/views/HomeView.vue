@@ -23,8 +23,7 @@ const view = ref<View>('join')
 </script>
 
 <template>
-  <SplashLayout :show-header-text="false" :show-flavor-text="false" :align-to-bottom="false" :increase-contrast="true"
-    :padding="3">
+  <SplashLayout :show-header-text="false" :show-flavor-text="false" :align-to-bottom="false" :increase-contrast="true" :padding="3">
     <div class="d-flex flex-column h-100">
       <div class="form-container p-3">
         <VBigSwitch class="mt-n5" :options="views" v-model="view" />
@@ -41,15 +40,12 @@ const view = ref<View>('join')
       <div class="mt-auto">
         <div class="hr"></div>
         <div class="btn-container my-4">
-          <div class="text-center mb-3 text-stone-400">
-            Want some rare achievements?
-          </div>
+          <div class="text-center mb-3 text-stone-400">Want some rare achievements?</div>
           <a role="button" target="_blank" href="https://discord.gg/7NfZMhMt" class="btn btn-purple d-block mx-auto">
             <VIcon icon="discord" prefix="brands" class="me-2" />
             <span>Join the official Discord</span>
           </a>
-          <a role="button" target="_blank" href="https://github.com/tyler-roper/DraftPuck"
-            class="btn btn-light d-block mt-3 mx-auto">
+          <a role="button" target="_blank" href="https://github.com/tyler-roper/DraftPuck" class="btn btn-light d-block mt-3 mx-auto">
             <VIcon icon="github" prefix="brands" class="me-2" />
             <span>Contribute on GitHub</span>
           </a>

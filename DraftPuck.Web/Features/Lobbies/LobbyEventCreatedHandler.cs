@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
-using DraftPuck.Application.Features.Lobbies;
+using DraftPuck.Application.Features.Lobbies.Events;
+using DraftPuck.Application.Features.Lobbies.Messages;
 
 namespace DraftPuck.Web.Features.Lobbies;
 

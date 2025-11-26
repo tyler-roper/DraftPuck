@@ -3,6 +3,7 @@ import VButton from '@/components/VButton.vue'
 import VIcon from '@/components/VIcon.vue'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
+import { useRouter } from 'vue-router';
 withDefaults(
   defineProps<{
     title: string
@@ -21,9 +22,20 @@ withDefaults(
 const userStore = useUserStore()
 const { currentUser } = storeToRefs(userStore)
 const emit = defineEmits(['discard', 'save'])
+const router = useRouter()
 //#endregion
 
 //#region methods
+function onBreadcrumbClick() {
+  try {
+    router.back()
+  } catch {
+    if (currentUser?.value?.nickname)
+      router.replace(`/u/${currentUser.value.nickname}`)
+
+    router.replace(`/`)
+  }
+}
 //#endregion
 </script>
 
@@ -31,9 +43,9 @@ const emit = defineEmits(['discard', 'save'])
   <div class="d-flex flex-column h-100 bg-dark-gradient overflow-auto">
     <div class="text-center bg-stone-900">
       <div class="position-relative">
-        <router-link :to="`/u/${currentUser!.nickname}`" class="back-link" replace>
+        <a role="button" @click="onBreadcrumbClick" class="back-link">
           <VIcon icon="angle-circle-left" prefix="sr" class="fs-3 text-stone-300" />
-        </router-link>
+        </a>
         <h1 class="p-3 m-0 text-uppercase fw-bold ls-2 mx-auto">{{ title }}</h1>
       </div>
       <slot name="header"></slot>
@@ -44,16 +56,10 @@ const emit = defineEmits(['discard', 'save'])
     <div class="bg-stone-900">
       <slot name="footer"></slot>
       <div v-if="showSave" class="d-flex p-3 justify-content-between align-items-center overflow-hidden">
-        <a v-if="isDirty" @click="emit('discard')" role="btn" class="text-stone-400 fs-7 me-4 ls-2"><span>Discard Changes</span></a>
-        <VButton
-          @click="emit('save')"
-          class="btn btn-primary px-5 ms-auto"
-          :disabled="!isDirty || isSaving"
-          :is-loading="isSaving"
-          :show-text="true"
-          loading-text="Saving..."
-          >Save Changes</VButton
-        >
+        <a v-if="isDirty" @click="emit('discard')" role="btn" class="text-stone-400 fs-7 me-4 ls-2"><span>Discard
+            Changes</span></a>
+        <VButton @click="emit('save')" class="btn btn-primary px-5 ms-auto" :disabled="!isDirty || isSaving"
+          :is-loading="isSaving" :show-text="true" loading-text="Saving...">Save Changes</VButton>
       </div>
     </div>
   </div>
@@ -61,6 +67,7 @@ const emit = defineEmits(['discard', 'save'])
 
 <style scoped lang="scss">
 @import '@/assets/scss/custom-colors.scss';
+
 .back-link {
   position: absolute;
   left: 20px;

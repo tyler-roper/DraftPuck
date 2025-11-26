@@ -55,13 +55,13 @@ export default class FeedItem {
   }
 
   static camelCaseToTitleCase(camelCaseString: string) {
-    let result = camelCaseString.replace(/([A-Z])/g, ' $1');
-    result = result.trim().toLowerCase();
-    result = result.charAt(0).toUpperCase() + result.slice(1);
+    let result = camelCaseString.replace(/([A-Z])/g, ' $1')
+    result = result.trim().toLowerCase()
+    result = result.charAt(0).toUpperCase() + result.slice(1)
     return result.replace(/\s+([a-z])/g, (_, p1) => {
-      return ' ' + p1.toUpperCase();
-    });
-  };
+      return ' ' + p1.toUpperCase()
+    })
+  }
 
   static fromPlay(gameId: number, teams: { home: GameTeam; away: GameTeam }, play: Play, players: PlayerSummary[]) {
     const homeAbbreviation = teams.home.abbreviation

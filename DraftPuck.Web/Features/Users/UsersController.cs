@@ -74,12 +74,4 @@ public class UsersController(IMediator mediator) : BaseController()
         var userDto = await mediator.Send(command);
         return Created($"/user/{userDto.Id}", userDto);
     }
-
-    [HttpGet("{id}/lobbies")]
-    public async Task<IActionResult> GetLobbiesByUser(Guid id)
-    {
-        var query = new GetLobbiesByUserQuery() { UserId = id };
-        var lobbyDtos = await mediator.Send(query);
-        return Ok(lobbyDtos);
-    }
 }

@@ -29,10 +29,6 @@ class UserService {
   public async updateUser(id: string, request: UpdateUserRequest): Promise<User> {
     return this._http.patch(id, request)
   }
-
-  public async getLobbies(id: string): Promise<Array<UserLobbySummary>> {
-    return this._http.get(`${id}/lobbies`)
-  }
 }
 
 export default new UserService()

@@ -1,4 +1,6 @@
-﻿namespace DraftPuck.Application.Features.Lobbies;
+﻿using DraftPuck.Application.Features.Lobbies.Members;
+
+namespace DraftPuck.Application.Features.Lobbies;
 
 public class LobbyDto
 {
