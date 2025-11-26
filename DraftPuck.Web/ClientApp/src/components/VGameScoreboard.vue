@@ -114,6 +114,7 @@ function setUpBotAutoPicking() {
 }
 
 function makeBotAutoPicksIfAvailable() {
+  if (!isPickingStarted.value) return
   if (botsHavePicks(game.value.homeTeam)) makeBotPicks(game.value.homeTeam)
   if (botsHavePicks(game.value.awayTeam)) makeBotPicks(game.value.awayTeam)
 }
