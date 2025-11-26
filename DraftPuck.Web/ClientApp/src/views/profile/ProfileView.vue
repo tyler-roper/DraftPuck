@@ -23,9 +23,9 @@ const notFound = ref(false)
 const bannerPath = computed(() => `url(${profileUser.value?.banner.imagePath})`)
 const allAchievements = ref<Array<Achievement>>([])
 const achievementCompletionPercentage = computed(() => {
-  if ((currentUser.value?.achievements?.length ?? 0) === 0) return 0
+  if ((profileUser.value?.achievements?.length ?? 0) === 0) return 0
 
-  return Math.floor((currentUser.value!.achievements.length / allAchievements.value.length) * 100)
+  return Math.floor((profileUser.value!.achievements.length / allAchievements.value.length) * 100)
 })
 //#endregion
 
@@ -153,7 +153,7 @@ watch(
             <div class="d-flex align-items-center justify-content-between flex-grow-1">
               <div class="fs-6 text-stone-0 py-3 d-flex align-items-center">
                 <span class="me-1 fs-3 my-n3 me-2">🏆</span>
-                <span>{{ currentUser?.achievements.length ?? 0 }}</span>
+                <span>{{ profileUser?.achievements.length ?? 0 }}</span>
                 <span class="mx-1">/</span>
                 <span>{{ allAchievements.length }}</span>
                 <span class="ms-2">Earned</span>
