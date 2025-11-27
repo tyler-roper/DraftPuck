@@ -10,16 +10,12 @@ public static class TelemetryServiceCollectionExtensions
 {
     public static IServiceCollection AddTelemetry(this IServiceCollection services, IConfiguration config)
     {
-        Console.WriteLine("ADD TELEMETRY");
         var telemetryOptions = config.GetSection(TelemetryOptions.SectionName).Get<TelemetryOptions>() ?? new TelemetryOptions();
         services.Configure<TelemetryOptions>(config.GetSection(TelemetryOptions.SectionName));
 
         var isProd = config.GetValue<string>("ASPNETCORE_ENVIRONMENT") == "Production";
         if (!isProd || !telemetryOptions.EnableTracing)
-        {
-            Console.WriteLine($"isProd: {isProd}, enableTracing: {telemetryOptions.EnableTracing}");
             return services;
-        }
 
         var serviceName = "DraftPuck";
         var serviceVersion = "1.0.0";
@@ -55,7 +51,6 @@ public static class TelemetryServiceCollectionExtensions
             });
 
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TracingBehavior<,>));
-        Console.WriteLine("DONE ADDING TELEMETRY");
         return services;
     }
 }

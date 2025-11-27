@@ -11,20 +11,18 @@ public static class LobbyQueryExtensions
                 l => l.LobbyMembers.Where(lm => includeRemoved || !lm.IsRemoved);
 
         return query
+            .AsSplitQuery()
             .Include(lobbyMembersSelector)
                 .ThenInclude(lm => lm.LobbyMemberPicks
                     .Where(lmp => lmp.IsActive))
                     .ThenInclude(lmp => lmp.Drinks)
-
             .Include(lobbyMembersSelector)
                 .ThenInclude(lm => lm.Messages
                     .Where(m => includeRemoved || !m.IsDeleted))
-
             .Include(lobbyMembersSelector)
                 .ThenInclude(lm => lm.User)
                     .ThenInclude(u => u.UserBanners)
                         .ThenInclude(ub => ub.Banner)
-
             .Include(lobbyMembersSelector)
                 .ThenInclude(lm => lm.User)
                     .ThenInclude(u => u.UserTitles)
