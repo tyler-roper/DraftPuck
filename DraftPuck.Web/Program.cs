@@ -6,6 +6,7 @@ using DraftPuck.Shared.Discord;
 using DraftPuck.Web.Features.Lobbies;
 using DraftPuck.Web.Filters;
 using DraftPuck.Web.Hubs;
+using DraftPuck.Web.Telemetry;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System.Text.Json.Serialization;
@@ -47,7 +48,8 @@ try
         .AddEndpointsApiExplorer()
         .AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(LobbyEventCreatedHandler).Assembly))
         .AddApplication()
-        .ConfigureAuth(builder.Configuration, builder.Environment);
+        .ConfigureAuth(builder.Configuration, builder.Environment)
+        .AddTelemetry(builder.Configuration);
 }
 catch (Exception ex)
 {
