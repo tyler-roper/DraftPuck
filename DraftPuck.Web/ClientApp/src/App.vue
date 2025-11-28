@@ -16,8 +16,7 @@ const { initialize: initializeUser } = useUserStore()
 const { initialize: initializeFirebase } = useFirebaseStore()
 
 onMounted(async () => {
-  initializeUser()
-  initializeFirebase()
+  initializeUser().then(initializeFirebase)
   initializeGameSummaries()
   await initAppSettings()
 

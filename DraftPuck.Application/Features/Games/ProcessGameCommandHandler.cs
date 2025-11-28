@@ -108,7 +108,7 @@ public class ProcessGameCommandHandler(IGameCache gameCache, IMediator mediator,
         updatedGame.HomeTeam.Roster = [.. homeRoster.OrderByDescending(p => p.Goals)];
         updatedGame.AwayTeam.Roster = [.. awayRoster.OrderByDescending(p => p.Goals)];
 
-        GameProcessingHelpers.SetPlayDateTimes(updatedGame, _appConfig.CurrentTimeUtc, cachedGame);
+        GameProcessingHelpers.SetPlayDateTimes(updatedGame, _appConfig.CurrentTimeUtc, _appConfig.IsTestMode, cachedGame);
         GameProcessingHelpers.HandleTestMode(updatedGame, _appConfig);
 
         var goalsBefore = GetGoalSummaries(cachedGame);

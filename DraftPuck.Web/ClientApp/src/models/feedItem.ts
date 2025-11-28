@@ -78,9 +78,6 @@ export default class FeedItem {
     //set color, player, image
     if (play.type === PlayType.Penalty || play.type === PlayType.Goal) {
       teamColor = TeamColorLookup[play.primaryTeamId!]
-
-      if (!teamColor) console.log(play.primaryTeamId)
-
       const scoringTeamAbbreviation = play.primaryTeamId! === teams.home.id ? homeAbbreviation : awayAbbreviation
 
       if (scoringTeamAbbreviation) {

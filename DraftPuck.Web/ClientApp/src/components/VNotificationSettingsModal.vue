@@ -4,10 +4,12 @@ import VButton from '@/components/VButton.vue'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
 import { useToast } from 'vue-toastification'
+import { useFirebaseStore } from '@/stores/firebase'
 
 const userStore = useUserStore()
 const { currentUser } = storeToRefs(userStore)
 const toast = useToast()
+const firebase = useFirebaseStore()
 
 const emit = defineEmits(['close'])
 const stopPropagation = (e: Event) => e.stopPropagation()
@@ -31,6 +33,7 @@ async function save() {
   isSaving.value = true
   try {
     await userStore.updateUser(notificationSettings.value)
+    await firebase.initialize()
     isSaving.value = false
     close()
     toast.success('Preferences saved!', { timeout: 2000 })

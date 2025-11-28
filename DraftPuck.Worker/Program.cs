@@ -1,5 +1,6 @@
 using DraftPuck.Application;
 using DraftPuck.Infrastructure;
+using DraftPuck.Shared.System;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Extensions.Configuration;
@@ -13,6 +14,7 @@ var builder = FunctionsApplication
 builder.Configuration.AddEnvironmentVariables("DRAFTPUCK_");
 
 builder.Services
+    .Configure<ApplicationOptions>(options => builder.Configuration.Bind(ApplicationOptions.SectionName, options))
     .AddInfrastructure(builder.Configuration)
     .AddApplication()
     .AddApplicationInsightsTelemetryWorkerService()

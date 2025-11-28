@@ -304,7 +304,6 @@ async function pauseLobbyConnection() {
   timers.value.forEach((t) => window.clearTimeout(t))
 
   // disconnect hub
-  console.log('STATE', hubConnection.state)
   await hubConnection.stop()
 
   // stop activity polling
@@ -384,7 +383,6 @@ async function initializeHubConnection() {
     .withAutomaticReconnect()
     .build()
 
-  hubConnection.onclose(() => console.log('Closing...'))
   hubConnection.on('LobbyEvent', dispatchLobbyEvent)
   hubConnection.on('Message', onNewMessage)
   hubConnection.on('LobbyStateChanged', getLobby)

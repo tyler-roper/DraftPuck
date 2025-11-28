@@ -18,7 +18,7 @@ public static class GameProcessingHelpers
         return gameAdjusted == nowAdjusted;
     }
 
-    public static void SetPlayDateTimes(GameDto updatedGame, DateTime currentUtcTime, GameDto? cachedGame = null)
+    public static void SetPlayDateTimes(GameDto updatedGame, DateTime currentUtcTime, bool isTestMode = false, GameDto? cachedGame = null)
     {
         const int FULL_PERIOD_DURATION_MINS = 40;
         const int SHORT_PERIOD_DURATION_MINS = 7;
@@ -50,7 +50,9 @@ public static class GameProcessingHelpers
 
             var totalOffset = durationBeforePeriod + timeInCurrentPeriod;
             var calculatedTime = estimatedStartTime.Add(totalOffset);
-            play.DateTime = Min(calculatedTime, currentUtcTime);
+            play.DateTime = isTestMode
+                ? calculatedTime
+                : Min(calculatedTime, currentUtcTime);
         }
     }
 

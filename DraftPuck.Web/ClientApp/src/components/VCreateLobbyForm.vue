@@ -28,7 +28,6 @@ const userStore = useUserStore()
 const gameSummariesStore = useGameSummariesStore()
 const { isLoggedIn } = storeToRefs(userStore)
 const isNotLoggedIn = computed(() => !isLoggedIn.value)
-const hasLoadedGames = ref(false)
 const isCreatingLobby = ref(false)
 const { gameSummaries } = storeToRefs(gameSummariesStore)
 const isPlayAllGames = ref(true)
@@ -282,7 +281,7 @@ function removeBot(bot: Bot) {
               <div class="bot-strategy">
                 <VInputWrapper small icon="check">
                   <select v-model="bot.pickStyle" class="dark borderless">
-                    <option v-for="o in botPickStyleOptions" :key="o.text" :value="o.value">
+                    <option v-for="o in botPickStyleOptions" :key="o.text" :value="Number(o.value)">
                       {{ o.text }}
                     </option>
                   </select>

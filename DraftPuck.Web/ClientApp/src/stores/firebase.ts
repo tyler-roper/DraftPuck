@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { initializeApp } from 'firebase/app'
 import { getMessaging, getToken, onMessage } from 'firebase/messaging'
 import { useUserStore } from '@/stores/user'
@@ -10,14 +10,14 @@ import VHtmlToast from '@/components/VHtmlToast.vue'
 export const useFirebaseStore = defineStore('firebase', () => {
   const isInitialized = ref(false)
   const notificationsSupported = ref('Notification' in window)
-  const permissionGranted = ref(Notification.permission === 'granted')
   const toast = useToast()
+
+  const isPermissionGranted = () => Notification.permission === 'granted'
 
   async function initialize() {
     if (isInitialized.value) return
-    isInitialized.value = true
 
-    if (!notificationsSupported.value || !permissionGranted.value) {
+    if (!notificationsSupported.value || !isPermissionGranted()) {
       await clearUserFcmToken()
       return
     }
@@ -62,6 +62,8 @@ export const useFirebaseStore = defineStore('firebase', () => {
       })
 
       await userStore.updateUser({ fcmRegistrationToken: token })
+
+      isInitialized.value = true
     } catch (err) {
       console.error('Firebase init failed', err)
     }
@@ -75,7 +77,6 @@ export const useFirebaseStore = defineStore('firebase', () => {
   return {
     isInitialized,
     notificationsSupported,
-    permissionGranted,
     initialize
   }
 })
