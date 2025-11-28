@@ -57,11 +57,11 @@ const fontSize = computed(() => {
   return `${size * ratio}px`
 })
 
-const loggedInUserLinks = ref<Array<UserLink>>([
+const loggedInUserLinks = computed<Array<UserLink>>(() => ([
   { path: `/u/${user.value?.nickname}`, text: 'Profile', iconPrefix: 'sr', icon: 'user-pen' },
   { path: '/account/lobbies', text: 'My Lobbies', iconPrefix: 'sr', icon: 'users-alt' },
   { action: logout, text: 'Logout', class: 'text-primary', iconPrefix: 'sr', icon: 'exit' }
-])
+]))
 
 const adminUserLinks = computed<Array<UserLink>>(() => ([
   ...loggedInUserLinks.value.filter(l => l.text !== 'Logout'),
@@ -69,10 +69,10 @@ const adminUserLinks = computed<Array<UserLink>>(() => ([
   { action: logout, text: 'Logout', class: 'text-primary', iconPrefix: 'sr', icon: 'exit' }
 ]))
 
-const guestUserLinks = ref<Array<UserLink>>([
+const guestUserLinks = computed<Array<UserLink>>(() => ([
   { path: loginPath.value, text: 'Log In', iconPrefix: 'sr', icon: 'sign-in-alt' },
   { path: joinPath.value, text: 'Sign Up', iconPrefix: 'sr', icon: 'hockey-puck', class: 'text-primary' }
-])
+]))
 
 const userLinks = computed(() => {
   if (isSelf.value !== true) return []

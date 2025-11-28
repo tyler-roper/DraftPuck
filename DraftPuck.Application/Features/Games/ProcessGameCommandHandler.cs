@@ -1,9 +1,10 @@
-﻿using Microsoft.Extensions.Options;
+﻿using DraftPuck.Application.Features.Lobbies.Picks;
+using Microsoft.Extensions.Options;
 using System.Text;
 
 namespace DraftPuck.Application.Features.Games;
 
-public class ProcessGameCommandHandler(IGameCache gameCache, IMediator mediator, INhlClient nhlClient, INhlQueueService nhlQueue, IOptions<ApplicationOptions> appConfig, ILogger<ProcessGameCommandHandler> logger) : IRequestHandler<ProcessGameCommand>
+public class ProcessGameCommandHandler(IGameCache gameCache, IMediator mediator, IDbContext dbContext, INhlClient nhlClient, INhlQueueService nhlQueue, IOptions<ApplicationOptions> appConfig, ILogger<ProcessGameCommandHandler> logger) : IRequestHandler<ProcessGameCommand>
 {
     private readonly ApplicationOptions _appConfig = appConfig.Value;
 
@@ -62,21 +63,39 @@ public class ProcessGameCommandHandler(IGameCache gameCache, IMediator mediator,
             cachedGame = updatedGame;
         }
 
+        var updatedHomeSummaries = updatedGame.PlayerSummaries
+            .Where(ps => ps.TeamId == cachedGame.HomeTeam.Id)
+            .ToList();
+
+        var updatedAwaySummaries = updatedGame.PlayerSummaries
+            .Where(ps => ps.TeamId == cachedGame.AwayTeam.Id)
+            .ToList();
+
+        await HandleRemovedPlayersAsync(cachedGame, updatedGame, updatedHomeSummaries, updatedAwaySummaries, ct);
+
         var homeRoster = cachedGame.HomeTeam.Roster;
         var awayRoster = cachedGame.AwayTeam.Roster;
-        var updatedHomeSummaries = updatedGame.PlayerSummaries.Where(ps => ps.TeamId == cachedGame.HomeTeam.Id).ToList();
-        var updatedAwaySummaries = updatedGame.PlayerSummaries.Where(ps => ps.TeamId == cachedGame.AwayTeam.Id).ToList();
 
         if (!request.IsInitialPopulation) //skip blocking the api queue with player requests until we've got the latest copy of each game
         {
-            if (homeRoster.Count != updatedHomeSummaries.Count)
+            var oldHomePlayerIds = homeRoster.Select(p => p.Id).ToHashSet();
+            var updatedHomePlayerIds = updatedHomeSummaries.Select(s => s.Id).ToHashSet();
+
+            bool homeRosterChanged = !oldHomePlayerIds.SetEquals(updatedHomePlayerIds);
+
+            var oldAwayPlayerIds = awayRoster.Select(p => p.Id).ToHashSet();
+            var updatedAwayPlayerIds = updatedAwaySummaries.Select(s => s.Id).ToHashSet();
+
+            bool awayRosterChanged = !oldAwayPlayerIds.SetEquals(updatedAwayPlayerIds);
+
+            if (homeRosterChanged)
             {
                 var playerDtos = await FetchPlayerDetails(updatedHomeSummaries);
                 playerDtos.ForEach(p => p.TeamId = cachedGame.HomeTeam.Id); // Overwrite player's usual team with their current team (e.g., they play for LAK but this is a USA vs Canada game)
                 homeRoster = playerDtos;
             }
 
-            if (awayRoster.Count != updatedAwaySummaries.Count)
+            if (awayRosterChanged)
             {
                 var playersDto = await FetchPlayerDetails(updatedAwaySummaries);
                 playersDto.ForEach(p => p.TeamId = cachedGame.AwayTeam.Id);
@@ -247,5 +266,49 @@ public class ProcessGameCommandHandler(IGameCache gameCache, IMediator mediator,
         }
 
         return null;
+    }
+
+    private async Task HandleRemovedPlayersAsync(GameDto cachedGame, GameDto updatedGame, IReadOnlyList<PlayerSummaryDto> updatedHomeSummaries, IReadOnlyList<PlayerSummaryDto> updatedAwaySummaries, CancellationToken ct)
+    {
+        var oldHome = cachedGame.HomeTeam.Roster;
+        var oldAway = cachedGame.AwayTeam.Roster;
+
+        var newHomeIds = updatedHomeSummaries.Select(s => s.Id).ToHashSet();
+        var newAwayIds = updatedAwaySummaries.Select(s => s.Id).ToHashSet();
+
+        var removedHomePlayers = oldHome.Where(p => !newHomeIds.Contains(p.Id)).ToList();
+        var removedAwayPlayers = oldAway.Where(p => !newAwayIds.Contains(p.Id)).ToList();
+        var removedPlayers = removedHomePlayers.Concat(removedAwayPlayers).ToList();
+
+        if (removedPlayers.Count == 0)
+            return;
+
+        var removedPlayerIds = removedPlayers.Select(p => p.Id).ToList();
+
+        var picksToRemove = await dbContext.LobbyMemberPicks
+            .AsNoTracking()
+            .Include(p => p.LobbyMember)
+                .ThenInclude(lm => lm.Lobby)
+            .Where(p => removedPlayerIds.Contains(p.PlayerId)
+                        && p.GameId == updatedGame.Id
+                        && p.IsActive)
+            .ToListAsync(ct);
+
+        foreach (var pick in picksToRemove)
+        {
+            await mediator.Send(new RemovePickCommand
+            {
+                PickId = pick.Id,
+                Code = pick.LobbyMember.Lobby.JoinCode,
+                UserId = pick.LobbyMember.UserId
+            }, ct);
+        }
+
+        logger.LogInformation(
+            "Removed {count} picks because players left the lineup for {away} @ {home}.",
+            picksToRemove.Count,
+            updatedGame.AwayTeam.Abbreviation,
+            updatedGame.HomeTeam.Abbreviation
+        );
     }
 }
