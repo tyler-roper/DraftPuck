@@ -14,7 +14,8 @@ public static class TelemetryServiceCollectionExtensions
         services.Configure<TelemetryOptions>(config.GetSection(TelemetryOptions.SectionName));
 
         var isProd = config.GetValue<string>("ASPNETCORE_ENVIRONMENT") == "Production";
-        if (!isProd || !telemetryOptions.EnableTracing) return services;
+        if (!isProd || !telemetryOptions.EnableTracing)
+            return services;
 
         var serviceName = "DraftPuck";
         var serviceVersion = "1.0.0";

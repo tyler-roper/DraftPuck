@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import useVuelidate from '@vuelidate/core'
 import { helpers, required, requiredIf, maxLength, minLength, maxValue, minValue, integer } from '@vuelidate/validators'
 import VInputWrapper from '@/components/VInputWrapper.vue'
@@ -20,15 +20,17 @@ import LobbyService from '@/services/LobbyService'
 import CreateLobbyRequest from '@/models/createLobbyRequest'
 import { useToast } from 'vue-toastification'
 import { useRouter } from 'vue-router'
+import { useGameSummariesStore } from '@/stores/gameSummaries'
 
 //#region data
 const maxBotCount = 5
 const userStore = useUserStore()
+const gameSummariesStore = useGameSummariesStore()
 const { isLoggedIn } = storeToRefs(userStore)
 const isNotLoggedIn = computed(() => !isLoggedIn.value)
 const hasLoadedGames = ref(false)
 const isCreatingLobby = ref(false)
-const gameSummaries = ref<Array<GameSummary>>([])
+const { gameSummaries } = storeToRefs(gameSummariesStore)
 const isPlayAllGames = ref(true)
 const tableHeight = computed(() => `${gameSummaries.value.length * 28.18}px`)
 const botPickStyleOptions = [
@@ -77,7 +79,7 @@ const v$ = useVuelidate<CreateLobbyViewModel>(rules, form)
 //#endregion
 
 //#region hooks
-;(async () => {
+onMounted(async () => {
   if (isLoggedIn.value) {
     form.value.nickname = userStore.currentUser!.nickname!
   } else {
@@ -87,12 +89,9 @@ const v$ = useVuelidate<CreateLobbyViewModel>(rules, form)
     form.value.nickname = userStore.currentUser?.nickname ?? latestLobby?.name ?? ''
   }
 
-  gameSummaries.value = (await GameService.getAllGameSummaries())
-    .filter((g) => g.gameState !== GameState.Final)
-    .sort((a, b) => compareAsc(a.dateTime, b.dateTime))
-  form.value.gameIds = gameSummaries.value.map((g) => g.id)
-  hasLoadedGames.value = true
-})()
+  await gameSummariesStore.loadGameSummaries()
+  form.value.gameIds = gameSummariesStore.gameSummaries.map((s) => s.id)
+})
 //#endregion
 
 //#region methods
@@ -172,7 +171,7 @@ function removeBot(bot: Bot) {
 </script>
 
 <template>
-  <form @submit="createLobby">
+  <form v-if="gameSummaries.length" @submit="createLobby">
     <div class="row mb-3" v-if="!isLoggedIn">
       <div class="col-12">
         <div class="d-flex justify-content-between">
@@ -303,6 +302,9 @@ function removeBot(bot: Bot) {
       </div>
     </div>
   </form>
+  <div v-else class="text-center fs-5 fw-bold text-stone-300">
+    No games tonight,<br>check back tomorrow!
+  </div>
 </template>
 
 <style scoped lang="scss">

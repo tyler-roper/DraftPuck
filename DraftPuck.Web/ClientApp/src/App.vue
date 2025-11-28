@@ -6,9 +6,10 @@ import { storeToRefs } from 'pinia'
 import { format } from 'date-fns'
 import { useSystemStore } from '@/stores/system'
 import { useFirebaseStore } from '@/stores/firebase'
+import { useGameSummariesStore } from './stores/gameSummaries'
 
 const systemStore = useSystemStore()
-
+const { loadGameSummaries: initializeGameSummaries } = useGameSummariesStore()
 const { appIsTestMode, currentSystemTime } = storeToRefs(systemStore)
 const { initAppSettings, updateSystemTime } = systemStore
 const { initialize: initializeUser } = useUserStore()
@@ -17,7 +18,7 @@ const { initialize: initializeFirebase } = useFirebaseStore()
 onMounted(async () => {
   initializeUser()
   initializeFirebase()
-
+  initializeGameSummaries()
   await initAppSettings()
 
   updateSystemTime()

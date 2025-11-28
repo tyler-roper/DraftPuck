@@ -67,6 +67,9 @@ public partial class DraftPuckContext : DbContext, IDbContext
             entity.HasOne(d => d.RecipientLobbyMember).WithMany(p => p.Drinks)
                 .HasForeignKey(d => d.RecipientLobbyMemberId)
                 .HasConstraintName("FK_Drinks_LobbyMembers");
+
+            entity.HasIndex(e => new { e.LobbyMemberPickId, e.EventId })
+                .HasDatabaseName("IX_Drinks_Pick_Event");
         });
 
 
@@ -94,6 +97,9 @@ public partial class DraftPuckContext : DbContext, IDbContext
                 .HasForeignKey(d => d.CreatedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Lobbies_People");
+
+            entity.HasIndex(e => e.IsActive)
+                .HasDatabaseName("IX_Lobbies_IsActive");
         });
 
         modelBuilder.Entity<LobbyEventEntity>(entity =>
@@ -124,6 +130,9 @@ public partial class DraftPuckContext : DbContext, IDbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_LobbyMembers_People");
+
+            entity.HasIndex(e => e.LobbyId)
+                .HasDatabaseName("IX_LobbyMembers_LobbyId");
         });
 
         modelBuilder.Entity<LobbyMemberPickEntity>(entity =>
@@ -136,6 +145,16 @@ public partial class DraftPuckContext : DbContext, IDbContext
                 .HasForeignKey(d => d.LobbyMemberId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_LobbyMemberPicks_LobbyMembers");
+
+            entity.HasIndex(e => new { e.LobbyMemberId, e.IsActive })
+                .HasDatabaseName("IX_LobbyMemberPicks_LobbyMemberId_IsActive");
+
+            entity.HasIndex(e => new { e.GameId, e.PlayerId, e.IsActive })
+                .HasDatabaseName("IX_LobbyMemberPicks_Game_Player_Active");
+
+            // 2. Index to speed up join to LobbyMember
+            entity.HasIndex(e => e.LobbyMemberId)
+                .HasDatabaseName("IX_LobbyMemberPicks_LobbyMemberId");
         });
 
         modelBuilder.Entity<MessageEntity>(entity =>
@@ -150,6 +169,9 @@ public partial class DraftPuckContext : DbContext, IDbContext
                 .HasForeignKey(d => d.LobbyMemberId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Messages_LobbyMembers");
+
+            entity.HasIndex(m => new { m.LobbyMemberId, m.IsDeleted })
+                .HasDatabaseName("IX_Messages_LobbyMemberId_IsDeleted");
         });
 
         modelBuilder.Entity<TitleEntity>(entity =>
