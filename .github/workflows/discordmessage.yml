@@ -3,8 +3,8 @@ name: Discord Notification
 on:
   push:
     branches:
-      - main
       - develop
+      - main
 
 jobs:
   discord-notify:
@@ -17,4 +17,8 @@ jobs:
           DISCORD_USERNAME: "DevBot"
           DISCORD_AVATAR: "https://draftpuck.com/img/logo-icon-only-2.png"
         with:
-          args: '🚀 New push to **{{ EVENT_PAYLOAD.repository.full_name }}** on `{{ EVENT_PAYLOAD.ref }}`. \n\n**Commit:** {{ EVENT_PAYLOAD.head_commit.message }} \n👉 [View Diff]({{ EVENT_PAYLOAD.compare }})'
+          args: |
+            A commit has been pushed:
+              **Target:** `{{ EVENT_PAYLOAD.ref }}`
+              **Commit:** {{ EVENT_PAYLOAD.head_commit.message }}
+              ([View Diff]({{ EVENT_PAYLOAD.compare }}))
