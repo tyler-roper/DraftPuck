@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using DraftPuck.Infrastructure.SignalR;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
@@ -6,20 +7,29 @@ using StackExchange.Redis;
 namespace DraftPuck.Infrastructure.Redis;
 public static class RedisServiceCollectionExtensions
 {
-    public static IServiceCollection AddRedis(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddRedisAndSignalR(this IServiceCollection services, IConfiguration configuration)
     {
-        services.Configure<RedisOptions>(configuration.GetSection(RedisOptions.SectionName));
+        var section = configuration.GetSection(RedisOptions.SectionName);
+        services.Configure<RedisOptions>(section);
 
-        services.AddSingleton(sp =>
-        {
-            var options = sp.GetRequiredService<IOptions<RedisOptions>>().Value;
-            if (string.IsNullOrEmpty(options?.ConnectionString))
-                throw new InvalidOperationException("Redis Connection String is required but missing.");
+        var options = section.Get<RedisOptions>();
+        if (string.IsNullOrEmpty(options?.ConnectionString))
+            throw new InvalidOperationException("Redis Connection String is required but missing.");
 
-            return ConnectionMultiplexer.Connect(options.ConnectionString);
-        });
+        var multiplexer = ConnectionMultiplexer.Connect(options.ConnectionString);
+        services.AddSingleton(multiplexer);
+        services.AddSingleton<IConnectionMultiplexer>(multiplexer);
+        services.AddSingleton(sp => multiplexer.GetDatabase());
 
-        return services.AddSingleton(sp =>
-            sp.GetRequiredService<ConnectionMultiplexer>().GetDatabase());
+        services.AddSignalR()
+                .AddStackExchangeRedis(o =>
+                {
+                    o.ConnectionFactory = async writer => multiplexer;
+                    o.Configuration.ChannelPrefix = RedisChannel.Literal("DraftPuckSignalR");
+                });
+
+        services.AddScoped<IClientEventService, LobbyClientEventService>();
+
+        return services;
     }
 }

@@ -1,8 +1,8 @@
 ﻿using DraftPuck.Application.Features.Lobbies.Events;
 using DraftPuck.Application.Features.Lobbies.Messages;
-using DraftPuck.Web.Hubs;
+using Microsoft.AspNetCore.SignalR;
 
-namespace DraftPuck.Web.Features.Lobbies;
+namespace DraftPuck.Infrastructure.SignalR;
 
 public class LobbyClientEventService(IHubContext<LobbyHub> hubContext) : IClientEventService
 {

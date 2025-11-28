@@ -1,6 +1,7 @@
-﻿using System.Collections.Concurrent;
+﻿using Microsoft.AspNetCore.SignalR;
+using System.Collections.Concurrent;
 
-namespace DraftPuck.Web.Hubs;
+namespace DraftPuck.Infrastructure.SignalR;
 
 public class LobbyHub : Hub
 {

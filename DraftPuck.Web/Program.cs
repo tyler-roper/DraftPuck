@@ -1,14 +1,13 @@
 using DraftPuck.Application;
+using DraftPuck.Application.Features.Lobbies.Events;
 using DraftPuck.Infrastructure;
 using DraftPuck.Infrastructure.Auth;
 using DraftPuck.Infrastructure.Persistence;
+using DraftPuck.Infrastructure.SignalR;
 using DraftPuck.Shared.Discord;
-using DraftPuck.Web.Features.Lobbies;
 using DraftPuck.Web.Filters;
-using DraftPuck.Web.Hubs;
 using DraftPuck.Web.Telemetry;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,13 +28,6 @@ builder.Services.AddMvc(options =>
     options.EnableEndpointRouting = false;
 });
 
-
-builder.Services.AddSignalR(options =>
-{
-    options.EnableDetailedErrors = true;
-    options.ClientTimeoutInterval = TimeSpan.FromMinutes(30);
-});
-
 try
 {
     builder.Services
@@ -44,9 +36,7 @@ try
         .Configure<SystemOptions>(options => builder.Configuration.Bind(SystemOptions.SectionName, options))
         .AddHttpContextAccessor()
         .AddInfrastructure(builder.Configuration)
-        .AddScoped<IClientEventService, LobbyClientEventService>()
         .AddEndpointsApiExplorer()
-        .AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(LobbyEventCreatedHandler).Assembly))
         .AddApplication()
         .ConfigureAuth(builder.Configuration, builder.Environment)
         .AddTelemetry(builder.Configuration);

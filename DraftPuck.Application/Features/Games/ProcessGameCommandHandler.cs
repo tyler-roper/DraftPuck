@@ -126,7 +126,7 @@ public class ProcessGameCommandHandler(IGameCache gameCache, IMediator mediator,
         logMessage.Append(pollingMessage);
         logger.LogInformation(logMessage.ToString());
 
-        await TriggerPregameAlerts(updatedGame, _appConfig.CurrentTimeUtc, ct);
+        await TriggerPregameEvents(updatedGame, _appConfig.CurrentTimeUtc, ct);
 
         if (pollAgainDelay != null)
         {
@@ -229,12 +229,13 @@ public class ProcessGameCommandHandler(IGameCache gameCache, IMediator mediator,
         }
     }
 
-    private async Task TriggerPregameAlerts(GameDto game, DateTime utcNow, CancellationToken ct)
+    private async Task TriggerPregameEvents(GameDto game, DateTime utcNow, CancellationToken ct)
     {
         var homeComplete = game.HomeTeam.Roster.Count == game.PlayerSummaries.Count(ps => ps.TeamId == game.HomeTeam.Id);
         var awayComplete = game.AwayTeam.Roster.Count == game.PlayerSummaries.Count(ps => ps.TeamId == game.AwayTeam.Id);
-        var isWithin30Min = (game.DateTime - utcNow) <= TimeSpan.FromMinutes(30)
-                            && (game.DateTime - utcNow) > TimeSpan.Zero;
+        var isWithin30Min = (game.DateTime - utcNow) <= TimeSpan.FromMinutes(30) && (game.DateTime - utcNow) > TimeSpan.Zero;
+
+        if (homeComplete && awayComplete) await mediator.Publish(new BotPicksReadyNotification(game), ct);
 
         if (homeComplete && awayComplete && isWithin30Min)
         {

@@ -52,6 +52,10 @@
     <ProjectReference Include="..\DraftPuck.Infrastructure\DraftPuck.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Hubs\" />
+  </ItemGroup>
+
   <Target Name="ReleaseBuildWeb" BeforeTargets="BeforeBuild" Condition="'$(Configuration)' == 'Release'">
     <Message Text="npm run build:release" />
     <Exec Command="npm run build:release" WorkingDirectory="$(ProjectDir)ClientApp" />

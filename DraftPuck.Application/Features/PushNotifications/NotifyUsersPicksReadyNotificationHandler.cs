@@ -3,7 +3,7 @@ using DraftPuck.Shared.Firebase;
 using Microsoft.Extensions.Options;
 
 namespace DraftPuck.Application.Features.PushNotifications;
-public class PicksReadyNotificationHandler(IDbContext dbContext, IGameCache gameCache, IPushNotificationService pushService, IOptions<ApplicationOptions> appConfig, ILogger<PicksReadyNotificationHandler> logger) : INotificationHandler<PicksReadyNotification>
+public class NotifyUsersPicksReadyNotificationHandler(IDbContext dbContext, IGameCache gameCache, IPushNotificationService pushService, IOptions<ApplicationOptions> appConfig, ILogger<NotifyUsersPicksReadyNotificationHandler> logger) : INotificationHandler<PicksReadyNotification>
 {
     private readonly ApplicationOptions _appConfig = appConfig.Value;
     public async Task Handle(PicksReadyNotification notification, CancellationToken ct)

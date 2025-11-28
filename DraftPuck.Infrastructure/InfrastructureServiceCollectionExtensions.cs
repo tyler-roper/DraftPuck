@@ -22,7 +22,7 @@ public static class InfrastructureServiceCollectionExtensions
             .AddNhlApi(configuration)
             .AddPersistence(configuration.GetConnectionString("DefaultConnection"))
             .AddFirebase(configuration)
-            .AddRedis(configuration)
+            .AddRedisAndSignalR(configuration)
             .AddQueueServices(configuration)
             .AddBlobStorageServices(configuration)
             .AddAutoMapperLicensed(configuration, typeof(UserMappingProfile).Assembly, typeof(GameMappingProfile).Assembly)

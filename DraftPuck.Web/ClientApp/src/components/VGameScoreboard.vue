@@ -5,9 +5,6 @@ import { addMinutes, formatDuration, intervalToDuration, format } from 'date-fns
 import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
 import { useToast } from 'vue-toastification'
-import type Bot from '@/models/bot'
-import BotPickStyle from '@/enums/botPickStyle'
-import BotFallbackPickStrategy from '@/enums/botFallbackPickStrategy'
 import TeamColors from '@/models/teamColorLookup'
 import { getOrdinal } from '@/helpers/gameHelpers'
 import GameState from '@/enums/gameState'
@@ -97,8 +94,6 @@ const strengthString = computed(() => {
 //hooks
 ;(async function onCreated() {
   updateTimeUntilPicking()
-  const isBotAutoPickingEnabled = lobby.value && lobby.value.isBotAutoPickingEnabled
-  if (isBotAutoPickingEnabled && gameIsPickable.value === true) setUpBotAutoPicking()
 
   if (!isPickingStarted.value && gameIsPickable.value === true) {
     pickingStartingTimer.value = window.setInterval(() => {
@@ -108,17 +103,6 @@ const strengthString = computed(() => {
 })()
 
 //methods
-function setUpBotAutoPicking() {
-  makeBotAutoPicksIfAvailable()
-  window.setInterval(makeBotAutoPicksIfAvailable, 10000)
-}
-
-function makeBotAutoPicksIfAvailable() {
-  if (!isPickingStarted.value) return
-  if (botsHavePicks(game.value.homeTeam)) makeBotPicks(game.value.homeTeam)
-  if (botsHavePicks(game.value.awayTeam)) makeBotPicks(game.value.awayTeam)
-}
-
 function updateTimeUntilPicking() {
   isPickingStarted.value = pickTime.value <= currentSystemTime.value
   if (isPickingStarted.value) return window.clearInterval(pickingStartingTimer.value)
@@ -160,94 +144,6 @@ async function pick(playerId: number, teamId: number, lobbyMemberId?: string) {
   await pickPlayer(new PickRequest(lobbyMemberId, playerId, game.value.id, teamId))
 }
 
-async function makeBotPicks(team: GameTeam) {
-  setIsBotPicking(team, true)
-  const botsWithPicks = bots.value.filter((bot) => userHasPicksForTeam(bot, team))
-  const delayBetweenBotPicks = 1000
-  let waitTime = 0
-
-  botsWithPicks.forEach((bot, idx) => {
-    waitTime = idx * delayBetweenBotPicks
-    const picks = bot.picks
-    if (!team.roster || !picks) return false
-
-    const picksMade = picks.filter((p: LobbyMemberPick) => p.gameId === game.value.id && team.roster.some((r) => r.id === p.playerId)).length
-    const picksRemaining = lobby.value!.picksPerTeam - picksMade
-
-    for (let i = 0; i < picksRemaining; i++) {
-      window.setTimeout(async () => await makeBotPick(bot, team), waitTime)
-      waitTime += botsWithPicks.length * delayBetweenBotPicks
-    }
-  })
-
-  setTimeout(() => setIsBotPicking(team, false), waitTime - botsWithPicks.length * delayBetweenBotPicks)
-}
-
-function setIsBotPicking(team: GameTeam, value: boolean) {
-  if (isHome(team)) isBotPickingHome.value = value
-  else isBotPickingAway.value = value
-}
-
-async function makeBotPick(bot: Bot, team: GameTeam) {
-  const style = bot.botPickStyle
-  const availablePlayers = team.roster.filter((player) => !pickedPlayers.value[player.id] && player.position !== 'G')
-  const botPickStrategies = {
-    [BotPickStyle.Best]: {
-      preferredRange: [0, 0],
-      fallbackStrategy: BotFallbackPickStrategy.BestAvailable
-    },
-    [BotPickStyle.Good]: {
-      preferredRange: [0, 5],
-      fallbackStrategy: BotFallbackPickStrategy.BestBelowRange
-    },
-    [BotPickStyle.Average]: {
-      preferredRange: [5, 10],
-      fallbackStrategy: BotFallbackPickStrategy.BestBelowRange
-    },
-    [BotPickStyle.Bad]: {
-      preferredRange: [team.roster.length - 6, team.roster.length - 1],
-      fallbackStrategy: BotFallbackPickStrategy.WorstAboveRange
-    },
-    [BotPickStyle.Worst]: {
-      preferredRange: [team.roster.length - 1, team.roster.length - 1],
-      fallbackStrategy: BotFallbackPickStrategy.WorstAvailable
-    },
-    [BotPickStyle.Random]: {
-      preferredRange: [0, team.roster.length - 1],
-      fallbackStrategy: BotFallbackPickStrategy.Random
-    }
-  }
-
-  const [rangeStart, rangeEnd] = botPickStrategies[style].preferredRange
-  const fallbackStrategy = botPickStrategies[style].fallbackStrategy
-
-  const availablePlayerIds = availablePlayers.map((ap) => ap.id)
-  const preferredPlayers = team.roster.slice(rangeStart, rangeEnd + 1).filter((p) => availablePlayerIds.includes(p.id))
-  if (preferredPlayers.length) return await pick(preferredPlayers.random().id, team.id, bot.id)
-
-  if (fallbackStrategy === BotFallbackPickStrategy.BestAvailable) return await pick(availablePlayers[0].id, team.id, bot.id)
-
-  if (fallbackStrategy === BotFallbackPickStrategy.BestBelowRange) {
-    const availableBelowRange = team.roster.slice(rangeEnd).filter((p) => availablePlayers.includes(p))
-    if (availableBelowRange.length) return await pick(availableBelowRange[0].id, team.id, bot.id)
-    return await pick(availablePlayers[availablePlayers.length - 1].id, team.id, bot.id)
-  }
-
-  if (fallbackStrategy === BotFallbackPickStrategy.WorstAboveRange) {
-    const availableAboveRange = team.roster.slice(0, rangeStart + 1).filter((p) => availablePlayers.includes(p))
-    if (availableAboveRange.length) return await pick(availableAboveRange[availableAboveRange.length - 1].id, team.id, bot.id)
-    return await pick(availablePlayers[0].id, team.id, bot.id)
-  }
-
-  if (fallbackStrategy === BotFallbackPickStrategy.WorstAvailable) {
-    return await pick(availablePlayers[availablePlayers.length - 1].id, team.id, bot.id)
-  }
-
-  if (fallbackStrategy === BotFallbackPickStrategy.Random) {
-    return await pick(availablePlayers.random().id, team.id, bot.id)
-  }
-}
-
 //#region helpers
 function getGameTimeClasses(): { [key: string]: boolean } {
   if (!isInProgress.value) return {}
@@ -281,12 +177,6 @@ function isTeamLosing(team: GameTeam) {
 
 function isTeamWinning(team: GameTeam) {
   return team.score > getOpponent(team).score
-}
-
-function isBotPickingForTeam(team: GameTeam) {
-  if (isHome(team) && isBotPickingHome.value === true) return true
-  else if (!isHome(team) && isBotPickingAway.value === true) return true
-  else return false
 }
 
 function teamWon(team: GameTeam) {
@@ -493,18 +383,7 @@ function getFriendlyPosition(position: string) {
                   <table style="width: 100%" class="roster-table">
                     <thead>
                       <tr>
-                        <th colspan="3">
-                          <a
-                            v-if="gameIsPickable && botsHavePicks(team) && isLobbyAdmin && !isBotPickingForTeam(team)"
-                            @click="makeBotPicks(team)"
-                            role="button"
-                            style="height: 14px; line-height: 14px"
-                            class="text-decoration-none btn btn-primary py-0 fw-bold text-uppercase px-1 fs-8"
-                          >
-                            Make Bot Picks
-                          </a>
-                          <span v-if="botsHavePicks(team) && isLobbyAdmin && isBotPickingForTeam(team)"> Bots currently picking... </span>
-                        </th>
+                        <th colspan="3"></th>
                         <th class="text-right" style="width: 40px">GP</th>
                         <th class="text-right" style="width: 40px">G</th>
                         <th class="text-right" style="width: 40px">A</th>

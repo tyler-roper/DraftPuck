@@ -1,8 +1,6 @@
-﻿using AutoMapper;
-using DraftPuck.Application.Features.Lobbies.Events;
-using DraftPuck.Application.Features.Lobbies.Messages;
+﻿using DraftPuck.Application.Features.Lobbies.Messages;
 
-namespace DraftPuck.Web.Features.Lobbies;
+namespace DraftPuck.Application.Features.Lobbies.Events;
 
 public class LobbyEventCreatedHandler(IClientEventService clientEventService, IMapper mapper) :
     INotificationHandler<LobbyEventCreatedNotification>,
