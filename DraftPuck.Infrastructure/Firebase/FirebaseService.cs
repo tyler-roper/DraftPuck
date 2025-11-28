@@ -53,12 +53,12 @@ public class FirebaseService(IOptions<ApplicationOptions> appConfig, FirebaseApp
                 {
                     Title = title,
                     Body = message,
-                    Icon = $"{_appConfig.BasePath}/img/icons/icon-192.png",
-                    Badge = $"{_appConfig.BasePath}/img/icons/badge.png"
+                    Icon = $"{_appConfig.BasePath}img/icons/icon-192.png",
+                    Badge = $"{_appConfig.BasePath}img/icons/badge.png"
                 },
                 FcmOptions = new WebpushFcmOptions()
                 {
-                    Link = $"{_appConfig.BasePath}/lobby/{lobbyCode}"
+                    Link = $"{_appConfig.BasePath}lobby/{lobbyCode}"
                 }
             },
             Data = new Dictionary<string, string> { { "type", PushNotificationTypes.LOBBY_EVENT } }
