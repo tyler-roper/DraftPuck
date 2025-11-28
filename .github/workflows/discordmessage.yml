@@ -18,7 +18,9 @@ jobs:
           DISCORD_AVATAR: "https://draftpuck.com/img/logo-icon-only-2.png"
         with:
           args: |
-            ##A commit has been pushed:
+            A commit has been pushed:
+            **Target:** `{{ EVENT_PAYLOAD.ref }}`
             **Author:** {{ EVENT_PAYLOAD.head_commit.author.username }}
             **Commit:** {{ EVENT_PAYLOAD.head_commit.message }}
-            ([View Diff]({{ EVENT_PAYLOAD.compare }}))
+
+            ([**View Diff**]({{ EVENT_PAYLOAD.compare }}))
