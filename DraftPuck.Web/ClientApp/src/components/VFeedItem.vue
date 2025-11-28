@@ -106,6 +106,7 @@ function formatAsTime(date: Date | string) {
   align-items: center;
   justify-content: center;
   align-self: stretch;
+  flex-shrink: 0;
 }
 
 .logo-container {
