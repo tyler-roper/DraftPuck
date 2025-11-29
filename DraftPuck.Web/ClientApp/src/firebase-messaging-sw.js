@@ -13,3 +13,15 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig)
 const messaging = firebase.messaging()
+
+messaging.onBackgroundMessage(function(payload) {
+  const { title, body, icon, badge } = payload.notification;
+
+  self.registration.showNotification(title, {
+    body,
+    icon: icon ?? '/img/icons/icon-192.png',
+    badge: badge ?? '/img/icons/badge.png',
+    vibrate: [200, 100, 200],
+    data: payload.data ?? {}
+  });
+});
