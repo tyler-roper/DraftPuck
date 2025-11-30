@@ -28,6 +28,7 @@
     "pulltorefreshjs": "^0.1.22",
     "sass": "^1.69.3",
     "vue": "^3.3.4",
+    "vue-countup-v3": "^1.4.2",
     "vue-router": "^4.2.4",
     "vue-smart-suggest": "^1.1.0",
     "vue-toastification": "^2.0.0-rc.5",

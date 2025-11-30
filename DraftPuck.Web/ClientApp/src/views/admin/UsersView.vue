@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import ProfileSubsectionLayout from '@/views/layouts/ProfileSubsectionLayout.vue'
+import HeaderLayout from '@/views/layouts/HeaderLayout.vue'
 import VIcon from '@/components/VIcon.vue'
 import VUser from '@/components/VUser.vue'
 import AdminUserService from '@/services/admin/AdminUserService'
@@ -49,7 +49,7 @@ function getBadges(user: User) {
 </script>
 
 <template>
-  <ProfileSubsectionLayout title="Users" :show-save="false">
+  <HeaderLayout title="Users" :show-save="false">
     <div class="p-3">
       <div class="d-flex justify-content-between mb-3">
         <div class="me-2">
@@ -125,34 +125,11 @@ function getBadges(user: User) {
         </table>
       </div>
     </div>
-  </ProfileSubsectionLayout>
+  </HeaderLayout>
 </template>
 
 <style scoped lang="scss">
 @import '@/assets/scss/custom-colors.scss';
-
-.table-container {
-  overflow-x: auto;
-}
-
-.dp-table td,
-.dp-table th {
-  white-space: nowrap;
-}
-
-.dp-table td {
-  border-top: 1px solid map-get($custom-colors, 'stone-800');
-  padding: 10px 0;
-}
-
-.avatar {
-  width: 40px;
-  height: 40px;
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-position: center;
-  border-radius: 50%;
-}
 
 .status-badge {
   padding: 0px 5px;

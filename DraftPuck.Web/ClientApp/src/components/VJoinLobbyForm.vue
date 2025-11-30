@@ -49,6 +49,12 @@ async function joinLobby(e: Event) {
   try {
     isJoiningLobby.value = true
     const lobby = await LobbyService.getLobbyByCode(form.value.code)
+    
+    if (!lobby.isActive) {
+      router.push({ name: 'LobbyReview', params: { joinCode: lobby.joinCode }})
+      return
+    }
+
     const existingMember = lobby.members.find((m) => m.name.trim().toLowerCase() === form.value.nickname.trim().toLowerCase())
 
     if (existingMember && currentUser.value!.id !== existingMember.userId) {

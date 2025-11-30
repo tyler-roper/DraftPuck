@@ -8,4 +8,5 @@ interface Lobby {
   createdBy: string
   gameIds: Array<number>
   members: Array<LobbyMember>
+  isActive: boolean
 }

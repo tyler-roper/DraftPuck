@@ -55,17 +55,31 @@ const router = createRouter({
     },
     {
       path: '/lobby/:joinCode',
-      name: 'Lobby',
+      name: 'LobbyRoot',
       props: true,
-      component: () => import('@/views/LobbyView.vue'),
-      meta: {
-        title: `DRAFTPUCK (Lobby: {{joinCode}})`,
-        metaTags: [
-          { name: 'title', content: `DRAFTPUCK (Lobby: {{joinCode}})` },
-          { property: 'og:title', content: `DRAFTPUCK (Lobby: {{joinCode}})` },
-          { property: 'twitter:title', content: `DRAFTPUCK (Lobby: {{joinCode}})` }
-        ]
-      }
+      component: RouterView,
+      children: [
+        {
+          path: '',
+          name: 'Lobby',
+          props: true,
+          component: () => import('@/views/lobby/LobbyView.vue'),
+          meta: {
+            title: `DRAFTPUCK (Lobby: {{joinCode}})`,
+            metaTags: [
+              { name: 'title', content: `DRAFTPUCK (Lobby: {{joinCode}})` },
+              { property: 'og:title', content: `DRAFTPUCK (Lobby: {{joinCode}})` },
+              { property: 'twitter:title', content: `DRAFTPUCK (Lobby: {{joinCode}})` }
+            ]
+          }
+        },
+        {
+          path: 'review',
+          name: 'LobbyReview',
+          props: true,
+          component: () => import('@/views/lobby/LobbyReviewView.vue')
+        }
+      ]
     },
     {
       path: '/account',

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useSystemStore } from '@/stores/system'
-import ProfileSubsectionLayout from '@/views/layouts/ProfileSubsectionLayout.vue'
+import HeaderLayout from '@/views/layouts/HeaderLayout.vue'
 import { storeToRefs } from 'pinia'
 import { format } from 'date-fns'
 import VIcon from '@/components/VIcon.vue'
@@ -13,7 +13,7 @@ const { gitSha, appIsTestMode, currentSystemTime } = storeToRefs(systemStore)
 </script>
 
 <template>
-  <ProfileSubsectionLayout title="Admin" :show-save="false">
+  <HeaderLayout title="Admin" :show-save="false">
     <div class="p-3">
       <a href="https://draftpuck.com/test-page.html">TEST PAGE</a>
       <div class="profile-section">
@@ -53,7 +53,7 @@ const { gitSha, appIsTestMode, currentSystemTime } = storeToRefs(systemStore)
         </div>
       </div>
     </div>
-  </ProfileSubsectionLayout>
+  </HeaderLayout>
 </template>
 
 <style scoped lang="scss">

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
-import ProfileSubsectionLayout from '@/views/layouts/ProfileSubsectionLayout.vue'
+import HeaderLayout from '@/views/layouts/HeaderLayout.vue'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
 import VInputWrapper from '@/components/VInputWrapper.vue'
@@ -83,7 +83,7 @@ const v$ = useVuelidate<UpdateUserRequest>(rules, form)
 </script>
 
 <template>
-  <ProfileSubsectionLayout
+  <HeaderLayout
     title="Account Settings"
     @save="triggerFormSubmission"
     @discard="discard"
@@ -177,7 +177,7 @@ const v$ = useVuelidate<UpdateUserRequest>(rules, form)
         </div> -->
       </form>
     </div>
-  </ProfileSubsectionLayout>
+  </HeaderLayout>
 </template>
 
 <style scoped lang="scss">

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import ProfileSubsectionLayout from '@/views/layouts/ProfileSubsectionLayout.vue'
+import HeaderLayout from '@/views/layouts/HeaderLayout.vue'
 import VIcon from '@/components/VIcon.vue'
 import AdminLobbyService from '@/services/admin/AdminLobbyService'
 import VInputWrapper from '@/components/VInputWrapper.vue'
@@ -47,7 +47,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <ProfileSubsectionLayout title="Lobbies" :show-save="false">
+  <HeaderLayout title="Lobbies" :show-save="false">
     <div class="p-3">
       <div class="d-flex justify-content-between mb-3">
         <div class="me-2">
@@ -108,7 +108,7 @@ onMounted(async () => {
         </table>
       </div>
     </div>
-  </ProfileSubsectionLayout>
+  </HeaderLayout>
 </template>
 
 <style scoped lang="scss">

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import ProfileSubsectionLayout from '@/views/layouts/ProfileSubsectionLayout.vue'
+import HeaderLayout from '@/views/layouts/HeaderLayout.vue'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
 import { differenceInDays, isToday, isYesterday } from 'date-fns'
@@ -105,7 +105,7 @@ watch(
 </script>
 
 <template>
-  <ProfileSubsectionLayout title="Achievements" :show-save="false">
+  <HeaderLayout title="Achievements" :show-save="false">
     <div v-if="isLoading" class="p-2">
       <div v-for="n in 20" :key="n" class="placeholder placeholder-wave w-100 rounded-md" style="margin-bottom: 10px; height: 100px"></div>
     </div>
@@ -129,7 +129,7 @@ watch(
         </div>
       </div>
     </div>
-  </ProfileSubsectionLayout>
+  </HeaderLayout>
 </template>
 
 <style scoped lang="scss">

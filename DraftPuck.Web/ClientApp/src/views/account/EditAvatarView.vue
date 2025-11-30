@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import ProfileSubsectionLayout from '@/views/layouts/ProfileSubsectionLayout.vue'
+import HeaderLayout from '@/views/layouts/HeaderLayout.vue'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
 import VUser from '@/components/VUser.vue'
@@ -129,7 +129,7 @@ async function save() {
 </script>
 
 <template>
-  <ProfileSubsectionLayout title="Avatar" :is-dirty="isDirty" @discard="discard" @save="save" :is-saving="isSaving">
+  <HeaderLayout title="Avatar" :is-dirty="isDirty" @discard="discard" @save="save" :is-saving="isSaving">
     <div class="d-flex flex-column justify-content-center h-100">
       <div class="d-flex justify-content-center mt-n5 position-relative">
         <VUser display="avatar" :user="userPreview" :show-menu-on-click="false" :avatar-size-in-px="180" />
@@ -166,7 +166,7 @@ async function save() {
         <p>Max file size of 2MB</p>
       </div>
     </div>
-  </ProfileSubsectionLayout>
+  </HeaderLayout>
 </template>
 
 <style scoped lang="scss">

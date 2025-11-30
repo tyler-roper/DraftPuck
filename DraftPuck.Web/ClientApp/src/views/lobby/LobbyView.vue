@@ -133,7 +133,7 @@ const isInstructionsVisible = ref(false)
 const isNotificationSettingsVisible = ref(false)
 const isInvalidLobby = ref(false)
 const isLoading = ref(true)
-const mappedEvents = ref<LobbyEvent[]>([])
+const mappedEvents = computed(() => events.value.map(e => replaceTemplatedStrings(e)));
 const timers = ref<number[]>([])
 const currentView = ref<View>('picks')
 const pendingDrinksForCurrentUser = ref<LobbyEvent[]>([])
@@ -208,6 +208,11 @@ onMounted(async () => {
     await getLobby()
 
     if (!lobby.value) return (isInvalidLobby.value = true)
+    if (!lobby.value.isActive) {
+      isInvalidLobby.value = true
+      router.replace({ name: 'LobbyReview', params: { joinCode: joinCode.value }})
+      return
+    }
 
     let name: string | null = ''
 
@@ -289,11 +294,8 @@ async function initializeLobbyConnection(skipLobbyRetrieval = false) {
   if (!skipLobbyRetrieval) promises.push(getLobby())
   await Promise.all(promises)
 
-  if (lobby.value) {
+  if (lobby.value)
     await getLobbyEvents(lobby.value.id)
-    mappedEvents.value = events.value.map(replaceTemplatedStrings)
-    sendDebugMessage('Got lobby events.', 2)
-  }
 
   initializeActivityChecker()
 }
@@ -453,7 +455,6 @@ async function dispatchLobbyEvent(lobbyEvent: LobbyEvent) {
 
   parseAllDates(lobbyEvent)
   addLobbyEvent(lobbyEvent)
-  mappedEvents.value.push(replaceTemplatedStrings(lobbyEvent))
 
   const eventType = LobbyEventType[lobbyEvent.lobbyEventType]
   const eventHandler = lobbyEventHandlers[`on${eventType}`]

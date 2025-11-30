@@ -3,7 +3,7 @@ import { useUserStore } from '@/stores/user'
 import { ref, computed } from 'vue'
 import VUser from '@/components/VUser.vue'
 import VIcon from '@/components/VIcon.vue'
-import ProfileSubsectionLayout from '@/views/layouts/ProfileSubsectionLayout.vue'
+import HeaderLayout from '@/views/layouts/HeaderLayout.vue'
 import { storeToRefs } from 'pinia'
 import { useToast } from 'vue-toastification'
 import { useRouter } from 'vue-router'
@@ -83,7 +83,7 @@ async function save() {
 </script>
 
 <template>
-  <ProfileSubsectionLayout title="Banner & Title" :is-dirty="isDirty" @discard="discard" @save="save" :is-saving="isSaving">
+  <HeaderLayout title="Banner & Title" :is-dirty="isDirty" @discard="discard" @save="save" :is-saving="isSaving">
     <template #header>
       <div class="bg-stone-800 d-flex fs-6 text-uppercase fw-bold">
         <a
@@ -150,7 +150,7 @@ async function save() {
     <template #footer>
       <VUser :user="userPreview" />
     </template>
-  </ProfileSubsectionLayout>
+  </HeaderLayout>
 </template>
 
 <style scoped lang="scss">

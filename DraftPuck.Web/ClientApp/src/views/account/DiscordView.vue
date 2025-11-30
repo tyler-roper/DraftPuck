@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import ProfileSubsectionLayout from '@/views/layouts/ProfileSubsectionLayout.vue'
+import HeaderLayout from '@/views/layouts/HeaderLayout.vue'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
 import '@/extensions/arrayExtensions'
@@ -44,7 +44,7 @@ async function link() {
 </script>
 
 <template>
-  <ProfileSubsectionLayout title="Link Discord" :show-save="false">
+  <HeaderLayout title="Link Discord" :show-save="false">
     <div class="d-flex flex-column justify-content-center h-100 p-5">
       <VIcon prefix="brands" icon="discord" class="d-block text-center mb-2 mt-n5" style="font-size: 100px" />
 
@@ -74,7 +74,7 @@ async function link() {
         </span>
       </template>
     </div>
-  </ProfileSubsectionLayout>
+  </HeaderLayout>
 </template>
 
 <style scoped lang="scss">
