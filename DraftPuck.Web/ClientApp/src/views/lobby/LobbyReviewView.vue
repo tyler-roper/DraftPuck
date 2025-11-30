@@ -59,7 +59,7 @@ function setMembers() {
         totalPicksMade: member.picks.filter(pick => pick.isActive).length
       }
     } as LobbyMemberWithStats))
-    .sort((b, a) => a.results.totalDrinksAwarded - b.results.totalDrinksAwarded)
+    .sort((b, a) => a.results.totalDrinksGiven - b.results.totalDrinksGiven)
     ?? []
 }
 
@@ -197,9 +197,6 @@ function ago(date: Date) {
 @import '@/assets/scss/custom-colors.scss';
 
 .member {
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-position: center;
   opacity: 0;
   transform: translateY(40px);
   animation-timing-function: ease-in;
@@ -215,6 +212,9 @@ function ago(date: Date) {
 }
 
 .member-result {
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
   overflow: hidden;
   border-radius: 10px;
   background-image: linear-gradient(to right, map-get($custom-colors, 'stone-700'), map-get($custom-colors, 'stone-900'))
@@ -286,7 +286,7 @@ function ago(date: Date) {
   font-weight: bold;
   margin-left: 10px;
   padding: 3px;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.7);
 }
 
 .stat-title {
