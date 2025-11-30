@@ -24,8 +24,8 @@ public class FirebaseService(IOptions<ApplicationOptions> appConfig, FirebaseApp
                 {
                     Title = $"Achievement earned: {achievement.FriendlyName}",
                     Body = $"{achievement.Description}",
-                    Icon = $"{_appConfig.BasePath}/img/icons/icon-192.png",
-                    Badge = $"{_appConfig.BasePath}/img/icons/badge.png"
+                    Icon = $"{_appConfig.BasePath}img/icons/icon-192.png",
+                    Badge = $"{_appConfig.BasePath}img/icons/badge.png"
                 }
             },
             Data = new Dictionary<string,string> { { "type", PushNotificationTypes.ACHIEVEMENT } }

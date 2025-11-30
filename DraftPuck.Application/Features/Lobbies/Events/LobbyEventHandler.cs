@@ -10,7 +10,9 @@ public class LobbyEventHandler(IDbContext dbContext, IMediator mediator) :
     INotificationHandler<PickMadeNotification>,
     INotificationHandler<PickRemovedNotification>,
     INotificationHandler<DrinkAssignedNotification>,
-    INotificationHandler<DrinkAwardedNotification>
+    INotificationHandler<DrinkAwardedNotification>,
+    INotificationHandler<DrinkRemovedNotification>,
+    INotificationHandler<DrinkInvalidatedNotification>
 {
     public Task Handle(UserJoinedLobbyNotification n, CancellationToken ct)
     {
@@ -71,6 +73,21 @@ public class LobbyEventHandler(IDbContext dbContext, IMediator mediator) :
             lobbyMember2Id: n.Data.Recipient.Id, gameId: n.Data.Drink.LobbyMemberPick.GameId,
             playerId: n.Data.Drink.LobbyMemberPick.PlayerId, teamId: n.Data.Drink.LobbyMemberPick.TeamId,
             gameEventId: n.Data.Drink.EventId);
+    }
+
+    public Task Handle(DrinkInvalidatedNotification n, CancellationToken ct)
+    {
+        return NewLobbyEvent(n.Data.Lobby, LobbyEventType.DrinkInvalidated, ct, lobbyMemberId: n.Data.Sender.Id,
+            lobbyMember2Id: n.Data.Recipient.Id, gameId: n.Data.Drink.LobbyMemberPick.GameId,
+            playerId: n.Data.Drink.LobbyMemberPick.PlayerId, teamId: n.Data.Drink.LobbyMemberPick.TeamId,
+            gameEventId: n.Data.Drink.EventId);
+    }
+
+    public Task Handle(DrinkRemovedNotification n, CancellationToken ct)
+    {
+        return NewLobbyEvent(n.Data.Lobby, LobbyEventType.DrinkInvalidated, ct, lobbyMemberId: n.Data.Member.Id,
+            gameId: n.Data.Drink.LobbyMemberPick.GameId, playerId: n.Data.Drink.LobbyMemberPick.PlayerId, 
+            teamId: n.Data.Drink.LobbyMemberPick.TeamId, gameEventId: n.Data.Drink.EventId);
     }
 
     private async Task NewLobbyEvent(LobbyEntity lobby, LobbyEventType eventType, CancellationToken ct, Guid? lobbyMemberId = null, int? gameEventId = null, int? gameId = null, Guid? lobbyMember2Id = null, int? playerId = null, int? player2Id = null, int? teamId = null, string? title = null, string? text = null)
