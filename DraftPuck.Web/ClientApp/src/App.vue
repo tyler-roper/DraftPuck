@@ -16,8 +16,11 @@ const { initialize: initializeUser } = useUserStore()
 const { initialize: initializeFirebase } = useFirebaseStore()
 
 onMounted(async () => {
-  initializeUser().then(initializeFirebase)
-  initializeGameSummaries()
+  // Initialize user asynchronously, then load data that requires auth
+  initializeUser().then(() => {
+    initializeFirebase()
+    initializeGameSummaries()
+  })
   await initAppSettings()
 
   updateSystemTime()
