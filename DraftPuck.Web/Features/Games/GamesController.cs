@@ -1,7 +1,9 @@
 ﻿using DraftPuck.Application.Features.Games;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DraftPuck.Web.Features.Games;
 
+[AllowAnonymous]
 public class GamesController(IMediator mediator) : BaseController()
 {
     [HttpGet("{gameId}")]
