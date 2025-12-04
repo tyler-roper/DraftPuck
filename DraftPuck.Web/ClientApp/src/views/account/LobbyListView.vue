@@ -74,11 +74,10 @@ onMounted(async () => {
     <div v-else class="p-2">
       <div class="lobby-summary" :class="{ 'is-live-lobby': lobby.isActive }" v-for="lobby in lobbySummaries" :key="lobby.id">
         <span class="text-uppercase fw-bold ls-6">
-          <router-link v-if="lobby.isActive" :to="`/lobby/${lobby.joinCode}`" class="d-flex align-items-center">
+          <router-link :to="lobby.isActive ? `/lobby/${lobby.joinCode}` : `/lobby/${lobby.joinCode}/review`" class="d-flex align-items-center" :class="{'text-primary': lobby.isActive, 'text-stone-300': !lobby.isActive }">
             <VIcon icon="link-alt" class="d-block me-1 fs-8" />
             <span class="d-block">{{ lobby.joinCode }}</span>
           </router-link>
-          <span v-else>{{ lobby.joinCode }}</span>
         </span>
         <span :class="{ 'fw-bold ls-3': lobby.isActive }">{{ lobby.isActive ? 'LIVE' : ago(lobby.created) }}</span>
         <span><VIcon prefix="sr" icon="hockey-puck" class="me-1 text-stone-500" /> {{ lobby.gameCount }}</span>

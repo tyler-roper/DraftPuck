@@ -41,7 +41,7 @@ public class TokenService(AuthOptions options) : ITokenService
         var refreshToken = new UserRefreshTokenEntity
         {
             Token = Convert.ToBase64String(randomNumber),
-            Expires = DateTime.UtcNow.AddDays(7),
+            Expires = DateTime.UtcNow.AddDays(14),
             CreatedByIp = ipAddress,
             AntiCsrfToken = GenerateCryptographicallySecureGuid()
         };

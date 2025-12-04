@@ -203,14 +203,6 @@ function ago(date: Date) {
   margin-top: 10px;
 }
 
-.member:first-child .member-result {
-  box-shadow: 0 0 15px map-get($custom-colors, 'primary');
-}
-
-.member:last-child .member-result {
-  box-shadow: 0 0 15px map-get($custom-colors, 'danger');
-}
-
 .member-result {
   background-size: cover;
   background-repeat: no-repeat;

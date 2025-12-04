@@ -44,7 +44,7 @@ namespace DraftPuck.Infrastructure.Auth
                     ValidateAudience = true,
                     ValidAudience = authOptions.Audience,
                     ValidateLifetime = true,
-                    ClockSkew = TimeSpan.Zero
+                    ClockSkew = TimeSpan.FromMinutes(1)
                 };
             });
 

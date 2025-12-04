@@ -40,11 +40,30 @@ export default class HttpService implements IHttpService {
       async function (error) {
         const originalRequest = error.config
 
-        if (error.response.status === 401 && originalRequest.url !== refreshTokenUrl && !originalRequest._hasBeenRetried) {
+        // Check if error response exists and is a 401
+        if (error.response?.status === 401 && originalRequest && originalRequest.url !== refreshTokenUrl && !originalRequest._hasBeenRetried) {
           originalRequest._hasBeenRetried = true
-          const authenticationResponse = await axiosInstance.post<any, { data: AuthResponse }>(refreshTokenUrl)
-          TokenService.storeTokens(authenticationResponse.data)
-          return axiosInstance(originalRequest)
+
+          try {
+            console.log('Token expired, attempting refresh...')
+            const authenticationResponse = await axiosInstance.post<any, { data: AuthResponse }>(refreshTokenUrl)
+            TokenService.storeTokens(authenticationResponse.data)
+            console.log('Token refresh successful, retrying original request')
+            return axiosInstance(originalRequest)
+          } catch (refreshError: any) {
+            console.error('Token refresh failed:', refreshError.response?.data?.message || refreshError.message)
+
+            // Clear tokens on refresh failure
+            TokenService.clearTokens()
+
+            // If we're not already on the login page, redirect there
+            if (window.location.pathname !== '/login') {
+              console.log('Redirecting to login due to authentication failure')
+              window.location.href = '/login'
+            }
+
+            return Promise.reject(refreshError)
+          }
         }
 
         return Promise.reject(error)

@@ -47,9 +47,9 @@ public abstract class BaseController() : ControllerBase
         var cookieOptions = new CookieOptions
         {
             HttpOnly = true,
-            Expires = DateTime.UtcNow.AddDays(7),
+            Expires = DateTime.UtcNow.AddDays(14),
             Secure = true,
-            SameSite = SameSiteMode.Strict
+            SameSite = SameSiteMode.Lax
         };
         Response.Cookies.Append(RefreshTokenName, refreshToken, cookieOptions);
     }
