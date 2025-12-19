@@ -10,6 +10,7 @@ public static class UserQueryExtensions
             .Include(u => u.UserBanners)
                 .ThenInclude(ub => ub.Banner)
             .Include(u => u.UserTitles)
-                .ThenInclude(ut => ut.Title);
+                .ThenInclude(ut => ut.Title)
+            .AsSplitQuery();
     }
 }
