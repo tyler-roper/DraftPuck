@@ -7,13 +7,15 @@ public class ThreeGoalsForOnePickRule(ILogger<ThreeGoalsForOnePickRule> logger) 
     protected override async Task<bool> IsCriteriaMetAsync(IDbContext dbContext, UserEntity user)
     {
         var hatTrickPicks = await dbContext.LobbyMemberPicks
-        .Where(p => p.LobbyMember.UserId == user.Id && p.Drinks.Count() >= 3)
-        .Select(p => new
-        {
-            PickCreatedTime = p.Created,
-            Drinks = p.Drinks.Select(d => d.Created)
-        })
-        .ToListAsync();
+            .Where(p => p.LobbyMember.UserId == user.Id)
+            .Select(p => new
+            {
+                PickCreatedTime = p.Created,
+                DrinkCount = p.Drinks.Count(),
+                Drinks = p.Drinks.Select(d => d.Created)
+            })
+            .Where(p => p.DrinkCount >= 3)
+            .ToListAsync();
 
         if (hatTrickPicks.Count == 0)
             return false;

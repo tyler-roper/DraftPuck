@@ -9,7 +9,7 @@ public class MakePickCommandHandler(IDbContext dbContext, IMapper mapper, IMedia
     {
         var lobby = await dbContext.Lobbies
             .Include(l => l.LobbyMembers.Where(lm => !lm.IsRemoved))
-                .ThenInclude(lm => lm.LobbyMemberPicks.Where(lmp => lmp.IsActive))
+            .AsSplitQuery()
             .FirstOrDefaultAsync(l => l.JoinCode == request.Code, ct)
             ?? throw new NotFoundException("Lobby not found.");
 
@@ -18,7 +18,14 @@ public class MakePickCommandHandler(IDbContext dbContext, IMapper mapper, IMedia
             : lobby.LobbyMembers.FirstOrDefault(lm => lm.Id == request.LobbyMemberId))
             ?? throw new NotFoundException("User not found in lobby.");
 
-        if (lobby.LobbyMembers.SelectMany(lm => lm.LobbyMemberPicks).Any(p => p.IsActive && p.PlayerId == request.PlayerId && p.GameId == request.GameId))
+        var lobbyMemberIds = lobby.LobbyMembers.Select(lm => lm.Id).ToList();
+        var playerAlreadyPicked = await dbContext.LobbyMemberPicks
+            .AnyAsync(p => p.IsActive
+                && lobbyMemberIds.Contains(p.LobbyMemberId)
+                && p.PlayerId == request.PlayerId
+                && p.GameId == request.GameId, ct);
+
+        if (playerAlreadyPicked)
             throw new ValidationException("Player already picked.");
 
         var pick = new LobbyMemberPickEntity

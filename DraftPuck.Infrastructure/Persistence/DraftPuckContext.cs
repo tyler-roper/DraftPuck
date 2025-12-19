@@ -70,6 +70,12 @@ public partial class DraftPuckContext : DbContext, IDbContext
 
             entity.HasIndex(e => new { e.LobbyMemberPickId, e.EventId })
                 .HasDatabaseName("IX_Drinks_Pick_Event");
+
+            entity.HasIndex(e => e.EventId)
+                .HasDatabaseName("IX_Drinks_EventId");
+
+            entity.HasIndex(e => e.RecipientLobbyMemberId)
+                .HasDatabaseName("IX_Drinks_RecipientLobbyMemberId");
         });
 
 
@@ -100,6 +106,16 @@ public partial class DraftPuckContext : DbContext, IDbContext
 
             entity.HasIndex(e => e.IsActive)
                 .HasDatabaseName("IX_Lobbies_IsActive");
+
+            entity.HasIndex(e => e.JoinCode)
+                .IsUnique()
+                .HasDatabaseName("IX_Lobbies_JoinCode");
+
+            entity.HasIndex(e => e.Created)
+                .HasDatabaseName("IX_Lobbies_Created");
+
+            entity.HasIndex(e => e.CreatedBy)
+                .HasDatabaseName("IX_Lobbies_CreatedBy");
         });
 
         modelBuilder.Entity<LobbyEventEntity>(entity =>
@@ -133,6 +149,12 @@ public partial class DraftPuckContext : DbContext, IDbContext
 
             entity.HasIndex(e => e.LobbyId)
                 .HasDatabaseName("IX_LobbyMembers_LobbyId");
+
+            entity.HasIndex(e => e.UserId)
+                .HasDatabaseName("IX_LobbyMembers_UserId");
+
+            entity.HasIndex(e => new { e.LobbyId, e.UserId })
+                .HasDatabaseName("IX_LobbyMembers_LobbyId_UserId");
         });
 
         modelBuilder.Entity<LobbyMemberPickEntity>(entity =>
@@ -212,6 +234,12 @@ public partial class DraftPuckContext : DbContext, IDbContext
         {
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.Created).HasDefaultValueSql("(getutcdate())");
+
+            entity.HasIndex(e => e.Token)
+                .HasDatabaseName("IX_UserRefreshTokens_Token");
+
+            entity.HasIndex(e => e.UserId)
+                .HasDatabaseName("IX_UserRefreshTokens_UserId");
         });
 
         modelBuilder.Entity<UserTitleEntity>(entity =>
@@ -240,6 +268,13 @@ public partial class DraftPuckContext : DbContext, IDbContext
             entity.Property(e => e.AvatarPath).HasMaxLength(1000);
             entity.Property(e => e.Email).HasMaxLength(255);
             entity.Property(e => e.DiscordUserId).HasMaxLength(25);
+
+            entity.HasIndex(e => e.Email)
+                .IsUnique()
+                .HasDatabaseName("IX_Users_Email");
+
+            entity.HasIndex(e => e.Nickname)
+                .HasDatabaseName("IX_Users_Nickname");
         });
 
         OnModelCreatingPartial(modelBuilder);

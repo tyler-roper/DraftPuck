@@ -25,6 +25,7 @@ public class JoinLobbyCommandHandler(IDbContext dbContext, IMapper mapper, IMedi
                     .ThenInclude(lmp => lmp.Drinks)
             .Include(l => l.LobbyMembers)
                 .ThenInclude(lm => lm.Messages.Where(m => !m.IsDeleted))
+            .AsSplitQuery()
             .FirstOrDefaultAsync(l => l.JoinCode == request.Code, ct)
             ?? throw new NotFoundException("Lobby not found.");
 
