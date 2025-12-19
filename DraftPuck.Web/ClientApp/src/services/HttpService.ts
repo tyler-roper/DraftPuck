@@ -1,4 +1,4 @@
-﻿import { parseAllDates } from '@/helpers/dateHelpers'
+import { parseAllDates } from '@/helpers/dateHelpers'
 import axios, { type AxiosInstance, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
 import TokenService from './TokenService'
 
@@ -16,62 +16,95 @@ const apiBasePath = `/api/`
 const csrfHeaderKey = 'CSRF-Token'
 const refreshTokenUrl = `${apiBasePath}auth/refreshTokens/use`
 
+let refreshPromise: Promise<AuthResponse> | null = null
+
+function isRefreshableError(error: any): boolean {
+  const status = error.response?.status
+  const url = error.config?.url
+  const hasBeenRetried = error.config?._hasBeenRetried
+
+  return status === 401 && url !== refreshTokenUrl && !hasBeenRetried
+}
+
+async function refreshTokens(axiosInstance: AxiosInstance): Promise<AuthResponse> {
+  if (refreshPromise) return refreshPromise
+
+  refreshPromise = axiosInstance
+    .post<any, { data: AuthResponse }>(refreshTokenUrl)
+    .then((response) => {
+      TokenService.storeTokens(response.data)
+      return response.data
+    })
+    .finally(() => {
+      refreshPromise = null
+    })
+
+  return refreshPromise
+}
+
+function handleRefreshFailure(error: any): never {
+  TokenService.clearTokens()
+
+  if (window.location.pathname !== '/login')
+    window.location.href = '/login'
+  
+  throw error
+}
+
 export default class HttpService implements IHttpService {
   private _axios: AxiosInstance
   private _basePath: string
 
   constructor(controller: string) {
-    const axiosInstance = axios.create()
-    axiosInstance.interceptors.request.use(
-      (config) => {
-        this.setHeaders(config)
-        return config
-      },
-      (error) => {
-        Promise.reject(error)
-      }
-    )
-
-    axiosInstance.interceptors.response.use(
-      (originalResponse) => {
-        parseAllDates(originalResponse.data)
-        return originalResponse
-      },
-      async function (error) {
-        const originalRequest = error.config
-
-        // Check if error response exists and is a 401
-        if (error.response?.status === 401 && originalRequest && originalRequest.url !== refreshTokenUrl && !originalRequest._hasBeenRetried) {
-          originalRequest._hasBeenRetried = true
-
-          try {
-            console.log('Token expired, attempting refresh...')
-            const authenticationResponse = await axiosInstance.post<any, { data: AuthResponse }>(refreshTokenUrl)
-            TokenService.storeTokens(authenticationResponse.data)
-            console.log('Token refresh successful, retrying original request')
-            return axiosInstance(originalRequest)
-          } catch (refreshError: any) {
-            console.error('Token refresh failed:', refreshError.response?.data?.message || refreshError.message)
-
-            // Clear tokens on refresh failure
-            TokenService.clearTokens()
-
-            // If we're not already on the login page, redirect there
-            if (window.location.pathname !== '/login') {
-              console.log('Redirecting to login due to authentication failure')
-              window.location.href = '/login'
-            }
-
-            return Promise.reject(refreshError)
-          }
-        }
-
-        return Promise.reject(error)
-      }
-    )
-
-    this._axios = axiosInstance
+    this._axios = axios.create()
     this._basePath = `${apiBasePath}${controller}/`
+
+    this._axios.interceptors.request.use(
+      (config) => this.setHeaders(config),
+      (error) => Promise.reject(error)
+    )
+
+    this._axios.interceptors.response.use(
+      (response) => this.handleResponse(response),
+      (error) => this.handleResponseError(error)
+    )
+  }
+
+  private handleResponse(response: AxiosResponse): AxiosResponse {
+    parseAllDates(response.data)
+    return response
+  }
+
+  private async handleResponseError(error: any): Promise<any> {
+    if (!isRefreshableError(error)) {
+      return Promise.reject(error)
+    }
+
+    error.config._hasBeenRetried = true
+
+    try {
+      await refreshTokens(this._axios)
+      return this._axios(error.config)
+    } catch (refreshError) {
+      handleRefreshFailure(refreshError)
+    }
+  }
+
+  private setHeaders(config: InternalAxiosRequestConfig): InternalAxiosRequestConfig {
+    config.headers['Accept'] = 'application/json'
+    config.headers['Content-Type'] = 'application/json'
+
+    const { jwt, csrf } = TokenService.getTokens()
+
+    if (jwt && config.url !== refreshTokenUrl) {
+      config.headers['Authorization'] = `Bearer ${jwt}`
+    }
+
+    if (csrf) {
+      config.headers[csrfHeaderKey] = csrf
+    }
+
+    return config
   }
 
   public async get<T>(endpoint: string, id?: string): Promise<T> {
@@ -100,11 +133,6 @@ export default class HttpService implements IHttpService {
   }
 
   public async patch<T, R>(endpoint: string, data?: T): Promise<R> {
-    if (typeof data !== 'undefined') {
-      const response = await this._axios.patch<T, AxiosResponse<R>>(`${this._basePath}${endpoint}`, data)
-      return response.data
-    }
-
     const response = await this._axios.patch<T, AxiosResponse<R>>(`${this._basePath}${endpoint}`, data)
     return response.data
   }
@@ -116,16 +144,5 @@ export default class HttpService implements IHttpService {
 
   public async delete(endpoint: string): Promise<void> {
     await this._axios.delete(`${this._basePath}${endpoint}`)
-  }
-
-  setHeaders(config: InternalAxiosRequestConfig) {
-    config.headers['Accept'] = 'application/json'
-    config.headers['Content-Type'] = 'application/json'
-
-    const { jwt, csrf } = TokenService.getTokens()
-
-    if (jwt && config.url !== refreshTokenUrl) config.headers['Authorization'] = `Bearer ${jwt}`
-
-    if (csrf) config.headers[csrfHeaderKey] = csrf
   }
 }
