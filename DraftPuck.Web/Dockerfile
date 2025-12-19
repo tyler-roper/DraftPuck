@@ -17,8 +17,10 @@ COPY ./DraftPuck.Web/DraftPuck.Web.csproj ./DraftPuck.Web/
 COPY ./DraftPuck.Shared/DraftPuck.Shared.csproj ./DraftPuck.Shared/
 COPY ./DraftPuck.Application/DraftPuck.Application.csproj ./DraftPuck.Application/
 COPY ./DraftPuck.Infrastructure/DraftPuck.Infrastructure.csproj ./DraftPuck.Infrastructure/
+COPY ./DraftPuck.Worker/DraftPuck.Worker.csproj ./DraftPuck.Worker/
+COPY ./DraftPuck.DiscordBot/DraftPuck.DiscordBot.csproj ./DraftPuck.DiscordBot/
 
-RUN dotnet restore
+RUN dotnet restore "DraftPuck.Web/DraftPuck.Web.csproj"
 
 # Copy package.json and install npm dependencies (cached unless package.json changes)
 COPY ./DraftPuck.Web/ClientApp/package.json ./DraftPuck.Web/ClientApp/
