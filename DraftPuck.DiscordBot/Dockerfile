@@ -23,12 +23,12 @@ WORKDIR /src
 COPY . .
 
 WORKDIR /src/DraftPuck.DiscordBot
-RUN dotnet build "./DraftPuck.DiscordBot.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet build "./DraftPuck.DiscordBot.csproj" -c $BUILD_CONFIGURATION -o /app/build --no-restore
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./DraftPuck.DiscordBot.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "./DraftPuck.DiscordBot.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false --no-restore
 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final

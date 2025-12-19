@@ -17,6 +17,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Log in to Azure Container Registry
         uses: docker/login-action@v3
         with:
@@ -31,6 +34,8 @@ jobs:
           push: true
           tags: ${{ secrets.ACR_LOGIN_SERVER }}/draftpuck-web:${{ github.sha }}
           file: DraftPuck.Web/Dockerfile
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
           build-args: |
             GIT_SHA=${{ github.sha }}
 
@@ -41,6 +46,8 @@ jobs:
           push: true
           tags: ${{ secrets.ACR_LOGIN_SERVER }}/draftpuck-worker:${{ github.sha }}
           file: DraftPuck.Worker/Dockerfile
+          cache-from: type=gha,scope=worker
+          cache-to: type=gha,mode=max,scope=worker
           build-args: |
             GIT_SHA=${{ github.sha }}
 
@@ -51,6 +58,8 @@ jobs:
           push: true
           tags: ${{ secrets.ACR_LOGIN_SERVER }}/draftpuck-discord-bot:${{ github.sha }}
           file: DraftPuck.DiscordBot/Dockerfile
+          cache-from: type=gha,scope=discord
+          cache-to: type=gha,mode=max,scope=discord
           build-args: |
             GIT_SHA=${{ github.sha }}
 
@@ -73,6 +82,8 @@ jobs:
           resourceGroup: ${{ secrets.AZURE_RESOURCE_GROUP }}
           containerAppName: ${{ secrets.CONTAINER_APP_WEB_NAME }}
           imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/draftpuck-web:${{ github.sha }}
+          acrUsername: ${{ secrets.ACR_USERNAME }}
+          acrPassword: ${{ secrets.ACR_PASSWORD }}
 
       - name: Deploy Worker to Container Apps
         uses: azure/container-apps-deploy-action@v1
@@ -80,6 +91,8 @@ jobs:
           resourceGroup: ${{ secrets.AZURE_RESOURCE_GROUP }}
           containerAppName: ${{ secrets.CONTAINER_APP_WORKER_NAME }}
           imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/draftpuck-worker:${{ github.sha }}
+          acrUsername: ${{ secrets.ACR_USERNAME }}
+          acrPassword: ${{ secrets.ACR_PASSWORD }}
 
       - name: Deploy Discord Bot to Container Apps
         uses: azure/container-apps-deploy-action@v1
@@ -87,3 +100,5 @@ jobs:
           resourceGroup: ${{ secrets.AZURE_RESOURCE_GROUP }}
           containerAppName: ${{ secrets.CONTAINER_APP_DISCORD_BOT_NAME }}
           imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/draftpuck-discord-bot:${{ github.sha }}
+          acrUsername: ${{ secrets.ACR_USERNAME }}
+          acrPassword: ${{ secrets.ACR_PASSWORD }}
