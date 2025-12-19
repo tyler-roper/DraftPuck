@@ -1,4 +1,4 @@
-name: Build and update ACR
+name: Build and Deploy to Azure Container Apps
 
 on:
   push:
@@ -56,3 +56,34 @@ jobs:
 
       - name: Git SHA
         run: "echo 'Git SHA for this build: ${{ github.sha }}'"
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy Web App to Container Apps
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          resourceGroup: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          containerAppName: ${{ secrets.CONTAINER_APP_WEB_NAME }}
+          imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/draftpuck-web:${{ github.sha }}
+
+      - name: Deploy Worker to Container Apps
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          resourceGroup: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          containerAppName: ${{ secrets.CONTAINER_APP_WORKER_NAME }}
+          imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/draftpuck-worker:${{ github.sha }}
+
+      - name: Deploy Discord Bot to Container Apps
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          resourceGroup: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          containerAppName: ${{ secrets.CONTAINER_APP_DISCORD_BOT_NAME }}
+          imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/draftpuck-discord-bot:${{ github.sha }}

@@ -10,7 +10,7 @@ public class BottomThirdScorerRule(ILogger<BottomThirdScorerRule> logger, IGameC
     protected override async Task<bool> IsCriteriaMetAsync(IDbContext dbContext, UserEntity user)
     {
         var successfulPicks = await dbContext.LobbyMemberPicks
-            .Where(p => p.LobbyMember.UserId == user.Id && p.Drinks.Count > 0)
+            .Where(p => p.LobbyMember.UserId == user.Id && p.Drinks.Any())
             .Select(p => new
             {
                 p.PlayerId,
