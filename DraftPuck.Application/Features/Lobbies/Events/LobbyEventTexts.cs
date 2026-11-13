@@ -38,6 +38,9 @@ public static class LobbyEventTexts
         { LobbyEventType.PickRemoved, new("Pick Removed",
             "{{name}} has un-picked {{playerBadge}}")
         },
+        { LobbyEventType.PickScratched, new("Player Scratched",
+            "{{playerBadge}} was scratched, so {{name}}'s pick was removed.")
+        },
         { LobbyEventType.DrinkAwarded, new("Drink Awarded",
             "That's a bingo for {{name}}! {{playerBadge}}",
             "And then suddenly, {{name}} held all the cards. {{playerBadge}}",

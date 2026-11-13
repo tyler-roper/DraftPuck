@@ -23,7 +23,12 @@ public class RemovePickCommandHandler(IDbContext dbContext, IMediator mediator, 
 
         pick.IsActive = false;
         await dbContext.SaveChangesAsync(ct);
-        await mediator.Publish(new PickRemovedNotification(new(lobby, lobbyMember, pick)), ct);
+
+        // System removals only happen when the player left the lineup, which the lobby is told as a scratch, not an un-pick.
+        if (request.IsSystemRemoval)
+            await mediator.Publish(new PickScratchedNotification(new(lobby, lobbyMember, pick)), ct);
+        else
+            await mediator.Publish(new PickRemovedNotification(new(lobby, lobbyMember, pick)), ct);
     }
 
     /// <summary>

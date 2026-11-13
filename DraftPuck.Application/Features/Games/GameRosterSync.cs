@@ -20,6 +20,7 @@ public class GameRosterSync(IDbContext dbContext, IMediator mediator, INhlClient
             new(previous.AwayTeam, current.AwayTeam, LineupFor(previous.AwayTeam))
         ];
 
+        current.FormerPlayers = FormerPlayers(previous, current);
         await RemovePicksForPlayersWhoLeftAsync(current, teams, ct);
 
         foreach (var team in teams)
@@ -38,6 +39,18 @@ public class GameRosterSync(IDbContext dbContext, IMediator mediator, INhlClient
     }
 
     private sealed record TeamSync(GameTeamDto Previous, GameTeamDto Current, List<PlayerSummaryDto> Lineup);
+
+    /// <summary>
+    /// Everyone who was in the lineup on an earlier poll and isn't now, so the feed can still name them.
+    /// A player who returns to the lineup is dropped from the list.
+    /// </summary>
+    private static List<PlayerSummaryDto> FormerPlayers(GameDto previous, GameDto current)
+    {
+        var lineupIds = current.PlayerSummaries.Select(s => s.Id).ToHashSet();
+        return [.. previous.FormerPlayers.Concat(previous.PlayerSummaries)
+            .Where(p => !lineupIds.Contains(p.Id))
+            .DistinctBy(p => p.Id)];
+    }
 
     private async Task<List<PlayerDto>> FetchPlayersAsync(List<PlayerSummaryDto> lineup, int teamId)
     {
