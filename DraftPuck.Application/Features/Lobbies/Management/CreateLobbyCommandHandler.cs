@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using DraftPuck.Application.Features.Lobbies.Members;
 
 namespace DraftPuck.Application.Features.Lobbies.Management;
 
@@ -8,10 +8,7 @@ public class CreateLobbyCommandHandler(IDbContext dbContext, IMapper mapper, IMe
 
     public async Task<LobbyDto> Handle(CreateLobbyCommand request, CancellationToken ct)
     {
-        if (string.IsNullOrEmpty(request.Name))
-        {
-            throw new ValidationException("Your name is required.");
-        }
+        var hostName = LobbyMemberNames.Normalize(request.Name);
 
         var newLobbyId = Guid.NewGuid();
         var lobby = new LobbyEntity
@@ -29,7 +26,7 @@ public class CreateLobbyCommandHandler(IDbContext dbContext, IMapper mapper, IMe
         {
             LobbyId = newLobbyId,
             UserId = request.CreatorUserId,
-            Name = request.Name
+            Name = hostName
         };
         dbContext.LobbyMembers.Add(hostMember);
 
@@ -37,11 +34,12 @@ public class CreateLobbyCommandHandler(IDbContext dbContext, IMapper mapper, IMe
 
         foreach (var botRequest in request.Bots)
         {
+            var botName = LobbyMemberNames.Normalize(botRequest.Nickname);
             var botUser = new UserEntity
             {
                 Id = Guid.NewGuid(),
                 IsBot = true,
-                Nickname = botRequest.Nickname
+                Nickname = botName
             };
             dbContext.Users.Add(botUser);
 
@@ -49,7 +47,7 @@ public class CreateLobbyCommandHandler(IDbContext dbContext, IMapper mapper, IMe
             {
                 LobbyId = newLobbyId,
                 UserId = botUser.Id,
-                Name = botRequest.Nickname,
+                Name = botName,
                 IsBot = true,
                 BotPickStyle = botRequest.PickStyle
             };

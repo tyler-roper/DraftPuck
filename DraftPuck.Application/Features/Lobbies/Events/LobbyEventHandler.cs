@@ -1,4 +1,6 @@
-﻿namespace DraftPuck.Application.Features.Lobbies.Events;
+﻿using System.Net;
+
+namespace DraftPuck.Application.Features.Lobbies.Events;
 
 public class LobbyEventHandler(IDbContext dbContext, IMediator mediator) :
     INotificationHandler<UserJoinedLobbyNotification>,
@@ -27,26 +29,29 @@ public class LobbyEventHandler(IDbContext dbContext, IMediator mediator) :
     public Task Handle(UserNameChangedNotification n, CancellationToken ct)
     {
         return NewLobbyEvent(n.Data.Lobby, LobbyEventType.UserNameChanged, ct, lobbyMemberId: n.Data.Member.Id,
-            title: "Name Change", text: $"<strong>{n.Data.OldName}</strong> changed name to <strong>{n.Data.Member.Name}</strong>.");
+            title: "Name Change", text: $"{Bold(n.Data.OldName)} changed name to {Bold(n.Data.Member.Name)}.");
     }
 
     public Task Handle(UserRemovedNotification n, CancellationToken ct)
     {
         return NewLobbyEvent(n.Data.Lobby, LobbyEventType.UserRemoved, ct, lobbyMemberId: n.Data.Member.Id,
-            text: $"<strong>{n.Data.Member.Name}</strong> was removed from the lobby.");
+            text: $"{Bold(n.Data.Member.Name)} was removed from the lobby.");
     }
 
     public Task Handle(UserLeftNotification n, CancellationToken ct)
     {
         return NewLobbyEvent(n.Data.Lobby, LobbyEventType.UserLeft, ct, lobbyMemberId: n.Data.Member.Id,
-            text: $"<strong>{n.Data.Member.Name}</strong> left the lobby.");
+            text: $"{Bold(n.Data.Member.Name)} left the lobby.");
     }
 
     public Task Handle(UserPromotedNotification n, CancellationToken ct)
     {
         return NewLobbyEvent(n.Data.Lobby, LobbyEventType.UserPromoted, ct, lobbyMemberId: n.Data.Member.Id,
-            text: $"<strong>{n.Data.Member.Name}</strong> was promoted to lobby admin.");
+            text: $"{Bold(n.Data.Member.Name)} was promoted to lobby admin.");
     }
+
+    // Event text is rendered as HTML by the client, so user-supplied names must be encoded.
+    private static string Bold(string name) => $"<strong>{WebUtility.HtmlEncode(name)}</strong>";
 
     public Task Handle(PickMadeNotification n, CancellationToken ct)
     {

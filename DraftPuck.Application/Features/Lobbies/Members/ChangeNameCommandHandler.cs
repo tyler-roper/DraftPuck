@@ -14,9 +14,7 @@ public class ChangeLobbyNameCommandHandler(IDbContext dbContext, IMediator media
 
         var lobbyMember = lobby.LobbyMembers.FirstOrDefault(lm => lm.UserId == request.UserId && !lm.IsRemoved) ?? throw new NotFoundException($"User not found or is removed from lobby '{request.Code}'.");
 
-        var newName = request.NewName.Trim();
-        if (string.IsNullOrEmpty(newName))
-            throw new ValidationException("New name cannot be empty.");
+        var newName = LobbyMemberNames.Normalize(request.NewName);
 
         if (lobbyMember.Name == newName)
             return;

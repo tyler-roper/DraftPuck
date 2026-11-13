@@ -12,6 +12,7 @@ import PeriodType from '@/enums/periodType'
 import PlayType from '@/enums/playType'
 import TeamSituation from '@/enums/teamSituation'
 import { useSystemStore } from '@/stores/system'
+import { escapeHtml } from '@/helpers/htmlHelpers'
 
 const props = defineProps<{
   game: Game
@@ -208,7 +209,7 @@ function getScorerStringByTeam(team: GameTeam) {
     const player = team.roster.find((player) => player.id === Number(playerId))
     if (!player) return ''
 
-    let output = `${player.firstName[0]} ${player.lastName}`
+    let output = escapeHtml(`${player.firstName[0]} ${player.lastName}`)
     if (goals > 1) output += ` (${goals})`
 
     return output

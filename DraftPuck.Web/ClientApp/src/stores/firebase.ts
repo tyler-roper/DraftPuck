@@ -6,6 +6,7 @@ import { useUserStore } from '@/stores/user'
 import { env } from '@/env'
 import { useToast } from 'vue-toastification'
 import VHtmlToast from '@/components/VHtmlToast.vue'
+import { escapeHtml } from '@/helpers/htmlHelpers'
 
 export const useFirebaseStore = defineStore('firebase', () => {
   const isInitialized = ref(false)
@@ -46,7 +47,7 @@ export const useFirebaseStore = defineStore('firebase', () => {
           toast(
             {
               component: VHtmlToast,
-              props: { title: `<span class='text-primary'>${title}</span>`, message: body }
+              props: { title: `<span class='text-primary'>${escapeHtml(title ?? '')}</span>`, message: escapeHtml(body ?? '') }
             },
             {
               toastClassName: 'bg-stone-900',

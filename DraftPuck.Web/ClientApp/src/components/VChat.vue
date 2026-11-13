@@ -6,6 +6,7 @@ import { storeToRefs } from 'pinia'
 import { ref, watch, nextTick, onMounted, computed } from 'vue'
 import type SystemMessageViewModel from '@/models/systemMessageViewModel'
 import { SmartSuggest, type Trigger } from 'vue-smart-suggest'
+import { escapeHtml, escapeRegExp } from '@/helpers/htmlHelpers'
 
 //const
 const SECONDS_BETWEEN_MESSAGES = 3
@@ -124,18 +125,21 @@ async function sendMessage(e: Event, isSystem: boolean = false) {
 }
 
 function highlightMentions(message: string) {
-  message = message.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;')
+  message = escapeHtml(message)
   if (!lobby.value) return message
 
   const currentLobbyMember = lobby.value.members.find((lm) => lm.userId === currentUserId.value)
   if (!currentLobbyMember) return message
-  const updatedMessage = message.replace(new RegExp('(^|\\s)(@' + currentLobbyMember.name + ')(\\s|$)', 'ig'), '$1<span class="mention">$2</span>$3')
+  const updatedMessage = message.replace(new RegExp('(^|\\s)(@' + mentionPattern(currentLobbyMember.name) + ')(\\s|$)', 'ig'), '$1<span class="mention">$2</span>$3')
   const otherLobbyMembers = lobby.value.members.filter((lm) => lm.userId !== currentUserId.value && !lm.isBot && !lm.isRemoved)
   return otherLobbyMembers.reduce(
-    (finalMessage, lobbyMember) => finalMessage.replace(new RegExp('(^|\\s)(@' + lobbyMember.name + ')(\\s|$)', 'ig'), '$1<b>$2</b>$3'),
+    (finalMessage, lobbyMember) => finalMessage.replace(new RegExp('(^|\\s)(@' + mentionPattern(lobbyMember.name) + ')(\\s|$)', 'ig'), '$1<b>$2</b>$3'),
     updatedMessage
   )
 }
+
+// The message has already been HTML-escaped, so match the escaped form of the name, treated literally.
+const mentionPattern = (name: string) => escapeRegExp(escapeHtml(name))
 
 function onChatScroll() {
   if (!messagesContainer.value) return

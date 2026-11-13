@@ -1,3 +1,4 @@
+import { escapeHtml } from '@/helpers/htmlHelpers'
 import TeamColorLookup from '@/models/teamColorLookup'
 import FeedItemType from '@/enums/feedItemType'
 import GoalTexts from '@/models/goalTexts'
@@ -103,7 +104,7 @@ export default class FeedItem {
     }
 
     if (play.type === PlayType.Penalty) {
-      if (player && play.penalty) text = `${player.firstName} ${player.lastName} - ${this.camelCaseToTitleCase(play.penalty)}`
+      if (player && play.penalty) text = escapeHtml(`${player.firstName} ${player.lastName} - ${this.camelCaseToTitleCase(play.penalty)}`)
       else text = 'Waiting for details...'
     }
 
@@ -152,7 +153,7 @@ export default class FeedItem {
   private static getRandomGoalText(playerName: string, play: Play): string {
     const seed = Math.floor(Number(play.timeInPeriod.split(':')[1]))
     const randomString = GoalTexts.seed(seed)
-    const replaced = randomString.replace('{{player}}', `<strong>${playerName}</strong>`)
+    const replaced = randomString.replace('{{player}}', `<strong>${escapeHtml(playerName)}</strong>`)
 
     return `&#x1F6A8; ${replaced}!`
   }

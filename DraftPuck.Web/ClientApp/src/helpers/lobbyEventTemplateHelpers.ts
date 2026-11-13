@@ -1,3 +1,4 @@
+import { escapeHtml } from '@/helpers/htmlHelpers'
 import LobbyEventTemplate from '@/models/lobbyEventTemplates'
 import TeamColorLookup from '@/models/teamColorLookup'
 
@@ -7,11 +8,11 @@ export function parseLobbyEventText(lobbyEvent: LobbyEvent, lobby: Lobby, games:
   const templates = [
     new LobbyEventTemplate(['{{name}}', '{{senderName}}'], (token, eventText) => {
       const name = lobby.members.find((m) => m.id === lobbyEvent.lobbyMemberId)?.name ?? '(name)'
-      return eventText.replace(token, `<strong>${name}</strong>`)
+      return eventText.replace(token, `<strong>${escapeHtml(name)}</strong>`)
     }),
     new LobbyEventTemplate(['{{recipientName}}'], (token, eventText) => {
       const name = lobby.members.find((m) => m.id === lobbyEvent.lobbyMember2Id)?.name ?? '(recipient)'
-      return eventText.replace(token, `<strong>${name}</strong>`)
+      return eventText.replace(token, `<strong>${escapeHtml(name)}</strong>`)
     }),
     new LobbyEventTemplate(['{{player}}', '{{newScorer}}'], (token, eventText) => {
       const game = games.find((g) => g.id === lobbyEvent.gameId)
@@ -20,7 +21,7 @@ export function parseLobbyEventText(lobbyEvent: LobbyEvent, lobby: Lobby, games:
       const player = game.playerSummaries.find((p) => p.id === lobbyEvent.playerId)
       if (!player) return 'Goal Changed'
       const name = `${player.firstName} ${player.lastName}`
-      return eventText.replace(token, `<strong>${name}</strong>`)
+      return eventText.replace(token, `<strong>${escapeHtml(name)}</strong>`)
     }),
     new LobbyEventTemplate(['{{player2}}', '{{oldScorer}}'], (token, eventText) => {
       const game = games.find((g) => g.id === lobbyEvent.gameId)
@@ -29,7 +30,7 @@ export function parseLobbyEventText(lobbyEvent: LobbyEvent, lobby: Lobby, games:
       const player = game.playerSummaries.find((p) => p.id === lobbyEvent.player2Id)
       if (!player) return 'Goal Changed'
       const name = `${player.firstName} ${player.lastName}`
-      return eventText.replace(token, `<strong>${name}</strong>`)
+      return eventText.replace(token, `<strong>${escapeHtml(name)}</strong>`)
     }),
     new LobbyEventTemplate(['{{playerBadge}}'], (token, eventText) => {
       const game = games.find((g) => g.id === lobbyEvent.gameId)
@@ -44,7 +45,7 @@ export function parseLobbyEventText(lobbyEvent: LobbyEvent, lobby: Lobby, games:
       const playerLastName = game.playerSummaries.find((p) => p.id === lobbyEvent.playerId)?.lastName ?? '(Player)'
       return eventText.replace(
         token,
-        `<span class='d-inline-block ps-3 ms-1 badge text-uppercase text-shadow' style='align-self: center; background-color: ${teamColor} !important;'>${img} ${playerLastName}</span>`
+        `<span class='d-inline-block ps-3 ms-1 badge text-uppercase text-shadow' style='align-self: center; background-color: ${teamColor} !important;'>${img} ${escapeHtml(playerLastName)}</span>`
       )
     })
   ]
