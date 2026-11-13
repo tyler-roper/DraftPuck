@@ -11,6 +11,7 @@
     "build-only:release": "vite build --mode=release --emptyOutDir",
     "type-check": "vue-tsc --noEmit -p tsconfig.app.json --composite false",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
+    "lint:check": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore --max-warnings 0",
     "format": "prettier --write src/",
     "test": "vitest run",
     "test:watch": "vitest"

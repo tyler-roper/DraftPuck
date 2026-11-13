@@ -35,8 +35,6 @@ const pickingStartingTimer = ref<number>()
 const timeUntilPicking = ref<string>()
 const pickTime = ref(addMinutes(game.value.dateTime, -30))
 const isRosterVisible = ref(false)
-const isBotPickingAway = ref(false)
-const isBotPickingHome = ref(false)
 
 //computed
 const gameIsPickable = computed(() => lobby.value?.gameIds.includes(game.value.id))
@@ -47,7 +45,6 @@ const isExtraTime = computed(() => game.value.period > 3)
 const isThirdPeriod = computed(() => game.value.period === 3)
 const isCloseGame = computed(() => Math.abs(game.value.awayTeam.score - game.value.homeTeam.score) <= 1)
 const isLateInPeriod = computed(() => game.value.minutesRemainingInPeriod < 5)
-const bots = computed(() => lobby.value?.members.filter((m) => m.isBot) ?? [])
 const teams = computed(() => ({ home: game.value.homeTeam, away: game.value.awayTeam }))
 const pickedPlayers = computed(
   () =>
@@ -224,10 +221,6 @@ function getPickerName(playerId: number) {
 
 function isPlayerPicked(playerId: number) {
   return !!getPickerName(playerId)
-}
-
-function botsHavePicks(team: GameTeam) {
-  return bots.value.some((bot) => userHasPicksForTeam(bot, team))
 }
 
 function userHasPicksForTeam(member: LobbyMember, team: GameTeam) {
