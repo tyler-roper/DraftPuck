@@ -6,12 +6,19 @@ using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 var builder = FunctionsApplication
     .CreateBuilder(args)
     .ConfigureFunctionsWebApplication();
 
 builder.Configuration.AddEnvironmentVariables("DRAFTPUCK_");
+
+// HttpClient logs four Information lines per request, and the NHL API is called constantly
+// during games. Failures still surface as exceptions in the code that made the call.
+builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
+// Azure.Core logs a warning for the expected 409 when CreateIfNotExists finds an existing queue or container.
+builder.Logging.AddFilter("Azure.Core", LogLevel.Error);
 
 builder.Services
     .Configure<ApplicationOptions>(options => builder.Configuration.Bind(ApplicationOptions.SectionName, options))

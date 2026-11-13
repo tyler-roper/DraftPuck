@@ -10,69 +10,41 @@ public class ApiExceptionFilterAttribute(
 {
     public override void OnException(ExceptionContext context)
     {
-        logger.LogError(context.Exception, "An unhandled exception occurred.");
+        var exception = context.Exception;
 
-        if (context.Exception is NotFoundException)
+        var (status, title) = exception switch
         {
-            var details = new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "Not Found",
-                Detail = context.Exception.Message
-            };
-            context.Result = new NotFoundObjectResult(details);
-        }
-        else if (context.Exception is UnauthorizedException)
+            NotFoundException => (StatusCodes.Status404NotFound, "Not Found"),
+            UnauthorizedException => (StatusCodes.Status401Unauthorized, "Unauthorized"),
+            BadRequestException or ValidationException => (StatusCodes.Status400BadRequest, "Bad Request"),
+            ForbiddenException => (StatusCodes.Status403Forbidden, "Forbidden"),
+            _ => (StatusCodes.Status500InternalServerError, "An error occurred while processing your request.")
+        };
+
+        ProblemDetails details;
+        if (status == StatusCodes.Status500InternalServerError)
         {
-            var details = new ProblemDetails
-            {
-                Status = StatusCodes.Status401Unauthorized,
-                Title = "Unauthorized",
-                Detail = context.Exception.Message
-            };
-            context.Result = new ObjectResult(details) { StatusCode = StatusCodes.Status401Unauthorized };
-        }
-        else if (context.Exception is BadRequestException || context.Exception is ValidationException)
-        {
-            var details = new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Bad Request",
-                Detail = context.Exception.Message
-            };
-            context.Result = new BadRequestObjectResult(details);
-        }
-        else if (context.Exception is ForbiddenException)
-        {
-            var details = new ProblemDetails
-            {
-                Status = StatusCodes.Status403Forbidden,
-                Title = "Forbidden",
-                Detail = context.Exception.Message
-            };
-            context.Result = new ObjectResult(details) { StatusCode = StatusCodes.Status403Forbidden };
+            logger.LogError(exception, "An unhandled exception occurred.");
+
+            details = environment.IsDevelopment()
+                ? new ProblemDetails { Status = status, Title = $"Unhandled Exception: {exception.GetType().Name}", Detail = exception.ToString() }
+                : new ProblemDetails { Status = status, Title = title, Detail = "An unexpected error occurred. Please try again." };
         }
         else
         {
-            var details = new ProblemDetails
-            {
-                Status = StatusCodes.Status500InternalServerError,
-                Title = "An error occurred while processing your request."
-            };
+            // Expected client errors (expired session, bad input, missing resource) are not failures
+            // of the app, so log one line without a stack trace instead of an error.
+            logger.LogInformation(
+                "{StatusCode} {ExceptionType}: {Message}{InnerMessage}",
+                status,
+                exception.GetType().Name,
+                exception.Message,
+                exception.InnerException is { } inner ? $" ({inner.GetType().Name}: {inner.Message})" : "");
 
-            if (environment.IsDevelopment())
-            {
-                details.Title = $"Unhandled Exception: {context.Exception.GetType().Name}";
-                details.Detail = context.Exception.ToString();
-            }
-            else
-            {
-                details.Detail = "An unexpected error occurred. Please try again.";
-            }
-
-            context.Result = new ObjectResult(details) { StatusCode = StatusCodes.Status500InternalServerError };
+            details = new ProblemDetails { Status = status, Title = title, Detail = exception.Message };
         }
 
+        context.Result = new ObjectResult(details) { StatusCode = status };
         context.ExceptionHandled = true;
         base.OnException(context);
     }

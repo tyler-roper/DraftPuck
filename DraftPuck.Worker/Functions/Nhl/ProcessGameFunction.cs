@@ -13,13 +13,14 @@ public class ProcessGameFunction(IMediator mediator, ILogger<ProcessGameFunction
     {
         try
         {
-            logger.LogInformation("ProcessGameFunction triggered for game {GameId}", message.GameId);
+            // Debug: this runs every few seconds per live game, and the handler already logs what it did.
+            logger.LogDebug("ProcessGameFunction triggered for game {GameId}", message.GameId);
             await mediator.Send(new ProcessGameCommand(message.GameId, message.IsInitialPopulation));
-            logger.LogInformation("ProcessGameCommand for {GameId} dispatched", message.GameId);
+            logger.LogDebug("ProcessGameCommand for {GameId} dispatched", message.GameId);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, $"Error processing game {message.GameId}");
+            logger.LogError(ex, "Error processing game {GameId}", message.GameId);
             throw;
         }
     }
