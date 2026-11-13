@@ -3,6 +3,4 @@ interface Banner {
   imagePath: string
   uniqueIdentifier: string
   achievementId: string
-  friendlyName: null
-  description: null
 }

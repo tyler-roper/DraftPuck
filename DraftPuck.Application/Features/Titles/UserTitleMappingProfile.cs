@@ -7,6 +7,7 @@ public class UserTitleMappingProfile : Profile
         CreateMap<UserTitleEntity, TitleDto>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.TitleId))
             .ForMember(dest => dest.Text, opt => opt.MapFrom(src => src.Title.Text))
-            .ForMember(dest => dest.UniqueIdentifier, opt => opt.MapFrom(src => src.Title.UniqueIdentifier));
+            .ForMember(dest => dest.UniqueIdentifier, opt => opt.MapFrom(src => src.Title.UniqueIdentifier))
+            .ForMember(dest => dest.AchievementId, opt => opt.MapFrom(src => src.Title.AchievementId));
     }
 }

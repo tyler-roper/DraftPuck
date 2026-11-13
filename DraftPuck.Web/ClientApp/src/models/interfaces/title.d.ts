@@ -3,6 +3,4 @@ interface Title {
   text: string
   uniqueIdentifier: string
   achievementId: string
-  friendlyName: null
-  description: null
 }
