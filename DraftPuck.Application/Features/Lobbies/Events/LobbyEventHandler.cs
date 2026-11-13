@@ -11,6 +11,7 @@ public class LobbyEventHandler(IDbContext dbContext, IMediator mediator) :
     INotificationHandler<UserPromotedNotification>,
     INotificationHandler<PickMadeNotification>,
     INotificationHandler<PickRemovedNotification>,
+    INotificationHandler<PickScratchedNotification>,
     INotificationHandler<DrinkAssignedNotification>,
     INotificationHandler<DrinkAwardedNotification>,
     INotificationHandler<DrinkRemovedNotification>,
@@ -64,6 +65,12 @@ public class LobbyEventHandler(IDbContext dbContext, IMediator mediator) :
     public Task Handle(PickRemovedNotification n, CancellationToken ct)
     {
         return NewLobbyEvent(n.Data.Lobby, LobbyEventType.PickRemoved, ct, lobbyMemberId: n.Data.Member.Id,
+            gameId: n.Data.Pick.GameId, playerId: n.Data.Pick.PlayerId, teamId: n.Data.Pick.TeamId);
+    }
+
+    public Task Handle(PickScratchedNotification n, CancellationToken ct)
+    {
+        return NewLobbyEvent(n.Data.Lobby, LobbyEventType.PickScratched, ct, lobbyMemberId: n.Data.Member.Id,
             gameId: n.Data.Pick.GameId, playerId: n.Data.Pick.PlayerId, teamId: n.Data.Pick.TeamId);
     }
 

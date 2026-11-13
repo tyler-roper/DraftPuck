@@ -16,4 +16,10 @@ public class GameDto
     public string TimeRemainingInPeriod => MinutesRemainingInPeriod > 0 || SecondsRemainingInPeriod > 0 ? $"{MinutesRemainingInPeriod:0}:{SecondsRemainingInPeriod:00}" : "End";
     public List<PeriodSummaryDto> GoalsByPeriod { get; set; } = [];
     public List<PlayerSummaryDto> PlayerSummaries { get; set; } = [];
+
+    /// <summary>
+    /// Players who were in this game's lineup earlier but no longer are (e.g. scratched before puck drop). Not pickable;
+    /// kept so lobby events that mention them can still show their names. Not from the NHL: carried forward each poll.
+    /// </summary>
+    public List<PlayerSummaryDto> FormerPlayers { get; set; } = [];
 }

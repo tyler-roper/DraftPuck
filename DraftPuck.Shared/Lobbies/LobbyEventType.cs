@@ -17,5 +17,7 @@ public enum LobbyEventType
     Broadcast,
     PickRemoved,
     UserLeft,
-    UserPromoted
+    UserPromoted,
+    // Stored as an int and mirrored in the client's lobbyEventType.ts: add new values at the end only.
+    PickScratched
 }

@@ -30,6 +30,7 @@ public class GoalCorrectionPipelineTests(DatabaseFixture fixture)
 
     private readonly InMemoryGameCache _cache = new();
     private readonly INhlClient _nhl = Substitute.For<INhlClient>();
+    private readonly IPushNotificationService _push = Substitute.For<IPushNotificationService>();
     private readonly int _gameId = Seed.NewGameId();
     private readonly DateTime _start = DateTime.UtcNow;
 
@@ -71,7 +72,7 @@ public class GoalCorrectionPipelineTests(DatabaseFixture fixture)
             .AddSingleton(_nhl)
             .AddSingleton(Substitute.For<INhlQueueService>())
             .AddSingleton(Substitute.For<IAchievementQueueService>())
-            .AddSingleton(Substitute.For<IPushNotificationService>())
+            .AddSingleton(_push)
             .AddSingleton(Substitute.For<IClientEventService>())
             .AddScoped<IDbContext>(_ => fixture.CreateContext());
         return services.BuildServiceProvider();
@@ -314,6 +315,90 @@ public class GoalCorrectionPipelineTests(DatabaseFixture fixture)
         await using var db = fixture.CreateContext();
         Assert.False((await db.LobbyMemberPicks.AsNoTracking().SingleAsync(p => p.Id == _johnPickId)).IsActive);
         Assert.True((await db.LobbyMemberPicks.AsNoTracking().SingleAsync(p => p.Id == _janePickId)).IsActive);
+    }
+
+    /// <summary>Polls with John dropped from the NHL lineup, as when he's scratched before puck drop.</summary>
+    private async Task ScratchJohnAsync()
+    {
+        _nhl.GetPlayerAsync(Arg.Any<int>()).Returns(ci => new PlayerDto { Id = ci.Arg<int>(), TeamId = 99 });
+        var withoutJohn = Game();
+        withoutJohn.PlayerSummaries.RemoveAll(s => s.Id == John);
+        await PollAsync(withoutJohn);
+    }
+
+    private async Task SetJohnPickerNotificationsAsync(NotificationPreference pickingStarted)
+    {
+        await using var db = fixture.CreateContext();
+        var user = await db.Users.SingleAsync(u => u.Id == _johnPickerUserId);
+        user.FcmRegistrationToken = "john-picker-token";
+        user.PickingStartedNotificationPreference = pickingStarted;
+        await db.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task ScratchIsAnnouncedAsAScratchNotAnUnpick()
+    {
+        await SeedLobbyAsync();
+        await PollAsync(Game());
+
+        await ScratchJohnAsync();
+
+        var scratched = Assert.Single(await EventsAsync(LobbyEventType.PickScratched));
+        Assert.Equal(_johnPicker, scratched.LobbyMemberId); // {{name}}
+        Assert.Equal(John, scratched.PlayerId);             // {{playerBadge}}
+        Assert.Empty(await EventsAsync(LobbyEventType.PickRemoved));
+    }
+
+    [Fact]
+    public async Task ScratchedPlayerStaysNameableButNotPickable()
+    {
+        await SeedLobbyAsync();
+        await PollAsync(Game());
+
+        await ScratchJohnAsync();
+
+        var cached = (await _cache.GetGameByIdAsync(_gameId))!;
+        var former = Assert.Single(cached.FormerPlayers);
+        Assert.Equal((John, "Player", "1-2"), (former.Id, former.FirstName, former.LastName));
+        Assert.DoesNotContain(cached.HomeTeam.Roster, p => p.Id == John);
+
+        // Still listed on later polls, until he's back in the lineup.
+        await PollAsync(WithoutJohn());
+        Assert.Single((await _cache.GetGameByIdAsync(_gameId))!.FormerPlayers);
+        await PollAsync(Game());
+        Assert.Empty((await _cache.GetGameByIdAsync(_gameId))!.FormerPlayers);
+
+        GameDto WithoutJohn()
+        {
+            var game = Game();
+            game.PlayerSummaries.RemoveAll(s => s.Id == John);
+            return game;
+        }
+    }
+
+    [Fact]
+    public async Task PickOwnerIsToldTheirPlayerWasScratched()
+    {
+        await SeedLobbyAsync();
+        await SetJohnPickerNotificationsAsync(NotificationPreference.Relevant);
+        await PollAsync(Game());
+
+        await ScratchJohnAsync();
+
+        await _push.Received(1).SendLobbyEventNotification(_joinCode, "Pick scratched", "Player 1-2 isn't playing. Pick someone else!",
+            "john-picker-token", Arg.Any<Dictionary<string, string>?>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task NoScratchNotificationWhenPickingNotificationsAreOff()
+    {
+        await SeedLobbyAsync();
+        await SetJohnPickerNotificationsAsync(NotificationPreference.None);
+        await PollAsync(Game());
+
+        await ScratchJohnAsync();
+
+        await _push.DidNotReceiveWithAnyArgs().SendLobbyEventNotification(default!, default!, default!, default!);
     }
 
     [Fact]

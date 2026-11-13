@@ -16,6 +16,7 @@ public class GameMappingProfile : Profile
             .ForMember(dest => dest.GameType, opt => opt.MapFrom(src => NhlMappingHelpers.MapGameType(src.GameType)))
             .ForMember(dest => dest.Period, opt => opt.MapFrom(src => src.PeriodDescriptor.Number))
             .ForMember(dest => dest.PlayerSummaries, opt => opt.MapFrom(src => src.RosterSpots))
+            .ForMember(dest => dest.FormerPlayers, opt => opt.Ignore()) // carried forward by GameRosterSync, not sent by the NHL
             .AfterMap((src, dest) =>
             {
                 dest.HomeTeam.Strength = NhlMappingHelpers.MapStrength(src.Situation, true);

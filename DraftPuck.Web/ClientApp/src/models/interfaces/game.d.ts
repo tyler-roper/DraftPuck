@@ -13,4 +13,6 @@ interface Game {
   timeRemainingInPeriod: string
   goalsByPeriod: PeriodSummary[]
   playerSummaries: PlayerSummary[]
+  // Players who left the lineup (e.g. scratched). Not pickable; only used to name them in the feed.
+  formerPlayers?: PlayerSummary[]
 }

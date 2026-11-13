@@ -26,6 +26,8 @@ public record UserLeftNotification(LobbyMemberEventPayload Data) : INotification
 public record UserPromotedNotification(LobbyMemberEventPayload Data) : INotification;
 public record PickMadeNotification(LobbyPickEventPayload Data) : INotification;
 public record PickRemovedNotification(LobbyPickEventPayload Data) : INotification;
+/// <summary>The system removed a pick because its player left the game's lineup (e.g. scratched before puck drop).</summary>
+public record PickScratchedNotification(LobbyPickEventPayload Data) : INotification;
 public record DrinkAssignedNotification(LobbyDrinkEventPayload Data) : INotification;
 public record MessageSentNotification(LobbyMessageEventPayload Data) : INotification;
 public record LobbyEventCreatedNotification(LobbyEventEntity Event, string JoinCode) : INotification;
