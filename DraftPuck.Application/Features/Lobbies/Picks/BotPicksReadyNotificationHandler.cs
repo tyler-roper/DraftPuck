@@ -6,8 +6,14 @@ public class BotPicksReadyNotificationHandler(IDbContext dbContext, IMediator me
     {
         var game = notification.Game;
         var gameId = game.Id;
+        // This runs on every poll (every 10 seconds during live games), so only load lobbies where a bot still has
+        // picks left for this game. Once every bot is full, this is a single query that returns nothing.
         var lobbies = await dbContext.Lobbies
-            .Where(l => l.IsActive && l.LobbyMembers.Any(m => m.IsBot) && l.GameIds.Contains(game.Id))
+            .Where(l => l.IsActive
+                && l.GameIds.Contains(game.Id)
+                && l.LobbyMembers.Any(m => m.IsBot
+                    && !m.IsRemoved
+                    && m.LobbyMemberPicks.Count(p => p.IsActive && p.GameId == game.Id) < l.PicksPerTeam * 2))
             .Include(l => l.LobbyMembers)
                 .ThenInclude(lm => lm.LobbyMemberPicks)
             .AsNoTracking()
@@ -65,7 +71,8 @@ public class BotPicksReadyNotificationHandler(IDbContext dbContext, IMediator me
         var availablePlayers = team.Roster.Where(player => !alreadyPicked.Contains(player.Id)).OrderByDescending(player => player.Goals).ToList();
         if (availablePlayers.Count == 0) return Task.CompletedTask;
 
-        var strategy = GetStrategy(bot.BotPickStyle!.Value, availablePlayers.Count);
+        // Bots created before pick styles were required may have none; fall back to the default strategy.
+        var strategy = GetStrategy(bot.BotPickStyle ?? BotPickStyle.Best, availablePlayers.Count);
         var (start, end, fallback) = strategy;
 
         var preferred = availablePlayers

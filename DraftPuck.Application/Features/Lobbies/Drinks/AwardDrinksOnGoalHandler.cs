@@ -1,6 +1,6 @@
 ﻿namespace DraftPuck.Application.Features.Lobbies.Drinks;
 
-public class AwardDrinksOnGoalHandler(IDbContext dbContext, IMediator mediator) : INotificationHandler<GoalScoredNotification>
+public class AwardDrinksOnGoalHandler(IDbContext dbContext, IMediator mediator, ILogger<AwardDrinksOnGoalHandler> logger) : INotificationHandler<GoalScoredNotification>
 {
     private static readonly Random _random = new();
 
@@ -34,7 +34,8 @@ public class AwardDrinksOnGoalHandler(IDbContext dbContext, IMediator mediator) 
 
         var drinksToSave = new List<DrinkEntity>();
         var drinkAwardedPayloads = new List<DrinkAwardedPayload>();
-        var botAssignments = new List<AssignDrinkCommand>();
+        // Each bot assignment keeps a reference to its own drink, so its ID can be read after saving.
+        var botAssignments = new List<(DrinkEntity Drink, AssignDrinkCommand Command)>();
 
         foreach (var pick in picksToReward)
         {
@@ -47,24 +48,20 @@ public class AwardDrinksOnGoalHandler(IDbContext dbContext, IMediator mediator) 
             drinksToSave.Add(drink);
             drinkAwardedPayloads.Add(new DrinkAwardedPayload(pick.LobbyMember.Lobby, pick.LobbyMember, drink));
 
-            // Handle bots AFTER we save drinks (we need drink id)
-            if (pick.LobbyMember.IsBot)
+            // Bots hand their drink to a random human in the lobby. Removed bots can't assign (AssignDrink only sees current members).
+            if (pick.LobbyMember.IsBot
+                && !pick.LobbyMember.IsRemoved
+                && lobbyMembersByLobbyId.TryGetValue(pick.LobbyMember.LobbyId, out var possibleRecipients)
+                && possibleRecipients.Count > 0)
             {
-                var hasPossibleRecipients = lobbyMembersByLobbyId.TryGetValue(pick.LobbyMember.LobbyId, out var possibleRecipients) 
-                    && possibleRecipients.Count > 0;
+                var recipient = possibleRecipients[_random.Next(possibleRecipients.Count)];
 
-                if (hasPossibleRecipients)
+                botAssignments.Add((drink, new AssignDrinkCommand
                 {
-                    var recipient = possibleRecipients![_random.Next(possibleRecipients.Count)];
-
-                    botAssignments.Add(new AssignDrinkCommand
-                    {
-                        Code = pick.LobbyMember.Lobby.JoinCode,
-                        RecipientLobbyMemberId = recipient.Id,
-                        AssignerUserId = pick.LobbyMember.UserId,
-                        DrinkId = Guid.Empty // DrinkId gets filled later after SaveChanges
-                    });
-                }
+                    Code = pick.LobbyMember.Lobby.JoinCode,
+                    RecipientLobbyMemberId = recipient.Id,
+                    AssignerUserId = pick.LobbyMember.UserId
+                }));
             }
         }
 
@@ -76,23 +73,18 @@ public class AwardDrinksOnGoalHandler(IDbContext dbContext, IMediator mediator) 
         foreach (var drinkAwardedPayload in drinkAwardedPayloads)
             await mediator.Publish(new DrinkAwardedNotification(drinkAwardedPayload), ct);
 
-        // Fix drink IDs for bot assignments & send them
-        int drinkIndex = 0;
-        foreach (var pick in picksToReward)
+        // A failed bot assignment only leaves that drink unassigned; it must not abort processing the rest of the game.
+        foreach (var (drink, command) in botAssignments)
         {
-            var drink = drinksToSave[drinkIndex];
-
-            if (pick.LobbyMember.IsBot)
+            command.DrinkId = drink.Id;
+            try
             {
-                var assign = botAssignments.FirstOrDefault(a => a.DrinkId == Guid.Empty);
-                if (assign != null)
-                {
-                    assign.DrinkId = drink.Id;
-                    await mediator.Send(assign, ct);
-                }
+                await mediator.Send(command, ct);
             }
-
-            drinkIndex++;
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogError(ex, "Bot failed to assign drink {drinkId} in lobby {lobbyCode}.", drink.Id, command.Code);
+            }
         }
     }
 }

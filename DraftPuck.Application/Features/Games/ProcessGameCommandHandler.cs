@@ -235,7 +235,20 @@ public class ProcessGameCommandHandler(IGameCache gameCache, IMediator mediator,
         var awayComplete = game.AwayTeam.Roster.Count == game.PlayerSummaries.Count(ps => ps.TeamId == game.AwayTeam.Id);
         var isWithin30Min = GameProcessingHelpers.IsPickWindowOpen(game, utcNow) && (game.DateTime - utcNow) > TimeSpan.Zero;
 
-        if (homeComplete && awayComplete) await mediator.Publish(new BotPicksReadyNotification(game), ct);
+        // Bot picks run on every poll, so bots added mid-game, or games whose rosters complete after puck drop, still
+        // get picks. Bots only fill their remaining picks, so repeat runs do nothing. A failure here must not block the
+        // picks-ready alert below.
+        if (homeComplete && awayComplete)
+        {
+            try
+            {
+                await mediator.Publish(new BotPicksReadyNotification(game), ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogError(ex, "Bot picks failed for {away} @ {home}.", game.AwayTeam.Abbreviation, game.HomeTeam.Abbreviation);
+            }
+        }
 
         if (homeComplete && awayComplete && isWithin30Min)
         {
