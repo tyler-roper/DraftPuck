@@ -5,8 +5,7 @@ public static class SeedAccounts
     public const string Password = "correct-horse-9";
 
     /// <summary>
-    /// A registered (non-guest) user with <see cref="Password"/>. IsGuest is cleared after insert: EF omits a false bool on
-    /// insert when the column has a database default, so the default (guest) would win.
+    /// A registered (non-guest) user with <see cref="Password"/>.
     /// </summary>
     public static async Task<UserEntity> AccountAsync(DraftPuckContext db, string? nickname = null, bool isAdmin = false)
     {
@@ -17,11 +16,10 @@ public static class SeedAccounts
             Nickname = nickname,
             Email = $"{nickname}@example.com",
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(Password),
-            IsAdmin = isAdmin
+            IsAdmin = isAdmin,
+            IsGuest = false
         };
         db.Users.Add(user);
-        await db.SaveChangesAsync();
-        user.IsGuest = false;
         await db.SaveChangesAsync();
         return user;
     }
