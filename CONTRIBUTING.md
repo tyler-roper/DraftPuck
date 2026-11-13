@@ -43,3 +43,24 @@ git push origin feature/my-feature
 - Use C# primary constructors
 - Follow `.editorconfig`
 - Run tests locally before PR
+
+### Running tests
+Every pull request runs both suites in GitHub Actions, and a deploy to `main` only proceeds if they pass.
+
+**Server** (`DraftPuck.Tests`, xUnit) needs Docker running: the tests start SQL Server and Redis containers
+(Testcontainers) and apply the real migrations, so queries are tested exactly as they run in production.
+```bash
+dotnet test DraftPuck.Tests
+```
+- `Application/` tests handlers against the database, with other services faked using NSubstitute.
+- `Infrastructure/` tests the Redis game cache and NHL mapping.
+- `Web/` sends real HTTP requests through the app (auth, filters, SignalR) with `ApiFactory`.
+- `Support/` has the fixtures and seed helpers. Tests share one database, so seed your own lobbies and use
+  `Seed.NewGameId()` rather than fixed IDs.
+
+**Client** (Vitest):
+```bash
+cd DraftPuck.Web/ClientApp
+npm test            # or: npm run test:watch
+```
+Put specs in a `__tests__` folder next to the code, named `*.spec.ts`.

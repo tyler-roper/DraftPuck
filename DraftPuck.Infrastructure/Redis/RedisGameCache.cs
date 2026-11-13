@@ -1,4 +1,5 @@
-﻿using DraftPuck.Application.Common.Exceptions;
+﻿using System.Globalization;
+using DraftPuck.Application.Common.Exceptions;
 using DraftPuck.Application.Features.Games;
 using StackExchange.Redis;
 using System.Text.Json;
@@ -96,7 +97,8 @@ public class RedisGameCache(IDatabase redisDb) : IGameCache
         if (value.IsNullOrEmpty)
             return null;
 
-        if (DateTime.TryParse(value!, out var nextRun))
+        // Stored with "O" (UTC); RoundtripKind keeps it UTC instead of converting to the machine's local time.
+        if (DateTime.TryParse(value!, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var nextRun))
             return nextRun;
 
         return null;

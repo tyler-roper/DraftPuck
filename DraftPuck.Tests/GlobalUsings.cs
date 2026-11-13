@@ -1,0 +1,12 @@
+global using DraftPuck.Application.Common.Interfaces;
+global using DraftPuck.Infrastructure.Persistence;
+global using DraftPuck.Shared.Games;
+global using DraftPuck.Shared.Lobbies;
+global using DraftPuck.Shared.System;
+global using DraftPuck.Shared.Users;
+global using DraftPuck.Tests.Support;
+global using MediatR;
+global using Microsoft.EntityFrameworkCore;
+global using Microsoft.Extensions.Logging.Abstractions;
+global using NSubstitute;
+global using Xunit;
