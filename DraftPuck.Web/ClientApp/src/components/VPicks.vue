@@ -4,8 +4,10 @@ import { useLobbyStore } from '@/stores/lobby'
 import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import VPick from '@/components/VPick.vue'
-import { addMinutes, differenceInMilliseconds, formatDuration, intervalToDuration } from 'date-fns'
+import { differenceInMilliseconds, formatDuration, intervalToDuration } from 'date-fns'
 import GamePickableStatus from '@/enums/gamePickableStatus'
+import { canRemovePick, findPick, getPickableStatus, hasPicksLeftInGame, picksRemaining } from '@/helpers/pickRules'
+import { getErrorMessage } from '@/helpers/requestHelpers'
 import { useToast } from 'vue-toastification'
 import PickRequest from '@/models/pickRequest'
 import GameState from '@/enums/gameState'
@@ -30,10 +32,12 @@ const selectedTeamId = ref<number>()
 const teamRosterContainer = ref<HTMLDivElement | null>(null)
 const gameCountdowns = ref<Record<number, { asString: string; asMilliseconds: number }>>()
 const countdownTimer = ref<number>()
-const { lobby, currentUserId, isLobbyAdmin } = storeToRefs(lobbyStore)
+const { lobby, currentUserId } = storeToRefs(lobbyStore)
 const { currentSystemTime } = storeToRefs(systemStore)
-const { pickPlayer, removePick } = lobbyStore
+const { makePicks, removePick } = lobbyStore
 const selectedPlayers = ref<Player[]>([])
+// Selected players sent to the server by Lock In, until it answers.
+const pendingPlayerIds = ref(new Set<number>())
 const justLockedIn = ref(false)
 const selectedMember = ref<LobbyMember>()
 const removingPlayer = ref<Player>()
@@ -76,17 +80,10 @@ const nextUpcomingPicks = computed(() => {
 })
 
 const firstPickableGame = computed(() => games.value.find(currentUserHasPicksForGame))
-const isSelectedGameLocked = computed(() => !lobby.value?.gameIds.includes(selectedGame.value!.id))
-const isSelectedGameStarted = computed(() => selectedGame.value!.gameState !== GameState.Upcoming)
-const isSelectedGameOver = computed(() => selectedGame.value!.gameState === GameState.Final)
 
-const gamePickableStatusForCurrentMember = computed(() => {
-  if (isSelectedGameLocked.value) return GamePickableStatus.Locked
-  if (!isSelectedGameStarted.value && selectedGame.value!.dateTime > addMinutes(currentSystemTime.value, 30)) return GamePickableStatus.Upcoming
-  if (isSelectedGameOver.value) return GamePickableStatus.GameComplete
-
-  return currentUserHasPicksForGame(selectedGame.value!) ? GamePickableStatus.PicksAvailable : GamePickableStatus.PicksMade
-})
+const gamePickableStatusForCurrentMember = computed(() =>
+  getPickableStatus(lobby.value!, currentMember.value, selectedGame.value!, currentSystemTime.value)
+)
 
 const selectedTeamRosterSorted = computed(() => {
   if (selectedTeam.value === undefined) return []
@@ -112,7 +109,7 @@ const selectedTeamRosterSorted = computed(() => {
 //#region methods
 function getGameCountdowns() {
   gameCountdowns.value = games.value.reduce<Record<number, { asString: string; asMilliseconds: number }>>((acc, game) => {
-    const pickTime = addMinutes(game.dateTime, -30)
+    const pickTime = game.pickingOpensUtc
     const duration = intervalToDuration({ start: pickTime, end: currentSystemTime.value })
     const lessThanOneMinute = duration.hours === 0 && duration.minutes == 0
     acc[game.id] = {
@@ -135,32 +132,26 @@ function selectTeam(team: GameTeam) {
   teamRosterContainer.value.scrollTop = 0
 }
 
-async function pick(playerId: number, teamId: number, lobbyMemberId?: string) {
-  if (!lobby.value) return
-  lobbyMemberId = lobbyMemberId ?? currentMember.value.id
-  if (!lobbyMemberId) return
-
-  const picks = lobby.value.members.flatMap((m) => m.picks)
-  const existingPick = picks.find((p) => p.gameId === selectedGame.value!.id && p.playerId === playerId)
-
-  if (existingPick) {
-    const picker = lobby.value.members.find((lm) => lm.id === lobbyMemberId)
-    if (picker != undefined && picker.userId === currentUserId.value) {
-      const member = lobby.value.members.find((m) => m.picks.includes(existingPick))
-      let name = member ? `<strong>${member.name}</strong> has` : 'Someone has'
-      if (member?.userId === currentUserId.value) name = 'You have'
-      toast.error(`Oops! ${name} already picked this player.`)
-    }
-    return
-  }
-
-  await pickPlayer(new PickRequest(lobbyMemberId, playerId, selectedGame.value!.id, teamId))
-}
-
+/**
+ * Sends the selected players to the server. They show as pending until it answers; accepted ones become picks, and
+ * refused ones go back to unselected with the server's reason. Moves on to the next team or game only if all succeeded.
+ */
 async function lockIn() {
-  await Promise.all(selectedPlayers.value.map(({ id, teamId }) => pick(id, teamId, currentMember.value.id)))
+  const game = selectedGame.value
+  if (!game || pendingPlayerIds.value.size > 0 || selectedPlayers.value.length === 0) return
 
+  const players = [...selectedPlayers.value]
+  pendingPlayerIds.value = new Set(players.map((p) => p.id))
+  const results = await makePicks(players.map((p) => new PickRequest(currentMember.value.id, p.id, game.id, p.teamId)))
+  pendingPlayerIds.value = new Set()
   selectedPlayers.value = []
+
+  const refused = results.filter((r) => r.error)
+  for (const { request, error } of refused) {
+    const player = players.find((p) => p.id === request.playerId)!
+    toast.error(`${player.firstName} ${player.lastName}: ${error}`)
+  }
+  if (refused.length > 0) return
 
   const picksLeftForThisTeam = getPicksRemainingByMemberAndTeam(currentMember.value, selectedTeam.value!)
   if (picksLeftForThisTeam === 0) {
@@ -183,11 +174,11 @@ async function lockIn() {
 }
 
 function checkIfSelectedPlayerWasPicked() {
-  if (!lobby.value) return
+  if (!lobby.value || !selectedGame.value) return
 
-  const allPickedPlayerIds = lobby.value.members.flatMap((m) => m.picks.map((p) => p.playerId))
+  const gameId = selectedGame.value.id
   const oldSelectedPlayersCount = selectedPlayers.value.length
-  selectedPlayers.value = selectedPlayers.value.filter((player) => !allPickedPlayerIds.includes(player.id))
+  selectedPlayers.value = selectedPlayers.value.filter((player) => !findPick(lobby.value!, gameId, player.id))
   const newSelectedPlayersCount = selectedPlayers.value.length
 
   if (oldSelectedPlayersCount > newSelectedPlayersCount) toast.error('Sorry, someone picked one of your selections!')
@@ -204,26 +195,19 @@ function selectMember(member?: LobbyMember) {
 
 async function unpick(game: Game, player: Player) {
   if (!canRemovePlayer(game, player)) return
-  const pick = lobby.value!.members.flatMap((m) => m.picks).find((p) => p.playerId === player.id)
-  await removePick(pick!.id)
+  const { pick } = findPick(lobby.value!, game.id, player.id)!
+  try {
+    await removePick(pick.id)
+  } catch (error) {
+    toast.error(getErrorMessage(error, "Couldn't remove that pick. Please try again."))
+  }
 }
 //#endregion
 
 //#region helpers
 function canRemovePlayer(game: Game, player: Player) {
-  //not picked
-  const pick = lobby.value?.members.flatMap((m) => m.picks).find((p) => p.playerId === player.id)
-  if (!pick) return false
-
-  if (isLobbyAdmin.value) return true
-
-  //game started
-  if (game.gameState !== GameState.Upcoming) return false
-
-  //not current member's pick
-  if (pick.lobbyMemberId !== currentMember.value.id) return false
-
-  return true
+  const found = lobby.value && findPick(lobby.value, game.id, player.id)
+  return !!found && canRemovePick(lobby.value!, game, found.pick, currentMember.value)
 }
 
 function isRemovingPlayer(player: Player) {
@@ -235,14 +219,7 @@ function isPlayerSelected(player: Player) {
 }
 
 function currentUserHasPicksForGame(game: Game) {
-  const isGameStartingWithin30Minutes = game.gameState === GameState.Upcoming && addMinutes(game.dateTime, -30) < currentSystemTime.value
-  const isGamePickable =
-    game.awayTeam.roster.length + game.homeTeam.roster.length > 0 && (game.gameState === GameState.Live || isGameStartingWithin30Minutes)
-  const isGameLocked = !lobby.value?.gameIds.includes(game.id)
-
-  const picksPerTeam = lobby.value!.picksPerTeam
-  const picksAlreadyMadeForGame = currentMember.value.picks.filter((pick) => pick.gameId === game.id).length
-  return !isGameLocked && isGamePickable && picksAlreadyMadeForGame < picksPerTeam * 2
+  return hasPicksLeftInGame(lobby.value!, currentMember.value, game, currentSystemTime.value)
 }
 
 function togglePlayerSelection(player: Player) {
@@ -257,12 +234,7 @@ function togglePlayerRemoving(game: Game, player: Player) {
 }
 
 function getPicksRemainingByMemberAndTeam(member: LobbyMember, team: GameTeam) {
-  const memberPicks = member.picks
-  return (
-    lobby.value!.picksPerTeam -
-    memberPicks.filter((pick) => team.roster.some((rosterPlayer) => rosterPlayer.id === pick.playerId)).length -
-    selectedPlayers.value.length
-  )
+  return picksRemaining(lobby.value!, member, selectedGame.value!.id, team.id, selectedPlayers.value.length)
 }
 
 function getLogo(team: GameTeam) {
@@ -466,6 +438,7 @@ function selectGame(game?: Game) {
           :game="selectedGame"
           :is-for-picking="true"
           :is-selected="isPlayerSelected(player)"
+          :is-pending="pendingPlayerIds.has(player.id)"
           :selected-player-count="selectedPlayers.length"
           @on-selected="togglePlayerSelection"
         />
@@ -530,9 +503,10 @@ function selectGame(game?: Game) {
             <button
               class="btn btn-primary fw-bold fs-3 h-100 rounded-0 text-uppercase"
               :class="{ emphasized: !!selectedPlayers.length }"
-              :disabled="!selectedPlayers.length"
+              :disabled="!selectedPlayers.length || pendingPlayerIds.size > 0"
               @click="lockIn()"
             >
+              <span v-if="pendingPlayerIds.size > 0" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
               Lock In
             </button>
           </div>

@@ -5,14 +5,6 @@ public static class GameProcessingHelpers
     public static readonly int CutoffHours = 10;
 
     /// <summary>
-    /// Picking for a game opens this long before puck drop.
-    /// </summary>
-    public static readonly TimeSpan PickWindowBeforeStart = TimeSpan.FromMinutes(30);
-
-    public static bool IsPickWindowOpen(GameDto game, DateTime nowUtc)
-        => nowUtc >= game.DateTime - PickWindowBeforeStart;
-
-    /// <summary>
     /// We cutover to the upcoming day's games at 10:00:00 UTC (roughly 5-6AM EST depending on DST).
     /// Whenever we need "current" games, we must apply this adjustment.
     /// </summary>

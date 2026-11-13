@@ -36,17 +36,14 @@ public class RemovePickCommandHandler(IDbContext dbContext, IMediator mediator, 
     /// </summary>
     private async Task EnsureCanRemoveAsync(Guid userId, LobbyEntity lobby, LobbyMemberEntity pickOwner, LobbyMemberPickEntity pick, CancellationToken ct)
     {
-        if (lobby.CreatedBy == userId)
-            return;
-
-        if (await dbContext.Users.AnyAsync(u => u.Id == userId && u.IsAdmin, ct))
+        if (await PickPermissions.CanManageAllPicksAsync(dbContext, lobby, userId, ct))
             return;
 
         if (pickOwner.UserId != userId)
             throw new ForbiddenException("This user does not have permission to remove this pick.");
 
         var game = await gameCache.GetGameByIdAsync(pick.GameId);
-        if (game != null && game.GameState != GameState.Upcoming)
+        if (game != null && !game.CanMembersRemovePicks)
             throw new ForbiddenException("Picks can't be removed after the game has started.");
     }
 }

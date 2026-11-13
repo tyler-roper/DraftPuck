@@ -11,11 +11,38 @@ public class GameProcessingHelpersTests
     [InlineData(-30, true)]
     [InlineData(-1, true)]
     [InlineData(90, true)] // picking stays open once the game has started
-    public void IsPickWindowOpen_OpensThirtyMinutesBeforeStart(int minutesFromStart, bool expected)
+    public void PickingOpensThirtyMinutesBeforeStart(int minutesFromStart, bool expected)
     {
-        var game = TestGames.Create(1, Start);
+        var game = TestGames.Create(1, Start, minutesFromStart > 0 ? GameState.Live : GameState.Upcoming);
 
-        Assert.Equal(expected, GameProcessingHelpers.IsPickWindowOpen(game, Start.AddMinutes(minutesFromStart)));
+        Assert.Equal(Start.AddMinutes(-30), game.PickingOpensUtc);
+        Assert.Equal(expected, game.IsPickingOpen(Start.AddMinutes(minutesFromStart)));
+    }
+
+    [Fact]
+    public void PickingClosesWhenTheGameIsFinal()
+    {
+        var game = TestGames.Create(1, Start, GameState.Final);
+
+        Assert.True(game.IsPickingClosed);
+        Assert.False(game.IsPickingOpen(Start.AddHours(3)));
+    }
+
+    [Theory]
+    [InlineData(GameState.Upcoming, true)]
+    [InlineData(GameState.Live, false)]
+    [InlineData(GameState.Final, false)]
+    public void MembersCanRemoveTheirPicksOnlyBeforePuckDrop(GameState state, bool expected)
+        => Assert.Equal(expected, TestGames.Create(1, Start, state).CanMembersRemovePicks);
+
+    [Fact]
+    public void PickRulesReachClientsAsPartOfTheGame()
+    {
+        var json = System.Text.Json.JsonSerializer.Serialize(TestGames.Create(1, Start, GameState.Final));
+
+        Assert.Contains("\"PickingOpensUtc\"", json);
+        Assert.Contains("\"IsPickingClosed\":true", json);
+        Assert.Contains("\"CanMembersRemovePicks\":false", json);
     }
 
     [Theory]

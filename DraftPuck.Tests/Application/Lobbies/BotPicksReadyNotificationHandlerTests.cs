@@ -44,6 +44,24 @@ public class BotPicksReadyNotificationHandlerTests(DatabaseFixture fixture)
     }
 
     [Fact]
+    public async Task BotsDoNotPickOnceTheGameIsFinal()
+    {
+        var gameId = Seed.NewGameId();
+        Guid botId;
+        await using (var db = fixture.CreateContext())
+        {
+            var seed = new Seed(db);
+            var (lobby, _) = seed.Lobby([gameId]);
+            botId = seed.Bot(lobby).Id;
+            await db.SaveChangesAsync();
+        }
+
+        await RunAsync(TestGames.Create(gameId, DateTime.UtcNow.AddHours(-3), GameState.Final));
+
+        Assert.Empty(await PicksForAsync(botId, gameId));
+    }
+
+    [Fact]
     public async Task OnlyFillsRemainingPicksAndSkipsPlayersAlreadyTaken()
     {
         var gameId = Seed.NewGameId();

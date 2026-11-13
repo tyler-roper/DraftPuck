@@ -6,6 +6,9 @@ public class BotPicksReadyNotificationHandler(IDbContext dbContext, IMediator me
     {
         var game = notification.Game;
         var gameId = game.Id;
+        // Bots follow the same closing rule as members (the final poll still announces complete rosters).
+        if (game.IsPickingClosed) return;
+
         // This runs on every poll (every 10 seconds during live games), so only load lobbies where a bot still has
         // picks left for this game. Once every bot is full, this is a single query that returns nothing.
         // Lobbies with auto-picking turned off are skipped: their host picks for the bots.

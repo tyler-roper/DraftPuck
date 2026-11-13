@@ -14,10 +14,11 @@ public class MakePickCommandHandlerTests(DatabaseFixture fixture)
     private sealed record Setup(int GameId, string Code, LobbyMemberEntity Host, LobbyMemberEntity Member, LobbyMemberEntity Bot);
 
     /// <summary>A lobby (1 pick per team) with a host, a member and a bot, for a game in the cache starting at the given offset.</summary>
-    private async Task<Setup> SetupAsync(TimeSpan startsIn)
+    private async Task<Setup> SetupAsync(TimeSpan startsIn, GameState? state = null)
     {
         var gameId = Seed.NewGameId();
-        _gameCache.GetGameByIdAsync(gameId).Returns(TestGames.Create(gameId, DateTime.UtcNow.Add(startsIn)));
+        state ??= startsIn > TimeSpan.Zero ? GameState.Upcoming : GameState.Live;
+        _gameCache.GetGameByIdAsync(gameId).Returns(TestGames.Create(gameId, DateTime.UtcNow.Add(startsIn), state.Value));
 
         await using var db = fixture.CreateContext();
         var seed = new Seed(db);
@@ -72,6 +73,16 @@ public class MakePickCommandHandlerTests(DatabaseFixture fixture)
         await PickAsync(s, s.Member, TestGames.HomePlayer(0));
 
         Assert.Equal(1, await PickCountAsync(s.Member.Id));
+    }
+
+    [Fact]
+    public async Task RejectsPicksOnceTheGameIsFinal()
+    {
+        var s = await SetupAsync(TimeSpan.FromHours(-3), GameState.Final);
+
+        var error = await Assert.ThrowsAsync<BadRequestException>(() => PickAsync(s, s.Member, TestGames.HomePlayer(0)));
+        Assert.Equal("Picking has closed for this game.", error.Message);
+        Assert.Equal(0, await PickCountAsync(s.Member.Id));
     }
 
     [Fact]
