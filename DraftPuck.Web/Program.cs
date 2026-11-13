@@ -40,6 +40,11 @@ try
         .AddApplication()
         .ConfigureAuth(builder.Configuration, builder.Environment)
         .AddTelemetry(builder.Configuration);
+
+    builder.Services
+        .AddOptions<ApplicationOptions>()
+        .Validate(o => o.HasValidBasePath(), "DRAFTPUCK_Application__BasePath must be set to an absolute URL (e.g. https://draftpuck.com).")
+        .ValidateOnStart();
 }
 catch (Exception ex)
 {

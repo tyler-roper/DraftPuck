@@ -20,4 +20,9 @@ builder.Services
     .AddApplicationInsightsTelemetryWorkerService()
     .ConfigureFunctionsApplicationInsights();
 
+builder.Services
+    .AddOptions<ApplicationOptions>()
+    .Validate(o => o.HasValidBasePath(), "DRAFTPUCK_Application__BasePath must be set to an absolute URL (e.g. https://draftpuck.com).")
+    .ValidateOnStart();
+
 builder.Build().Run();

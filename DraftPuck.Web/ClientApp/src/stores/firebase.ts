@@ -39,8 +39,8 @@ export const useFirebaseStore = defineStore('firebase', () => {
       // Handle foreground messages
       onMessage(messaging, (payload) => {
         const type = payload.data?.type
-        const title = payload.notification?.title
-        const body = payload.notification?.body
+        const title = payload.data?.title
+        const body = payload.data?.body
 
         if (type === 'Achievement') {
           toast(

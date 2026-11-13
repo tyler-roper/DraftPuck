@@ -1,5 +1,5 @@
-importScripts('https://www.gstatic.com/firebasejs/9.0.2/firebase-app-compat.js')
-importScripts('https://www.gstatic.com/firebasejs/9.0.2/firebase-messaging-compat.js')
+importScripts('https://www.gstatic.com/firebasejs/11.10.0/firebase-app-compat.js')
+importScripts('https://www.gstatic.com/firebasejs/11.10.0/firebase-messaging-compat.js')
 importScripts('/env-sw.js')
 
 const firebaseConfig = {
@@ -14,14 +14,25 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig)
 const messaging = firebase.messaging()
 
+// Messages are data-only, so the SDK never auto-displays them; this is the only place a notification is shown.
+// The SDK awaits this handler inside the push event, so returning the promise keeps the event alive until it's shown.
 messaging.onBackgroundMessage(function(payload) {
-  const { title, body, icon, badge } = payload.notification;
+  const data = payload.data ?? {};
 
-  self.registration.showNotification(title, {
-    body,
-    icon: icon ?? '/img/icons/icon-192.png',
-    badge: badge ?? '/img/icons/badge.png',
+  return self.registration.showNotification(data.title || 'DraftPuck', {
+    body: data.body,
+    icon: data.icon || '/img/icons/icon-192.png',
+    badge: data.badge || '/img/icons/badge.png',
     vibrate: [200, 100, 200],
-    data: payload.data ?? {}
+    data
   });
+});
+
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close();
+
+  const link = event.notification.data?.link;
+  if (link) {
+    event.waitUntil(clients.openWindow(link));
+  }
 });

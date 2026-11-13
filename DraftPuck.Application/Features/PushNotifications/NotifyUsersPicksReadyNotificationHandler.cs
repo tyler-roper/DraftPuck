@@ -21,7 +21,9 @@ public class NotifyUsersPicksReadyNotificationHandler(IDbContext dbContext, IGam
             .ToList();
 
         var usersWithPushNotificationsEnabled = await dbContext.Users
-            .Where(u => userIds.Contains(u.Id) && !string.IsNullOrEmpty(u.FcmRegistrationToken))
+            .Where(u => userIds.Contains(u.Id)
+                && !string.IsNullOrEmpty(u.FcmRegistrationToken)
+                && u.PickingStartedNotificationPreference != NotificationPreference.None)
             .ToDictionaryAsync(u => u.Id, u => u, ct);
 
         foreach (var userId in userIds)
@@ -39,12 +41,20 @@ public class NotifyUsersPicksReadyNotificationHandler(IDbContext dbContext, IGam
             if (userLobby == null)
                 continue;
 
-            await pushService.SendLobbyEventNotification(
+            var sent = await pushService.SendLobbyEventNotification(
                 userLobby.JoinCode,
                 "Time to pick players!",
                 "One or more games is about to start! Make your picks now.",
-                user.FcmRegistrationToken!
+                user.FcmRegistrationToken!,
+                ct: ct
             );
+
+            if (!sent)
+            {
+                logger.LogWarning("Failed to send picks-ready notification to User {userId} for game {gameId} via lobby {lobbyCode}.",
+                    userId, game.Id, userLobby.JoinCode);
+                continue;
+            }
 
             await gameCache.MarkUserAsNotifiedAsync(userId);
             await gameCache.MarkUserNotifiedForGameAsync(userId, game.Id, _appConfig.CurrentTimeUtc, game.DateTime);

@@ -21,7 +21,13 @@ public static class RedisServiceCollectionExtensions
         services.AddSingleton<IConnectionMultiplexer>(multiplexer);
         services.AddSingleton(sp => multiplexer.GetDatabase());
 
-        services.AddSignalR()
+        // Mobile browsers throttle the JS timers that send client pings, so allow well beyond
+        // the 30s default before treating a client as gone.
+        services.AddSignalR(o =>
+                {
+                    o.KeepAliveInterval = TimeSpan.FromSeconds(15);
+                    o.ClientTimeoutInterval = TimeSpan.FromMinutes(2);
+                })
                 .AddStackExchangeRedis(o =>
                 {
                     o.ConnectionFactory = async writer => multiplexer;

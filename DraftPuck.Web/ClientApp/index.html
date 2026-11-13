@@ -36,7 +36,20 @@
   </noscript>
 
   <div id="app" class="h-100"></div>
-  <script>setTimeout(() => document.querySelector('html').style.height = '100dvh', 0)</script>
+  <script>
+    // Size the app shell to the real viewport. Some browsers (notably iOS 26 home-screen apps) report the wrong
+    // height at launch and only correct it after a resize, so re-measure on every event that can change it.
+    (function () {
+      var root = document.documentElement
+      function setAppHeight() { root.style.setProperty('--app-height', window.innerHeight + 'px') }
+      setAppHeight()
+      ;['resize', 'orientationchange', 'pageshow', 'load'].forEach(function (e) { window.addEventListener(e, setAppHeight) })
+      document.addEventListener('visibilitychange', function () { if (!document.hidden) setAppHeight() })
+      if (window.visualViewport) window.visualViewport.addEventListener('resize', setAppHeight)
+      setTimeout(setAppHeight, 300)
+      setTimeout(setAppHeight, 1000)
+    })()
+  </script>
   <script src="/env.js"></script>
   <script type="module" src="/src/main.ts"></script>
 </body>

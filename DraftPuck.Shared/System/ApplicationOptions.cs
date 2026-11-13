@@ -11,4 +11,10 @@ public class ApplicationOptions
     public static int GameCheckFrequencyInSeconds => 10;
     public string? InternalApiKey { get; set; }
     public string? InternalApiBasePath { get; set; }
+
+    public bool HasValidBasePath() =>
+        Uri.TryCreate(BasePath, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp);
+
+    // BasePath is configured without a trailing slash (e.g. https://draftpuck.com), so join explicitly.
+    public string GetAbsoluteUrl(string relativePath) => $"{BasePath.TrimEnd('/')}/{relativePath.TrimStart('/')}";
 }
