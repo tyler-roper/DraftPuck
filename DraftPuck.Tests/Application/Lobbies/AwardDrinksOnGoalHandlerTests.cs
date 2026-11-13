@@ -10,10 +10,13 @@ public class AwardDrinksOnGoalHandlerTests(DatabaseFixture fixture)
 
     private readonly IMediator _mediator = Substitute.For<IMediator>();
 
-    private static GoalScoredNotification GoalBy(int gameId, int scorerId) => new(new GoalEventPayload(
-        gameId,
-        TestGames.Goal(PlayId, 1, "05:00", scorerId, TestGames.HomeTeamId),
-        new PlayerDto { Id = scorerId, TeamId = TestGames.HomeTeamId }));
+    /// <summary>A goal first seen now, after the test's picks were made.</summary>
+    private static GoalScoredNotification GoalBy(int gameId, int scorerId, DateTime? happenedUtc = null)
+    {
+        var goal = TestGames.Goal(PlayId, 1, "05:00", scorerId, TestGames.HomeTeamId);
+        goal.FirstSeenUtc = happenedUtc ?? DateTime.UtcNow;
+        return new(new GoalEventPayload(gameId, goal, new PlayerDto { Id = scorerId, TeamId = TestGames.HomeTeamId }));
+    }
 
     /// <summary>Runs the handler, with bot assignments going through the real AssignDrinkCommandHandler.</summary>
     private async Task RunAsync(GoalScoredNotification notification)
@@ -54,6 +57,29 @@ public class AwardDrinksOnGoalHandlerTests(DatabaseFixture fixture)
         Assert.Null(drink.RecipientLobbyMemberId); // humans hand out their own drinks
         Assert.Empty(await DrinksForPickAsync(otherPickId));
         await _mediator.Received(1).Publish(Arg.Any<DrinkAwardedNotification>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task PicksMadeAfterTheGoalHappenedEarnNothingForIt()
+    {
+        var gameId = Seed.NewGameId();
+        var goalTime = DateTime.UtcNow.AddMinutes(-10);
+        Guid beforePickId, afterPickId;
+        await using (var db = fixture.CreateContext())
+        {
+            var seed = new Seed(db);
+            var (lobby, host) = seed.Lobby([gameId]);
+            beforePickId = seed.Pick(host, gameId, TestGames.HomeTeamId, Scorer, created: goalTime.AddMinutes(-1)).Id;
+            // Another lobby's member picked the scorer after the goal (picking stays open after puck drop).
+            var (otherLobby, otherHost) = seed.Lobby([gameId]);
+            afterPickId = seed.Pick(otherHost, gameId, TestGames.HomeTeamId, Scorer, created: goalTime.AddMinutes(1)).Id;
+            await db.SaveChangesAsync();
+        }
+
+        await RunAsync(GoalBy(gameId, Scorer, happenedUtc: goalTime));
+
+        Assert.Single(await DrinksForPickAsync(beforePickId));
+        Assert.Empty(await DrinksForPickAsync(afterPickId));
     }
 
     [Fact]

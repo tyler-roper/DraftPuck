@@ -107,4 +107,54 @@ public class GameProcessingHelpersTests
 
         Assert.Equal(cachedTime, updated.Plays[0].DateTime);
     }
+
+    private static PlayDto GoalPlay(int id, DateTime? firstSeen = null)
+    {
+        var play = TestGames.Goal(id, 1, "05:00", TestGames.HomePlayer(0), TestGames.HomeTeamId);
+        play.FirstSeenUtc = firstSeen;
+        return play;
+    }
+
+    [Fact]
+    public void SetFirstSeenTimes_StampsNewPlaysAndKeepsEarlierOnes()
+    {
+        var seen = Start.AddMinutes(5);
+        var previous = TestGames.Create(1, Start);
+        previous.Plays = [GoalPlay(1, seen), GoalPlay(2, firstSeen: null)];
+        var game = TestGames.Create(1, Start);
+        game.Plays = [GoalPlay(1), GoalPlay(2), GoalPlay(3)];
+
+        GameProcessingHelpers.SetFirstSeenTimes(game, previous, [], Start.AddMinutes(20));
+
+        Assert.Equal(seen, game.Plays[0].FirstSeenUtc);             // kept
+        Assert.Null(game.Plays[1].FirstSeenUtc);                    // already there before we knew: still unknown
+        Assert.Equal(Start.AddMinutes(20), game.Plays[2].FirstSeenUtc); // new this poll
+    }
+
+    [Fact]
+    public void SetFirstSeenTimes_KeepsTheTimeWhenAGoalIsRenumbered()
+    {
+        var seen = Start.AddMinutes(5);
+        var previous = TestGames.Create(1, Start);
+        previous.Plays = [GoalPlay(450, seen)];
+        var game = TestGames.Create(1, Start);
+        game.Plays = [GoalPlay(451)];
+
+        GameProcessingHelpers.SetFirstSeenTimes(game, previous, [new GoalRenumbered(450, 451)], Start.AddMinutes(20));
+
+        Assert.Equal(seen, game.Plays[0].FirstSeenUtc);
+    }
+
+    [Fact]
+    public void SetFirstSeenTimes_LeavesPlaysUnknownWithoutAPreviousPoll()
+    {
+        var game = TestGames.Create(1, Start);
+        game.Plays = [GoalPlay(1)];
+        game.Plays[0].DateTime = Start.AddMinutes(15);
+
+        GameProcessingHelpers.SetFirstSeenTimes(game, previous: null, [], Start.AddHours(2));
+
+        Assert.Null(game.Plays[0].FirstSeenUtc);
+        Assert.Equal(Start.AddMinutes(15), game.Plays[0].HappenedUtc); // falls back to the estimate
+    }
 }
