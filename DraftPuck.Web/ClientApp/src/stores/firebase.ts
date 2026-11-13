@@ -7,6 +7,8 @@ import { env } from '@/env'
 import { useToast } from 'vue-toastification'
 import VHtmlToast from '@/components/VHtmlToast.vue'
 import { escapeHtml } from '@/helpers/htmlHelpers'
+import { getForegroundToast } from '@/helpers/pushHelpers'
+import router from '@/router'
 
 export const useFirebaseStore = defineStore('firebase', () => {
   const isInitialized = ref(false)
@@ -55,7 +57,26 @@ export const useFirebaseStore = defineStore('firebase', () => {
             }
           )
           userStore.refreshUser()
+          return
         }
+
+        // Foreground pushes skip the service worker, so show other notifications (picks ready, drinks, chat) in-app.
+        const notification = getForegroundToast(payload.data, router.currentRoute.value.path)
+        if (!notification) return
+
+        const { path } = notification
+        toast(
+          {
+            component: VHtmlToast,
+            // The toast renders HTML and chat pushes carry other members' text, so escape both.
+            props: { title: escapeHtml(notification.title), message: escapeHtml(notification.body) }
+          },
+          {
+            toastClassName: 'bg-stone-900',
+            icon: 'fi fi-sr-bell fs-3 text-primary',
+            onClick: path ? () => router.push(path) : undefined
+          }
+        )
       })
 
       const token = await getToken(messaging, {
