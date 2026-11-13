@@ -11,7 +11,7 @@ public class GetLobbyEventsQueryHandler(IDbContext dbContext, IMapper mapper) : 
 
         if (!isMember)
         {
-            throw new UnauthorizedException("User not in lobby.");
+            throw new ForbiddenException("User not in lobby.");
         }
 
         var lobby = await dbContext.Lobbies.FindAsync([request.LobbyId], cancellationToken: ct) ?? throw new NotFoundException("Lobby not found.");

@@ -13,7 +13,7 @@ public class RemoveLobbyMemberCommandHandler(IDbContext dbContext, IMediator med
             ?? throw new NotFoundException($"Lobby with code '{request.Code}' not found.");
 
         if (lobby.CreatedBy != request.RequesterUserId)
-            throw new UnauthorizedException("Only the lobby host can remove members.");
+            throw new ForbiddenException("Only the lobby host can remove members.");
 
         var memberToRemove = lobby.LobbyMembers.FirstOrDefault(lm => lm.Id == request.LobbyMemberId);
 

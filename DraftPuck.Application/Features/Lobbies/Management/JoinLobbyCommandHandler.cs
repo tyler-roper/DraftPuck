@@ -1,4 +1,5 @@
 ﻿using DraftPuck.Application.Common.Exceptions;
+using DraftPuck.Application.Features.Lobbies.Members;
 
 namespace DraftPuck.Application.Features.Lobbies.Management;
 
@@ -6,18 +7,10 @@ public class JoinLobbyCommandHandler(IDbContext dbContext, IMapper mapper, IMedi
 {
     public async Task<LobbyDto> Handle(JoinLobbyCommand request, CancellationToken ct)
     {
-        if (request.IsBot)
-            request.UserId = Guid.NewGuid();
-        else if (request.UserId == null)
+        if (request.UserId == null)
             throw new UnauthorizedException("You must be logged in to join.");
 
-        if (request.IsBot)
-        {
-            var botUser = await dbContext.Users.FindAsync([request.UserId.Value], cancellationToken: ct);
-
-            if (botUser == null)
-                dbContext.Users.Add(new UserEntity { Id = request.UserId.Value, IsBot = true });
-        }
+        var name = LobbyMemberNames.Normalize(request.Name);
 
         var lobby = await dbContext.Lobbies
             .Include(l => l.LobbyMembers)
@@ -29,17 +22,31 @@ public class JoinLobbyCommandHandler(IDbContext dbContext, IMapper mapper, IMedi
             .FirstOrDefaultAsync(l => l.JoinCode == request.Code, ct)
             ?? throw new NotFoundException("Lobby not found.");
 
+        // Bots are added by the host on the lobby's behalf; each one gets its own new bot user.
+        var memberUserId = request.UserId.Value;
+        if (request.IsBot)
+        {
+            if (lobby.CreatedBy != request.UserId)
+                throw new ForbiddenException("Only the lobby host can add bots.");
+
+            if (request.BotPickStyle == null)
+                throw new BadRequestException("Bots require a pick style.");
+
+            memberUserId = Guid.NewGuid();
+            dbContext.Users.Add(new UserEntity { Id = memberUserId, IsBot = true });
+        }
+
         var existingLobbyMember = await dbContext.LobbyMembers
             .Include(lm => lm.LobbyMemberPicks)
-            .FirstOrDefaultAsync(lm => lm.LobbyId == lobby.Id && lm.UserId == request.UserId.Value, ct);
+            .FirstOrDefaultAsync(lm => lm.LobbyId == lobby.Id && lm.UserId == memberUserId, ct);
 
         if (existingLobbyMember == null)
         {
             var lobbyMember = new LobbyMemberEntity
             {
                 LobbyId = lobby.Id,
-                UserId = request.UserId.Value,
-                Name = request.Name,
+                UserId = memberUserId,
+                Name = name,
                 IsBot = request.IsBot,
                 BotPickStyle = request.BotPickStyle
             };
@@ -50,10 +57,10 @@ public class JoinLobbyCommandHandler(IDbContext dbContext, IMapper mapper, IMedi
         }
         else if (!existingLobbyMember.IsRemoved)
         {
-            if (existingLobbyMember.Name != request.Name)
+            if (existingLobbyMember.Name != name)
             {
                 var previousName = existingLobbyMember.Name;
-                existingLobbyMember.Name = request.Name;
+                existingLobbyMember.Name = name;
                 await dbContext.SaveChangesAsync(ct);
 
                 await mediator.Publish(new UserNameChangedNotification(new(lobby, existingLobbyMember, previousName)), ct);
@@ -62,7 +69,7 @@ public class JoinLobbyCommandHandler(IDbContext dbContext, IMapper mapper, IMedi
         else // Rejoining after removal
         {
             var previousName = existingLobbyMember.Name;
-            existingLobbyMember.Name = request.Name;
+            existingLobbyMember.Name = name;
             existingLobbyMember.IsRemoved = false;
 
             var activePicks = lobby.LobbyMembers

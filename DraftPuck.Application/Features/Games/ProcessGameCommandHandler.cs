@@ -233,7 +233,7 @@ public class ProcessGameCommandHandler(IGameCache gameCache, IMediator mediator,
     {
         var homeComplete = game.HomeTeam.Roster.Count == game.PlayerSummaries.Count(ps => ps.TeamId == game.HomeTeam.Id);
         var awayComplete = game.AwayTeam.Roster.Count == game.PlayerSummaries.Count(ps => ps.TeamId == game.AwayTeam.Id);
-        var isWithin30Min = (game.DateTime - utcNow) <= TimeSpan.FromMinutes(30) && (game.DateTime - utcNow) > TimeSpan.Zero;
+        var isWithin30Min = GameProcessingHelpers.IsPickWindowOpen(game, utcNow) && (game.DateTime - utcNow) > TimeSpan.Zero;
 
         if (homeComplete && awayComplete) await mediator.Publish(new BotPicksReadyNotification(game), ct);
 
@@ -301,7 +301,8 @@ public class ProcessGameCommandHandler(IGameCache gameCache, IMediator mediator,
             {
                 PickId = pick.Id,
                 Code = pick.LobbyMember.Lobby.JoinCode,
-                UserId = pick.LobbyMember.UserId
+                UserId = pick.LobbyMember.UserId,
+                IsSystemRemoval = true
             }, ct);
         }
 

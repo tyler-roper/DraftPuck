@@ -1,9 +1,10 @@
 ﻿using DraftPuck.Application.Common.Exceptions;
+using DraftPuck.Application.Features.Games;
 using MediatR;
 
 namespace DraftPuck.Application.Features.Lobbies.Picks;
 
-public class RemovePickCommandHandler(IDbContext dbContext, IMediator mediator) : IRequestHandler<RemovePickCommand>
+public class RemovePickCommandHandler(IDbContext dbContext, IMediator mediator, IGameCache gameCache) : IRequestHandler<RemovePickCommand>
 {
     public async Task Handle(RemovePickCommand request, CancellationToken ct)
     {
@@ -17,17 +18,30 @@ public class RemovePickCommandHandler(IDbContext dbContext, IMediator mediator) 
         var lobbyMember = pick.LobbyMember;
         var lobby = lobbyMember.Lobby;
 
-        var isPickOwner = lobbyMember.UserId == request.UserId;
-        var isLobbyCreator = lobby.CreatedBy == request.UserId;
-
-        if (!isPickOwner && !isLobbyCreator)
-        {
-            var isAdmin = await dbContext.Users.AnyAsync(u => u.Id == request.UserId && u.IsAdmin, ct);
-            if (!isAdmin) throw new UnauthorizedException("This user does not have permission to remove this pick.");
-        }
+        if (!request.IsSystemRemoval)
+            await EnsureCanRemoveAsync(request.UserId, lobby, lobbyMember, pick, ct);
 
         pick.IsActive = false;
         await dbContext.SaveChangesAsync(ct);
         await mediator.Publish(new PickRemovedNotification(new(lobby, lobbyMember, pick)), ct);
+    }
+
+    /// <summary>
+    /// The host and site admins can remove any pick. A member can remove their own pick only before the game starts.
+    /// </summary>
+    private async Task EnsureCanRemoveAsync(Guid userId, LobbyEntity lobby, LobbyMemberEntity pickOwner, LobbyMemberPickEntity pick, CancellationToken ct)
+    {
+        if (lobby.CreatedBy == userId)
+            return;
+
+        if (await dbContext.Users.AnyAsync(u => u.Id == userId && u.IsAdmin, ct))
+            return;
+
+        if (pickOwner.UserId != userId)
+            throw new ForbiddenException("This user does not have permission to remove this pick.");
+
+        var game = await gameCache.GetGameByIdAsync(pick.GameId);
+        if (game != null && game.GameState != GameState.Upcoming)
+            throw new ForbiddenException("Picks can't be removed after the game has started.");
     }
 }

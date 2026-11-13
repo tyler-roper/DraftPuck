@@ -24,10 +24,11 @@ public class AssignDrinkCommandHandler(IDbContext dbContext, IMapper mapper, IMe
         var recipient = lobby.LobbyMembers.FirstOrDefault(m => m.Id == request.RecipientLobbyMemberId)
             ?? throw new NotFoundException("Recipient not found in lobby.");
 
-        var drink = lobby.LobbyMembers.SelectMany(m => m.LobbyMemberPicks)
+        // Only the member whose pick earned the drink can hand it out.
+        var drink = sender.LobbyMemberPicks
             .SelectMany(p => p.Drinks)
             .FirstOrDefault(d => d.Id == request.DrinkId)
-            ?? throw new NotFoundException("Drink not found in lobby.");
+            ?? throw new NotFoundException("Drink not found.");
 
         if (drink.RecipientLobbyMemberId != null)
         {
