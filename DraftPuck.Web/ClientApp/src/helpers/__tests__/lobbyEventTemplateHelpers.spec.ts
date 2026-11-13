@@ -43,6 +43,12 @@ describe('parseLobbyEventText', () => {
     expect(result.text).toContain('&lt;img src=x onerror=alert(1)&gt;')
   })
 
+  it("shows names containing replacement patterns like $& literally", () => {
+    const result = parseLobbyEventText(event('{{name}} joined'), lobby({ id: 'm1', name: "Ca$h $& $'" }), games)
+
+    expect(result.text).toBe("<strong>Ca$h $&amp; $&#039;</strong> joined")
+  })
+
   it('uses placeholders for members who are no longer in the lobby', () => {
     const result = parseLobbyEventText(event('{{name}} gave {{recipientName}} a drink'), lobby(), games)
 

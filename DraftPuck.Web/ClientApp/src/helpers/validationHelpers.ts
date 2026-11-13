@@ -24,13 +24,13 @@ export function nickname(value?: string) {
 export function password(value?: string) {
   if (!value) return false
   if (value.trim().length === 0) return false
-  if (value.length > 25 || value.length < 8) return false
+  if (value.length > 25 || value.trim().length < 8) return false // matches the server: at least 8 characters besides spaces
 
   return true
 }
 
 export function optionalPassword(value?: string) {
   if (!value || value.trim().length === 0) return true
-  if (value.length > 25 || value.length < 8) return false
+  if (value.length > 25 || value.trim().length < 8) return false // matches the server: at least 8 characters besides spaces
   return true
 }
