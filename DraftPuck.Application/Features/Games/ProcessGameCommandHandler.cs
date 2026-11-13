@@ -4,8 +4,8 @@ using Microsoft.Extensions.Options;
 namespace DraftPuck.Application.Features.Games;
 
 /// <summary>
-/// One poll of a game: fetch it from the NHL, sync rosters, announce goal changes, send pregame alerts, and queue the
-/// next poll. The previous poll's copy of the game lives in the game cache.
+/// One poll of a game: fetch it from the NHL, sync rosters, save it and push it to clients, announce goal changes, send
+/// pregame alerts, and queue the next poll. The previous poll's copy of the game lives in the game cache.
 /// </summary>
 public class ProcessGameCommandHandler(
     IGameCache gameCache,
@@ -93,7 +93,10 @@ public class ProcessGameCommandHandler(
         // so this only fills in goals missed while there was no cached copy.
         var goalChanges = GoalMatcher.Compare(previous == null ? [] : TrackedGoal.CountedIn(previous), TrackedGoal.CountedIn(game));
 
+        game.UpdatedUtc = DateTime.UtcNow;
         await gameCache.UpdateGameAsync(game);
+        // Before the goal changes, so clients have the goal play by the time its drink events arrive.
+        await mediator.Publish(new GameUpdatedNotification(game), ct);
         await PublishGoalChangesAsync(game.Id, goalChanges, ct);
 
         var pollAgainDelay = GameProcessingHelpers.GetPollDelay(game, _appConfig.CurrentTimeUtc, request.IsInitialPopulation);

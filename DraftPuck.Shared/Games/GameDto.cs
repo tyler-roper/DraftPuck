@@ -3,6 +3,12 @@
 public class GameDto
 {
     public int Id { get; set; }
+
+    /// <summary>
+    /// When this copy was produced by a poll. Clients get games both by fetching and by push, so they keep whichever
+    /// copy is newest. Not from the NHL.
+    /// </summary>
+    public DateTime UpdatedUtc { get; set; }
     public DateTime DateTime { get; set; }
     public GameType GameType { get; set; }
     public GameState GameState { get; set; }
