@@ -10,6 +10,13 @@ body {
   margin: 0;
 }
 
+html {
+  height: 100vh;
+  height: 100dvh;
+  // --app-height is kept in sync with window.innerHeight by the script in index.html
+  height: var(--app-height, 100dvh);
+}
+
 body {
   height: 100%;
 }
