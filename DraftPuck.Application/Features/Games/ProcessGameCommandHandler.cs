@@ -239,11 +239,18 @@ public class ProcessGameCommandHandler(IGameCache gameCache, IMediator mediator,
 
         if (homeComplete && awayComplete && isWithin30Min)
         {
-            var alreadyTriggered = await gameCache.HasPreGameAlertTriggeredAsync(game.Id);
-            if (!alreadyTriggered)
+            // Claim atomically so overlapping runs for the same game can't both publish. Release on failure so a retry can.
+            if (await gameCache.TryClaimPreGameAlertAsync(game.Id))
             {
-                await mediator.Publish(new PicksReadyNotification(game), ct);
-                await gameCache.SetPreGameAlertTriggeredAsync(game.Id);
+                try
+                {
+                    await mediator.Publish(new PicksReadyNotification(game), ct);
+                }
+                catch
+                {
+                    await gameCache.ReleasePreGameAlertAsync(game.Id);
+                    throw;
+                }
 
                 logger.LogInformation(
                     "Picks ready for {away} @ {home}. Triggered pregame alert event.",
