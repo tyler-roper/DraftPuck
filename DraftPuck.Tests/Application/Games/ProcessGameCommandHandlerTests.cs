@@ -130,6 +130,47 @@ public class ProcessGameCommandHandlerTests
     }
 
     [Fact]
+    public async Task EachPollPushesTheSavedGameStampedWithItsUpdateTime()
+    {
+        var (cached, updated) = LiveGame(Seed.NewGameId());
+        var before = DateTime.UtcNow;
+
+        await PollAsync(cached, updated);
+
+        var pushed = Assert.Single(Published<GameUpdatedNotification>()).Game;
+        Assert.Same(updated, pushed);
+        Assert.InRange(pushed.UpdatedUtc, before, DateTime.UtcNow);
+        await _gameCache.Received(1).UpdateGameAsync(Arg.Is<GameDto>(g => g.UpdatedUtc == pushed.UpdatedUtc));
+    }
+
+    [Fact]
+    public async Task GameIsPushedBeforeItsGoalEvents()
+    {
+        // Clients build the feed's goal item from the game's plays, so the play should arrive before the drink events.
+        var (cached, updated) = LiveGame(Seed.NewGameId());
+        updated.Plays = [TestGames.Goal(PlayId, 1, "05:00", Scorer, TestGames.HomeTeamId)];
+
+        await PollAsync(cached, updated);
+
+        var published = _mediator.ReceivedCalls()
+            .Where(c => c.GetMethodInfo().Name == nameof(IMediator.Publish))
+            .Select(c => c.GetArguments()[0])
+            .ToList();
+        Assert.True(published.FindIndex(n => n is GameUpdatedNotification) < published.FindIndex(n => n is GoalScoredNotification));
+    }
+
+    [Fact]
+    public async Task GamesThatAreNotCurrentAreNotPushed()
+    {
+        var gameId = Seed.NewGameId();
+        var yesterday = TestGames.Create(gameId, DateTime.UtcNow.AddDays(-2), GameState.Final);
+
+        await PollAsync(yesterday, yesterday);
+
+        Assert.Empty(Published<GameUpdatedNotification>());
+    }
+
+    [Fact]
     public async Task BotPicksStillRunDuringLiveGames()
     {
         // Rosters can complete after puck drop, and bots can be added mid-game.

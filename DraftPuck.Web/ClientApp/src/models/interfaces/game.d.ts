@@ -13,6 +13,8 @@ interface Game {
   timeRemainingInPeriod: string
   goalsByPeriod: PeriodSummary[]
   playerSummaries: PlayerSummary[]
+  // When the server's poll produced this copy; the games store keeps the newest copy it has seen.
+  updatedUtc: Date
   // Players who left the lineup (e.g. scratched). Not pickable; only used to name them in the feed.
   formerPlayers?: PlayerSummary[]
 }

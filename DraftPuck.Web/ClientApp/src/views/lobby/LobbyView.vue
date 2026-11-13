@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { useLobbyStore } from '@/stores/lobby'
 import { storeToRefs } from 'pinia'
-import { computed, nextTick, ref, watch, onMounted, onUnmounted } from 'vue'
+import { computed, nextTick, ref, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { TYPE, useToast } from 'vue-toastification'
-import * as SignalR from '@microsoft/signalr'
-import { compareAsc, addHours, isWithinInterval, differenceInSeconds } from 'date-fns'
-import GameService from '@/services/GameService'
+import { compareAsc, addHours, isWithinInterval } from 'date-fns'
 import LobbyEventType from '@/enums/lobbyEventType'
 import { parseAllDates } from '@/helpers/dateHelpers'
 import { parseLobbyEventText } from '@/helpers/lobbyEventTemplateHelpers'
-import FeedItem from '@/models/feedItem'
+import { buildFeedItems } from '@/helpers/feedHelpers'
+import { sortGamesForLobby } from '@/helpers/gameHelpers'
+import { useGamesStore } from '@/stores/games'
+import { useLobbyConnection } from '@/composables/useLobbyConnection'
 import LoadingMessages from '@/models/loadingMessages'
 import VInstructionsModal from '@/components/VInstructionsModal.vue'
 import VGameScoreboards from '@/components/VGameScoreboards.vue'
@@ -22,36 +23,16 @@ import MessageViewModel from '@/models/messageViewModel'
 import VChat from '@/components/VChat.vue'
 import VNotificationSettingsModal from '@/components/VNotificationSettingsModal.vue'
 import LobbyService from '@/services/LobbyService'
-import GameState from '@/enums/gameState'
-import PlayType from '@/enums/playType'
-import PeriodType from '@/enums/periodType'
-import type { ILogger, LogLevel } from '@microsoft/signalr'
 import VUser from '@/components/VUser.vue'
 import { useUserStore } from '@/stores/user'
 import { useSystemStore } from '@/stores/system'
 import VHtmlToast from '@/components/VHtmlToast.vue'
 import type { ToastOptions } from 'vue-toastification/dist/types/types'
-import { getValidJwt } from '@/services/HttpService'
-
-class SignalRLogger implements ILogger {
-  logLevel = 0
-
-  constructor(_logLevel: number) {
-    this.logLevel = _logLevel
-  }
-
-  log(_: LogLevel, message: string) {
-    sendDebugMessage(message, this.logLevel)
-  }
-}
 
 //const
 type View = 'feed' | 'game' | 'lobby' | 'chat' | 'picks'
 const LOCAL_STORAGE_KEY = 'latestLobby'
-const ACTIVE_GAME_POLLING_INTERVAL_MS = 10000
-const INACTIVE_GAME_POLLING_INTERVAL_MS = 60000
 const DRINK_ANIMATION_DURATION_MS = 5000
-const HUB_URL = '/hub'
 
 const replaceTemplatedStrings = (lobbyEvent: LobbyEvent) => parseLobbyEventText(lobbyEvent, lobby.value!, games.value)
 
@@ -91,17 +72,7 @@ const commands = computed<{ [command: string]: (...args: string[]) => void }>(()
     else sendSystemMessage(`Debugging enabled (Level ${newLevelClamped}).`)
   },
   connection: () => {
-    sendSystemMessage(
-      JSON.stringify(
-        {
-          id: hubConnection.connectionId,
-          baseUrl: hubConnection.baseUrl,
-          state: hubConnection.state
-        },
-        undefined,
-        2
-      )
-    )
+    sendSystemMessage(JSON.stringify(connection.describe(), undefined, 2))
   },
   me: () => {
     sendSystemMessage(JSON.stringify(getLobbyMemberInfo(), undefined, 2))
@@ -129,13 +100,13 @@ const { lobby, currentUserId, events, systemMessages } = storeToRefs(store)
 const { appIsTestMode } = storeToRefs(systemStore)
 const { getLobby: getLobbyFromStore, getLobbyEvents, addLobbyEvent, addMessageToStore, sendDebugMessage, sendSystemMessage, setDebugging } = store
 const joinCode = ref(route.params.joinCode as string)
-const games = ref<Game[]>([])
+const gamesStore = useGamesStore()
+const { games } = storeToRefs(gamesStore)
 const isInstructionsVisible = ref(false)
 const isNotificationSettingsVisible = ref(false)
 const isInvalidLobby = ref(false)
 const isLoading = ref(true)
 const mappedEvents = computed(() => events.value.map(e => replaceTemplatedStrings(e)));
-const timers = ref<number[]>([])
 const currentView = ref<View>('picks')
 const pendingDrinksForCurrentUser = ref<LobbyEvent[]>([])
 const currentDrink = ref<LobbyEvent>()
@@ -144,19 +115,26 @@ const unseenMentionsCount = ref(0)
 const vChat = ref<InstanceType<typeof VChat> | null>(null)
 const shouldAnimateFeed = ref(false)
 const feedAnimationTimer = ref<number>()
-const checkActivityTimer = ref<number>()
-const lastLobbyRetrieval = ref<Date>(new Date())
 const isInitialLoad = ref(true)
 const selectedGame = ref<Game>()
 
-let hubConnection: SignalR.HubConnection
-let hubGeneration = 0
-let hubStartRetryTimer: number | undefined
-let isResuming = false
-let isUnmounted = false
+// Live updates: lobby events, chat messages and game scores are pushed; resync fills in anything missed while away.
+const connection = useLobbyConnection({
+  joinCode: joinCode.value,
+  handlers: {
+    LobbyEvent: dispatchLobbyEvent,
+    Message: onNewMessage,
+    LobbyStateChanged: getLobby,
+    GameUpdated: onGameUpdated
+  },
+  resync,
+  log: sendDebugMessage
+})
 
 //computed
-const feedItems = computed(getFeedItems)
+const feedItems = computed(() =>
+  lobby.value ? buildFeedItems(games.value, mappedEvents.value, lobby.value.created, appIsTestMode.value) : []
+)
 const currentLobbyMember = computed(() => lobby.value?.members.find((m) => m.userId === currentUserId.value))
 const loadingMessage = computed(() => LoadingMessages.random())
 const isLobbyView = computed(() => currentView.value === 'lobby')
@@ -164,17 +142,7 @@ const isFeedView = computed(() => currentView.value === 'feed')
 const isPicksView = computed(() => currentView.value === 'picks')
 const isGameView = computed(() => currentView.value === 'game')
 const isChatView = computed(() => currentView.value === 'chat')
-const sortedGames = computed(() =>
-  !games.value
-    ? []
-    : [...games.value].sort((a, b) => {
-        if (a.gameState === GameState.Final) return 1
-        if (b.gameState === GameState.Final) return -1
-        if (lobby.value?.gameIds.includes(a.id) && !lobby.value?.gameIds.includes(b.id)) return -1
-        if (!lobby.value?.gameIds.includes(a.id) && lobby.value?.gameIds.includes(b.id)) return 1
-        return compareAsc(a.dateTime, b.dateTime)
-      })
-)
+const sortedGames = computed(() => sortGamesForLobby(games.value, lobby.value?.gameIds ?? []))
 
 const is4Nations = computed(() => {
   const today = new Date()
@@ -240,49 +208,24 @@ onMounted(async () => {
     if (!currentLobbyMember.value) return router.push({ name: 'Home' })
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ joinCode: joinCode.value, name: currentLobbyMember.value.name }))
 
-    await initializeLobbyConnection(true)
-
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    window.addEventListener('pageshow', handleResume)
-    window.addEventListener('online', handleResume)
+    await connection.start()
   } catch (e) {
-    logError(e as string)
+    reportError(e)
     isInvalidLobby.value = true
   } finally {
     isLoading.value = false
   }
 })
 
-onUnmounted(() => {
-  isUnmounted = true
-  document.removeEventListener('visibilitychange', handleVisibilityChange)
-  window.removeEventListener('pageshow', handleResume)
-  window.removeEventListener('online', handleResume)
-  pauseLobbyConnection()
-})
-
-const isGameInProgress = (game: Game) => game.gameState === GameState.Live
-const isGameOver = (game: Game) => game.gameState === GameState.Final
-const isGameStale = (game: Game) => isGameOver(game)
-
-function handleVisibilityChange() {
-  if (document.hidden) pauseLobbyConnection()
-  else handleResume()
+/** Everything the page shows that may have changed while it wasn't listening. */
+async function resync() {
+  await Promise.all([getLobby(), gamesStore.load()])
+  if (lobby.value) await getLobbyEvents(lobby.value.id)
 }
 
-// visibilitychange, pageshow and online can all fire when the app resumes; only run one re-initialization at a time.
-async function handleResume() {
-  if (document.hidden || isUnmounted || isResuming) return
-  if (hubConnection?.state === SignalR.HubConnectionState.Connected) return
-
-  isResuming = true
-  try {
-    await initializeLobbyConnection()
-  } catch (e) {
-    reportError(e)
-  } finally {
-    isResuming = false
-  }
+function onGameUpdated(game: Game) {
+  parseAllDates(game)
+  gamesStore.applyUpdate(game)
 }
 
 function lobbyEventToast(lobbyEvent: LobbyEvent, options?: ToastOptions | undefined) {
@@ -302,188 +245,9 @@ function setView(view: View) {
   currentView.value = view
 }
 
-function initializeActivityChecker() {
-  if (checkActivityTimer.value) window.clearInterval(checkActivityTimer.value)
-  if (isUnmounted) return
-  checkActivityTimer.value = window.setInterval(checkActivity, 3000)
-}
-
-async function checkActivity() {
-  const secondsSinceLastLobbyRetrieval = Math.abs(differenceInSeconds(new Date(), lastLobbyRetrieval.value))
-  if (secondsSinceLastLobbyRetrieval > 300) {
-    sendDebugMessage(`${secondsSinceLastLobbyRetrieval} seconds since last retrieval.`, 2)
-    initializeLobbyConnection().catch(reportError)
-  }
-}
-
-async function initializeLobbyConnection(skipLobbyRetrieval = false) {
-  sendDebugMessage('Initializing lobby connection.', 2)
-  try {
-    const promises = [initializeHubConnection(), setGames()]
-    if (!skipLobbyRetrieval) promises.push(getLobby())
-    await Promise.all(promises)
-
-    if (lobby.value)
-      await getLobbyEvents(lobby.value.id)
-  } finally {
-    // Always restart the safety net, even if a fetch failed, so the lobby can recover on its own.
-    initializeActivityChecker()
-  }
-}
-
-async function pauseLobbyConnection() {
-  sendDebugMessage('Pausing lobby connection.', 2)
-  // stop polling for game updates
-  timers.value.forEach((t) => window.clearTimeout(t))
-
-  // disconnect hub and cancel any pending start retries
-  hubGeneration++
-  window.clearTimeout(hubStartRetryTimer)
-  await hubConnection?.stop()
-
-  // stop activity polling
-  if (checkActivityTimer.value) window.clearInterval(checkActivityTimer.value)
-}
-
 function reportError(error: unknown) {
   console.error(error)
   sendDebugMessage(String(error), 3)
-}
-
-function logError(error: string) {
-  reportError(error)
-  throw error
-}
-
-async function setGames() {
-  timers.value.forEach((t) => window.clearTimeout(t))
-
-  sendDebugMessage(`Setting games...`, 1)
-  games.value = await GameService.getAllGames()
-  sendDebugMessage(`${games.value.length} games retrieved.`, 1)
-  games.value.forEach((game) => {
-    if (!isGameStale(game)) timers.value.push(window.setTimeout(() => pollForUpdates(game), ACTIVE_GAME_POLLING_INTERVAL_MS))
-  })
-}
-
-async function updateGame(gameId: number) {
-  const gameIndex = games.value.findIndex((g) => gameId === g.id)
-  const updatedGame = await getGameData(gameId)
-  Object.assign(games.value[gameIndex], updatedGame)
-}
-
-async function getGameData(gameId: number) {
-  return await GameService.getGame(gameId)
-}
-
-async function pollForUpdates(game: Game, attempts: number = 1) {
-  const MAX_ATTEMPTS = 5
-  const DEBOUNCE_ENABLED = false
-
-  const msgPrefix = `[${game.awayTeam.abbreviation} @ ${game.homeTeam.abbreviation}]`
-  let isSuccess = false
-  let tryAgainIfFailure = attempts < MAX_ATTEMPTS
-
-  try {
-    await updateGame(game.id)
-    isSuccess = true
-  } catch (e) {
-    logError(`${msgPrefix} ${e as string}`)
-  }
-
-  if (isGameStale(game)) {
-    sendDebugMessage(`${msgPrefix} Game is stale. `, 1)
-    return
-  }
-
-  let interval = isGameInProgress(game) ? ACTIVE_GAME_POLLING_INTERVAL_MS : INACTIVE_GAME_POLLING_INTERVAL_MS
-  let debugMessage = `${msgPrefix} Updated. (Next update in ${interval / 1000} seconds)`
-
-  if (!isSuccess && !tryAgainIfFailure) {
-    debugMessage = `${msgPrefix} Stopping updates after ${MAX_ATTEMPTS} failed attempts.`
-  } else if (!isSuccess) {
-    const nextAttempt = attempts + 1
-    if (DEBOUNCE_ENABLED) interval *= nextAttempt
-    debugMessage = `${msgPrefix} Failed to update on attempt #${attempts}. (Trying again in ${interval / 1000} seconds)`
-    timers.value.push(window.setTimeout(() => pollForUpdates(game, nextAttempt), interval))
-  } else if (isSuccess) {
-    timers.value.push(window.setTimeout(() => pollForUpdates(game), interval))
-  }
-
-  sendDebugMessage(debugMessage, 1)
-}
-
-const HUB_MAX_RETRY_DELAY_MS = 30000
-const hubRetryDelay = (retryCount: number) => Math.min(HUB_MAX_RETRY_DELAY_MS, 1000 * 2 ** retryCount)
-
-async function initializeHubConnection() {
-  // Invalidate the previous connection (and any pending start retries for it) before stopping it,
-  // including when it's still connecting or reconnecting, so it can't linger with handlers attached.
-  const generation = ++hubGeneration
-  window.clearTimeout(hubStartRetryTimer)
-  if (hubConnection && hubConnection.state !== SignalR.HubConnectionState.Disconnected) await hubConnection.stop()
-
-  const connection = new SignalR.HubConnectionBuilder()
-    // Negotiates WebSockets first, falling back to SSE then long polling.
-    // The hub requires auth; SignalR calls this before every (re)connect, so expired tokens get refreshed.
-    .withUrl(HUB_URL, { accessTokenFactory: getValidJwt })
-    .configureLogging(new SignalRLogger(1))
-    // The default policy gives up after 4 attempts; keep retrying with backoff (0s, 1s, 2s, 4s ... 30s).
-    .withAutomaticReconnect({ nextRetryDelayInMilliseconds: (ctx) => (ctx.previousRetryCount === 0 ? 0 : hubRetryDelay(ctx.previousRetryCount - 1)) })
-    .build()
-  hubConnection = connection
-
-  connection.on('LobbyEvent', dispatchLobbyEvent)
-  connection.on('Message', onNewMessage)
-  connection.on('LobbyStateChanged', getLobby)
-  connection.onreconnecting(() => sendDebugMessage(`Hub connection reconnecting... (State: ${connection.state})`, 2))
-  // A reconnect gets a new connection ID, so the server no longer has us in the lobby group.
-  // Rejoin it, then refetch whatever was missed while disconnected.
-  connection.onreconnected(async () => {
-    sendDebugMessage(`Hub connection reconnected. (State: ${connection.state})`, 2)
-    try {
-      await joinLobbyGroup(connection)
-      await resyncLobby()
-    } catch (err) {
-      reportError(err)
-    }
-  })
-
-  await startHubConnection(connection, generation)
-}
-
-// Automatic reconnect only covers drops after a successful start, so retry the initial start ourselves
-// (e.g. on resume the network often isn't ready for a second or two).
-async function startHubConnection(connection: SignalR.HubConnection, generation: number, attempt = 1) {
-  if (generation !== hubGeneration) return
-
-  try {
-    if (connection.state === SignalR.HubConnectionState.Disconnected) {
-      await connection.start()
-      sendDebugMessage(`Hub connection started. (State: ${connection.state})`, 2)
-    }
-    await joinLobbyGroup(connection)
-    if (attempt > 1) await resyncLobby()
-  } catch (err) {
-    reportError(err)
-    if (generation !== hubGeneration || document.hidden) return
-    // Automatic reconnect is already handling it and will rejoin in onreconnected.
-    if (connection.state === SignalR.HubConnectionState.Reconnecting) return
-
-    const delay = hubRetryDelay(attempt - 1)
-    sendDebugMessage(`Hub connection failed (attempt #${attempt}). Retrying in ${delay / 1000} seconds.`, 2)
-    hubStartRetryTimer = window.setTimeout(() => startHubConnection(connection, generation, attempt + 1), delay)
-  }
-}
-
-async function joinLobbyGroup(connection: SignalR.HubConnection) {
-  await connection.invoke('JoinLobby', joinCode.value)
-  sendDebugMessage(`Hub connection "Join Lobby" invoked. (State: ${connection.state})`, 2)
-}
-
-async function resyncLobby() {
-  await getLobby()
-  if (lobby.value) await getLobbyEvents(lobby.value.id)
 }
 
 function onNewMessage(message: Message) {
@@ -547,27 +311,6 @@ async function dispatchLobbyEvent(lobbyEvent: LobbyEvent) {
   if (eventHandler) eventHandler(lobbyEvent)
 }
 
-function getFeedItems() {
-  if (!lobby.value) return []
-  const desiredPlayTypes = [PlayType.Goal, PlayType.PeriodStart, PlayType.PeriodEnd, PlayType.GameEnd, PlayType.Challenge, PlayType.Penalty]
-
-  const gameItems = games.value.flatMap((game) => {
-    return game.plays.reduce((items: FeedItem[], play) => {
-      const includedInFilters = desiredPlayTypes.includes(play.type)
-      const happenedAfterLobbyStarted = appIsTestMode.value ? true : play.dateTime >= lobby.value!.created
-      const isShootoutGoal = play.type === PlayType.Goal && play.periodType === PeriodType.Shootout
-      if (includedInFilters && happenedAfterLobbyStarted && !isShootoutGoal) {
-        return [...items, FeedItem.fromPlay(game.id, { away: game.awayTeam, home: game.homeTeam }, play, game.playerSummaries)]
-      } else return items
-    }, [])
-  })
-
-  const lobbyItems = mappedEvents.value.map((evt) => FeedItem.fromLobbyEvent(evt))
-  const feedItems = [...gameItems, ...lobbyItems]
-  feedItems.sort((a, b) => compareAsc(a.time, b.time))
-  return feedItems
-}
-
 async function setViewToChat() {
   setView('chat')
   unseenMessageCount.value = 0
@@ -602,7 +345,6 @@ function getLobbyMemberInfo(name?: string): Partial<LobbyMember> | undefined {
 
 async function getLobby() {
   if (!joinCode.value) return
-  lastLobbyRetrieval.value = new Date()
   await getLobbyFromStore(joinCode.value)
   sendDebugMessage(`Got lobby ${joinCode.value}.`, 2)
 }

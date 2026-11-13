@@ -8,6 +8,8 @@ public record GoalChangeEventPayload(int GameId, PlayDto Play, PlayerDto NewScor
 public record GoalRemovedEventPayload(int GameId, int EventId, PlayerDto Scorer);
 public record UpcomingPicksPayload(string LobbyCode, UserEntity User);
 
+/// <summary>A poll produced a new copy of the game, already saved to the game cache.</summary>
+public record GameUpdatedNotification(GameDto Game) : INotification;
 public record GoalScoredNotification(GoalEventPayload Data) : INotification;
 public record GoalChangedNotification(GoalChangeEventPayload Data) : INotification;
 public record GoalRemovedNotification(GoalRemovedEventPayload Data) : INotification;

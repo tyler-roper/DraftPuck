@@ -31,6 +31,7 @@ public class GoalCorrectionPipelineTests(DatabaseFixture fixture)
     private readonly InMemoryGameCache _cache = new();
     private readonly INhlClient _nhl = Substitute.For<INhlClient>();
     private readonly IPushNotificationService _push = Substitute.For<IPushNotificationService>();
+    private readonly IClientEventService _clientEvents = Substitute.For<IClientEventService>();
     private readonly int _gameId = Seed.NewGameId();
     private readonly DateTime _start = DateTime.UtcNow;
 
@@ -73,7 +74,7 @@ public class GoalCorrectionPipelineTests(DatabaseFixture fixture)
             .AddSingleton(Substitute.For<INhlQueueService>())
             .AddSingleton(Substitute.For<IAchievementQueueService>())
             .AddSingleton(_push)
-            .AddSingleton(Substitute.For<IClientEventService>())
+            .AddSingleton(_clientEvents)
             .AddScoped<IDbContext>(_ => fixture.CreateContext());
         return services.BuildServiceProvider();
     }
@@ -144,6 +145,18 @@ public class GoalCorrectionPipelineTests(DatabaseFixture fixture)
         Assert.Null(drink.RecipientLobbyMemberId);
         Assert.Empty(await DrinksAsync(_janePickId));
         Assert.Equal(_johnPicker, Assert.Single(await EventsAsync(LobbyEventType.DrinkAwarded)).LobbyMemberId);
+    }
+
+    [Fact]
+    public async Task FailedPushToClientsDoesNotStopTheGoalBeingAwarded()
+    {
+        _clientEvents.SendGameUpdated(Arg.Any<GameDto>(), Arg.Any<CancellationToken>())
+            .Returns<Task>(_ => throw new InvalidOperationException("backplane down"));
+
+        await JohnScoresAsync();
+
+        Assert.Single(await DrinksAsync(_johnPickId));
+        await _clientEvents.Received().SendGameUpdated(Arg.Is<GameDto>(g => g.Id == _gameId), Arg.Any<CancellationToken>());
     }
 
     [Fact]
