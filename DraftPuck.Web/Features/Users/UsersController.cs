@@ -53,6 +53,7 @@ public class UsersController(IMediator mediator) : BaseController()
             BannerId = request.BannerId,
             TitleId = request.TitleId,
             Password = request.Password,
+            CurrentPassword = request.CurrentPassword,
             AvatarData = request.AvatarData
         };
 

@@ -5,7 +5,7 @@ import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
 import VInputWrapper from '@/components/VInputWrapper.vue'
 import useVuelidate from '@vuelidate/core'
-import { required, email, maxLength, sameAs } from '@vuelidate/validators'
+import { required, requiredIf, email, maxLength, sameAs } from '@vuelidate/validators'
 import { nickname, optionalPassword } from '@/helpers/validationHelpers'
 import VIcon from '@/components/VIcon.vue'
 import { useRouter } from 'vue-router'
@@ -22,7 +22,7 @@ const formElement = ref<HTMLFormElement | null>()
 
 //#region methods
 function discard() {
-  ;((form.nickname = currentUser.value!.nickname!), (form.email = currentUser.value!.email!), (form.password = ''), (form.confirmPassword = ''))
+  ;((form.nickname = currentUser.value!.nickname!), (form.email = currentUser.value!.email!), (form.currentPassword = ''), (form.password = ''), (form.confirmPassword = ''))
 }
 
 async function triggerFormSubmission() {
@@ -35,7 +35,14 @@ async function updateAccount() {
     if (v$.value.$error) return
     isUpdatingAccount.value = true
 
-    await userStore.updateUser(form)
+    // Only send password fields when changing it; the server treats any password value as a change.
+    const request: UpdateUserRequest = { nickname: form.nickname, email: form.email }
+    if (form.password) {
+      request.password = form.password
+      request.currentPassword = form.currentPassword
+    }
+
+    await userStore.updateUser(request)
     router.replace(`/u/${currentUser.value?.nickname}`)
     toast.success('Profile updated!', { timeout: 2000 })
   } catch (ex: unknown) {
@@ -43,7 +50,7 @@ async function updateAccount() {
     let friendlyMessage = 'Sorry, something went wrong.'
     if (typeof ex === 'object' && ex !== null && 'response' in ex) {
       const axiosError = ex as any
-      friendlyMessage = axiosError.response?.data?.title ?? friendlyMessage
+      friendlyMessage = axiosError.response?.data?.detail ?? axiosError.response?.data?.title ?? friendlyMessage
     }
     toast.error(friendlyMessage)
   } finally {
@@ -59,6 +66,7 @@ async function updateAccount() {
 const form = reactive<UpdateUserRequest>({
   nickname: currentUser.value!.nickname!,
   email: currentUser.value!.email!,
+  currentPassword: '',
   password: '',
   confirmPassword: ''
 })
@@ -66,6 +74,7 @@ const form = reactive<UpdateUserRequest>({
 const rules = computed(() => ({
   nickname: { required, nickname },
   email: { required, email, maxLength: maxLength(100) },
+  currentPassword: { required: requiredIf(computed(() => form.password !== '')) },
   password: { optionalPassword },
   confirmPassword: { sameAs: sameAs(computed(() => form.password)) }
 }))
@@ -73,6 +82,7 @@ const rules = computed(() => ({
 const isDirty = computed(() => {
   if (form.nickname !== currentUser.value!.nickname!) return true
   if (form.email !== currentUser.value!.email!) return true
+  if (form.currentPassword !== '') return true
   if (form.password !== '') return true
   if (form.confirmPassword !== '') return true
   return false
@@ -139,7 +149,22 @@ const v$ = useVuelidate<UpdateUserRequest>(rules, form)
 
         <div class="profile-section">
           <span class="title">Change Password</span>
-          <label class="form-label" for="password">Password <span class="text-primary small ms-2">(8+ Characters)</span></label>
+          <label class="form-label" for="currentPassword">Current Password</label>
+          <VInputWrapper>
+            <input
+              type="password"
+              id="currentPassword"
+              v-model="form.currentPassword"
+              placeholder="Current password"
+              maxlength="100"
+              autocomplete="current-password"
+              class="form-control fs-5 bg-stone-900"
+              :class="{ 'is-invalid': v$.currentPassword.$error }"
+            />
+          </VInputWrapper>
+        </div>
+        <div class="mt-3">
+          <label class="form-label" for="password">New Password <span class="text-primary small ms-2">(8+ Characters)</span></label>
           <VInputWrapper>
             <input
               type="password"

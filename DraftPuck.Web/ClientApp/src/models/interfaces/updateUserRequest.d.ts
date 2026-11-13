@@ -13,5 +13,6 @@ interface UpdateUserRequest {
   titleId?: string
   password?: string
   confirmPassword?: string
+  currentPassword?: string
   avatarData?: string
 }

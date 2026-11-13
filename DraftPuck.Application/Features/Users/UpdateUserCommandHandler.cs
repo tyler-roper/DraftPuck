@@ -22,6 +22,13 @@ public class UpdateUserCommandHandler(IDbContext dbContext, IMapper mapper, IUse
         var userToUpdate = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == userIdToUpdate, cancellationToken) ?? throw new NotFoundException("Target user not found.");
         var oldName = userToUpdate.Nickname;
 
+        // Changing your own password requires the current one (admins resetting someone else's don't need it).
+        if (request.Password != null && isUpdatingSelf && userToUpdate.PasswordHash != null)
+        {
+            if (string.IsNullOrEmpty(request.CurrentPassword) || !BCrypt.Net.BCrypt.Verify(request.CurrentPassword, userToUpdate.PasswordHash))
+                throw new BadRequestException("Current password is incorrect.");
+        }
+
         if (request.Email != null)
             userToUpdate.Email = request.Email;
 
@@ -77,6 +84,12 @@ public class UpdateUserCommandHandler(IDbContext dbContext, IMapper mapper, IUse
     {
         if (newBannerId.HasValue)
         {
+            var banner = await dbContext.Banners.FirstOrDefaultAsync(b => b.Id == newBannerId.Value, ct)
+                ?? throw new NotFoundException("Banner not found.");
+
+            if (!await IsUnlockedAsync(user.Id, banner.AchievementId, dbContext.UserBanners.Where(ub => ub.UserId == user.Id && ub.BannerId == banner.Id), ct))
+                throw new ForbiddenException("This banner hasn't been unlocked.");
+
             await dbContext.UserBanners
                 .Where(ub => ub.UserId == user.Id && ub.IsEquipped)
                 .ExecuteUpdateAsync(s => s.SetProperty(ub => ub.IsEquipped, false), ct);
@@ -101,6 +114,12 @@ public class UpdateUserCommandHandler(IDbContext dbContext, IMapper mapper, IUse
 
         if (newTitleId.HasValue)
         {
+            var title = await dbContext.Titles.FirstOrDefaultAsync(t => t.Id == newTitleId.Value, ct)
+                ?? throw new NotFoundException("Title not found.");
+
+            if (!await IsUnlockedAsync(user.Id, title.AchievementId, dbContext.UserTitles.Where(ut => ut.UserId == user.Id && ut.TitleId == title.Id), ct))
+                throw new ForbiddenException("This title hasn't been unlocked.");
+
             dbContext.UserTitles
                 .Where(ut => ut.UserId == user.Id && ut.IsEquipped)
                 .ExecuteUpdate(s => s.SetProperty(ut => ut.IsEquipped, false));
@@ -125,6 +144,21 @@ public class UpdateUserCommandHandler(IDbContext dbContext, IMapper mapper, IUse
         }
 
         //SaveChanges handled by calling method
+    }
+
+    /// <summary>
+    /// Generic items (no achievement) are available to everyone. Achievement rewards require the user to already
+    /// have the item, or to have earned the achievement it belongs to.
+    /// </summary>
+    private async Task<bool> IsUnlockedAsync<TLink>(Guid userId, Guid? achievementId, IQueryable<TLink> existingLinks, CancellationToken ct)
+    {
+        if (achievementId == null)
+            return true;
+
+        if (await existingLinks.AnyAsync(ct))
+            return true;
+
+        return await dbContext.UserAchievements.AnyAsync(ua => ua.UserId == userId && ua.AchievementId == achievementId, ct);
     }
 
     private async Task<string?> TryAvatarUpload(Guid userId, string newAvatarData, string? previousAvatarPath)
