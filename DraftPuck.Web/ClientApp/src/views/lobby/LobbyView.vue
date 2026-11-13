@@ -149,6 +149,10 @@ const isInitialLoad = ref(true)
 const selectedGame = ref<Game>()
 
 let hubConnection: SignalR.HubConnection
+let hubGeneration = 0
+let hubStartRetryTimer: number | undefined
+let isResuming = false
+let isUnmounted = false
 
 //computed
 const feedItems = computed(getFeedItems)
@@ -237,8 +241,9 @@ onMounted(async () => {
 
     await initializeLobbyConnection(true)
 
-    document.removeEventListener('visibilitychange', handleVisibilityChange)
     document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('pageshow', handleResume)
+    window.addEventListener('online', handleResume)
   } catch (e) {
     logError(e as string)
     isInvalidLobby.value = true
@@ -247,7 +252,13 @@ onMounted(async () => {
   }
 })
 
-onUnmounted(pauseLobbyConnection)
+onUnmounted(() => {
+  isUnmounted = true
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
+  window.removeEventListener('pageshow', handleResume)
+  window.removeEventListener('online', handleResume)
+  pauseLobbyConnection()
+})
 
 const isGameInProgress = (game: Game) => game.gameState === GameState.Live
 const isGameOver = (game: Game) => game.gameState === GameState.Final
@@ -255,7 +266,22 @@ const isGameStale = (game: Game) => isGameOver(game)
 
 function handleVisibilityChange() {
   if (document.hidden) pauseLobbyConnection()
-  else initializeLobbyConnection()
+  else handleResume()
+}
+
+// visibilitychange, pageshow and online can all fire when the app resumes; only run one re-initialization at a time.
+async function handleResume() {
+  if (document.hidden || isUnmounted || isResuming) return
+  if (hubConnection?.state === SignalR.HubConnectionState.Connected) return
+
+  isResuming = true
+  try {
+    await initializeLobbyConnection()
+  } catch (e) {
+    reportError(e)
+  } finally {
+    isResuming = false
+  }
 }
 
 function lobbyEventToast(lobbyEvent: LobbyEvent, options?: ToastOptions | undefined) {
@@ -277,6 +303,7 @@ function setView(view: View) {
 
 function initializeActivityChecker() {
   if (checkActivityTimer.value) window.clearInterval(checkActivityTimer.value)
+  if (isUnmounted) return
   checkActivityTimer.value = window.setInterval(checkActivity, 3000)
 }
 
@@ -284,20 +311,23 @@ async function checkActivity() {
   const secondsSinceLastLobbyRetrieval = Math.abs(differenceInSeconds(new Date(), lastLobbyRetrieval.value))
   if (secondsSinceLastLobbyRetrieval > 300) {
     sendDebugMessage(`${secondsSinceLastLobbyRetrieval} seconds since last retrieval.`, 2)
-    initializeLobbyConnection()
+    initializeLobbyConnection().catch(reportError)
   }
 }
 
 async function initializeLobbyConnection(skipLobbyRetrieval = false) {
   sendDebugMessage('Initializing lobby connection.', 2)
-  const promises = [initializeHubConnection(), setGames()]
-  if (!skipLobbyRetrieval) promises.push(getLobby())
-  await Promise.all(promises)
+  try {
+    const promises = [initializeHubConnection(), setGames()]
+    if (!skipLobbyRetrieval) promises.push(getLobby())
+    await Promise.all(promises)
 
-  if (lobby.value)
-    await getLobbyEvents(lobby.value.id)
-
-  initializeActivityChecker()
+    if (lobby.value)
+      await getLobbyEvents(lobby.value.id)
+  } finally {
+    // Always restart the safety net, even if a fetch failed, so the lobby can recover on its own.
+    initializeActivityChecker()
+  }
 }
 
 async function pauseLobbyConnection() {
@@ -305,16 +335,22 @@ async function pauseLobbyConnection() {
   // stop polling for game updates
   timers.value.forEach((t) => window.clearTimeout(t))
 
-  // disconnect hub
-  await hubConnection.stop()
+  // disconnect hub and cancel any pending start retries
+  hubGeneration++
+  window.clearTimeout(hubStartRetryTimer)
+  await hubConnection?.stop()
 
   // stop activity polling
   if (checkActivityTimer.value) window.clearInterval(checkActivityTimer.value)
 }
 
-function logError(error: string) {
+function reportError(error: unknown) {
   console.error(error)
-  sendDebugMessage(error, 3)
+  sendDebugMessage(String(error), 3)
+}
+
+function logError(error: string) {
+  reportError(error)
   throw error
 }
 
@@ -376,29 +412,76 @@ async function pollForUpdates(game: Game, attempts: number = 1) {
   sendDebugMessage(debugMessage, 1)
 }
 
+const HUB_MAX_RETRY_DELAY_MS = 30000
+const hubRetryDelay = (retryCount: number) => Math.min(HUB_MAX_RETRY_DELAY_MS, 1000 * 2 ** retryCount)
+
 async function initializeHubConnection() {
-  if (hubConnection && hubConnection.state === SignalR.HubConnectionState.Connected) await hubConnection.stop()
+  // Invalidate the previous connection (and any pending start retries for it) before stopping it,
+  // including when it's still connecting or reconnecting, so it can't linger with handlers attached.
+  const generation = ++hubGeneration
+  window.clearTimeout(hubStartRetryTimer)
+  if (hubConnection && hubConnection.state !== SignalR.HubConnectionState.Disconnected) await hubConnection.stop()
 
-  hubConnection = new SignalR.HubConnectionBuilder()
-    .withUrl(HUB_URL, SignalR.HttpTransportType.ServerSentEvents)
+  const connection = new SignalR.HubConnectionBuilder()
+    // Negotiates WebSockets first, falling back to SSE then long polling.
+    .withUrl(HUB_URL)
     .configureLogging(new SignalRLogger(1))
-    .withAutomaticReconnect()
+    // The default policy gives up after 4 attempts; keep retrying with backoff (0s, 1s, 2s, 4s ... 30s).
+    .withAutomaticReconnect({ nextRetryDelayInMilliseconds: (ctx) => (ctx.previousRetryCount === 0 ? 0 : hubRetryDelay(ctx.previousRetryCount - 1)) })
     .build()
+  hubConnection = connection
 
-  hubConnection.on('LobbyEvent', dispatchLobbyEvent)
-  hubConnection.on('Message', onNewMessage)
-  hubConnection.on('LobbyStateChanged', getLobby)
-  hubConnection.onreconnecting(() => sendDebugMessage(`Hub connection reconnecting... (State: ${hubConnection.state})`, 2))
-  hubConnection.onreconnected(() => sendDebugMessage(`Hub connection reconnected. (State: ${hubConnection.state})`, 2))
+  connection.on('LobbyEvent', dispatchLobbyEvent)
+  connection.on('Message', onNewMessage)
+  connection.on('LobbyStateChanged', getLobby)
+  connection.onreconnecting(() => sendDebugMessage(`Hub connection reconnecting... (State: ${connection.state})`, 2))
+  // A reconnect gets a new connection ID, so the server no longer has us in the lobby group.
+  // Rejoin it, then refetch whatever was missed while disconnected.
+  connection.onreconnected(async () => {
+    sendDebugMessage(`Hub connection reconnected. (State: ${connection.state})`, 2)
+    try {
+      await joinLobbyGroup(connection)
+      await resyncLobby()
+    } catch (err) {
+      reportError(err)
+    }
+  })
+
+  await startHubConnection(connection, generation)
+}
+
+// Automatic reconnect only covers drops after a successful start, so retry the initial start ourselves
+// (e.g. on resume the network often isn't ready for a second or two).
+async function startHubConnection(connection: SignalR.HubConnection, generation: number, attempt = 1) {
+  if (generation !== hubGeneration) return
 
   try {
-    await hubConnection.start()
-    sendDebugMessage(`Hub connection started. (State: ${hubConnection.state})`, 2)
-    await hubConnection.invoke('JoinLobby', joinCode.value, currentLobbyMember.value)
-    sendDebugMessage(`Hub connection "Join Lobby" invoked. (State: ${hubConnection.state})`, 2)
+    if (connection.state === SignalR.HubConnectionState.Disconnected) {
+      await connection.start()
+      sendDebugMessage(`Hub connection started. (State: ${connection.state})`, 2)
+    }
+    await joinLobbyGroup(connection)
+    if (attempt > 1) await resyncLobby()
   } catch (err) {
-    logError(err as string)
+    reportError(err)
+    if (generation !== hubGeneration || document.hidden) return
+    // Automatic reconnect is already handling it and will rejoin in onreconnected.
+    if (connection.state === SignalR.HubConnectionState.Reconnecting) return
+
+    const delay = hubRetryDelay(attempt - 1)
+    sendDebugMessage(`Hub connection failed (attempt #${attempt}). Retrying in ${delay / 1000} seconds.`, 2)
+    hubStartRetryTimer = window.setTimeout(() => startHubConnection(connection, generation, attempt + 1), delay)
   }
+}
+
+async function joinLobbyGroup(connection: SignalR.HubConnection) {
+  await connection.invoke('JoinLobby', joinCode.value, currentLobbyMember.value)
+  sendDebugMessage(`Hub connection "Join Lobby" invoked. (State: ${connection.state})`, 2)
+}
+
+async function resyncLobby() {
+  await getLobby()
+  if (lobby.value) await getLobbyEvents(lobby.value.id)
 }
 
 function onNewMessage(message: Message) {

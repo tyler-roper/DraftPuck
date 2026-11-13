@@ -44,7 +44,8 @@ export default defineConfig(({ mode }) => {
         },
         '/hub': {
           target: 'https://localhost:17000',
-          secure: false
+          secure: false,
+          ws: true
         }
       }
     },
