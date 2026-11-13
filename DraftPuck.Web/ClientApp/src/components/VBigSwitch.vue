@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="TValue">
-import { ref, computed, getCurrentInstance } from 'vue'
+import { computed, getCurrentInstance } from 'vue'
 
 const props = defineProps<{
   modelValue: any

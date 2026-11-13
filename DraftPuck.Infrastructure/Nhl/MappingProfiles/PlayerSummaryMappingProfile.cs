@@ -10,6 +10,7 @@ public class PlayerSummaryMappingProfile : Profile
             .ForMember(dest => dest.FirstName, opt => opt.MapFrom(src => src.FirstName.Default))
             .ForMember(dest => dest.LastName, opt => opt.MapFrom(src => src.LastName.Default))
             .ForMember(dest => dest.Number, opt => opt.MapFrom(src => src.SweaterNumber))
-            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.PlayerId));
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.PlayerId))
+            .ForMember(dest => dest.Position, opt => opt.MapFrom(src => src.PositionCode));
     }
 }

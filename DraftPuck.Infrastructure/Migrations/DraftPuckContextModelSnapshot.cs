@@ -88,14 +88,18 @@ namespace DraftPuck.Infrastructure.Migrations
 
                     b.Property<string>("Token")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("Token")
+                        .HasDatabaseName("IX_UserRefreshTokens_Token");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("IX_UserRefreshTokens_UserId");
 
                     b.ToTable("UserRefreshTokens");
                 });
@@ -153,9 +157,14 @@ namespace DraftPuck.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("LobbyMemberPickId");
+                    b.HasIndex("EventId")
+                        .HasDatabaseName("IX_Drinks_EventId");
 
-                    b.HasIndex("RecipientLobbyMemberId");
+                    b.HasIndex("RecipientLobbyMemberId")
+                        .HasDatabaseName("IX_Drinks_RecipientLobbyMemberId");
+
+                    b.HasIndex("LobbyMemberPickId", "EventId")
+                        .HasDatabaseName("IX_Drinks_Pick_Event");
 
                     b.ToTable("Drinks");
                 });
@@ -203,10 +212,18 @@ namespace DraftPuck.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CreatedBy");
+                    b.HasIndex("Created")
+                        .HasDatabaseName("IX_Lobbies_Created");
+
+                    b.HasIndex("CreatedBy")
+                        .HasDatabaseName("IX_Lobbies_CreatedBy");
 
                     b.HasIndex("IsActive")
                         .HasDatabaseName("IX_Lobbies_IsActive");
+
+                    b.HasIndex("JoinCode")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Lobbies_JoinCode");
 
                     b.ToTable("Lobbies");
                 });
@@ -323,9 +340,14 @@ namespace DraftPuck.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("LobbyId");
+                    b.HasIndex("LobbyId")
+                        .HasDatabaseName("IX_LobbyMembers_LobbyId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("IX_LobbyMembers_UserId");
+
+                    b.HasIndex("LobbyId", "UserId")
+                        .HasDatabaseName("IX_LobbyMembers_LobbyId_UserId");
 
                     b.ToTable("LobbyMembers");
                 });
@@ -361,8 +383,14 @@ namespace DraftPuck.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("LobbyMemberId")
+                        .HasDatabaseName("IX_LobbyMemberPicks_LobbyMemberId");
+
                     b.HasIndex("LobbyMemberId", "IsActive")
                         .HasDatabaseName("IX_LobbyMemberPicks_LobbyMemberId_IsActive");
+
+                    b.HasIndex("GameId", "PlayerId", "IsActive")
+                        .HasDatabaseName("IX_LobbyMemberPicks_Game_Player_Active");
 
                     b.ToTable("LobbyMemberPicks");
                 });
@@ -576,7 +604,7 @@ namespace DraftPuck.Infrastructure.Migrations
                         .HasDefaultValueSql("((1))");
 
                     b.Property<string>("Nickname")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("PasswordHash")
                         .HasColumnType("nvarchar(max)");
@@ -587,6 +615,14 @@ namespace DraftPuck.Infrastructure.Migrations
                         .HasDefaultValueSql("((0))");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Users_Email")
+                        .HasFilter("[Email] IS NOT NULL");
+
+                    b.HasIndex("Nickname")
+                        .HasDatabaseName("IX_Users_Nickname");
 
                     b.ToTable("Users");
                 });

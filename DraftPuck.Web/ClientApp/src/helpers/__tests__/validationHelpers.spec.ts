@@ -19,6 +19,11 @@ describe('password', () => {
     expect(password('a'.repeat(26))).toBe(false)
     expect(password(undefined)).toBe(false)
   })
+
+  it('does not count surrounding spaces toward the minimum, like the server', () => {
+    expect(password('   abcde   ')).toBe(false)
+    expect(optionalPassword('   abcde   ')).toBe(false)
+  })
 })
 
 describe('optionalPassword', () => {

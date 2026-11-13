@@ -39,7 +39,7 @@ public class LobbiesController(IMediator mediator) : BaseController()
     [HttpGet("{code}")]
     public async Task<ActionResult<LobbyDto>> GetLobbyByCode(string code)
     {
-        var query = new GetLobbyByCodeQuery { Code = code };
+        var query = new GetLobbyByCodeQuery { Code = code, UserId = CurrentUserId };
         var lobbyDto = await mediator.Send(query);
         return Ok(lobbyDto);
     }

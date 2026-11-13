@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using DraftPuck.Application.Common.Exceptions;
 using DraftPuck.Application.Features.Games;
+using DraftPuck.Application.Features.Lobbies;
 using DraftPuck.Application.Features.Lobbies.Drinks;
 using DraftPuck.Application.Features.Lobbies.Management;
 using DraftPuck.Application.Features.Lobbies.Messages;
@@ -194,6 +195,30 @@ public class LobbyActivityTests(DatabaseFixture fixture)
 
         await using var check = fixture.CreateContext();
         Assert.Equal("Go team", Assert.Single(await check.Messages.Where(m => m.LobbyMember.Lobby.JoinCode == s.Code).ToListAsync()).Message);
+    }
+
+    [Fact]
+    public async Task OnlyMembersSeeTheChatWhenViewingALobby()
+    {
+        var s = await SetupAsync();
+        await using (var db = fixture.CreateContext())
+        {
+            db.Messages.Add(new MessageEntity { Id = Guid.NewGuid(), LobbyMemberId = s.Member.Id, Message = "Members only" });
+            await db.SaveChangesAsync();
+        }
+
+        async Task<LobbyDto> View(Guid userId)
+        {
+            await using var db = fixture.CreateContext();
+            return await new GetLobbyByCodeQueryHandler(db, TestServices.Mapper()).Handle(new GetLobbyByCodeQuery { Code = s.Code, UserId = userId }, default);
+        }
+
+        var asMember = await View(s.Other.UserId);
+        var asOutsider = await View(Guid.NewGuid());
+
+        Assert.Contains(asMember.Members.SelectMany(m => m.Messages), m => m.Message == "Members only");
+        Assert.Empty(asOutsider.Members.SelectMany(m => m.Messages));
+        Assert.Equal(asMember.Members.Count, asOutsider.Members.Count); // the join form still sees who's in the lobby
     }
 
     // --- Stale lobbies ---

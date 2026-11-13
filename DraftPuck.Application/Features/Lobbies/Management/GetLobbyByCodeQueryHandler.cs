@@ -19,6 +19,18 @@ public class GetLobbyByCodeQueryHandler(IDbContext dbContext, IMapper mapper) : 
 
         if (lobby == null) throw new NotFoundException("Lobby not found.");
         //if (lobby.IsActive == false) throw new BadRequestException("Lobby is no longer active.");
-        return mapper.Map<LobbyDto>(lobby);
+
+        var lobbyDto = mapper.Map<LobbyDto>(lobby);
+
+        // Anyone with the code can see a lobby before joining (the join form checks names, and finished lobbies show
+        // results), but the chat is for members. Joining is announced to the lobby; reading this endpoint isn't.
+        var isMember = lobby.LobbyMembers.Any(m => m.UserId == request.UserId && !m.IsRemoved);
+        if (!isMember)
+        {
+            foreach (var member in lobbyDto.Members)
+                member.Messages = [];
+        }
+
+        return lobbyDto;
     }
 }

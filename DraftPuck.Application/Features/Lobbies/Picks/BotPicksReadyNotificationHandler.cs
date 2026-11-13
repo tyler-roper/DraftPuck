@@ -8,8 +8,10 @@ public class BotPicksReadyNotificationHandler(IDbContext dbContext, IMediator me
         var gameId = game.Id;
         // This runs on every poll (every 10 seconds during live games), so only load lobbies where a bot still has
         // picks left for this game. Once every bot is full, this is a single query that returns nothing.
+        // Lobbies with auto-picking turned off are skipped: their host picks for the bots.
         var lobbies = await dbContext.Lobbies
             .Where(l => l.IsActive
+                && l.IsBotAutoPickingEnabled
                 && l.GameIds.Contains(game.Id)
                 && l.LobbyMembers.Any(m => m.IsBot
                     && !m.IsRemoved

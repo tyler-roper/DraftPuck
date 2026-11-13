@@ -8,6 +8,8 @@ public class PlayMappingProfile : Profile
     {
         CreateMap<NhlPlay, PlayDto>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.EventId))
+            // Estimated from the game clock afterwards (GameProcessingHelpers.SetPlayDateTimes).
+            .ForMember(dest => dest.DateTime, opt => opt.Ignore())
             .ForMember(dest => dest.Period, opt => opt.MapFrom(src => src.PeriodDescriptor.Number))
             .ForMember(dest => dest.PeriodType, opt => opt.MapFrom(src => NhlMappingHelpers.MapPeriodType(src.PeriodDescriptor.PeriodType)))
             .ForMember(dest => dest.TimeRemainingInPeriod, opt => opt.MapFrom(src => src.TimeRemaining))

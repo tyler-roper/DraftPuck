@@ -95,7 +95,9 @@ public partial class DraftPuckContext : DbContext, IDbContext
             entity.Property(e => e.CreatedBy).HasMaxLength(50);
             entity.Property(e => e.JoinCode).HasMaxLength(4);
             entity.Property(e => e.GameIds).HasMaxLength(500);
-            entity.Property(e => e.IsActive).HasDefaultValueSql("((1))");
+            // Bools that default to true in both C# and the database use true as the sentinel. Otherwise EF treats
+            // false as "not set", leaves the column out of the INSERT, and the database default (true) wins.
+            entity.Property(e => e.IsActive).HasDefaultValueSql("((1))").HasSentinel(true);
             entity.Property(e => e.PicksPerTeam).HasDefaultValueSql("((1))");
             entity.Property(e => e.IsBotAutoPickingEnabled).HasDefaultValueSql("((0))");
 
@@ -161,7 +163,7 @@ public partial class DraftPuckContext : DbContext, IDbContext
         {
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.Created).HasDefaultValueSql("(getutcdate())");
-            entity.Property(e => e.IsActive).HasDefaultValueSql("((1))");
+            entity.Property(e => e.IsActive).HasDefaultValueSql("((1))").HasSentinel(true);
 
             entity.HasOne(d => d.LobbyMember).WithMany(p => p.LobbyMemberPicks)
                 .HasForeignKey(d => d.LobbyMemberId)
@@ -262,9 +264,9 @@ public partial class DraftPuckContext : DbContext, IDbContext
             entity.Property(e => e.ChatNotificationPreference).HasDefaultValueSql("((0))");
             entity.Property(e => e.PickingStartedNotificationPreference).HasDefaultValueSql("((0))");
             entity.Property(e => e.AchievementAwardedNotificationPreference).HasDefaultValueSql("((0))");
-            entity.Property(e => e.IsActive).HasDefaultValueSql("((1))");
+            entity.Property(e => e.IsActive).HasDefaultValueSql("((1))").HasSentinel(true);
             entity.Property(e => e.IsAdmin).HasDefaultValueSql("((0))");
-            entity.Property(e => e.IsGuest).HasDefaultValueSql("((1))");
+            entity.Property(e => e.IsGuest).HasDefaultValueSql("((1))").HasSentinel(true);
             entity.Property(e => e.AvatarPath).HasMaxLength(1000);
             entity.Property(e => e.Email).HasMaxLength(255);
             entity.Property(e => e.DiscordUserId).HasMaxLength(25);

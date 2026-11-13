@@ -32,10 +32,9 @@ public class Seed(DraftPuckContext db)
     }
 
     /// <summary>
-    /// A lobby for the given games, with its host as the first member. To make a lobby inactive, set IsActive after
-    /// saving: EF omits bools equal to false on insert when the column has a database default, so the default (true) wins.
+    /// A lobby for the given games, with its host as the first member.
     /// </summary>
-    public (LobbyEntity Lobby, LobbyMemberEntity Host) Lobby(int[] gameIds, int picksPerTeam = 1)
+    public (LobbyEntity Lobby, LobbyMemberEntity Host) Lobby(int[] gameIds, int picksPerTeam = 1, bool isActive = true, bool botAutoPicking = true)
     {
         var hostUser = User();
         var lobby = new LobbyEntity
@@ -44,7 +43,9 @@ public class Seed(DraftPuckContext db)
             JoinCode = NewJoinCode(),
             CreatedBy = hostUser.Id,
             PicksPerTeam = picksPerTeam,
-            GameIds = [.. gameIds]
+            GameIds = [.. gameIds],
+            IsActive = isActive,
+            IsBotAutoPickingEnabled = botAutoPicking
         };
         db.Lobbies.Add(lobby);
         return (lobby, Member(lobby, hostUser));

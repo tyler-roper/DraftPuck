@@ -115,6 +115,31 @@ public class AuthHandlerTests(DatabaseFixture fixture)
     }
 
     [Fact]
+    public async Task LoginDoesNotTakeLobbiesFromThePreviouslySignedInAccount()
+    {
+        var previous = await AccountAsync();
+        var account = await AccountAsync();
+        Guid memberId, lobbyId;
+        await using (var db = fixture.CreateContext())
+        {
+            var seed = new Seed(db);
+            var previousUser = await db.Users.SingleAsync(u => u.Id == previous.Id);
+            var (lobby, _) = seed.Lobby([Seed.NewGameId()]);
+            lobby.CreatedByUser = previousUser; // the previous account hosts the lobby
+            lobby.CreatedBy = previous.Id;
+            memberId = seed.Member(lobby, previousUser).Id;
+            lobbyId = lobby.Id;
+            await db.SaveChangesAsync();
+        }
+
+        await LoginAsync(account.Email!, SeedAccounts.Password, guestUserId: previous.Id);
+
+        await using var check = fixture.CreateContext();
+        Assert.Equal(previous.Id, (await check.LobbyMembers.SingleAsync(m => m.Id == memberId)).UserId);
+        Assert.Equal(previous.Id, (await check.Lobbies.SingleAsync(l => l.Id == lobbyId)).CreatedBy);
+    }
+
+    [Fact]
     public async Task LoginRenamesAnotherMemberAlreadyUsingTheAccountsName()
     {
         var account = await AccountAsync();
