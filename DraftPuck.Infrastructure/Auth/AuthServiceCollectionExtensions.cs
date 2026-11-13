@@ -46,6 +46,20 @@ namespace DraftPuck.Infrastructure.Auth
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.FromMinutes(1)
                 };
+
+                // Browsers can't set an Authorization header on WebSocket/SSE requests, so SignalR sends the
+                // token as a query string parameter. Only accept it there for the hub.
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+                        if (!string.IsNullOrEmpty(accessToken) && context.HttpContext.Request.Path.StartsWithSegments("/hub"))
+                            context.Token = accessToken;
+
+                        return Task.CompletedTask;
+                    }
+                };
             });
 
             services

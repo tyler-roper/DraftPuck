@@ -26,12 +26,14 @@ function isRefreshableError(error: any): boolean {
   return status === 401 && url !== refreshTokenUrl && !hasBeenRetried
 }
 
-async function refreshTokens(axiosInstance: AxiosInstance): Promise<AuthResponse> {
+async function refreshTokens(): Promise<AuthResponse> {
   if (refreshPromise) return refreshPromise
 
-  refreshPromise = axiosInstance
-    .post<any, { data: AuthResponse }>(refreshTokenUrl)
+  const { csrf } = TokenService.getTokens()
+  refreshPromise = axios
+    .post<AuthResponse>(refreshTokenUrl, undefined, { headers: csrf ? { [csrfHeaderKey]: csrf } : {} })
     .then((response) => {
+      parseAllDates(response.data)
       TokenService.storeTokens(response.data)
       return response.data
     })
@@ -40,6 +42,25 @@ async function refreshTokens(axiosInstance: AxiosInstance): Promise<AuthResponse
     })
 
   return refreshPromise
+}
+
+function isJwtExpiringSoon(jwt: string, withinSeconds = 60): boolean {
+  try {
+    const payload = JSON.parse(atob(jwt.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+    return typeof payload.exp !== 'number' || payload.exp * 1000 - Date.now() < withinSeconds * 1000
+  } catch {
+    return true
+  }
+}
+
+// For connections that can't go through the axios refresh-on-401 flow (e.g. the SignalR hub):
+// returns the current access token, refreshing it first if it's missing or about to expire.
+export async function getValidJwt(): Promise<string> {
+  const { jwt } = TokenService.getTokens()
+  if (jwt && !isJwtExpiringSoon(jwt)) return jwt
+
+  const authResponse = await refreshTokens()
+  return authResponse.jwtToken
 }
 
 function handleRefreshFailure(error: any): never {
@@ -83,7 +104,7 @@ export default class HttpService implements IHttpService {
     error.config._hasBeenRetried = true
 
     try {
-      await refreshTokens(this._axios)
+      await refreshTokens()
       return this._axios(error.config)
     } catch (refreshError) {
       handleRefreshFailure(refreshError)

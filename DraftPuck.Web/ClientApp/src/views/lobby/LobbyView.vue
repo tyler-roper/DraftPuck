@@ -31,6 +31,7 @@ import { useUserStore } from '@/stores/user'
 import { useSystemStore } from '@/stores/system'
 import VHtmlToast from '@/components/VHtmlToast.vue'
 import type { ToastOptions } from 'vue-toastification/dist/types/types'
+import { getValidJwt } from '@/services/HttpService'
 
 class SignalRLogger implements ILogger {
   logLevel = 0
@@ -424,7 +425,8 @@ async function initializeHubConnection() {
 
   const connection = new SignalR.HubConnectionBuilder()
     // Negotiates WebSockets first, falling back to SSE then long polling.
-    .withUrl(HUB_URL)
+    // The hub requires auth; SignalR calls this before every (re)connect, so expired tokens get refreshed.
+    .withUrl(HUB_URL, { accessTokenFactory: getValidJwt })
     .configureLogging(new SignalRLogger(1))
     // The default policy gives up after 4 attempts; keep retrying with backoff (0s, 1s, 2s, 4s ... 30s).
     .withAutomaticReconnect({ nextRetryDelayInMilliseconds: (ctx) => (ctx.previousRetryCount === 0 ? 0 : hubRetryDelay(ctx.previousRetryCount - 1)) })
@@ -475,7 +477,7 @@ async function startHubConnection(connection: SignalR.HubConnection, generation:
 }
 
 async function joinLobbyGroup(connection: SignalR.HubConnection) {
-  await connection.invoke('JoinLobby', joinCode.value, currentLobbyMember.value)
+  await connection.invoke('JoinLobby', joinCode.value)
   sendDebugMessage(`Hub connection "Join Lobby" invoked. (State: ${connection.state})`, 2)
 }
 
