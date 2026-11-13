@@ -23,11 +23,16 @@ public class ProcessGameCommandHandlerTests
         _gameCache.GetGameByIdAsync(updated.Id).Returns(cached);
         _nhlClient.GetFullGameAsync(updated.Id).Returns(updated);
 
-        var handler = new ProcessGameCommandHandler(_gameCache, _mediator, Substitute.For<IDbContext>(), _nhlClient, _queue,
-            Options.Create(new ApplicationOptions()), NullLogger<ProcessGameCommandHandler>.Instance);
+        var handler = CreateHandler(NullLogger<ProcessGameCommandHandler>.Instance);
 
         await handler.Handle(new ProcessGameCommand(updated.Id, IsInitialPopulation: false), default);
     }
+
+    // No database is needed while no players leave the lineup, so roster sync gets a bare substitute.
+    private ProcessGameCommandHandler CreateHandler(ILogger<ProcessGameCommandHandler> logger) => new(
+        _gameCache, _mediator, _nhlClient, _queue,
+        new GameRosterSync(Substitute.For<IDbContext>(), _mediator, _nhlClient, NullLogger<GameRosterSync>.Instance),
+        Options.Create(new ApplicationOptions()), logger);
 
     private List<T> Published<T>() => [.. _mediator.ReceivedCalls()
         .Where(c => c.GetMethodInfo().Name == nameof(IMediator.Publish))
@@ -77,8 +82,25 @@ public class ProcessGameCommandHandlerTests
         await PollAsync(cached, updated);
 
         Assert.Equal(newScorer, Assert.Single(Published<GoalScoredNotification>()).Data.Scorer.Id);
-        Assert.Equal(Scorer, Assert.Single(Published<GoalRemovedNotification>()).Data.Scorer.Id);
-        Assert.Single(Published<GoalChangedNotification>());
+        var changed = Assert.Single(Published<GoalChangedNotification>());
+        Assert.Equal(Scorer, changed.Data.OldScorer.Id);
+        Assert.Equal(newScorer, changed.Data.NewScorer.Id);
+        // The goal still stands, so it isn't also reported as removed (that would revoke the old scorer's drinks twice).
+        Assert.Empty(Published<GoalRemovedNotification>());
+    }
+
+    [Fact]
+    public async Task CorrectedGoalTimeWithTheSameScorerPublishesNothing()
+    {
+        var (cached, updated) = LiveGame(Seed.NewGameId());
+        cached.Plays = [TestGames.Goal(PlayId, 1, "05:00", Scorer, TestGames.HomeTeamId)];
+        updated.Plays = [TestGames.Goal(PlayId, 1, "05:30", Scorer, TestGames.HomeTeamId)];
+
+        await PollAsync(cached, updated);
+
+        Assert.Empty(Published<GoalScoredNotification>());
+        Assert.Empty(Published<GoalChangedNotification>());
+        Assert.Empty(Published<GoalRemovedNotification>());
     }
 
     [Fact]
@@ -178,8 +200,7 @@ public class ProcessGameCommandHandlerTests
     private async Task<ListLogger> HandleExpectingFallbackAsync(int gameId)
     {
         var logger = new ListLogger();
-        var handler = new ProcessGameCommandHandler(_gameCache, _mediator, Substitute.For<IDbContext>(), _nhlClient, _queue,
-            Options.Create(new ApplicationOptions()), logger);
+        var handler = CreateHandler(logger);
 
         await handler.Handle(new ProcessGameCommand(gameId, IsInitialPopulation: false), default);
 

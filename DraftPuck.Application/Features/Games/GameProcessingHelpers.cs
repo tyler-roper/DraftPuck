@@ -19,6 +19,23 @@ public static class GameProcessingHelpers
     public static DateTime AdjustDateTimeForCutoff(DateTime utcDate)
         => utcDate.AddHours(CutoffHours * -1);
 
+    /// <summary>
+    /// How long until a game is polled again, or null to stop: every 10 seconds while live, every minute in the 40 minutes
+    /// before puck drop (and right after the morning schedule load), every 10 minutes before that, never once final.
+    /// </summary>
+    public static TimeSpan? GetPollDelay(GameDto game, DateTime nowUtc, bool isInitialPopulation)
+    {
+        if (isInitialPopulation) return TimeSpan.FromMinutes(1);
+
+        return game.GameState switch
+        {
+            GameState.Live => TimeSpan.FromSeconds(10),
+            GameState.Upcoming when game.DateTime - nowUtc <= TimeSpan.FromMinutes(40) => TimeSpan.FromMinutes(1),
+            GameState.Upcoming => TimeSpan.FromMinutes(10),
+            _ => null
+        };
+    }
+
     public static bool IsGameCurrent(GameDto game, DateTime nowUtc)
     {
         var nowAdjusted = AdjustDateTimeForCutoff(nowUtc).Date;
