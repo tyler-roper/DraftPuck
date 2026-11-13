@@ -58,9 +58,17 @@ dotnet test DraftPuck.Tests
 - `Support/` has the fixtures and seed helpers. Tests share one database, so seed your own lobbies and use
   `Seed.NewGameId()` rather than fixed IDs.
 
+If Windows blocks the test DLLs ("An Application Control policy has blocked this file", from Smart App Control),
+run the suite in a Linux container instead, the same way CI does. Extra arguments go to `dotnet test`:
+```bash
+scripts/test-server-in-docker.sh
+scripts/test-server-in-docker.sh --filter "FullyQualifiedName~Lobbies"
+```
+
 **Client** (Vitest):
 ```bash
 cd DraftPuck.Web/ClientApp
 npm test            # or: npm run test:watch
+npm run lint:check  # what CI runs; `npm run lint` fixes what it can
 ```
 Put specs in a `__tests__` folder next to the code, named `*.spec.ts`.
