@@ -1,10 +1,8 @@
 name: Tests
 
 on:
+  # Every PR, including ones stacked on another PR's branch.
   pull_request:
-    branches:
-      - develop
-      - main
   push:
     branches:
       - develop
