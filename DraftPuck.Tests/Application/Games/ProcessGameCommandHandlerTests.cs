@@ -1,4 +1,5 @@
 using DraftPuck.Application.Features.Games;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace DraftPuck.Tests.Application.Games;
@@ -135,5 +136,64 @@ public class ProcessGameCommandHandlerTests
         Assert.Single(Published<PicksReadyNotification>());
         // The normal one-minute pregame poll was scheduled, not the two-minute retry after an unhandled error.
         await _queue.Received(1).SendMessageAsync(Arg.Any<ProcessGameMessage>(), TimeSpan.FromMinutes(1), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task NhlApiErrorLogsWarningAndSchedulesRetry()
+    {
+        var gameId = Seed.NewGameId();
+        _nhlClient.GetFullGameAsync(gameId).Returns<GameDto>(_ => throw new HttpRequestException("boom", null, System.Net.HttpStatusCode.InternalServerError));
+
+        var logger = await HandleExpectingFallbackAsync(gameId);
+
+        var entry = Assert.Single(logger.Entries);
+        Assert.Equal(LogLevel.Warning, entry.Level);
+        Assert.Contains("500", entry.Message);
+    }
+
+    [Fact]
+    public async Task NhlApiTimeoutLogsWarningAndSchedulesRetry()
+    {
+        var gameId = Seed.NewGameId();
+        _nhlClient.GetFullGameAsync(gameId).Returns<GameDto>(_ => throw new TaskCanceledException("timeout", new TimeoutException()));
+
+        var logger = await HandleExpectingFallbackAsync(gameId);
+
+        Assert.Equal(LogLevel.Warning, Assert.Single(logger.Entries).Level);
+    }
+
+    [Fact]
+    public async Task UnexpectedExceptionStillLogsErrorAndSchedulesRetry()
+    {
+        var gameId = Seed.NewGameId();
+        _nhlClient.GetFullGameAsync(gameId).Returns<GameDto>(_ => throw new InvalidOperationException("bug"));
+
+        var logger = await HandleExpectingFallbackAsync(gameId);
+
+        var entry = Assert.Single(logger.Entries);
+        Assert.Equal(LogLevel.Error, entry.Level);
+        Assert.IsType<InvalidOperationException>(entry.Exception);
+    }
+
+    private async Task<ListLogger> HandleExpectingFallbackAsync(int gameId)
+    {
+        var logger = new ListLogger();
+        var handler = new ProcessGameCommandHandler(_gameCache, _mediator, Substitute.For<IDbContext>(), _nhlClient, _queue,
+            Options.Create(new ApplicationOptions()), logger);
+
+        await handler.Handle(new ProcessGameCommand(gameId, IsInitialPopulation: false), default);
+
+        await _queue.Received(1).SendMessageAsync(
+            Arg.Is<ProcessGameMessage>(m => m.GameId == gameId), TimeSpan.FromMinutes(2), Arg.Any<CancellationToken>());
+        return logger;
+    }
+
+    private sealed class ListLogger : ILogger<ProcessGameCommandHandler>
+    {
+        public List<(LogLevel Level, string Message, Exception? Exception)> Entries { get; } = [];
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(LogLevel logLevel) => true;
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+            => Entries.Add((logLevel, formatter(state, exception), exception));
     }
 }

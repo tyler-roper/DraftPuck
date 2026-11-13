@@ -16,19 +16,43 @@ public class ProcessGameCommandHandler(IGameCache gameCache, IMediator mediator,
         {
             await HandleInternal(request, ct);
         }
+        catch (Exception ex) when (DescribeNhlApiFailure(ex, ct) is { } reason)
+        {
+            // The NHL API being down or slow is outside our control and the retry handles it,
+            // so it's a warning without a stack trace rather than an error.
+            logger.LogWarning(
+                "NHL API unavailable for game {gameId} ({reason}). Scheduling fallback retry in {delay}.",
+                request.GameId, reason, fallbackDelay);
+
+            await ScheduleFallbackAsync();
+        }
         catch (Exception ex)
         {
             logger.LogError(ex,
                 "Unhandled exception processing game {gameId}. Scheduling fallback retry.",
                 request.GameId);
 
-            await nhlQueue.SendMessageAsync(
-                new ProcessGameMessage(request.GameId, false),
-                fallbackDelay,
-                ct
-            );
+            await ScheduleFallbackAsync();
         }
+
+        Task ScheduleFallbackAsync() => nhlQueue.SendMessageAsync(
+            new ProcessGameMessage(request.GameId, false),
+            fallbackDelay,
+            ct
+        );
     }
+
+    /// <summary>
+    /// Returns a short reason when the exception is the NHL API failing (an error status code or
+    /// an HttpClient timeout), or null for anything else, which is a real bug.
+    /// </summary>
+    private static string? DescribeNhlApiFailure(Exception ex, CancellationToken ct) => ex switch
+    {
+        HttpRequestException { StatusCode: { } status } => $"{(int)status} {status}",
+        HttpRequestException http => http.Message,
+        TaskCanceledException { InnerException: TimeoutException } when !ct.IsCancellationRequested => "request timed out",
+        _ => null
+    };
 
     private async Task HandleInternal(ProcessGameCommand request, CancellationToken ct)
     {
