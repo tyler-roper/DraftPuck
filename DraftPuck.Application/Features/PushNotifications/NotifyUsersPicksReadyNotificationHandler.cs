@@ -21,7 +21,9 @@ public class NotifyUsersPicksReadyNotificationHandler(IDbContext dbContext, IGam
             .ToList();
 
         var usersWithPushNotificationsEnabled = await dbContext.Users
-            .Where(u => userIds.Contains(u.Id) && !string.IsNullOrEmpty(u.FcmRegistrationToken))
+            .Where(u => userIds.Contains(u.Id)
+                && !string.IsNullOrEmpty(u.FcmRegistrationToken)
+                && u.PickingStartedNotificationPreference != NotificationPreference.None)
             .ToDictionaryAsync(u => u.Id, u => u, ct);
 
         foreach (var userId in userIds)
