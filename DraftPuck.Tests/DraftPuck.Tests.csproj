@@ -9,6 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.21" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.21" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.21" />
     <PackageReference Include="NSubstitute" Version="5.3.0" />
@@ -25,6 +27,7 @@
     <ProjectReference Include="..\DraftPuck.Application\DraftPuck.Application.csproj" />
     <ProjectReference Include="..\DraftPuck.Infrastructure\DraftPuck.Infrastructure.csproj" />
     <ProjectReference Include="..\DraftPuck.Shared\DraftPuck.Shared.csproj" />
+    <ProjectReference Include="..\DraftPuck.Web\DraftPuck.Web.csproj" />
   </ItemGroup>
 
 </Project>

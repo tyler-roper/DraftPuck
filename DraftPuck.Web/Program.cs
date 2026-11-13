@@ -106,3 +106,5 @@ static void MigrateDatabase(WebApplication app)
         logger.LogError(ex, "An error occurred while migrating the database.");
     }
 }
+// Public so the integration tests can host the app with WebApplicationFactory<Program>.
+public partial class Program;
