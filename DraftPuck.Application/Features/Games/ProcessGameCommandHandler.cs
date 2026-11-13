@@ -1,20 +1,29 @@
 ﻿using DraftPuck.Application.Features.Lobbies.Picks;
 using Microsoft.Extensions.Options;
-using System.Text;
 
 namespace DraftPuck.Application.Features.Games;
 
-public class ProcessGameCommandHandler(IGameCache gameCache, IMediator mediator, IDbContext dbContext, INhlClient nhlClient, INhlQueueService nhlQueue, IOptions<ApplicationOptions> appConfig, ILogger<ProcessGameCommandHandler> logger) : IRequestHandler<ProcessGameCommand>
+/// <summary>
+/// One poll of a game: fetch it from the NHL, sync rosters, announce goal changes, send pregame alerts, and queue the
+/// next poll. The previous poll's copy of the game lives in the game cache.
+/// </summary>
+public class ProcessGameCommandHandler(
+    IGameCache gameCache,
+    IMediator mediator,
+    INhlClient nhlClient,
+    INhlQueueService nhlQueue,
+    GameRosterSync rosterSync,
+    IOptions<ApplicationOptions> appConfig,
+    ILogger<ProcessGameCommandHandler> logger) : IRequestHandler<ProcessGameCommand>
 {
+    private static readonly TimeSpan FallbackDelay = TimeSpan.FromMinutes(2);
     private readonly ApplicationOptions _appConfig = appConfig.Value;
 
     public async Task Handle(ProcessGameCommand request, CancellationToken ct)
     {
-        TimeSpan fallbackDelay = TimeSpan.FromMinutes(2);
-
         try
         {
-            await HandleInternal(request, ct);
+            await PollAsync(request, ct);
         }
         catch (Exception ex) when (DescribeNhlApiFailure(ex, ct) is { } reason)
         {
@@ -22,9 +31,9 @@ public class ProcessGameCommandHandler(IGameCache gameCache, IMediator mediator,
             // so it's a warning without a stack trace rather than an error.
             logger.LogWarning(
                 "NHL API unavailable for game {gameId} ({reason}). Scheduling fallback retry in {delay}.",
-                request.GameId, reason, fallbackDelay);
+                request.GameId, reason, FallbackDelay);
 
-            await ScheduleFallbackAsync();
+            await QueuePollAsync(request.GameId, FallbackDelay, ct);
         }
         catch (Exception ex)
         {
@@ -32,14 +41,8 @@ public class ProcessGameCommandHandler(IGameCache gameCache, IMediator mediator,
                 "Unhandled exception processing game {gameId}. Scheduling fallback retry.",
                 request.GameId);
 
-            await ScheduleFallbackAsync();
+            await QueuePollAsync(request.GameId, FallbackDelay, ct);
         }
-
-        Task ScheduleFallbackAsync() => nhlQueue.SendMessageAsync(
-            new ProcessGameMessage(request.GameId, false),
-            fallbackDelay,
-            ct
-        );
     }
 
     /// <summary>
@@ -54,307 +57,127 @@ public class ProcessGameCommandHandler(IGameCache gameCache, IMediator mediator,
         _ => null
     };
 
-    private async Task HandleInternal(ProcessGameCommand request, CancellationToken ct)
+    private async Task PollAsync(ProcessGameCommand request, CancellationToken ct)
     {
-        var updatedGame = await nhlClient.GetFullGameAsync(request.GameId);
-        if (updatedGame == null) return;
+        var game = await nhlClient.GetFullGameAsync(request.GameId);
+        if (game == null) return;
+
+        var matchup = $"{game.AwayTeam.Abbreviation} @ {game.HomeTeam.Abbreviation}";
 
         var nextRun = await gameCache.GetNextRunAsync(request.GameId);
-        if (nextRun.HasValue && nextRun > DateTime.UtcNow)
+        if (nextRun > DateTime.UtcNow)
         {
-            logger.LogInformation(
-                "Skipping {awayTeam} @ {homeTeam} because another process is already scheduled at {nextRun}.",
-                updatedGame.AwayTeam.Abbreviation,
-                updatedGame.HomeTeam.Abbreviation,
-                nextRun.Value
-            );
+            logger.LogInformation("Skipping {matchup} because another process is already scheduled at {nextRun}.", matchup, nextRun.Value);
             return;
         }
 
-        if (!GameProcessingHelpers.IsGameCurrent(updatedGame, _appConfig.CurrentTimeUtc))
+        if (!GameProcessingHelpers.IsGameCurrent(game, _appConfig.CurrentTimeUtc))
         {
-            await gameCache.RemoveGameAsync(updatedGame.Id);
-            logger.LogInformation("{awayTeam} @ {homeTeam} has been removed from the cache.", updatedGame.AwayTeam.Abbreviation, updatedGame.HomeTeam.Abbreviation);
+            await gameCache.RemoveGameAsync(game.Id);
+            logger.LogInformation("{matchup} has been removed from the cache.", matchup);
             return;
         }
 
-        logger.LogInformation("Processing {awayTeam} @ {homeTeam}...", updatedGame.AwayTeam.Abbreviation, updatedGame.HomeTeam.Abbreviation);
+        logger.LogInformation("Processing {matchup}...", matchup);
 
-        var cachedGame = await gameCache.GetGameByIdAsync(request.GameId);
-        if (cachedGame == null)
-        {
-            await gameCache.AddGameAsync(updatedGame);
-            cachedGame = updatedGame;
-        }
+        // Null on the first poll, or when the cached copy was lost mid-game.
+        var previous = await gameCache.GetGameByIdAsync(request.GameId);
 
-        var updatedHomeSummaries = updatedGame.PlayerSummaries
-            .Where(ps => ps.TeamId == cachedGame.HomeTeam.Id)
-            .ToList();
+        // On the initial schedule load, skip fetching every player so the queue isn't blocked until each game is cached.
+        await rosterSync.SyncAsync(previous ?? game, game, fetchChangedRosters: !request.IsInitialPopulation, ct);
 
-        var updatedAwaySummaries = updatedGame.PlayerSummaries
-            .Where(ps => ps.TeamId == cachedGame.AwayTeam.Id)
-            .ToList();
+        GameProcessingHelpers.SetPlayDateTimes(game, _appConfig.CurrentTimeUtc, _appConfig.IsTestMode, previous ?? game);
+        GameProcessingHelpers.HandleTestMode(game, _appConfig);
 
-        await HandleRemovedPlayersAsync(cachedGame, updatedGame, updatedHomeSummaries, updatedAwaySummaries, ct);
+        // With no previous poll every goal is treated as new. Awarding skips goals that already have drinks,
+        // so this only fills in goals missed while there was no cached copy.
+        var goalChanges = GoalMatcher.Compare(previous == null ? [] : TrackedGoal.CountedIn(previous), TrackedGoal.CountedIn(game));
 
-        var homeRoster = cachedGame.HomeTeam.Roster;
-        var awayRoster = cachedGame.AwayTeam.Roster;
+        await gameCache.UpdateGameAsync(game);
+        await PublishGoalChangesAsync(game.Id, goalChanges, ct);
 
-        if (!request.IsInitialPopulation) //skip blocking the api queue with player requests until we've got the latest copy of each game
-        {
-            var oldHomePlayerIds = homeRoster.Select(p => p.Id).ToHashSet();
-            var updatedHomePlayerIds = updatedHomeSummaries.Select(s => s.Id).ToHashSet();
+        var pollAgainDelay = GameProcessingHelpers.GetPollDelay(game, _appConfig.CurrentTimeUtc, request.IsInitialPopulation);
+        logger.LogInformation("Processing {matchup} complete. {polling}", matchup,
+            pollAgainDelay == null ? "Stopping polling." : $"Polling again in {pollAgainDelay.Value.TotalSeconds} seconds.");
 
-            bool homeRosterChanged = !oldHomePlayerIds.SetEquals(updatedHomePlayerIds);
-
-            var oldAwayPlayerIds = awayRoster.Select(p => p.Id).ToHashSet();
-            var updatedAwayPlayerIds = updatedAwaySummaries.Select(s => s.Id).ToHashSet();
-
-            bool awayRosterChanged = !oldAwayPlayerIds.SetEquals(updatedAwayPlayerIds);
-
-            if (homeRosterChanged)
-            {
-                var playerDtos = await FetchPlayerDetails(updatedHomeSummaries);
-                playerDtos.ForEach(p => p.TeamId = cachedGame.HomeTeam.Id); // Overwrite player's usual team with their current team (e.g., they play for LAK but this is a USA vs Canada game)
-                homeRoster = playerDtos;
-            }
-
-            if (awayRosterChanged)
-            {
-                var playersDto = await FetchPlayerDetails(updatedAwaySummaries);
-                playersDto.ForEach(p => p.TeamId = cachedGame.AwayTeam.Id);
-                awayRoster = playersDto;
-            }
-        }
-
-        cachedGame.HomeTeam.Roster = homeRoster;
-        cachedGame.AwayTeam.Roster = awayRoster;
-        updatedGame.HomeTeam.Roster = [.. homeRoster.OrderByDescending(p => p.Goals)];
-        updatedGame.AwayTeam.Roster = [.. awayRoster.OrderByDescending(p => p.Goals)];
-
-        GameProcessingHelpers.SetPlayDateTimes(updatedGame, _appConfig.CurrentTimeUtc, _appConfig.IsTestMode, cachedGame);
-        GameProcessingHelpers.HandleTestMode(updatedGame, _appConfig);
-
-        var goalsBefore = GetGoalSummaries(cachedGame);
-        var goalsAfter = GetGoalSummaries(updatedGame);
-
-        await gameCache.UpdateGameAsync(updatedGame);
-        await HandleScoringUpdatesAsync(goalsBefore, goalsAfter, updatedGame, ct);
-
-        var pollAgainDelay = request.IsInitialPopulation
-            ? TimeSpan.FromMinutes(1)
-            : GetPollDelayBasedOnGameStatus(updatedGame);
-
-        var logMessage = new StringBuilder($"Processing {updatedGame.AwayTeam.Abbreviation} @ {updatedGame.HomeTeam.Abbreviation} complete. ");
-        var pollingMessage = pollAgainDelay == null ? "Stopping polling." : $"Polling again in {pollAgainDelay.Value.TotalSeconds} seconds.";
-        logMessage.Append(pollingMessage);
-        logger.LogInformation(logMessage.ToString());
-
-        await TriggerPregameEvents(updatedGame, _appConfig.CurrentTimeUtc, ct);
+        await TriggerPregameEventsAsync(game, _appConfig.CurrentTimeUtc, ct);
 
         if (pollAgainDelay != null)
         {
-            var nextRunTime = DateTime.UtcNow.Add(pollAgainDelay.Value);
-            await gameCache.SetNextRunAsync(updatedGame.Id, nextRunTime);
-            await nhlQueue.SendMessageAsync(new ProcessGameMessage(request.GameId, false), pollAgainDelay, ct);
+            await gameCache.SetNextRunAsync(game.Id, DateTime.UtcNow.Add(pollAgainDelay.Value));
+            await QueuePollAsync(game.Id, pollAgainDelay.Value, ct);
         }
         else
         {
-            await gameCache.RemoveNextRunAsync(updatedGame.Id);
+            await gameCache.RemoveNextRunAsync(game.Id);
         }
     }
 
-    private async Task<List<PlayerDto>> FetchPlayerDetails(List<PlayerSummaryDto> summaries)
+    private Task QueuePollAsync(int gameId, TimeSpan delay, CancellationToken ct)
+        => nhlQueue.SendMessageAsync(new ProcessGameMessage(gameId, false), delay, ct);
+
+    /// <summary>
+    /// A scorer change revokes the old scorer's drinks (GoalChanged) before awarding the new scorer's (GoalScored).
+    /// Renumbers go first so revokes and awards find drinks under the goal's current play ID.
+    /// </summary>
+    private async Task PublishGoalChangesAsync(int gameId, List<GoalChange> changes, CancellationToken ct)
     {
-        if (summaries.Count == 0)
-            return [];
-
-        var fetchedPlayers = new List<PlayerDto>();
-
-        foreach (var summary in summaries)
+        foreach (var change in changes)
         {
-            var player = await nhlClient.GetPlayerAsync(summary.Id);
-
-            if (player != null)
-                fetchedPlayers.Add(player);
-        }
-
-        return fetchedPlayers;
-    }
-
-    private static Dictionary<int, GoalSummaryDto> GetGoalSummaries(GameDto game)
-    {
-        if (game.HomeTeam.Roster.Count == 0 && game.AwayTeam.Roster.Count == 0)
-            return [];
-
-        return game.Plays
-            .Where(play =>
-                play.Type == PlayType.Goal
-                && play.PrimaryPlayerId != null
-                && play.PeriodType is PeriodType.Regulation or PeriodType.Overtime)
-            .DistinctBy(play => play.Id)
-            .Select(play => new { play.Id, Player = GetPlayerById(game, play.PrimaryPlayerId!.Value), play.TimeInPeriod })
-            .Where(x => x.Player != null)
-            .ToDictionary(
-                k => k.Id,
-                v => new GoalSummaryDto { Player = v.Player!, PeriodTime = v.TimeInPeriod }
-            );
-    }
-
-    private static PlayerDto? GetPlayerById(GameDto game, int id)
-    {
-        var allPlayers = game.HomeTeam.Roster.Concat(game.AwayTeam.Roster);
-        return allPlayers.FirstOrDefault(p => p.Id == id);
-    }
-
-    private static bool IsSameGoal(GoalSummaryDto goalSummary1, GoalSummaryDto goalSummary2)
-    {
-        var isSamePlayer = goalSummary1.Player.Id == goalSummary2.Player.Id;
-        var isSameTime = Math.Abs(GetPeriodTimeInSeconds(goalSummary1.PeriodTime) - GetPeriodTimeInSeconds(goalSummary2.PeriodTime)) <= 3;
-        return isSamePlayer && isSameTime;
-    }
-
-    private static int GetPeriodTimeInSeconds(string periodTime)
-    {
-        if (string.IsNullOrEmpty(periodTime) || !periodTime.Contains(':')) return 0;
-        var parts = periodTime.Split(':');
-        if (parts.Length != 2 || !int.TryParse(parts[0], out var minutes) || !int.TryParse(parts[1], out var seconds)) return 0;
-        return minutes * 60 + seconds;
-    }
-
-    private async Task HandleScoringUpdatesAsync(Dictionary<int, GoalSummaryDto> before, Dictionary<int, GoalSummaryDto> after, GameDto game, CancellationToken ct)
-    {
-        //check for new and changed goals
-        foreach (var (id, goalAfter) in after)
-        {
-            var playDto = game.Plays.First(p => p.Id == id);
-            var scorerDto = goalAfter.Player;
-
-            if (!before.TryGetValue(id, out var goalBefore))
+            switch (change)
             {
-                await mediator.Publish(new GoalScoredNotification(new(game.Id, playDto, scorerDto)), ct);
-            }
-            else if (!IsSameGoal(goalBefore, goalAfter))
-            {
-                var oldScorerDto = goalBefore.Player;
-                await mediator.Publish(new GoalChangedNotification(new(game.Id, playDto, scorerDto, oldScorerDto)), ct);
-                await mediator.Publish(new GoalScoredNotification(new(game.Id, playDto, scorerDto)), ct);
-            }
-        }
-
-        //check for removed goals
-        foreach (var (id, goalBefore) in before)
-        {
-            if (!after.TryGetValue(id, out var goalAfter) || !IsSameGoal(goalBefore, goalAfter))
-            {
-                var scorerDto = goalBefore.Player;
-                await mediator.Publish(new GoalRemovedNotification(new(game.Id, id, scorerDto)), ct);
+                case GoalRenumbered r:
+                    await mediator.Publish(new GoalRenumberedNotification(gameId, r.OldPlayId, r.NewPlayId), ct);
+                    break;
+                case GoalScorerChanged c:
+                    await mediator.Publish(new GoalChangedNotification(new(gameId, c.After.Play, c.After.Scorer, c.Before.Scorer)), ct);
+                    await mediator.Publish(new GoalScoredNotification(new(gameId, c.After.Play, c.After.Scorer)), ct);
+                    break;
+                case GoalAdded a:
+                    await mediator.Publish(new GoalScoredNotification(new(gameId, a.Goal.Play, a.Goal.Scorer)), ct);
+                    break;
+                case GoalCalledBack b:
+                    await mediator.Publish(new GoalRemovedNotification(new(gameId, b.Goal.PlayId, b.Goal.Scorer)), ct);
+                    break;
             }
         }
     }
 
-    private async Task TriggerPregameEvents(GameDto game, DateTime utcNow, CancellationToken ct)
+    private async Task TriggerPregameEventsAsync(GameDto game, DateTime utcNow, CancellationToken ct)
     {
-        var homeComplete = game.HomeTeam.Roster.Count == game.PlayerSummaries.Count(ps => ps.TeamId == game.HomeTeam.Id);
-        var awayComplete = game.AwayTeam.Roster.Count == game.PlayerSummaries.Count(ps => ps.TeamId == game.AwayTeam.Id);
-        var isWithin30Min = GameProcessingHelpers.IsPickWindowOpen(game, utcNow) && (game.DateTime - utcNow) > TimeSpan.Zero;
+        var rostersComplete =
+            game.HomeTeam.Roster.Count == game.PlayerSummaries.Count(ps => ps.TeamId == game.HomeTeam.Id)
+            && game.AwayTeam.Roster.Count == game.PlayerSummaries.Count(ps => ps.TeamId == game.AwayTeam.Id);
+        if (!rostersComplete) return;
 
         // Bot picks run on every poll, so bots added mid-game, or games whose rosters complete after puck drop, still
         // get picks. Bots only fill their remaining picks, so repeat runs do nothing. A failure here must not block the
         // picks-ready alert below.
-        if (homeComplete && awayComplete)
+        try
         {
-            try
-            {
-                await mediator.Publish(new BotPicksReadyNotification(game), ct);
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                logger.LogError(ex, "Bot picks failed for {away} @ {home}.", game.AwayTeam.Abbreviation, game.HomeTeam.Abbreviation);
-            }
+            await mediator.Publish(new BotPicksReadyNotification(game), ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogError(ex, "Bot picks failed for {away} @ {home}.", game.AwayTeam.Abbreviation, game.HomeTeam.Abbreviation);
         }
 
-        if (homeComplete && awayComplete && isWithin30Min)
-        {
-            // Claim atomically so overlapping runs for the same game can't both publish. Release on failure so a retry can.
-            if (await gameCache.TryClaimPreGameAlertAsync(game.Id))
-            {
-                try
-                {
-                    await mediator.Publish(new PicksReadyNotification(game), ct);
-                }
-                catch
-                {
-                    await gameCache.ReleasePreGameAlertAsync(game.Id);
-                    throw;
-                }
+        var isBeforePuckDropInPickWindow = GameProcessingHelpers.IsPickWindowOpen(game, utcNow) && game.DateTime > utcNow;
+        if (!isBeforePuckDropInPickWindow) return;
 
-                logger.LogInformation(
-                    "Picks ready for {away} @ {home}. Triggered pregame alert event.",
-                    game.AwayTeam.Abbreviation,
-                    game.HomeTeam.Abbreviation
-                );
-            }
+        // Claim atomically so overlapping runs for the same game can't both publish. Release on failure so a retry can.
+        if (!await gameCache.TryClaimPreGameAlertAsync(game.Id)) return;
+
+        try
+        {
+            await mediator.Publish(new PicksReadyNotification(game), ct);
         }
-    }
-
-    private TimeSpan? GetPollDelayBasedOnGameStatus(GameDto game)
-    {
-        if (game.GameState == GameState.Final) return null;
-        if (game.GameState == GameState.Live) return TimeSpan.FromSeconds(10);
-        if (game.GameState == GameState.Upcoming)
+        catch
         {
-            if (game.DateTime - _appConfig.CurrentTimeUtc <= TimeSpan.FromMinutes(40))
-                return TimeSpan.FromMinutes(1);
-            else
-                return TimeSpan.FromMinutes(10);
+            await gameCache.ReleasePreGameAlertAsync(game.Id);
+            throw;
         }
 
-        return null;
-    }
-
-    private async Task HandleRemovedPlayersAsync(GameDto cachedGame, GameDto updatedGame, IReadOnlyList<PlayerSummaryDto> updatedHomeSummaries, IReadOnlyList<PlayerSummaryDto> updatedAwaySummaries, CancellationToken ct)
-    {
-        var oldHome = cachedGame.HomeTeam.Roster;
-        var oldAway = cachedGame.AwayTeam.Roster;
-
-        var newHomeIds = updatedHomeSummaries.Select(s => s.Id).ToHashSet();
-        var newAwayIds = updatedAwaySummaries.Select(s => s.Id).ToHashSet();
-
-        var removedHomePlayers = oldHome.Where(p => !newHomeIds.Contains(p.Id)).ToList();
-        var removedAwayPlayers = oldAway.Where(p => !newAwayIds.Contains(p.Id)).ToList();
-        var removedPlayers = removedHomePlayers.Concat(removedAwayPlayers).ToList();
-
-        if (removedPlayers.Count == 0)
-            return;
-
-        var removedPlayerIds = removedPlayers.Select(p => p.Id).ToList();
-
-        var picksToRemove = await dbContext.LobbyMemberPicks
-            .AsNoTracking()
-            .Include(p => p.LobbyMember)
-                .ThenInclude(lm => lm.Lobby)
-            .Where(p => removedPlayerIds.Contains(p.PlayerId)
-                        && p.GameId == updatedGame.Id
-                        && p.IsActive)
-            .ToListAsync(ct);
-
-        foreach (var pick in picksToRemove)
-        {
-            await mediator.Send(new RemovePickCommand
-            {
-                PickId = pick.Id,
-                Code = pick.LobbyMember.Lobby.JoinCode,
-                UserId = pick.LobbyMember.UserId,
-                IsSystemRemoval = true
-            }, ct);
-        }
-
-        logger.LogInformation(
-            "Removed {count} picks because players left the lineup for {away} @ {home}.",
-            picksToRemove.Count,
-            updatedGame.AwayTeam.Abbreviation,
-            updatedGame.HomeTeam.Abbreviation
-        );
+        logger.LogInformation("Picks ready for {away} @ {home}. Triggered pregame alert event.", game.AwayTeam.Abbreviation, game.HomeTeam.Abbreviation);
     }
 }

@@ -11,6 +11,8 @@ public record UpcomingPicksPayload(string LobbyCode, UserEntity User);
 public record GoalScoredNotification(GoalEventPayload Data) : INotification;
 public record GoalChangedNotification(GoalChangeEventPayload Data) : INotification;
 public record GoalRemovedNotification(GoalRemovedEventPayload Data) : INotification;
+/// <summary>The NHL gave an unchanged goal a new play ID. Not a game event: nothing is announced.</summary>
+public record GoalRenumberedNotification(int GameId, int OldEventId, int NewEventId) : INotification;
 public record UpcomingPicksNotification(UpcomingPicksPayload Data) : INotification;
 
 public record CheckUpcomingPicksRequest() : INotification;

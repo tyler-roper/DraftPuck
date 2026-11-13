@@ -1,5 +1,6 @@
 ﻿using DraftPuck.Application.Features.Achievements;
 using DraftPuck.Application.Features.Achievements.Rules;
+using DraftPuck.Application.Features.Games;
 using DraftPuck.Application.Features.Users;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -12,6 +13,7 @@ public static class ApplicationServiceCollectionExtensions
         return services
             .AddAchievementRules()
             .AddScoped<AchievementAwardService>()
+            .AddScoped<GameRosterSync>()
             .AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(CreateUserCommandHandler).Assembly));
     }
 
