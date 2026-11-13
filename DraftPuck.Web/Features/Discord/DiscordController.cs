@@ -32,7 +32,7 @@ public class DiscordController(IMediator mediator, IOptions<ApplicationOptions> 
 
     private string GetRedirectUrl(bool isSuccessful)
     {
-        var urlBase = $"{_appConfig.BasePath}/account/discord?state=link-";
+        var urlBase = _appConfig.GetAbsoluteUrl("account/discord?state=link-");
         return urlBase + (isSuccessful ? "success" : "failed");
     }
 }
