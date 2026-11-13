@@ -112,10 +112,10 @@ public class BotPicksReadyNotificationHandlerTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task IgnoresRemovedBotsInactiveLobbiesAndOtherGames()
+    public async Task IgnoresRemovedBotsInactiveLobbiesOtherGamesAndManualPickingLobbies()
     {
         var gameId = Seed.NewGameId();
-        Guid removedBotId, inactiveLobbyBotId, otherGameBotId;
+        Guid removedBotId, inactiveLobbyBotId, otherGameBotId, manualLobbyBotId;
         await using (var db = fixture.CreateContext())
         {
             var seed = new Seed(db);
@@ -125,14 +125,16 @@ public class BotPicksReadyNotificationHandlerTests(DatabaseFixture fixture)
             removedBot.IsRemoved = true;
             removedBotId = removedBot.Id;
 
-            var (inactiveLobby, _) = seed.Lobby([gameId]);
+            var (inactiveLobby, _) = seed.Lobby([gameId], isActive: false);
             inactiveLobbyBotId = seed.Bot(inactiveLobby).Id;
 
             var (otherGameLobby, _) = seed.Lobby([Seed.NewGameId()]);
             otherGameBotId = seed.Bot(otherGameLobby).Id;
 
-            await db.SaveChangesAsync();
-            inactiveLobby.IsActive = false; // set after insert; see Seed.Lobby
+            // The host turned auto-picking off and picks for the bots.
+            var (manualLobby, _) = seed.Lobby([gameId], botAutoPicking: false);
+            manualLobbyBotId = seed.Bot(manualLobby).Id;
+
             await db.SaveChangesAsync();
         }
 
@@ -141,6 +143,7 @@ public class BotPicksReadyNotificationHandlerTests(DatabaseFixture fixture)
         Assert.Empty(await PicksForAsync(removedBotId, gameId));
         Assert.Empty(await PicksForAsync(inactiveLobbyBotId, gameId));
         Assert.Empty(await PicksForAsync(otherGameBotId, gameId));
+        Assert.Empty(await PicksForAsync(manualLobbyBotId, gameId));
     }
 
     [Fact]
