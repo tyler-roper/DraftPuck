@@ -3,4 +3,5 @@
 public class GetLobbyByCodeQuery : IRequest<LobbyDto>
 {
     public string Code { get; set; } = null!;
+    public Guid UserId { get; set; }
 }
