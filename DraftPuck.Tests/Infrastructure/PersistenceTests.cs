@@ -48,32 +48,55 @@ public class PersistenceTests(DatabaseFixture fixture)
         Assert.True(user.IsActive);
     }
 
-    /// <summary>
-    /// Migrations written without the generated Designer file must carry [Migration] themselves, or EF never sees them.
-    /// </summary>
-    private static readonly string[] KnownUndiscoverableMigrations =
-    [
-        // Never applied anywhere. Turning it on needs a decision first: its unique email index fails if
-        // production has duplicate emails. See the review notes on fix/review-findings.
-        "AddPerformanceIndexes"
-    ];
-
     [Fact]
     public void EveryMigrationIsDiscoverable()
     {
+        // A migration written by hand without the generated Designer file must carry [Migration] itself, or EF never
+        // sees it. (The original AddPerformanceIndexes was never applied because of this.)
         var undiscoverable = typeof(DraftPuckContext).Assembly.GetTypes()
             .Where(t => t.IsSubclassOf(typeof(Migration)) && !t.IsAbstract && t.GetCustomAttribute<MigrationAttribute>() == null)
-            .Select(t => t.Name)
-            .Except(KnownUndiscoverableMigrations);
+            .Select(t => t.Name);
 
         Assert.Empty(undiscoverable);
     }
 
     [Fact]
-    public async Task GuestFlagCorrectionIsApplied()
+    public async Task EveryMigrationIsApplied()
     {
         await using var db = fixture.CreateContext();
 
+        Assert.Empty(await db.Database.GetPendingMigrationsAsync());
         Assert.Contains("20261112230000_ClearGuestFlagOnRegisteredUsers", await db.Database.GetAppliedMigrationsAsync());
+        Assert.Contains("20261113014702_AddPerformanceIndexes", await db.Database.GetAppliedMigrationsAsync());
+    }
+
+    [Theory]
+    [InlineData("Users", "IX_Users_Email", true)]
+    [InlineData("Lobbies", "IX_Lobbies_JoinCode", true)]
+    [InlineData("LobbyMemberPicks", "IX_LobbyMemberPicks_Game_Player_Active", false)]
+    [InlineData("Drinks", "IX_Drinks_Pick_Event", false)]
+    public async Task PerformanceIndexesExist(string table, string index, bool unique)
+    {
+        await using var db = fixture.CreateContext();
+
+        var found = await db.Database.SqlQueryRaw<bool>(
+            "SELECT i.is_unique AS Value FROM sys.indexes i WHERE i.object_id = OBJECT_ID({0}) AND i.name = {1}", table, index).ToListAsync();
+
+        Assert.Equal(unique, Assert.Single(found));
+    }
+
+    [Fact]
+    public async Task EmailsMustBeUniqueButGuestsHaveNone()
+    {
+        await using var db = fixture.CreateContext();
+        db.Users.AddRange(new UserEntity { Id = Guid.NewGuid() }, new UserEntity { Id = Guid.NewGuid() }); // two guests, no email
+        await db.SaveChangesAsync();
+
+        var email = $"{Guid.NewGuid():N}@example.com";
+        db.Users.Add(new UserEntity { Id = Guid.NewGuid(), Email = email });
+        await db.SaveChangesAsync();
+        db.Users.Add(new UserEntity { Id = Guid.NewGuid(), Email = email });
+
+        await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
     }
 }
