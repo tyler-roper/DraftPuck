@@ -50,6 +50,30 @@ public class UserHandlerTests(DatabaseFixture fixture)
     // --- Registration ---
 
     [Fact]
+    public async Task RegisteringWithoutAGuestAccountCreatesARegisteredUser()
+    {
+        var user = await RegisterAsync(Guid.NewGuid());
+
+        await using var check = fixture.CreateContext();
+        Assert.False((await check.Users.SingleAsync(u => u.Id == user.Id)).IsGuest);
+    }
+
+    [Fact]
+    public async Task SigningUpWhileSignedInCannotOverwriteTheAccount()
+    {
+        // Converting a registered account would replace its email and password without the current password.
+        var account = await AccountAsync();
+
+        var created = await RegisterAsync(account.Id, email: "attacker@example.com", password: "attacker-pass");
+
+        Assert.NotEqual(account.Id, created.Id);
+        await using var check = fixture.CreateContext();
+        var original = await check.Users.SingleAsync(u => u.Id == account.Id);
+        Assert.Equal(account.Email, original.Email);
+        Assert.True(BCrypt.Net.BCrypt.Verify(SeedAccounts.Password, original.PasswordHash));
+    }
+
+    [Fact]
     public async Task RegisteringConvertsTheGuestInPlace()
     {
         var guest = await GuestAsync();

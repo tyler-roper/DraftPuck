@@ -8,7 +8,10 @@ public class CreateUserCommandHandler(IDbContext dbContext, IMapper mapper, IMed
 
         await UserValidationHelpers.ValidateCreateUserRequest(dbContext, request, cancellationToken);
 
-        var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == request.GuestUserId, cancellationToken) ?? new UserEntity() { Id = Guid.NewGuid() };
+        // Signing up converts the caller's guest account in place. A registered account is never converted: that would
+        // replace its email and password without the current password.
+        var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == request.GuestUserId && u.IsGuest && !u.IsBot, cancellationToken)
+            ?? new UserEntity() { Id = Guid.NewGuid() };
         user.Email = request.Email;
         user.Nickname = request.Nickname;
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);

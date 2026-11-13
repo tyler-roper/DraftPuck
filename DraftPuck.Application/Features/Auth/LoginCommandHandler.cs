@@ -49,6 +49,11 @@ public class LoginCommandHandler(IDbContext dbContext, ITokenService tokenServic
         //In which case, Lobby updates are already handled by the CreateUserCommandHandler
         if (oldUserId == newUserId) return result;
 
+        // Only a guest's lobbies carry over. Logging in while signed in as another account must not move that
+        // account's memberships (or host role) to the one being logged in to.
+        var previousUserIsGuest = await dbContext.Users.AnyAsync(u => u.Id == oldUserId && u.IsGuest && !u.IsBot, ct);
+        if (!previousUserIsGuest) return result;
+
         var activeLobbiesWithUser = await dbContext
             .Lobbies
             .Where(l => l.IsActive)
