@@ -74,7 +74,10 @@ public class MakePickCommandHandler(IDbContext dbContext, IMapper mapper, IMedia
         if (!isPlayerOnTeam)
             throw new BadRequestException("This player is not on that team's roster.");
 
-        if (!GameProcessingHelpers.IsPickWindowOpen(game, _appConfig.CurrentTimeUtc))
+        if (game.IsPickingClosed)
+            throw new BadRequestException("Picking has closed for this game.");
+
+        if (!game.IsPickingOpen(_appConfig.CurrentTimeUtc))
             throw new BadRequestException("Picking hasn't opened for this game yet.");
 
         var memberPicksForTeam = await dbContext.LobbyMemberPicks

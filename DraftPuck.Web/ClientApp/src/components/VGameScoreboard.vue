@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import PickRequest from '@/models/pickRequest'
 import { useLobbyStore } from '@/stores/lobby'
-import { addMinutes, formatDuration, intervalToDuration, format } from 'date-fns'
+import { format } from 'date-fns'
+import { canPickPlayer, canRemovePick, findPick, hasPicksLeftInGame, isGameInLobby } from '@/helpers/pickRules'
+import { getErrorMessage } from '@/helpers/requestHelpers'
 import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
 import { useToast } from 'vue-toastification'
@@ -27,17 +29,17 @@ const lobbyStore = useLobbyStore()
 const systemStore = useSystemStore()
 const { currentSystemTime } = storeToRefs(systemStore)
 
-const { lobby, currentUserId, isLobbyAdmin } = storeToRefs(lobbyStore)
-const { pickPlayer, removePick } = lobbyStore
+const { lobby, currentUserId } = storeToRefs(lobbyStore)
+const { makePicks, removePick } = lobbyStore
 
-const isPickingStarted = ref(false)
-const pickingStartingTimer = ref<number>()
-const timeUntilPicking = ref<string>()
-const pickTime = ref(addMinutes(game.value.dateTime, -30))
 const isRosterVisible = ref(false)
+// Players sent to the server, until it answers.
+const pendingPlayerIds = ref(new Set<number>())
 
 //computed
-const gameIsPickable = computed(() => lobby.value?.gameIds.includes(game.value.id))
+const gameIsPickable = computed(() => !!lobby.value && isGameInLobby(lobby.value, game.value))
+// currentSystemTime ticks every second, so this flips when picking opens without a timer of its own.
+const hasPickingOpened = computed(() => currentSystemTime.value >= game.value.pickingOpensUtc)
 const isStarted = computed(() => game.value.gameState !== GameState.Upcoming)
 const isInProgress = computed(() => game.value.gameState === GameState.Live)
 const isOver = computed(() => game.value.gameState === GameState.Final)
@@ -49,18 +51,15 @@ const teams = computed(() => ({ home: game.value.homeTeam, away: game.value.away
 const pickedPlayers = computed(
   () =>
     lobby.value?.members.reduce((playerIdLookup: { [key: number]: string }, member) => {
-      member.picks.forEach((pick) => (playerIdLookup[pick.playerId] = member.name))
+      member.picks.filter((pick) => pick.gameId === game.value.id).forEach((pick) => (playerIdLookup[pick.playerId] = member.name))
       return playerIdLookup
     }, {}) ?? {}
 )
 const currentUser = computed(() => lobby.value!.members.find((m) => m.userId === currentUserId.value))
 const currentUserCanPick = computed(
-  () =>
-    gameIsPickable.value &&
-    isPickingStarted.value &&
-    (currentUserHasPicksForTeam(game.value.awayTeam) || currentUserHasPicksForTeam(game.value.homeTeam))
+  () => !!currentUser.value && hasPicksLeftInGame(lobby.value!, currentUser.value, game.value, currentSystemTime.value)
 )
-const pickTimeFormatted = computed(() => format(pickTime.value, 'p'))
+const pickTimeFormatted = computed(() => format(game.value.pickingOpensUtc, 'p'))
 
 const time = computed(() => {
   let time = format(game.value.dateTime, 'p')
@@ -89,57 +88,27 @@ const strengthString = computed(() => {
   return result === `5-on-4` ? 'PP' : result
 })
 
-//hooks
-;(async function onCreated() {
-  updateTimeUntilPicking()
-
-  if (!isPickingStarted.value && gameIsPickable.value === true) {
-    pickingStartingTimer.value = window.setInterval(() => {
-      updateTimeUntilPicking()
-    }, 1000)
-  }
-})()
-
 //methods
-function updateTimeUntilPicking() {
-  isPickingStarted.value = pickTime.value <= currentSystemTime.value
-  if (isPickingStarted.value) return window.clearInterval(pickingStartingTimer.value)
-
-  const duration = intervalToDuration({ start: pickTime.value, end: currentSystemTime.value })
-  const lessThanOneMinute = duration.hours === 0 && duration.minutes == 0
-  timeUntilPicking.value = lessThanOneMinute
-    ? formatDuration(duration, { format: ['seconds'], zero: true })
-    : (timeUntilPicking.value = formatDuration(duration, { format: ['hours', 'minutes'] }))
-}
-
 async function getPickIdAndRemovePick(playerId: number) {
-  const picks = lobby.value?.members.flatMap((m) => m.picks)
-  const pick = picks?.find((p) => p.playerId === playerId)
-  if (!pick) return
+  const found = lobby.value && findPick(lobby.value, game.value.id, playerId)
+  if (!found) return
 
-  await removePick(pick.id)
+  try {
+    await removePick(found.pick.id)
+  } catch (error) {
+    toast.error(getErrorMessage(error, "Couldn't remove that pick. Please try again."))
+  }
 }
 
-async function pick(playerId: number, teamId: number, lobbyMemberId?: string) {
-  if (!lobby.value) return
-  lobbyMemberId = lobbyMemberId ?? currentUser.value?.id
-  if (!lobbyMemberId) return
+/** Picks a player for the current user. Pending until the server answers; a refusal shows the server's reason. */
+async function pick(player: Player, teamId: number) {
+  if (!currentUser.value || pendingPlayerIds.value.has(player.id)) return
 
-  const picks = lobby.value.members.flatMap((m) => m.picks)
-  const existingPick = picks.find((p) => p.gameId === game.value.id && p.playerId === playerId)
+  pendingPlayerIds.value = new Set([...pendingPlayerIds.value, player.id])
+  const [{ error }] = await makePicks([new PickRequest(currentUser.value.id, player.id, game.value.id, teamId)])
+  pendingPlayerIds.value = new Set([...pendingPlayerIds.value].filter((id) => id !== player.id))
 
-  if (existingPick) {
-    const picker = lobby.value.members.find((lm) => lm.id === lobbyMemberId)
-    if (picker != undefined && picker.userId === currentUserId.value) {
-      const member = lobby.value.members.find((m) => m.picks.includes(existingPick))
-      let name = member ? `<strong>${member.name}</strong> has` : 'Someone has'
-      if (member?.userId === currentUserId.value) name = 'You have'
-      toast.error(`Oops! ${name} already picked this player.`)
-    }
-    return
-  }
-
-  await pickPlayer(new PickRequest(lobbyMemberId, playerId, game.value.id, teamId))
+  if (error) toast.error(`${player.firstName} ${player.lastName}: ${error}`)
 }
 
 //#region helpers
@@ -223,32 +192,22 @@ function isPlayerPicked(playerId: number) {
   return !!getPickerName(playerId)
 }
 
-function userHasPicksForTeam(member: LobbyMember, team: GameTeam) {
-  if (isOver.value || !team.roster.length) return false
-
-  const currentUserPicks = member.picks
-  const count = currentUserPicks.filter(
-    (pick) => pick.gameId === game.value.id && team.roster.some((rosterPlayer) => rosterPlayer.id === pick.playerId)
-  ).length
-
-  return count < lobby.value!.picksPerTeam
-}
-
-function currentUserHasPicksForTeam(team: GameTeam) {
-  if (!currentUser.value) return false
-  return userHasPicksForTeam(currentUser.value, team)
-}
 
 function isCurrentUserPick(player: Player) {
   return !!currentUser.value?.picks.some((p) => p.gameId === game.value.id && p.playerId === player.id)
 }
 
 function currentUserCanPickPlayer(player: Player, team: GameTeam) {
-  return isPickingStarted.value && !isPlayerPicked(player.id) && currentUserHasPicksForTeam(team)
+  return (
+    !!currentUser.value &&
+    !pendingPlayerIds.value.has(player.id) &&
+    canPickPlayer(lobby.value!, currentUser.value, game.value, { id: player.id, teamId: team.id }, currentSystemTime.value)
+  )
 }
 
 function currentUserCanRemovePick(player: Player) {
-  return isLobbyAdmin.value || (isCurrentUserPick(player) && !isStarted.value)
+  const found = findPick(lobby.value!, game.value.id, player.id)
+  return !!found && !!currentUser.value && canRemovePick(lobby.value!, game.value, found.pick, currentUser.value)
 }
 
 function getFriendlyPosition(position: string) {
@@ -357,7 +316,7 @@ function getFriendlyPosition(position: string) {
                 <span class="d-block mb-n1"><i class="fs-7 fi fi-sr-exclamation text-danger"></i></span>
                 <span class="d-block mb-n1 ms-1 fw-bold">Picks Available</span>
               </span>
-              <span v-if="!isPickingStarted && gameIsPickable" class="text-stone-600 small mt-1 mb-n1 ms-3"
+              <span v-if="!hasPickingOpened && gameIsPickable" class="text-stone-600 small mt-1 mb-n1 ms-3"
                 >Picks open @ <strong>{{ pickTimeFormatted }}</strong></span
               >
               <span v-if="!gameIsPickable" class="text-stone-600 small mt-1 mb-n1 ms-3">
@@ -397,7 +356,7 @@ function getFriendlyPosition(position: string) {
                             role="button"
                             class="btn btn-primary py-0 px-1 text-decoration-none fs-8 fw-bold ms-2"
                             style="height: 12px; line-height: 12px; margin-top: -1px"
-                            @click="pick(player.id, team.id)"
+                            @click="pick(player, team.id)"
                           >
                             PICK
                           </a>

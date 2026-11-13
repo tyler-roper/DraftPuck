@@ -165,7 +165,7 @@ public class ProcessGameCommandHandler(
             logger.LogError(ex, "Bot picks failed for {away} @ {home}.", game.AwayTeam.Abbreviation, game.HomeTeam.Abbreviation);
         }
 
-        var isBeforePuckDropInPickWindow = GameProcessingHelpers.IsPickWindowOpen(game, utcNow) && game.DateTime > utcNow;
+        var isBeforePuckDropInPickWindow = game.IsPickingOpen(utcNow) && game.DateTime > utcNow;
         if (!isBeforePuckDropInPickWindow) return;
 
         // Claim atomically so overlapping runs for the same game can't both publish. Release on failure so a retry can.

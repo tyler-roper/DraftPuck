@@ -6,6 +6,7 @@ import { compareAsc } from 'date-fns'
 import type PickRequest from '@/models/pickRequest'
 import SystemMessageViewModel from '@/models/systemMessageViewModel'
 import { useUserStore } from '@/stores/user'
+import { getErrorMessage } from '@/helpers/requestHelpers'
 
 export const useLobbyStore = defineStore('lobby', () => {
   //#region state
@@ -23,17 +24,10 @@ export const useLobbyStore = defineStore('lobby', () => {
   const setEvents = (_events: LobbyEvent[]) => (events.value = _events)
 
   function addPick(pick: LobbyMemberPick) {
-    lobby.value?.members.find((m) => pick.lobbyMemberId === m.id)?.picks.push(pick)
-  }
-
-  function updatePick(pick: LobbyMemberPick) {
     const member = lobby.value?.members.find((m) => pick.lobbyMemberId === m.id)
-    if (!member) return
-
-    const idx = member.picks.findIndex((p) => p.playerId === pick.playerId && pick.gameId === p.gameId)
-    if (idx === -1) return
-
-    member.picks[idx] = pick
+    // A lobby refetch (e.g. from someone else's event) may already have brought this pick in.
+    if (!member || member.picks.some((p) => p.id === pick.id)) return
+    member.picks.push(pick)
   }
 
   function removePickFromStore(pickId: string) {
@@ -106,12 +100,25 @@ export const useLobbyStore = defineStore('lobby', () => {
     setEvents(events)
   }
 
-  async function pickPlayer(pickRequest: PickRequest) {
-    if (!lobby.value) return
-    addPick(pickRequest)
+  /**
+   * Makes each pick and adds the ones the server accepts. Nothing is shown before the server answers (the UI shows
+   * them as pending), so a refused pick never appears. Picks are independent: one can fail while others succeed.
+   * Returns each request's outcome, with the server's reason for any refusal.
+   */
+  async function makePicks(pickRequests: PickRequest[]): Promise<{ request: PickRequest; error?: string }[]> {
+    const joinCode = lobby.value?.joinCode
+    if (!joinCode) return pickRequests.map((request) => ({ request, error: 'Not in a lobby.' }))
 
-    const persistedPick = await LobbyService.makePick(lobby.value.joinCode, pickRequest)
-    updatePick(persistedPick)
+    return Promise.all(
+      pickRequests.map(async (request) => {
+        try {
+          addPick(await LobbyService.makePick(joinCode, request))
+          return { request }
+        } catch (error) {
+          return { request, error: getErrorMessage(error, "Couldn't make that pick. Please try again.") }
+        }
+      })
+    )
   }
 
   async function assignDrink(drinkId: string, recipientId: string) {
@@ -134,11 +141,12 @@ export const useLobbyStore = defineStore('lobby', () => {
     await LobbyService.removeLobbyMember(lobby.value.joinCode, lobbyMemberId)
   }
 
+  /** Removes a pick once the server has. Throws the server's refusal, so the caller can show it. */
   async function removePick(pickId: string) {
     if (!lobby.value) return
 
-    removePickFromStore(pickId)
     await LobbyService.removePick(lobby.value.joinCode, pickId)
+    removePickFromStore(pickId)
   }
 
   async function addBot(bot: Bot) {
@@ -173,7 +181,6 @@ export const useLobbyStore = defineStore('lobby', () => {
     setLobby,
     setEvents,
     addPick,
-    updatePick,
     removePickFromStore,
     setDrinkRecipient,
     addLobbyEvent,
@@ -183,7 +190,7 @@ export const useLobbyStore = defineStore('lobby', () => {
     addMessageToStore,
     getLobby,
     getLobbyEvents,
-    pickPlayer,
+    makePicks,
     assignDrink,
     changeName,
     removeLobbyMember,

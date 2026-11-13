@@ -103,6 +103,29 @@ public class LobbyActivityTests(DatabaseFixture fixture)
         Assert.False(await PickIsActiveAsync(s.MemberPick.Id));
     }
 
+    [Fact]
+    public async Task TheLobbyTellsEachViewerWhetherTheyCanRemoveAnyPick()
+    {
+        var s = await SetupAsync();
+        UserEntity admin;
+        await using (var db = fixture.CreateContext())
+        {
+            admin = await SeedAccounts.AccountAsync(db, isAdmin: true);
+        }
+
+        async Task<bool> CanManageAllPicks(Guid userId)
+        {
+            await using var db = fixture.CreateContext();
+            var lobby = await new GetLobbyByCodeQueryHandler(db, TestServices.Mapper()).Handle(new GetLobbyByCodeQuery { Code = s.Code, UserId = userId }, default);
+            return lobby.CanManageAllPicks;
+        }
+
+        Assert.True(await CanManageAllPicks(s.Host.UserId));
+        Assert.True(await CanManageAllPicks(admin.Id));
+        Assert.False(await CanManageAllPicks(s.Member.UserId));
+        Assert.False(await CanManageAllPicks(Guid.NewGuid()));
+    }
+
     // --- Assign drink ---
 
     private async Task<Guid> AwardDrinkAsync(LobbyMemberPickEntity pick)
