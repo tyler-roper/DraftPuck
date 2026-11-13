@@ -114,28 +114,28 @@ public class RedisGameCache(IDatabase redisDb) : IGameCache
         await redisDb.KeyDeleteAsync(key);
     }
 
-    public async Task<bool> HasPreGameAlertTriggeredAsync(int gameId)
+    public async Task<bool> TryClaimPreGameAlertAsync(int gameId)
     {
         var key = $"{PregameAlertTriggeredPrefix}{gameId}";
-        return await redisDb.KeyExistsAsync(key);
+        return await redisDb.StringSetAsync(key, "1", expiry: TimeSpan.FromDays(1), when: When.NotExists);
     }
 
-    public async Task SetPreGameAlertTriggeredAsync(int gameId)
+    public async Task ReleasePreGameAlertAsync(int gameId)
     {
         var key = $"{PregameAlertTriggeredPrefix}{gameId}";
-        await redisDb.StringSetAsync(key, "1", expiry: TimeSpan.FromDays(1));
+        await redisDb.KeyDeleteAsync(key);
     }
 
-    public async Task<bool> HasUserBeenNotifiedRecentlyAsync(Guid userId)
+    public async Task<bool> TryClaimUserPicksNotificationAsync(Guid userId)
     {
         var key = $"{UserPicksThrottlePrefix}{userId}";
-        return await redisDb.KeyExistsAsync(key);
+        return await redisDb.StringSetAsync(key, "1", expiry: TimeSpan.FromMinutes(15), when: When.NotExists);
     }
 
-    public async Task MarkUserAsNotifiedAsync(Guid userId)
+    public async Task ReleaseUserPicksNotificationAsync(Guid userId)
     {
         var key = $"{UserPicksThrottlePrefix}{userId}";
-        await redisDb.StringSetAsync(key, "1", expiry: TimeSpan.FromMinutes(15));
+        await redisDb.KeyDeleteAsync(key);
     }
 
     public async Task<bool> HasUserBeenNotifiedForGameAsync(Guid userId, int gameId)

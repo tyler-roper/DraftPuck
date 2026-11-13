@@ -34,11 +34,13 @@ public class NotifyUsersPicksReadyNotificationHandler(IDbContext dbContext, IGam
             if (await gameCache.HasUserBeenNotifiedForGameAsync(userId, game.Id))
                 continue;
 
-            if (await gameCache.HasUserBeenNotifiedRecentlyAsync(userId))
-                continue;
-
             var userLobby = lobbies.FirstOrDefault(l => l.LobbyMembers.Any(m => m.UserId == userId));
             if (userLobby == null)
+                continue;
+
+            // Games starting together are processed in parallel; claim the user's 15-minute window atomically
+            // so they get one "one or more games" notification rather than one per game.
+            if (!await gameCache.TryClaimUserPicksNotificationAsync(userId))
                 continue;
 
             var sent = await pushService.SendLobbyEventNotification(
@@ -53,10 +55,10 @@ public class NotifyUsersPicksReadyNotificationHandler(IDbContext dbContext, IGam
             {
                 logger.LogWarning("Failed to send picks-ready notification to User {userId} for game {gameId} via lobby {lobbyCode}.",
                     userId, game.Id, userLobby.JoinCode);
+                await gameCache.ReleaseUserPicksNotificationAsync(userId);
                 continue;
             }
 
-            await gameCache.MarkUserAsNotifiedAsync(userId);
             await gameCache.MarkUserNotifiedForGameAsync(userId, game.Id, _appConfig.CurrentTimeUtc, game.DateTime);
 
             logger.LogInformation("Sent picks-ready notification to User {userId} for game {gameId} via lobby {lobbyCode}.",
