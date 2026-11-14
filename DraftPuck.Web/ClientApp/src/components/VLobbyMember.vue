@@ -5,6 +5,7 @@ import { addSeconds } from 'date-fns'
 import { storeToRefs } from 'pinia'
 import { ref, computed } from 'vue'
 import { useToast } from 'vue-toastification'
+import { getErrorMessage } from '@/helpers/requestHelpers'
 import BotPickStyle from '@/enums/botPickStyle'
 import LobbyService from '@/services/LobbyService'
 import { useRouter } from 'vue-router'
@@ -80,8 +81,20 @@ async function changeName() {
     return
   }
 
-  lastNameChange.value = new Date()
-  await changeNameInStore(newName.trim())
+  try {
+    await changeNameInStore(newName.trim())
+    lastNameChange.value = new Date()
+  } catch (error) {
+    toast.error(getErrorMessage(error, "Couldn't change your name. Please try again."))
+  }
+}
+
+async function removeMember(member: LobbyMember) {
+  try {
+    await removeLobbyMember(member.id)
+  } catch (error) {
+    toast.error(getErrorMessage(error, `Couldn't remove ${member.name}. Please try again.`))
+  }
 }
 
 async function giveDrink(recipient: LobbyMember) {
@@ -165,7 +178,7 @@ function viewProfile() {
             <a role="button" class="fw-bold dropdown-item" @click="viewProfile">View Profile</a>
           </li>
           <li v-if="isLobbyAdmin">
-            <a role="button" class="fw-bold dropdown-item text-danger" @click="removeLobbyMember(member.id)"
+            <a role="button" class="fw-bold dropdown-item text-danger" @click="removeMember(member)"
               ><i class="fi fi-sr-remove-user me-2"></i>Remove User</a
             >
           </li>

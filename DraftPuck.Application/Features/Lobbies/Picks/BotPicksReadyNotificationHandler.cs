@@ -6,6 +6,8 @@ public class BotPicksReadyNotificationHandler(IDbContext dbContext, IMediator me
     {
         var game = notification.Game;
         var gameId = game.Id;
+        // Deliberately not limited to the picking window: bots pick as soon as rosters are complete, before members can,
+        // so they never compete with members for players.
         // Bots follow the same closing rule as members (the final poll still announces complete rosters).
         if (game.IsPickingClosed) return;
 
