@@ -26,7 +26,7 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: 10.0.x
 
       # Integration tests start SQL Server and Redis containers with Testcontainers (Docker is preinstalled on the runner).
       - name: Run tests

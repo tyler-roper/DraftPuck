@@ -1,10 +1,10 @@
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 WORKDIR /opt/app
 
 COPY ./DraftPuck.Web/entrypoint.sh /opt/app/entrypoint.sh
 RUN chmod +x /opt/app/entrypoint.sh
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine3.21 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine3.22 AS build
 LABEL BUILD_IMAGE=true
 ARG BUILD_CONFIGURATION=Release
 

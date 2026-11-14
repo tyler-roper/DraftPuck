@@ -42,16 +42,12 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         await _redis.DisposeAsync();
     }
 
+    public string SqlConnectionString => _sql.GetConnectionString();
+    public string RedisConnectionString => _redis.GetConnectionString();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.UseEnvironment("Testing");
-        builder.UseSetting("ConnectionStrings:DefaultConnection", _sql.GetConnectionString());
-        builder.UseSetting("Redis:ConnectionString", _redis.GetConnectionString());
-        builder.UseSetting("Auth:JwtKey", TestServices.AuthOptions.JwtKey);
-        builder.UseSetting("Auth:Issuer", TestServices.AuthOptions.Issuer);
-        builder.UseSetting("Auth:Audience", TestServices.AuthOptions.Audience);
-        builder.UseSetting("Application:BasePath", "https://draftpuck.test");
-        builder.UseSetting("Application:InternalApiKey", InternalApiKey);
+        UseTestSettings(builder, SqlConnectionString, RedisConnectionString);
 
         builder.ConfigureTestServices(services =>
         {
@@ -64,6 +60,19 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             Replace(services, Push);
             Replace(services, Nhl);
         });
+    }
+
+    /// <summary>The configuration the app needs to start, pointed at the given SQL Server and Redis.</summary>
+    public static void UseTestSettings(IWebHostBuilder builder, string sqlConnectionString, string redisConnectionString)
+    {
+        builder.UseEnvironment("Testing");
+        builder.UseSetting("ConnectionStrings:DefaultConnection", sqlConnectionString);
+        builder.UseSetting("Redis:ConnectionString", redisConnectionString);
+        builder.UseSetting("Auth:JwtKey", TestServices.AuthOptions.JwtKey);
+        builder.UseSetting("Auth:Issuer", TestServices.AuthOptions.Issuer);
+        builder.UseSetting("Auth:Audience", TestServices.AuthOptions.Audience);
+        builder.UseSetting("Application:BasePath", "https://draftpuck.test");
+        builder.UseSetting("Application:InternalApiKey", InternalApiKey);
     }
 
     private static void Replace<T>(IServiceCollection services, T instance) where T : class

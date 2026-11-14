@@ -3,7 +3,7 @@
 ## Prerequisites
 
 * Visual Studio 2022+
-* .NET 8 SDK
+* .NET 10 SDK
 * SQL Server & SSMS
 * Node.js & npm
 * Docker Desktop
