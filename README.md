@@ -1,6 +1,6 @@
 # DraftPuck
 
-DraftPuck is a containerized .NET 8 application with a Vue 3 frontend, built using Clean Architecture principles and a MediatR CQRS pattern. This repository contains everything needed to run the backend API, background worker, frontend, and local infrastructure dependencies such as Redis and Azurite.
+DraftPuck is a containerized .NET 10 application with a Vue 3 frontend, built using Clean Architecture principles and a MediatR CQRS pattern. This repository contains everything needed to run the backend API, background worker, frontend, and local infrastructure dependencies such as Redis and Azurite.
 
 This README provides a high-level overview and quickstart instructions.  
 For full development setup and contributor workflows, see:  

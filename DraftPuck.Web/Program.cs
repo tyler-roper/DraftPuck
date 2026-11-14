@@ -6,6 +6,7 @@ using DraftPuck.Infrastructure.Persistence;
 using DraftPuck.Infrastructure.SignalR;
 using DraftPuck.Shared.Discord;
 using DraftPuck.Web.Filters;
+using DraftPuck.Web.Mvc.App;
 using DraftPuck.Web.RateLimiting;
 using DraftPuck.Web.Telemetry;
 using Microsoft.EntityFrameworkCore;
@@ -16,17 +17,13 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables("DRAFTPUCK_");
 
 //services
+// With views: AppController serves the Vue app's page (Views/App/Index.cshtml).
 builder.Services
-    .AddControllers(options => { options.Filters.Add<ApiExceptionFilterAttribute>(); })
+    .AddControllersWithViews(options => { options.Filters.Add<ApiExceptionFilterAttribute>(); })
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
     });
-
-builder.Services.AddMvc(options =>
-{
-    options.EnableEndpointRouting = false;
-});
 
 try
 {
@@ -70,45 +67,42 @@ if (!app.Environment.IsDevelopment())
        .UseHttpsRedirection();
 }
 
-app
-    .UseRouting()
-    .UseAuthentication()
-    .UseRateLimiter()
-    .UseAuthorization()
-    .UseStaticFiles()
-    .UseWebSockets()
-    .UseEndpoints(endpoints =>
-    {
-        endpoints.MapHub<LobbyHub>("/hub");
-        endpoints.MapControllers();
-    })
-    .UseMvc(routes =>
-    {
-        routes.MapRoute(name: "default", template: "{controller=App}/{action=Index}/{id?}");
-        routes.MapSpaFallbackRoute("spa-routes", new { controller = "App", action = "Index" });
-    });
+app.UseStaticFiles();
+app.UseRouting();
 
-
+// In development, requests no endpoint handles (Vite's modules and assets) go to the Vite dev server.
 if (app.Environment.IsDevelopment())
-    app.UseSpa(spa => spa.UseProxyToSpaDevelopmentServer("https://localhost:17010"));
+    app.UseWhen(
+        context => context.GetEndpoint() is null,
+        spaApp => spaApp.UseSpa(spa => spa.UseProxyToSpaDevelopmentServer("https://localhost:17010")));
+
+app.UseAuthentication();
+app.UseRateLimiter();
+app.UseAuthorization();
+app.UseWebSockets();
+
+app.MapHub<LobbyHub>("/hub");
+app.MapControllers();
+// Client routes (any path that isn't a file) get the Vue app. Unknown /api paths don't: AppController.Api 404s them.
+app.MapFallbackToController(nameof(AppController.Index), "App");
 
 app.Run();
 
 
+// Startup fails when migrations fail: the app must not run against a schema it doesn't match. EF Core holds a
+// database-wide lock while migrating, so replicas starting together apply migrations one at a time.
 static void MigrateDatabase(WebApplication app)
 {
     using var scope = app.Services.CreateScope();
-    var services = scope.ServiceProvider;
     try
     {
-        var context = services.GetRequiredService<DraftPuckContext>();
-        context.Database.Migrate();
-        Console.WriteLine("Database migrations applied successfully.");
+        scope.ServiceProvider.GetRequiredService<DraftPuckContext>().Database.Migrate();
+        app.Logger.LogInformation("Database migrations applied.");
     }
     catch (Exception ex)
     {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while migrating the database.");
+        app.Logger.LogCritical(ex, "Migrating the database failed; not starting.");
+        throw;
     }
 }
 // Public so the integration tests can host the app with WebApplicationFactory<Program>.

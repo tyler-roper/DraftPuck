@@ -102,7 +102,8 @@ Everything under `helpers/`, `stores/` and `composables/` has tests in a sibling
 1. **Server**: a folder under `Application/Features/<Area>/` with the command or query, its handler, and DTOs. Add a
    thin controller action in `Web/Features/<Area>/`.
 2. **Data**: change the entity in `Shared`, configure it in `DraftPuckContext`, and add a migration
-   (`dotnet ef migrations add <Name> --project DraftPuck.Infrastructure`). The Web app applies migrations at startup.
+   (`dotnet ef migrations add <Name> --project DraftPuck.Infrastructure`). The Web app applies migrations at startup,
+   one replica at a time (EF Core's migration lock), and doesn't start if they fail.
 3. **Follow-ups**: publish a notification and handle it, rather than growing the handler.
 4. **Client**: a `services/` method, store state if several components need it, and logic in a helper or composable
    with tests.

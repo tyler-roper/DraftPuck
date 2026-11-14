@@ -22,7 +22,7 @@ public class RedisGameCache(IDatabase redisDb) : IGameCache
 
         if (json.IsNullOrEmpty) return null;
 
-        return JsonSerializer.Deserialize<GameDto>(json!) ?? null;
+        return JsonSerializer.Deserialize<GameDto>((string)json!);
     }
 
     /// <summary>
@@ -47,7 +47,7 @@ public class RedisGameCache(IDatabase redisDb) : IGameCache
                 continue;
             }
 
-            if (JsonSerializer.Deserialize<GameDto>(values[i]!) is { } game)
+            if (JsonSerializer.Deserialize<GameDto>((string)values[i]!) is { } game)
                 games.Add(game);
         }
 
