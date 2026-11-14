@@ -1,5 +1,6 @@
 ﻿using DraftPuck.Application.Common.Exceptions;
 using DraftPuck.Infrastructure.Auth;
+using DraftPuck.Web.RateLimiting;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
@@ -60,10 +61,6 @@ public abstract class BaseController() : ControllerBase
         Response.Cookies.Delete(RefreshTokenName);
     }
 
-    protected string GetIpAddress()
-    {
-        return Request.Headers.TryGetValue("X-Forwarded-For", out var value)
-            ? (string)value!
-            : HttpContext.Connection.RemoteIpAddress!.MapToIPv4().ToString();
-    }
+    /// <summary>The client's IP. The forwarded-headers middleware has already applied the proxy's X-Forwarded-For.</summary>
+    protected string GetIpAddress() => RateLimits.ClientIp(HttpContext);
 }

@@ -1,4 +1,6 @@
-﻿using DraftPuck.Application.Common.Exceptions;
+﻿using DraftPuck.Web.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
+using DraftPuck.Application.Common.Exceptions;
 using DraftPuck.Application.Features.Auth;
 using Microsoft.AspNetCore.Authorization;
 
@@ -6,6 +8,7 @@ namespace DraftPuck.Web.Features.Auth;
 
 public class AuthController(IMediator mediator) : BaseController()
 {
+    [EnableRateLimiting(RateLimits.Login)]
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequestDto request)
     {

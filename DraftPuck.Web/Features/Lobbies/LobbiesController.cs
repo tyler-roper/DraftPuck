@@ -1,4 +1,6 @@
-﻿using DraftPuck.Application.Features.Lobbies;
+﻿using DraftPuck.Web.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
+using DraftPuck.Application.Features.Lobbies;
 using DraftPuck.Application.Features.Lobbies.Drinks;
 using DraftPuck.Application.Features.Lobbies.Events;
 using DraftPuck.Application.Features.Lobbies.Management;
@@ -138,6 +140,7 @@ public class LobbiesController(IMediator mediator) : BaseController()
         return NoContent();
     }
 
+    [EnableRateLimiting(RateLimits.Chat)]
     [HttpPost("{code}/message")]
     public async Task<IActionResult> SendMessage(string code, SendLobbyMessageRequestDto request)
     {
