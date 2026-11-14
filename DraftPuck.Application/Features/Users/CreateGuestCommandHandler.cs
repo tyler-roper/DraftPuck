@@ -12,7 +12,7 @@ public class CreateGuestCommandHandler(IDbContext dbContext, IMapper mapper, ITo
         dbContext.Users.Add(guest);
 
         var refreshToken = tokenService.GenerateRefreshToken(request.IpAddress);
-        var jwtToken = tokenService.GenerateGuestJwtToken(guest.Id);
+        var jwtToken = tokenService.GenerateJwtToken(guest);
         guest.RefreshTokens.Add(refreshToken);
 
         await dbContext.SaveChangesAsync(cancellationToken);

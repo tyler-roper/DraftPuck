@@ -85,7 +85,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     }
 
     public static string JwtFor(UserEntity user) => TestServices.TokenService().GenerateJwtToken(user);
-    public static string GuestJwtFor(Guid userId) => TestServices.TokenService().GenerateGuestJwtToken(userId);
+    public static string GuestJwtFor(Guid userId) => TestServices.TokenService().GenerateJwtToken(new UserEntity { Id = userId, IsGuest = true });
 
     public HubConnection HubConnection(string? jwt) => new HubConnectionBuilder()
         .WithUrl(new Uri(Server.BaseAddress, "hub"), options =>

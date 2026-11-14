@@ -9,6 +9,13 @@ namespace DraftPuck.Infrastructure.Auth;
 
 public class TokenService(AuthOptions options) : ITokenService
 {
+    public const string GuestClaimType = "guest";
+
+    /// <summary>
+    /// A short-lived access token for any user. Guests get a "guest" claim, so endpoints can tell them from signed-in
+    /// users whichever way the token was issued (a new guest, or a returning guest's refresh). Guests renew through the
+    /// refresh-token flow like everyone else.
+    /// </summary>
     public string GenerateJwtToken(UserEntity user)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
@@ -16,6 +23,9 @@ public class TokenService(AuthOptions options) : ITokenService
         var claims = new List<Claim> {
             new(ClaimTypes.NameIdentifier, user.Id.ToString())
         };
+
+        if (user.IsGuest)
+            claims.Add(new Claim(GuestClaimType, "true"));
 
         if (user.IsAdmin)
             claims.Add(new Claim(ClaimTypes.Role, "Admin"));
@@ -47,30 +57,6 @@ public class TokenService(AuthOptions options) : ITokenService
         };
 
         return refreshToken;
-    }
-
-    public string GenerateGuestJwtToken(Guid guestUserId)
-    {
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.UTF8.GetBytes(options.JwtKey!);
-
-        var claims = new List<Claim>
-        {
-            new(ClaimTypes.NameIdentifier, guestUserId.ToString()),
-            new("guest", "true")
-        };
-
-        var tokenDescriptor = new SecurityTokenDescriptor
-        {
-            Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddYears(10),
-            Issuer = options.Issuer,
-            Audience = options.Audience,
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-        };
-
-        var token = tokenHandler.CreateToken(tokenDescriptor);
-        return tokenHandler.WriteToken(token);
     }
 
     private static Guid GenerateCryptographicallySecureGuid()

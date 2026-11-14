@@ -1,4 +1,5 @@
 ﻿using DraftPuck.Application.Common.Exceptions;
+using DraftPuck.Infrastructure.Auth;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
@@ -23,7 +24,7 @@ public abstract class BaseController() : ControllerBase
 
         if (!string.IsNullOrEmpty(userIdClaim) && Guid.TryParse(userIdClaim, out var claimUserId))
         {
-            var isGuest = User.Claims.Any(c => c.Type == "guest" && c.Value == "true");
+            var isGuest = User.Claims.Any(c => c.Type == TokenService.GuestClaimType && c.Value == "true");
             _userIdentificationResult = (claimUserId, !isGuest);
             return _userIdentificationResult.Value;
         }
