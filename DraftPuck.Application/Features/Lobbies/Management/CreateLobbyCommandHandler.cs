@@ -4,10 +4,9 @@ namespace DraftPuck.Application.Features.Lobbies.Management;
 
 public class CreateLobbyCommandHandler(IDbContext dbContext, IMapper mapper, IMediator mediator) : IRequestHandler<CreateLobbyCommand, LobbyDto>
 {
-    private static readonly Random _random = new();
-
     public async Task<LobbyDto> Handle(CreateLobbyCommand request, CancellationToken ct)
     {
+        LobbyRules.ValidateNewLobby(request.PicksPerTeam, request.GameIds, request.Bots.Count);
         var hostName = LobbyMemberNames.Normalize(request.Name);
 
         var newLobbyId = Guid.NewGuid();
@@ -74,7 +73,7 @@ public class CreateLobbyCommandHandler(IDbContext dbContext, IMapper mapper, IMe
         do
         {
             result = new string(Enumerable.Repeat(chars, length)
-                .Select(s => s[_random.Next(s.Length)]).ToArray());
+                .Select(s => s[Random.Shared.Next(s.Length)]).ToArray());
         } while (await dbContext.Lobbies.AnyAsync(l => l.JoinCode == result));
 
         return result;

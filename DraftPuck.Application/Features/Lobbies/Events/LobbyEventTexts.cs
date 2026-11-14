@@ -2,7 +2,6 @@
 
 public static class LobbyEventTexts
 {
-    private static readonly Random _random = new();
     private record EventText(string Title, params string[] Texts);
 
     private static readonly Dictionary<LobbyEventType, EventText> _eventMap = new()
@@ -102,6 +101,6 @@ public static class LobbyEventTexts
 
     private static string Random(string[] strings)
     {
-        return strings == null || strings.Length == 0 ? string.Empty : strings[_random.Next(strings.Length)];
+        return strings == null || strings.Length == 0 ? string.Empty : strings[global::System.Random.Shared.Next(strings.Length)];
     }
 }

@@ -2,7 +2,6 @@
 
 public class AwardDrinksOnGoalHandler(IDbContext dbContext, IMediator mediator, ILogger<AwardDrinksOnGoalHandler> logger) : INotificationHandler<GoalScoredNotification>
 {
-    private static readonly Random _random = new();
 
     public async Task Handle(GoalScoredNotification notification, CancellationToken ct)
     {
@@ -58,7 +57,7 @@ public class AwardDrinksOnGoalHandler(IDbContext dbContext, IMediator mediator, 
                 && lobbyMembersByLobbyId.TryGetValue(pick.LobbyMember.LobbyId, out var possibleRecipients)
                 && possibleRecipients.Count > 0)
             {
-                var recipient = possibleRecipients[_random.Next(possibleRecipients.Count)];
+                var recipient = possibleRecipients[Random.Shared.Next(possibleRecipients.Count)];
 
                 botAssignments.Add((drink, new AssignDrinkCommand
                 {

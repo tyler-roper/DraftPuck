@@ -32,6 +32,8 @@ public class JoinLobbyCommandHandler(IDbContext dbContext, IMapper mapper, IMedi
             if (request.BotPickStyle == null)
                 throw new BadRequestException("Bots require a pick style.");
 
+            LobbyRules.ValidateBotCount(lobby.LobbyMembers.Count(lm => lm.IsBot && !lm.IsRemoved) + 1);
+
             memberUserId = Guid.NewGuid();
             dbContext.Users.Add(new UserEntity { Id = memberUserId, IsBot = true });
         }
