@@ -18,6 +18,7 @@ public partial class DraftPuckContext : DbContext, IDbContext
     public DbSet<BannerEntity> Banners { get; set; }
     public DbSet<DrinkEntity> Drinks { get; set; }
     public DbSet<ErrorLogEntity> ErrorLogs { get; set; }
+    public DbSet<EventLogoEntity> EventLogos { get; set; }
     public DbSet<LobbyEntity> Lobbies { get; set; }
     public DbSet<LobbyEventEntity> LobbyEvents { get; set; }
     public DbSet<LobbyMemberEntity> LobbyMembers { get; set; }
@@ -40,6 +41,16 @@ public partial class DraftPuckContext : DbContext, IDbContext
             entity.Property(e => e.Description).HasMaxLength(500);
             entity.Property(e => e.FriendlyName).HasMaxLength(255);
             entity.Property(e => e.UniqueIdentifier).HasMaxLength(50);
+        });
+
+        modelBuilder.Entity<EventLogoEntity>(entity =>
+        {
+            entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
+            entity.Property(e => e.Name).HasMaxLength(100);
+            entity.Property(e => e.LogoUrl).HasMaxLength(1000);
+            entity.Property(e => e.WideLogoUrl).HasMaxLength(1000);
+            // The site asks "which event is on now?", so look rows up by when they start and end.
+            entity.HasIndex(e => new { e.StartsUtc, e.EndsUtc });
         });
 
         modelBuilder.Entity<BannerEntity>(entity =>

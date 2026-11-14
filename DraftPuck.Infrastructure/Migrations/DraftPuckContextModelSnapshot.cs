@@ -452,6 +452,41 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.ToTable("ErrorLogs");
                 });
 
+            modelBuilder.Entity("DraftPuck.Shared.System.EventLogoEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("(newid())");
+
+                    b.Property<DateTime>("EndsUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LogoUrl")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("StartsUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("WideLogoUrl")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StartsUtc", "EndsUtc");
+
+                    b.ToTable("EventLogos");
+                });
+
             modelBuilder.Entity("DraftPuck.Shared.Titles.TitleEntity", b =>
                 {
                     b.Property<Guid>("Id")
