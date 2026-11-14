@@ -10,6 +10,7 @@ namespace DraftPuck.Application.Common.Interfaces
         DbSet<BannerEntity> Banners { get; }
         DbSet<DrinkEntity> Drinks { get; }
         DbSet<ErrorLogEntity> ErrorLogs { get; }
+        DbSet<EventLogoEntity> EventLogos { get; }
         DbSet<LobbyEntity> Lobbies { get; }
         DbSet<LobbyEventEntity> LobbyEvents { get; }
         DbSet<LobbyMemberEntity> LobbyMembers { get; }

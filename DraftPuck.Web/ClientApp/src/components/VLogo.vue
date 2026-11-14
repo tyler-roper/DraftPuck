@@ -1,7 +1,13 @@
 <script setup lang="ts">
-// The site logo. The one place that decides which logo to show, so event logos (e.g. for a tournament) can be
-// swapped in here without touching the pages that show it.
-const src = '/img/logo-wide.png'
+import { computed } from 'vue'
+import { useSystemStore, type LogoVariant } from '@/stores/system'
+
+// The site logo, swapped for an event's logo while one is on (see the EventLogos table). It's fetched once per visit
+// with the site settings, so showing it costs no requests.
+const props = withDefaults(defineProps<{ variant?: LogoVariant }>(), { variant: 'wide' })
+
+const systemStore = useSystemStore()
+const src = computed(() => systemStore.logoUrl(props.variant))
 </script>
 
 <template>
