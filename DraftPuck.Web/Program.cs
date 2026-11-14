@@ -6,6 +6,7 @@ using DraftPuck.Infrastructure.Persistence;
 using DraftPuck.Infrastructure.SignalR;
 using DraftPuck.Shared.Discord;
 using DraftPuck.Web.Filters;
+using DraftPuck.Web.RateLimiting;
 using DraftPuck.Web.Telemetry;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
@@ -38,7 +39,8 @@ try
         .AddEndpointsApiExplorer()
         .AddApplication()
         .ConfigureAuth(builder.Configuration, builder.Environment)
-        .AddTelemetry(builder.Configuration);
+        .AddTelemetry(builder.Configuration)
+        .AddDraftPuckRateLimiting();
 
     builder.Services
         .AddOptions<ApplicationOptions>()
@@ -57,6 +59,9 @@ builder.WebHost.UseKestrel();
 //app
 var app = builder.Build();
 
+// First, so everything after (HTTPS redirection, rate limits, logged IPs) sees the client's address, not the proxy's.
+app.UseForwardedHeaders();
+
 MigrateDatabase(app);
 
 if (!app.Environment.IsDevelopment())
@@ -68,6 +73,7 @@ if (!app.Environment.IsDevelopment())
 app
     .UseRouting()
     .UseAuthentication()
+    .UseRateLimiter()
     .UseAuthorization()
     .UseStaticFiles()
     .UseWebSockets()

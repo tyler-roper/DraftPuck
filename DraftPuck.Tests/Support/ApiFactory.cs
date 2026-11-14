@@ -75,10 +75,17 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     public DraftPuckContext CreateDbContext() => new(
         new DbContextOptionsBuilder<DraftPuckContext>().UseSqlServer(_sql.GetConnectionString()).Options);
 
-    /// <summary>A client over HTTPS (the refresh cookie is Secure), optionally sending a bearer token.</summary>
-    public HttpClient Client(string? jwt = null)
+    private static int _clientCount;
+
+    /// <summary>
+    /// A client over HTTPS (the refresh cookie is Secure), optionally sending a bearer token. Each client looks like a
+    /// different visitor (its own X-Forwarded-For address, as the ingress would send), so tests don't share rate limits.
+    /// </summary>
+    public HttpClient Client(string? jwt = null, string? clientIp = null)
     {
         var client = CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
+        var n = Interlocked.Increment(ref _clientCount);
+        client.DefaultRequestHeaders.Add("X-Forwarded-For", clientIp ?? $"10.{n / 65536 % 256}.{n / 256 % 256}.{n % 256}");
         if (jwt != null)
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
         return client;
