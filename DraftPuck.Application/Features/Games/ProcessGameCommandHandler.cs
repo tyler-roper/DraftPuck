@@ -93,6 +93,9 @@ public class ProcessGameCommandHandler(
         // so this only fills in goals missed while there was no cached copy.
         var goalChanges = GoalMatcher.Compare(previous == null ? [] : TrackedGoal.CountedIn(previous), TrackedGoal.CountedIn(game));
 
+        // Drinks only go to picks made before a goal happened, which this time is the best record of.
+        GameProcessingHelpers.SetFirstSeenTimes(game, previous, goalChanges.OfType<GoalRenumbered>(), DateTime.UtcNow);
+
         game.UpdatedUtc = DateTime.UtcNow;
         await gameCache.UpdateGameAsync(game);
         // Before the goal changes, so clients have the goal play by the time its drink events arrive.

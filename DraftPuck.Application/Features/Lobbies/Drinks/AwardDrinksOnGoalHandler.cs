@@ -7,6 +7,9 @@ public class AwardDrinksOnGoalHandler(IDbContext dbContext, IMediator mediator, 
     public async Task Handle(GoalScoredNotification notification, CancellationToken ct)
     {
         var data = notification.Data;
+        // Members can pick after puck drop, but a pick only earns drinks for goals that happen after it's made. This
+        // matters when a goal is announced again: credited to a new scorer, or re-found after the cached game was lost.
+        var goalHappenedUtc = data.Play.HappenedUtc;
 
         var picksToReward = await dbContext.LobbyMemberPicks
             .Include(p => p.Drinks)
@@ -15,6 +18,7 @@ public class AwardDrinksOnGoalHandler(IDbContext dbContext, IMediator mediator, 
             .Where(p => p.IsActive
                 && p.GameId == data.GameId
                 && p.PlayerId == data.Scorer.Id
+                && p.Created <= goalHappenedUtc
                 && !p.Drinks.Any(d => d.EventId == data.Play.Id))
             .ToListAsync(ct);
 
