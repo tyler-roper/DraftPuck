@@ -1,5 +1,4 @@
 ﻿using System.Globalization;
-using DraftPuck.Application.Common.Exceptions;
 using DraftPuck.Application.Features.Games;
 using StackExchange.Redis;
 using System.Text.Json;
@@ -9,6 +8,8 @@ namespace DraftPuck.Infrastructure.Redis;
 public class RedisGameCache(IDatabase redisDb) : IGameCache
 {
     private const string GamePrefix = "game:";
+    /// <summary>A set of the IDs of cached games, so they can be listed without scanning keys.</summary>
+    private const string GameIndexKey = "games";
     private const string NextRunPrefix = "nextRun:";
     private const string PregameAlertTriggeredPrefix = "pregameAlertTriggered:";
     private const string UserPicksThrottlePrefix = "userPicksThrottle:";
@@ -24,48 +25,36 @@ public class RedisGameCache(IDatabase redisDb) : IGameCache
         return JsonSerializer.Deserialize<GameDto>(json!) ?? null;
     }
 
+    /// <summary>
+    /// Every cached game, found through the <see cref="GameIndexKey"/> set rather than by scanning keys, which only
+    /// works on a single-node Redis and slows as the keyspace grows. IDs whose game has expired are dropped as found.
+    /// </summary>
     public async Task<List<GameDto>> GetAllGamesAsync()
     {
-        var endpoint = redisDb.Multiplexer.GetEndPoints().SingleOrDefault();
-
-        if (endpoint == null)
+        var ids = (await redisDb.SetMembersAsync(GameIndexKey)).Select(id => (int)id).ToArray();
+        if (ids.Length == 0)
             return [];
 
-        var server = redisDb.Multiplexer.GetServer(endpoint);
-        var asyncKeys = server.KeysAsync(database: redisDb.Database, pattern: $"{GamePrefix}*");
-        var keysList = new List<RedisKey>();
+        var values = await redisDb.StringGetAsync([.. ids.Select(id => (RedisKey)GameKey(id))]);
+        var games = new List<GameDto>(values.Length);
+        var expiredIds = new List<RedisValue>();
 
-        await foreach (var key in asyncKeys)
+        for (var i = 0; i < ids.Length; i++)
         {
-            keysList.Add(key);
-        }
-
-        var keys = keysList.ToArray();
-
-        if (keys.Length == 0)
-            return [];
-
-        try
-        {
-            var values = await redisDb.StringGetAsync(keys);
-            var games = new List<GameDto>(values.Length);
-
-            foreach (var value in values)
+            if (values[i].IsNullOrEmpty)
             {
-                if (value.IsNullOrEmpty) continue;
-
-                var game = JsonSerializer.Deserialize<GameDto>(value!);
-
-                if (game != null)
-                    games.Add(game);
+                expiredIds.Add(ids[i]);
+                continue;
             }
 
-            return games;
+            if (JsonSerializer.Deserialize<GameDto>(values[i]!) is { } game)
+                games.Add(game);
         }
-        catch (Exception ex)
-        {
-            throw new BadRequestException(ex.Message);
-        }
+
+        if (expiredIds.Count > 0)
+            await redisDb.SetRemoveAsync(GameIndexKey, [.. expiredIds]);
+
+        return games;
     }
 
     public async Task RemoveGameAsync(GameDto game)
@@ -78,15 +67,16 @@ public class RedisGameCache(IDatabase redisDb) : IGameCache
         var pregameTriggerKey = $"{PregameAlertTriggeredPrefix}{id}";
 
         await redisDb.KeyDeleteAsync([key, nextRunKey, pregameTriggerKey]);
+        await redisDb.SetRemoveAsync(GameIndexKey, id);
     }
 
     public async Task AddGameAsync(GameDto game) => await UpdateGameAsync(game);
 
     public async Task UpdateGameAsync(GameDto game)
     {
-        var key = $"{GamePrefix}{game.Id}";
         var json = JsonSerializer.Serialize(game);
-        await redisDb.StringSetAsync(key, json, expiry: TimeSpan.FromDays(1));
+        await redisDb.StringSetAsync(GameKey(game.Id), json, expiry: TimeSpan.FromDays(1));
+        await redisDb.SetAddAsync(GameIndexKey, game.Id);
     }
 
     public async Task<DateTime?> GetNextRunAsync(int gameId)
@@ -154,4 +144,6 @@ public class RedisGameCache(IDatabase redisDb) : IGameCache
             expiry = TimeSpan.FromHours(1);
         await redisDb.StringSetAsync(key, "1", expiry);
     }
+
+    private static string GameKey(int id) => $"{GamePrefix}{id}";
 }
