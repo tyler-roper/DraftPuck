@@ -10,6 +10,15 @@ import { nickname } from '@/helpers/validationHelpers'
 import LobbyService from '@/services/LobbyService'
 import { useToast } from 'vue-toastification'
 import { useRouter } from 'vue-router'
+import { getErrorMessage } from '@/helpers/requestHelpers'
+
+//#region props
+// With a code (on a lobby's own page) the form only asks for a name, joins that lobby and emits 'joined' instead of
+// navigating. Without one (the home page) it asks for the code too and opens the lobby once joined.
+const props = defineProps<{ code?: string }>()
+const emit = defineEmits<{ joined: [] }>()
+const hasFixedCode = computed(() => !!props.code)
+//#endregion
 
 //#region data
 const userStore = useUserStore()
@@ -32,7 +41,7 @@ const form = ref<JoinLobbyViewModel>({
 })
 
 const rules = computed(() => ({
-  code: { required, maxLength: maxLength(4), minLength: minLength(4), alpha },
+  code: hasFixedCode.value ? {} : { required, maxLength: maxLength(4), minLength: minLength(4), alpha },
   nickname: { requiredIf: requiredIf(isNotLoggedIn), maxLength: maxLength(25), nickname }
 }))
 
@@ -57,16 +66,22 @@ async function joinLobby(e: Event) {
 
     const existingMember = lobby.members.find((m) => m.name.trim().toLowerCase() === form.value.nickname.trim().toLowerCase())
 
-    if (existingMember && currentUser.value!.id !== existingMember.userId) {
+    // currentUser is null for a first-time guest, who can't already be a member.
+    if (existingMember && currentUser.value?.id !== existingMember.userId) {
       toast.error('Nickname already in use')
       isJoiningLobby.value = false
       return
     }
 
     await LobbyService.joinLobbyByCode(form.value.code, form.value.nickname)
+    if (hasFixedCode.value) {
+      isJoiningLobby.value = false
+      emit('joined')
+      return
+    }
     router.push({ name: 'Lobby', params: { joinCode: lobby.joinCode } })
   } catch (e) {
-    toast.error('Lobby not found.')
+    toast.error(getErrorMessage(e, 'Lobby not found.'))
     isJoiningLobby.value = false
   }
 }
@@ -76,7 +91,7 @@ async function joinLobby(e: Event) {
 onMounted(() => {
   const latestLobbyRaw = localStorage.getItem('latestLobby')
   const latestLobby: { joinCode: string; name: string } | undefined = latestLobbyRaw ? JSON.parse(latestLobbyRaw) : undefined
-  form.value.code = latestLobby?.joinCode ?? ''
+  form.value.code = props.code ?? latestLobby?.joinCode ?? ''
   form.value.nickname = isLoggedIn.value ? userStore.currentUser!.nickname! : (userStore.currentUser?.nickname ?? latestLobby?.name ?? '')
 })
 //#endregion
@@ -87,7 +102,7 @@ onMounted(() => {
 <template>
   <form @submit="joinLobby">
     <div class="row gx-3">
-      <div :class="isLoggedIn ? 'col-12' : 'col-4'">
+      <div v-if="!hasFixedCode" :class="isLoggedIn ? 'col-12' : 'col-4'">
         <label class="form-label" for="lobbyCode">Code</label>
         <VInputWrapper icon="key" prefix="sr">
           <input
@@ -102,7 +117,7 @@ onMounted(() => {
           />
         </VInputWrapper>
       </div>
-      <div v-if="!isLoggedIn" class="col-8">
+      <div v-if="!isLoggedIn" :class="hasFixedCode ? 'col-12' : 'col-8'">
         <label class="form-label" for="nickname">Nickname</label>
         <VInputWrapper icon="user" prefix="sr">
           <input

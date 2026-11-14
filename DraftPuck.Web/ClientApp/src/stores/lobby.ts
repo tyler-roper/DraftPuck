@@ -1,10 +1,11 @@
-import { computed, ref } from 'vue'
+import { computed, ref, toRaw } from 'vue'
 import { defineStore } from 'pinia'
 import type Bot from '@/models/bot'
 import LobbyService from '@/services/LobbyService'
 import { compareAsc } from 'date-fns'
 import type PickRequest from '@/models/pickRequest'
 import SystemMessageViewModel from '@/models/systemMessageViewModel'
+import MessageViewModel from '@/models/messageViewModel'
 import { useUserStore } from '@/stores/user'
 import { getErrorMessage } from '@/helpers/requestHelpers'
 
@@ -62,10 +63,6 @@ export const useLobbyStore = defineStore('lobby', () => {
   function removeLobbyMemberFromStore(lobbyMemberId: string) {
     if (!lobby.value?.members) return
     lobby.value.members = lobby.value.members.filter((m) => m.id != lobbyMemberId)
-  }
-
-  function addLobbyMember(lobbyMember: LobbyMember) {
-    lobby.value?.members.push(lobbyMember)
   }
 
   function addMessageToStore(message: Message) {
@@ -127,18 +124,21 @@ export const useLobbyStore = defineStore('lobby', () => {
     setDrinkRecipient(drink)
   }
 
+  // Lobby changes below are applied once the server has made them, and throw its refusal (e.g. a name already taken)
+  // so the caller can show it. Only chat is optimistic: messages appear instantly and are taken back if sending fails.
+
   async function changeName(newName: string) {
     if (!lobby.value) return
 
-    setNewName(newName)
     await LobbyService.changeName(lobby.value.joinCode, newName)
+    setNewName(newName)
   }
 
   async function removeLobbyMember(lobbyMemberId: string) {
     if (!lobby.value) return
 
-    removeLobbyMemberFromStore(lobbyMemberId)
     await LobbyService.removeLobbyMember(lobby.value.joinCode, lobbyMemberId)
+    removeLobbyMemberFromStore(lobbyMemberId)
   }
 
   /** Removes a pick once the server has. Throws the server's refusal, so the caller can show it. */
@@ -149,27 +149,45 @@ export const useLobbyStore = defineStore('lobby', () => {
     removePickFromStore(pickId)
   }
 
+  /** Adds a bot, then refetches the lobby so the bot appears as the server created it (with its ID). */
   async function addBot(bot: Bot) {
     if (!lobby.value) return
 
-    addLobbyMember(bot)
-    await LobbyService.addBot(lobby.value.joinCode, bot)
+    const joinCode = lobby.value.joinCode
+    await LobbyService.addBot(joinCode, bot)
+    await getLobby(joinCode)
   }
 
+  /** Shows the message immediately, and takes it back (and rethrows) if the server doesn't accept it. */
   async function sendMessage(messageText: string) {
     if (!lobby.value) return
 
-    const member = lobby.value?.members.find((m) => m.userId === currentUserId.value)
+    const member = lobby.value.members.find((m) => m.userId === currentUserId.value)
     if (!member) return
     const message = { lobbyMemberId: member.id, message: messageText, sent: new Date() } as Message
 
     addMessageToStore(message)
-    await LobbyService.sendMessage(lobby.value.joinCode, message)
+    try {
+      await LobbyService.sendMessage(lobby.value.joinCode, message)
+    } catch (error) {
+      // The stored copy is a reactive proxy of `message`, so compare the raw objects.
+      member.messages = member.messages.filter((m) => toRaw(m) !== message)
+      throw error
+    }
   }
   //#endregion
 
   //#region getters
   const isLobbyAdmin = computed(() => currentUserId.value === lobby.value?.createdBy)
+  const currentMember = computed(() => lobby.value?.members.find((m) => m.userId === currentUserId.value))
+
+  /** Every member's messages plus local system messages (e.g. command output), oldest first. */
+  const chatMessages = computed(() => {
+    const memberMessages = (lobby.value?.members ?? []).flatMap(
+      (member) => member.messages?.map((msg) => new MessageViewModel(member, msg.message, msg.sent, msg.id)) ?? []
+    )
+    return [...memberMessages, ...systemMessages.value].sort((a, b) => compareAsc(a.sent, b.sent))
+  })
   //#endregion
 
   return {
@@ -186,7 +204,6 @@ export const useLobbyStore = defineStore('lobby', () => {
     addLobbyEvent,
     setNewName,
     removeLobbyMemberFromStore,
-    addLobbyMember,
     addMessageToStore,
     getLobby,
     getLobbyEvents,
@@ -198,6 +215,8 @@ export const useLobbyStore = defineStore('lobby', () => {
     addBot,
     sendMessage,
     isLobbyAdmin,
+    currentMember,
+    chatMessages,
     sendDebugMessage,
     sendSystemMessage,
     setDebugging
