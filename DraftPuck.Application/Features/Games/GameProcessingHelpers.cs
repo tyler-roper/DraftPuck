@@ -35,6 +35,30 @@ public static class GameProcessingHelpers
         return gameAdjusted == nowAdjusted;
     }
 
+    /// <summary>
+    /// Carries each play's first-seen time forward from the previous poll (by play ID, and across renumbered goals), and
+    /// stamps plays that are new since then with <paramref name="utcNow"/>. Without a previous poll nothing is known, so
+    /// plays stay unstamped and fall back to their estimated time.
+    /// </summary>
+    /// <param name="utcNow">Real time, not test mode's simulated clock: it's compared with when picks were saved.</param>
+    public static void SetFirstSeenTimes(GameDto game, GameDto? previous, IEnumerable<GoalRenumbered> renumbers, DateTime utcNow)
+    {
+        if (previous == null) return;
+
+        var previousById = previous.Plays.DistinctBy(p => p.Id).ToDictionary(p => p.Id);
+        var renumberedFrom = renumbers.ToDictionary(r => r.NewPlayId, r => r.OldPlayId);
+
+        foreach (var play in game.Plays)
+        {
+            if (previousById.TryGetValue(play.Id, out var same))
+                play.FirstSeenUtc = same.FirstSeenUtc;
+            else if (renumberedFrom.TryGetValue(play.Id, out var oldId) && previousById.TryGetValue(oldId, out var old))
+                play.FirstSeenUtc = old.FirstSeenUtc;
+            else
+                play.FirstSeenUtc = utcNow;
+        }
+    }
+
     public static void SetPlayDateTimes(GameDto updatedGame, DateTime currentUtcTime, bool isTestMode = false, GameDto? cachedGame = null)
     {
         const int FULL_PERIOD_DURATION_MINS = 40;

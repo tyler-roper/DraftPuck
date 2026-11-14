@@ -218,6 +218,26 @@ public class GoalCorrectionPipelineTests(DatabaseFixture fixture)
     }
 
     [Fact]
+    public async Task ReassignedGoalOnlyRewardsPicksMadeBeforeTheGoal()
+    {
+        await JohnScoresAsync();
+        // In the quiet lobby, someone picks Jane after John's goal (picking stays open after puck drop).
+        Guid latePickId;
+        await using (var db = fixture.CreateContext())
+        {
+            var lobby = await db.Lobbies.SingleAsync(l => l.Id == _quietLobbyId);
+            var host = await db.LobbyMembers.SingleAsync(m => m.LobbyId == _quietLobbyId);
+            latePickId = new Seed(db).Pick(host, _gameId, TestGames.HomeTeamId, Jane, created: DateTime.UtcNow.AddSeconds(1)).Id;
+            await db.SaveChangesAsync();
+        }
+
+        await PollAsync(Game(GoalBy(Jane)));
+
+        Assert.Single(await DrinksAsync(_janePickId)); // picked Jane before the goal
+        Assert.Empty(await DrinksAsync(latePickId));   // picked Jane after it
+    }
+
+    [Fact]
     public async Task ScorerChangeInvalidatesAnAssignedDrinkOnce()
     {
         await JohnScoresAsync();
