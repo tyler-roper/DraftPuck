@@ -37,6 +37,7 @@ const itemIcon = computed(() => {
     [LobbyEventType.NewPick]: { prefix: 'rr', icon: 'badge-check' },
     [LobbyEventType.PickRemoved]: { prefix: 'sr', icon: 'undo' },
     [LobbyEventType.PickScratched]: { prefix: 'sr', icon: 'user-slash' },
+    [LobbyEventType.BotPicksMade]: { prefix: 'sr', icon: 'user-robot' },
     [LobbyEventType.DrinkAssigned]: { prefix: 'sr', icon: 'beer' },
     [LobbyEventType.DrinkAwarded]: { prefix: 'rr', icon: 'beer' },
     [LobbyEventType.GoalChanged]: { prefix: 'rr', icon: 'shuffle' },

@@ -12,6 +12,7 @@ public class LobbyEventHandler(IDbContext dbContext, IMediator mediator) :
     INotificationHandler<PickMadeNotification>,
     INotificationHandler<PickRemovedNotification>,
     INotificationHandler<PickScratchedNotification>,
+    INotificationHandler<BotPicksMadeNotification>,
     INotificationHandler<DrinkAssignedNotification>,
     INotificationHandler<DrinkAwardedNotification>,
     INotificationHandler<DrinkRemovedNotification>,
@@ -72,6 +73,15 @@ public class LobbyEventHandler(IDbContext dbContext, IMediator mediator) :
     {
         return NewLobbyEvent(n.Data.Lobby, LobbyEventType.PickScratched, ct, lobbyMemberId: n.Data.Member.Id,
             gameId: n.Data.Pick.GameId, playerId: n.Data.Pick.PlayerId, teamId: n.Data.Pick.TeamId);
+    }
+
+    public async Task Handle(BotPicksMadeNotification n, CancellationToken ct)
+    {
+        // Named on the event when a single bot picked, as with other members' events.
+        var onlyBot = n.Data.Picks.Count == 1 ? n.Data.Picks[0].Bot.Id : (Guid?)null;
+        foreach (var (title, text) in BotPickEventTexts.Describe(n.Data))
+            await NewLobbyEvent(n.Data.Lobby, LobbyEventType.BotPicksMade, ct, lobbyMemberId: onlyBot, gameId: n.Data.Game.Id,
+                title: title, text: text);
     }
 
     public Task Handle(DrinkAwardedNotification n, CancellationToken ct)
