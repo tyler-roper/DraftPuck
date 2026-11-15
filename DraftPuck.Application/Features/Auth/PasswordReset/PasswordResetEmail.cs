@@ -1,4 +1,4 @@
-using System.Net;
+using DraftPuck.Application.Common.Email;
 
 namespace DraftPuck.Application.Features.Auth.PasswordReset;
 
@@ -6,35 +6,35 @@ public static class PasswordResetEmail
 {
     public const string Subject = "Reset your DraftPuck password";
 
-    public static EmailMessage Create(string to, string nickname, string link)
+    public static EmailMessage Create(string to, string nickname, string link, ApplicationOptions app)
     {
         var minutes = (int)PasswordResetTokens.Lifetime.TotalMinutes;
+        const string intro = "We got a request to reset the password for your DraftPuck account. Choose a new one with the button below.";
+        var expiry = $"The link works once, for the next {minutes} minutes.";
+        const string footnote = "Didn't ask for this? You can ignore this email. Your password stays the same until someone uses the link.";
 
         var plainText =
             $"""
             Hi {nickname},
 
-            Someone (hopefully you) asked to reset the password for your DraftPuck account.
-            Open this link to choose a new one. It works once, for the next {minutes} minutes:
+            {intro}
 
             {link}
 
-            If you didn't ask for this, you can ignore this email; your password hasn't changed.
+            {expiry}
+
+            {footnote}
+
+            DraftPuck - A live hockey drinking game.
             """;
 
-        var html =
-            $"""
-            <div style="font-family: Arial, sans-serif; font-size: 15px; color: #222; max-width: 480px;">
-              <p>Hi {WebUtility.HtmlEncode(nickname)},</p>
-              <p>Someone (hopefully you) asked to reset the password for your DraftPuck account.
-                 This link works once, for the next {minutes} minutes.</p>
-              <p style="margin: 24px 0;">
-                <a href="{WebUtility.HtmlEncode(link)}"
-                   style="background: #222; color: #fff; padding: 12px 20px; border-radius: 6px; text-decoration: none;">Choose a new password</a>
-              </p>
-              <p style="color: #666; font-size: 13px;">If you didn't ask for this, you can ignore this email; your password hasn't changed.</p>
-            </div>
-            """;
+        var html = EmailLayout.Render(new EmailLayoutContent(
+            Preheader: $"Choose a new password. The link works for {minutes} minutes.",
+            Heading: $"Hi {nickname}, let's get you back in the game",
+            Paragraphs: [intro, expiry],
+            ButtonText: "Choose a new password",
+            ButtonUrl: link,
+            Footnote: footnote), app);
 
         return new EmailMessage(to, Subject, plainText, html);
     }
