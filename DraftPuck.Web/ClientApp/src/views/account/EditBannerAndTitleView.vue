@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { useUserStore } from '@/stores/user'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import VUser from '@/components/VUser.vue'
 import VIcon from '@/components/VIcon.vue'
+import VFlipCard from '@/components/VFlipCard.vue'
+import { useSingleFlip } from '@/composables/useSingleFlip'
+import { howEarned } from '@/helpers/earnedHelpers'
 import HeaderLayout from '@/views/layouts/HeaderLayout.vue'
 import { storeToRefs } from 'pinia'
 import { useToast } from 'vue-toastification'
@@ -18,6 +21,10 @@ const currentView = ref<View>('banners')
 const isSaving = ref(false)
 const toast = useToast()
 const router = useRouter()
+// One card at a time can be flipped to show how it was earned.
+const flip = useSingleFlip()
+const achievements = computed(() => currentUser.value?.achievements ?? [])
+watch(currentView, () => flip.reset())
 
 const genericBanners = computed(() => allBanners.value.filter((b) => !b.achievementId))
 const genericTitles = computed(() => allTitles.value.filter((t) => !t.achievementId))
@@ -53,10 +60,12 @@ const availableTitles = computed(() => {
 //#region methods
 function selectBanner(banner: Banner) {
   userPreview.value.banner = banner
+  flip.reset()
 }
 
 function selectTitle(title: Title) {
   userPreview.value.title = title
+  flip.reset()
 }
 
 function resetUserPreview() {
@@ -108,16 +117,17 @@ async function save() {
     </template>
 
     <div v-if="currentView === 'banners'" class="p-3 my-n3">
-      <a
-        role="button"
-        @click="selectBanner(banner)"
-        class="banner-container rounded-lg my-3"
+      <VFlipCard
         v-for="banner in availableBanners"
-        :class="{ selected: banner.id === userPreview?.banner.id }"
         :key="banner.id"
+        :selected="banner.id === userPreview?.banner.id"
+        :flipped="flip.isFlipped(banner.id)"
+        :how-earned="howEarned(banner, achievements)"
+        @select="selectBanner(banner)"
+        @flip="flip.toggle(banner.id)"
       >
         <div class="banner rounded-md" :style="{ 'background-image': `url(${banner.imagePath})` }"></div>
-      </a>
+      </VFlipCard>
       <a role="button" class="banner-container rounded-lg my-3" v-for="n in allBanners.length - availableBanners.length" :key="n">
         <div class="banner locked rounded-md bg-gradient">
           <div class="lock">
@@ -128,16 +138,18 @@ async function save() {
     </div>
 
     <div v-if="currentView === 'titles'" class="p-3 my-n3">
-      <a
-        role="button"
-        @click="selectTitle(title)"
-        class="banner-container rounded-lg my-3"
+      <VFlipCard
         v-for="title in availableTitles"
-        :class="{ selected: title.id === userPreview?.title.id }"
         :key="title.id"
+        compact
+        :selected="title.id === userPreview?.title.id"
+        :flipped="flip.isFlipped(title.id)"
+        :how-earned="howEarned(title, achievements)"
+        @select="selectTitle(title)"
+        @flip="flip.toggle(title.id)"
       >
         <div class="banner title rounded-md">{{ title.text }}</div>
-      </a>
+      </VFlipCard>
       <a role="button" class="banner-container rounded-lg my-3 p-0" v-for="n in allTitles.length - availableTitles.length" :key="n">
         <div class="banner title locked rounded-md bg-gradient">
           <div class="lock">
@@ -191,17 +203,11 @@ a.view-tab.is-selected {
   height: auto;
 }
 
+// Locked placeholders; owned banners and titles are framed by VFlipCard.
 .banner-container {
   display: block;
   border: 1px solid map-get($custom-colors, 'stone-400');
   padding: 8px;
-}
-
-.banner-container.selected {
-  opacity: 1;
-  padding: 6px;
-  border: 3px solid map-get($custom-colors, 'primary');
-  box-shadow: 0 0 20px rgba(map-get($custom-colors, 'primary'), 0.5);
 }
 
 .banner.locked .lock {
