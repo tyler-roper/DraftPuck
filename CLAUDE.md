@@ -3,7 +3,8 @@
 A live hockey drinking game: .NET 10 API and Azure Functions worker, Vue 3 client, SQL Server, Redis, SignalR.
 
 Read `docs/architecture.md` before changing code: it covers the projects, how requests, games and real-time updates
-flow, the domain rules, and where new code goes. `docs/review/2026-11-14.md` lists known issues and planned work.
+flow, the domain rules, and where new code goes. Known issues and planned work are GitHub issues
+(`gh issue list`).
 
 ## Commands
 
