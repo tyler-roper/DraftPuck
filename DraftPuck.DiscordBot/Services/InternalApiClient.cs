@@ -1,5 +1,4 @@
-﻿using DraftPuck.Application.Features.Discord;
-using DraftPuck.DiscordBot.Interfaces;
+﻿using DraftPuck.DiscordBot.Interfaces;
 using System.Net.Http.Json;
 
 namespace DraftPuck.DiscordBot.Services;
@@ -8,7 +7,7 @@ public class InternalApiClient(HttpClient httpClient) : IInternalApiClient
 {
     public async Task SendDiscordServerJoinedNotification(string userId, CancellationToken ct)
     {
-        var request = new DiscordServerJoinedRequestDto { DiscordUserId = userId };
+        var request = new DiscordServerJoinedRequest(userId);
 
         using var response = await httpClient.PostAsJsonAsync(
             "api/internal/discord-server-joined",
