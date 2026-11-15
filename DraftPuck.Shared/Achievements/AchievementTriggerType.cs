@@ -16,5 +16,7 @@ public enum AchievementTriggerType
     /// <summary>The user's name changed in a lobby.</summary>
     NameChanged,
     /// <summary>A lobby the user was in ended (deactivated at the daily cutoff).</summary>
-    LobbyEnded
+    LobbyEnded,
+    /// <summary>A drink the user gave or received was invalidated by a scoring change.</summary>
+    DrinkInvalidated
 }
