@@ -3,6 +3,7 @@ using DraftPuck.Application.Features.Games;
 using DraftPuck.Application.Features.Lobbies.Picks;
 using DraftPuck.Shared.Achievements;
 using DraftPuck.Shared.Firebase;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -19,7 +20,7 @@ public class BotPickFeedTests(DatabaseFixture fixture)
 
     private ServiceProvider BuildServices() => new ServiceCollection()
         .AddLogging()
-        .AddApplication()
+        .AddApplication(new ConfigurationBuilder().Build())
         .AddSingleton(TestServices.Mapper())
         .AddSingleton(Options.Create(new ApplicationOptions()))
         .AddSingleton<IGameCache>(new InMemoryGameCache())

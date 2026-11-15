@@ -23,7 +23,7 @@ builder.Logging.AddFilter("Azure.Core", LogLevel.Error);
 builder.Services
     .Configure<ApplicationOptions>(options => builder.Configuration.Bind(ApplicationOptions.SectionName, options))
     .AddInfrastructure(builder.Configuration)
-    .AddApplication()
+    .AddApplication(builder.Configuration)
     .AddApplicationInsightsTelemetryWorkerService()
     .ConfigureFunctionsApplicationInsights();
 

@@ -8,7 +8,7 @@ builder.Configuration.AddEnvironmentVariables("DRAFTPUCK_");
 builder
     .Services
     .AddInfrastructure(builder.Configuration)
-    .AddApplication()
+    .AddApplication(builder.Configuration)
     .AddDiscordBotWorker(builder.Configuration)
     .AddInternalApiClient(builder.Configuration);
 

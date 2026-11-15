@@ -3,6 +3,7 @@ using DraftPuck.Application.Features.Games;
 using DraftPuck.Application.Features.Lobbies.Drinks;
 using DraftPuck.Shared.Achievements;
 using DraftPuck.Shared.Firebase;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -66,7 +67,7 @@ public class GoalCorrectionPipelineTests(DatabaseFixture fixture)
     {
         var services = new ServiceCollection()
             .AddLogging()
-            .AddApplication()
+            .AddApplication(new ConfigurationBuilder().Build())
             .AddSingleton(TestServices.Mapper())
             .AddSingleton(Options.Create(new ApplicationOptions()))
             .AddSingleton<IGameCache>(_cache)
