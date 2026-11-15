@@ -1,4 +1,6 @@
-﻿namespace DraftPuck.Application.Features.Achievements;
+﻿using DraftPuck.Application.Features.Lobbies;
+
+namespace DraftPuck.Application.Features.Achievements;
 
 /// <summary>Checks the joiner (lobbies joined) and the host (how big their lobby has grown).</summary>
 public class LobbyJoinedAchievementHandler(IAchievementQueueService queueService) : INotificationHandler<UserJoinedLobbyNotification>

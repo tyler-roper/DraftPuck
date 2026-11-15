@@ -1,4 +1,6 @@
-﻿namespace DraftPuck.Application.Features.Users;
+﻿using DraftPuck.Application.Features.Lobbies;
+
+namespace DraftPuck.Application.Features.Users;
 
 public class UserProfileUpdatedLobbyNotifier(IDbContext dbContext, IMediator mediator) : INotificationHandler<UserProfileUpdatedNotification>
 {

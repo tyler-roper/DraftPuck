@@ -1,8 +1,8 @@
-using System.ComponentModel.DataAnnotations;
 using DraftPuck.Application.Common.Exceptions;
 using DraftPuck.Application.Features.Lobbies;
 using DraftPuck.Application.Features.Lobbies.Management;
 using DraftPuck.Application.Features.Lobbies.Members;
+using System.ComponentModel.DataAnnotations;
 
 namespace DraftPuck.Tests.Application.Lobbies;
 
@@ -48,7 +48,7 @@ public class LobbyMembershipTests(DatabaseFixture fixture)
     private async Task RenameAsync(string code, Guid userId, string newName)
     {
         await using var db = fixture.CreateContext();
-        await new ChangeLobbyNameCommandHandler(db, _mediator).Handle(new ChangeNameCommand { Code = code, UserId = userId, NewName = newName }, default);
+        await new ChangeNameCommandHandler(db, _mediator).Handle(new ChangeNameCommand { Code = code, UserId = userId, NewName = newName }, default);
     }
 
     private async Task<UserEntity> UserAsync()

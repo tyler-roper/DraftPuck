@@ -1,12 +1,6 @@
 ﻿global using AutoMapper;
 global using DraftPuck.Application.Common.Interfaces;
 global using DraftPuck.Application.Common.Options;
-global using DraftPuck.Application.Features.Achievements;
-global using DraftPuck.Application.Features.Achievements.Rules;
-global using DraftPuck.Application.Features.Games;
-global using DraftPuck.Application.Features.Lobbies;
-global using DraftPuck.Application.Features.Lobbies.Picks;
-global using DraftPuck.Application.Features.Users;
 global using DraftPuck.Domain.Achievements;
 global using DraftPuck.Domain.Auth;
 global using DraftPuck.Domain.Banners;

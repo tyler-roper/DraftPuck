@@ -1,4 +1,6 @@
-﻿namespace DraftPuck.Application.Features.Achievements;
+﻿using DraftPuck.Application.Features.Achievements.Rules;
+
+namespace DraftPuck.Application.Features.Achievements;
 
 public class AchievementAwardService(IDbContext dbContext, IEnumerable<IAchievementRule> allRules, ILogger<AchievementAwardService> logger, IUserRepository userRepository)
 {
