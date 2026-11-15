@@ -3,7 +3,7 @@ import { storeToRefs } from 'pinia'
 import { useUserStore } from '@/stores/user'
 import { computed, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useToast } from 'vue-toastification'
+import { useToast } from '@/composables/useToast'
 import VIcon from '@/components/VIcon.vue'
 
 const props = withDefaults(

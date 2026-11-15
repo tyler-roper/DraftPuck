@@ -5,7 +5,7 @@ import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
 import '@/extensions/arrayExtensions'
 import VIcon from '@/components/VIcon.vue'
-import { useToast } from 'vue-toastification'
+import { useToast } from '@/composables/useToast'
 import { useRouter, useRoute } from 'vue-router'
 import DiscordService from '@/services/DiscordService'
 

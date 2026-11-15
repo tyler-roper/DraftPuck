@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useToast } from 'vue-toastification'
+import { useToast } from '@/composables/useToast'
 import VButton from '@/components/VButton.vue'
 import VIcon from '@/components/VIcon.vue'
 import VNotificationPreferenceFields from '@/components/VNotificationPreferenceFields.vue'
