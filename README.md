@@ -27,7 +27,7 @@ The backend can be run either:
 
 Don't run `DraftPuck.Web` on its own with its Docker launch profile: that container isn't on the Compose network, so it can't reach Redis (`redis:6379`) and every request times out.
 
-SQL Server runs on your machine, not in Docker (see [environment.md](./docs/environment.md)). The Web app won't start if it can't apply the database migrations.
+SQL Server: start the one in Compose once with `docker compose --profile sql up -d sqlserver` (it keeps running, and its data persists), or use your own (see [environment.md](./docs/environment.md)). The Web app creates the database and applies migrations at startup, and won't start if it can't.
 
 ### Frontend (Vue 3)
 ```bash
