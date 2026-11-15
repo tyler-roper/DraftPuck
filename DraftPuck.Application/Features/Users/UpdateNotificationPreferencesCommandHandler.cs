@@ -1,12 +1,22 @@
 ﻿using DraftPuck.Application.Common.Exceptions;
+using DraftPuck.Application.Features.Lobbies.Members;
 
 namespace DraftPuck.Application.Features.Users;
 
-public class UpdateNotificationPreferencesCommandHandler(IDbContext dbContext, IUserRepository userRepository, IMapper mapper) : IRequestHandler<UpdateNotificationPreferencesCommand, UserDto>
+public class UpdateNotificationPreferencesCommandHandler(IDbContext dbContext, IUserRepository userRepository, IMapper mapper)
+    : IRequestHandler<UpdateNotificationPreferencesCommand, UserDto>
 {
-    public async Task<UserDto> Handle(UpdateNotificationPreferencesCommand request, CancellationToken cancellationToken)
+    public async Task<UserDto> Handle(UpdateNotificationPreferencesCommand request, CancellationToken ct)
     {
-        var user = await userRepository.GetById(request.UserId, cancellationToken) ?? throw new NotFoundException($"User not found with ID {request.UserId}");
+        MemberNotificationPreferences.Validate(
+            request.DrinkReceivedNotificationPreference,
+            request.DrinkAwardedNotificationPreference,
+            request.ChatNotificationPreference,
+            request.PickingStartedNotificationPreference,
+            request.AchievementAwardedNotificationPreference);
+
+        var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == request.UserId && !u.IsBot, ct)
+            ?? throw new NotFoundException("User not found.");
 
         user.DrinkReceivedNotificationPreference = request.DrinkReceivedNotificationPreference;
         user.DrinkAwardedNotificationPreference = request.DrinkAwardedNotificationPreference;
@@ -14,7 +24,18 @@ public class UpdateNotificationPreferencesCommandHandler(IDbContext dbContext, I
         user.PickingStartedNotificationPreference = request.PickingStartedNotificationPreference;
         user.AchievementAwardedNotificationPreference = request.AchievementAwardedNotificationPreference;
 
-        await dbContext.SaveChangesAsync(cancellationToken);
-        return mapper.Map<UserDto>(user);
+        if (request.ApplyToActiveLobbies)
+        {
+            var members = await dbContext.LobbyMembers
+                .Where(lm => lm.UserId == user.Id && !lm.IsRemoved && lm.Lobby.IsActive)
+                .ToListAsync(ct);
+            foreach (var member in members)
+                MemberNotificationPreferences.StampDefaults(member, user);
+        }
+
+        await dbContext.SaveChangesAsync(ct);
+
+        var updated = await userRepository.GetById(user.Id, ct);
+        return mapper.Map<UserDto>(updated);
     }
 }

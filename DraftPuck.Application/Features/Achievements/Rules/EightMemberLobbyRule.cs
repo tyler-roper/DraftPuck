@@ -3,7 +3,8 @@
 public class EightMemberLobbyRule(ILogger<EightMemberLobbyRule> logger) : BaseAchievementRule(logger)
 {
     public override string UniqueIdentifier => "party_starter";
-    public override IReadOnlyCollection<AchievementTriggerType> Triggers => [AchievementTriggerType.LobbyJoined];
+    // Checked for the host whenever someone joins their lobby.
+    public override IReadOnlyCollection<AchievementTriggerType> Triggers => [AchievementTriggerType.HostedLobbyJoined];
     protected override async Task<bool> IsCriteriaMetAsync(IDbContext dbContext, UserEntity user)
     {
         return await dbContext.Lobbies

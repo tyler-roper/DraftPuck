@@ -22,6 +22,32 @@ namespace DraftPuck.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("DraftPuck.Shared.Achievements.AchievementBackfillEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AchievementsAwarded")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("StartedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("StartedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UsersChecked")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UsersQueued")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AchievementBackfills");
+                });
+
             modelBuilder.Entity("DraftPuck.Shared.Achievements.AchievementEntity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -345,6 +371,15 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.Property<int?>("BotPickStyle")
                         .HasColumnType("int");
 
+                    b.Property<int>("ChatNotificationPreference")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DrinkAwardedNotificationPreference")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DrinkReceivedNotificationPreference")
+                        .HasColumnType("int");
+
                     b.Property<bool>("IsBot")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
@@ -367,6 +402,9 @@ namespace DraftPuck.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("PickingStartedNotificationPreference")
+                        .HasColumnType("int");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
@@ -569,7 +607,8 @@ namespace DraftPuck.Infrastructure.Migrations
 
                     b.HasIndex("AchievementId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "AchievementId")
+                        .IsUnique();
 
                     b.ToTable("UserAchievements");
                 });
@@ -596,7 +635,8 @@ namespace DraftPuck.Infrastructure.Migrations
 
                     b.HasIndex("BannerId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "BannerId")
+                        .IsUnique();
 
                     b.ToTable("UserBanners");
                 });
@@ -717,7 +757,8 @@ namespace DraftPuck.Infrastructure.Migrations
 
                     b.HasIndex("TitleId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "TitleId")
+                        .IsUnique();
 
                     b.ToTable("UserTitles");
                 });

@@ -4,6 +4,7 @@ public abstract class BaseAchievementRule(ILogger logger) : IAchievementRule
     protected readonly ILogger Logger = logger;
     public abstract string UniqueIdentifier { get; }
     public abstract IReadOnlyCollection<AchievementTriggerType> Triggers { get; }
+    public virtual bool CanBackfill => true;
     protected abstract Task<bool> IsCriteriaMetAsync(IDbContext dbContext, UserEntity user);
 
     public async Task<bool> IsCriteriaMetAsync(object contextObj)

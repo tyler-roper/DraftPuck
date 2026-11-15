@@ -1,5 +1,6 @@
 ﻿import type CreateAccountViewModel from '@/models/interfaces/createAccountViewModel'
 import HttpService, { type IHttpService } from '@/services/HttpService'
+import type { NotificationPreferences } from '@/helpers/notificationSettings'
 
 const controller = 'users'
 
@@ -28,6 +29,11 @@ class UserService {
 
   public async updateUser(id: string, request: UpdateUserRequest): Promise<User> {
     return this._http.patch(id, request)
+  }
+
+  /** Sets the current user's default notification settings, optionally applying them to their active lobbies. */
+  public async updateNotificationPreferences(preferences: NotificationPreferences, applyToActiveLobbies: boolean): Promise<User> {
+    return this._http.put('me/notificationPreferences', { ...preferences, applyToActiveLobbies })
   }
 }
 

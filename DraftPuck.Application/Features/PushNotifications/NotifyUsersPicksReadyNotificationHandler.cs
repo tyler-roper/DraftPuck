@@ -15,27 +15,26 @@ public class NotifyUsersPicksReadyNotificationHandler(IDbContext dbContext, IGam
             .Where(l => l.GameIds.Contains(game.Id))
             .ToListAsync(ct);
 
-        var userIds = lobbies
-            .SelectMany(l => l.LobbyMembers.Select(m => m.UserId))
-            .Distinct()
-            .ToList();
+        // Notification settings are per lobby: a user hears about the game if any of their lobbies with it has picking
+        // notifications on, and the notification opens the first such lobby.
+        var lobbyByUser = lobbies
+            .SelectMany(l => l.LobbyMembers
+                .Where(m => !m.IsBot && !m.IsRemoved && m.PickingStartedNotificationPreference != NotificationPreference.None)
+                .Select(m => (m.UserId, Lobby: l)))
+            .GroupBy(x => x.UserId)
+            .ToDictionary(g => g.Key, g => g.First().Lobby);
 
+        var userIds = lobbyByUser.Keys.ToList();
         var usersWithPushNotificationsEnabled = await dbContext.Users
-            .Where(u => userIds.Contains(u.Id)
-                && !string.IsNullOrEmpty(u.FcmRegistrationToken)
-                && u.PickingStartedNotificationPreference != NotificationPreference.None)
+            .Where(u => userIds.Contains(u.Id) && !string.IsNullOrEmpty(u.FcmRegistrationToken))
             .ToDictionaryAsync(u => u.Id, u => u, ct);
 
-        foreach (var userId in userIds)
+        foreach (var (userId, userLobby) in lobbyByUser)
         {
             if (!usersWithPushNotificationsEnabled.TryGetValue(userId, out var user))
                 continue;
 
             if (await gameCache.HasUserBeenNotifiedForGameAsync(userId, game.Id))
-                continue;
-
-            var userLobby = lobbies.FirstOrDefault(l => l.LobbyMembers.Any(m => m.UserId == userId));
-            if (userLobby == null)
                 continue;
 
             // Games starting together are processed in parallel; claim the user's 15-minute window atomically

@@ -1,5 +1,6 @@
 ﻿using DraftPuck.Application.Common.Exceptions;
 using DraftPuck.Application.Common.QueryExtensions;
+using DraftPuck.Application.Features.Lobbies.Members;
 using DraftPuck.Application.Features.Users;
 using DraftPuck.Shared.Auth;
 namespace DraftPuck.Application.Features.Auth;
@@ -22,7 +23,7 @@ public class LoginCommandHandler(IDbContext dbContext, ITokenService tokenServic
         userEntity.RefreshTokens.Add(refreshToken);
         dbContext.UserRefreshTokens.RemoveRange(userEntity.RefreshTokens.Where(t => !t.IsValid && t.Created.AddDays(2) <= DateTime.UtcNow));
 
-        var mediatorNotifications = await HandleLobbiesAndGetNotifications(request.GuestUserId, userEntity.Id, userEntity.Nickname!, cancellationToken);
+        var mediatorNotifications = await HandleLobbiesAndGetNotifications(request.GuestUserId, userEntity, cancellationToken);
 
         await dbContext.SaveChangesAsync(cancellationToken);
 
@@ -41,8 +42,9 @@ public class LoginCommandHandler(IDbContext dbContext, ITokenService tokenServic
         };
     }
 
-    private async Task<List<INotification>> HandleLobbiesAndGetNotifications(Guid oldUserId, Guid newUserId, string nickname, CancellationToken ct)
+    private async Task<List<INotification>> HandleLobbiesAndGetNotifications(Guid oldUserId, UserEntity account, CancellationToken ct)
     {
+        var (newUserId, nickname) = (account.Id, account.Nickname!);
         var result = new List<INotification>();
 
         //If the old and new ID are the same, it means we're converting the user from Guest -> User (a new sign-up)
@@ -83,6 +85,8 @@ public class LoginCommandHandler(IDbContext dbContext, ITokenService tokenServic
             // Convert guest to Logged-In user
             {
                 guestMember.UserId = newUserId;
+                // The membership is the account's now, so it gets the account's notification defaults.
+                MemberNotificationPreferences.StampDefaults(guestMember, account);
 
                 var lobbyMemberWithSameName = lobby.LobbyMembers.FirstOrDefault(lm => !lm.IsRemoved && lm.UserId != newUserId && lm.Name.Equals(nickname, StringComparison.CurrentCultureIgnoreCase));
                 if (lobbyMemberWithSameName != null)

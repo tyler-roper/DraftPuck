@@ -1,36 +1,26 @@
 ﻿namespace DraftPuck.Application.Features.Achievements.Rules;
 
+/// <summary>"Have two of your chosen players score in the same minute": two different players, within 60 seconds, in one lobby.</summary>
 public class TwoGoalsInOneMinute(ILogger<TwoGoalsInOneMinute> logger) : BaseAchievementRule(logger)
 {
     public override string UniqueIdentifier => "hot_hand";
     public override IReadOnlyCollection<AchievementTriggerType> Triggers => [AchievementTriggerType.DrinkAwarded];
+
     protected override async Task<bool> IsCriteriaMetAsync(IDbContext dbContext, UserEntity user)
     {
-        var activeLobbyMemberships = await dbContext.LobbyMembers
-                .Where(lm => lm.UserId == user.Id && !lm.IsRemoved)
-                .Select(lm => lm.LobbyId)
-                .ToListAsync();
+        // A drink is created when its goal is found, so its time is when the goal was scored (to within a poll).
+        var goals = await dbContext.Drinks
+            .Where(d => d.LobbyMemberPick.LobbyMember.UserId == user.Id && !d.LobbyMemberPick.LobbyMember.IsRemoved)
+            .Select(d => new { d.LobbyMemberPick.LobbyMember.LobbyId, d.LobbyMemberPick.PlayerId, d.Created })
+            .ToListAsync();
 
-        if (activeLobbyMemberships.Count == 0) return false;
-
-        foreach (var lobbyId in activeLobbyMemberships)
+        foreach (var lobbyGoals in goals.GroupBy(g => g.LobbyId))
         {
-            var allDrinksInLobby = await dbContext.Drinks
-                .Where(d => d.LobbyMemberPick.LobbyMember.UserId == user.Id &&
-                            d.LobbyMemberPick.LobbyMember.LobbyId == lobbyId)
-                .OrderBy(d => d.Created)
-                .Select(d => d.Created)
-                .ToListAsync();
-
-            if (allDrinksInLobby.Count < 2)
-                continue;
-
-            for (var i = 1; i < allDrinksInLobby.Count; i++)
-            {
-                var timeDifference = allDrinksInLobby[i] - allDrinksInLobby[i - 1];
-                if (timeDifference <= TimeSpan.FromSeconds(60))
-                    return true;
-            }
+            var ordered = lobbyGoals.OrderBy(g => g.Created).ToList();
+            for (var i = 0; i < ordered.Count; i++)
+                for (var j = i + 1; j < ordered.Count && ordered[j].Created - ordered[i].Created <= TimeSpan.FromSeconds(60); j++)
+                    if (ordered[j].PlayerId != ordered[i].PlayerId)
+                        return true;
         }
 
         return false;

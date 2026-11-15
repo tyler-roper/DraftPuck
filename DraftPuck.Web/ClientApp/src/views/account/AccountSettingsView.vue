@@ -8,6 +8,7 @@ import useVuelidate from '@vuelidate/core'
 import { required, requiredIf, email, maxLength, sameAs } from '@vuelidate/validators'
 import { nickname, optionalPassword } from '@/helpers/validationHelpers'
 import VIcon from '@/components/VIcon.vue'
+import VDefaultNotificationSettings from '@/components/VDefaultNotificationSettings.vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 
@@ -201,6 +202,12 @@ const v$ = useVuelidate<UpdateUserRequest>(rules, form)
           <button class="btn btn-outline-danger">Delete My Account</button>
         </div> -->
       </form>
+
+      <div class="hr"></div>
+      <div class="profile-section">
+        <span class="title">Default Notifications</span>
+        <VDefaultNotificationSettings />
+      </div>
     </div>
   </HeaderLayout>
 </template>

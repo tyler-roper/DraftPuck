@@ -44,6 +44,23 @@ public class ProcessGameCommandHandlerTests
         => (TestGames.Create(gameId, DateTime.UtcNow, GameState.Live), TestGames.Create(gameId, DateTime.UtcNow, GameState.Live));
 
     [Fact]
+    public async Task AGameGoingFinalIsAnnouncedOnce()
+    {
+        var (cached, updated) = LiveGame(Seed.NewGameId());
+        updated.GameState = GameState.Final;
+        updated.Plays = [new PlayDto { Id = 99, Type = PlayType.GameEnd, Period = 3, TimeInPeriod = "20:00", TimeRemainingInPeriod = "00:00" }];
+
+        await PollAsync(cached, updated);
+
+        Assert.Equal(updated.Id, Assert.Single(Published<GameFinishedNotification>()).Game.Id);
+
+        // A later poll of the finished game doesn't announce it again.
+        _mediator.ClearReceivedCalls();
+        await PollAsync(updated, updated);
+        Assert.Empty(Published<GameFinishedNotification>());
+    }
+
+    [Fact]
     public async Task NewGoalPublishesGoalScored()
     {
         var (cached, updated) = LiveGame(Seed.NewGameId());

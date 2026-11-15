@@ -15,6 +15,7 @@ public partial class DraftPuckContext : DbContext, IDbContext
     }
 
     public DbSet<AchievementEntity> Achievements { get; set; }
+    public DbSet<AchievementBackfillEntity> AchievementBackfills { get; set; }
     public DbSet<BannerEntity> Banners { get; set; }
     public DbSet<DrinkEntity> Drinks { get; set; }
     public DbSet<ErrorLogEntity> ErrorLogs { get; set; }
@@ -234,6 +235,9 @@ public partial class DraftPuckContext : DbContext, IDbContext
             entity.HasOne(ua => ua.Achievement)
                 .WithMany(a => a.UserAchievements)
                 .HasForeignKey(ua => ua.AchievementId);
+
+            // An achievement is earned once: this stops parallel checks from awarding it twice.
+            entity.HasIndex(ua => new { ua.UserId, ua.AchievementId }).IsUnique();
         });
 
         modelBuilder.Entity<UserBannerEntity>(entity =>
@@ -242,6 +246,7 @@ public partial class DraftPuckContext : DbContext, IDbContext
             entity.Property(e => e.IsEquipped).HasDefaultValueSql("((0))");
             entity.HasOne(ub => ub.User).WithMany(u => u.UserBanners).HasForeignKey(ub => ub.UserId);
             entity.HasOne(ub => ub.Banner).WithMany(b => b.UserBanners).HasForeignKey(ub => ub.BannerId);
+            entity.HasIndex(ub => new { ub.UserId, ub.BannerId }).IsUnique();
         });
 
         modelBuilder.Entity<UserRefreshTokenEntity>(entity =>
@@ -275,6 +280,7 @@ public partial class DraftPuckContext : DbContext, IDbContext
 
             entity.HasOne(ut => ut.User).WithMany(u => u.UserTitles).HasForeignKey(ut => ut.UserId);
             entity.HasOne(ut => ut.Title).WithMany(b => b.UserTitles).HasForeignKey(ut => ut.TitleId);
+            entity.HasIndex(ut => new { ut.UserId, ut.TitleId }).IsUnique();
         });
 
         modelBuilder.Entity<UserEntity>(entity =>

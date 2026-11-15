@@ -1,4 +1,4 @@
-﻿namespace DraftPuck.Application.Features.Users;
+namespace DraftPuck.Application.Features.Users;
 public class UpdateUserCommand : IRequest<UserDto>
 {
     public Guid TargetUserId { get; set; }
@@ -10,11 +10,6 @@ public class UpdateUserCommand : IRequest<UserDto>
     public string? Password { get; set; }
     public string? CurrentPassword { get; set; }
     public string? AvatarData { get; set; }
-    public NotificationPreference? DrinkReceivedNotificationPreference { get; set; }
-    public NotificationPreference? DrinkAwardedNotificationPreference { get; set; }
-    public NotificationPreference? ChatNotificationPreference { get; set; }
-    public NotificationPreference? PickingStartedNotificationPreference { get; set; }
-    public NotificationPreference? AchievementAwardedNotificationPreference { get; set; }
     public Guid? BannerId { get; set; }
     public Guid? TitleId { get; set; }
 }

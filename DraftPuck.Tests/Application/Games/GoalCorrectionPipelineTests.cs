@@ -365,7 +365,9 @@ public class GoalCorrectionPipelineTests(DatabaseFixture fixture)
         await using var db = fixture.CreateContext();
         var user = await db.Users.SingleAsync(u => u.Id == _johnPickerUserId);
         user.FcmRegistrationToken = "john-picker-token";
-        user.PickingStartedNotificationPreference = pickingStarted;
+        // Notification settings are per lobby member.
+        var member = await db.LobbyMembers.SingleAsync(m => m.Id == _johnPicker);
+        member.PickingStartedNotificationPreference = pickingStarted;
         await db.SaveChangesAsync();
     }
 

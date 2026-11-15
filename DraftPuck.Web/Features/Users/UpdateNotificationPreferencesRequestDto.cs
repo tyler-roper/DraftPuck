@@ -7,4 +7,5 @@ public class UpdateNotificationPreferencesRequestDto
     public NotificationPreference ChatNotificationPreference { get; set; }
     public NotificationPreference PickingStartedNotificationPreference { get; set; }
     public NotificationPreference AchievementAwardedNotificationPreference { get; set; }
+    public bool ApplyToActiveLobbies { get; set; }
 }
