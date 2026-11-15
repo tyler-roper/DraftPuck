@@ -1,8 +1,11 @@
-using System.ComponentModel.DataAnnotations;
 using DraftPuck.Application.Common.Exceptions;
+using DraftPuck.Application.Common.Interfaces;
+using DraftPuck.Application.Features.Achievements;
+using DraftPuck.Application.Features.Achievements.Rules;
 using DraftPuck.Application.Features.Users;
-using DraftPuck.Shared.Achievements;
-using DraftPuck.Shared.Banners;
+using DraftPuck.Domain.Achievements;
+using DraftPuck.Domain.Banners;
+using System.ComponentModel.DataAnnotations;
 
 namespace DraftPuck.Tests.Application.Users;
 

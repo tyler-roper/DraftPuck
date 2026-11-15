@@ -1,13 +1,13 @@
-using System.ComponentModel.DataAnnotations;
 using DraftPuck.Application.Common.Exceptions;
+using DraftPuck.Application.Common.Interfaces;
 using DraftPuck.Application.Features.Auth;
 using DraftPuck.Application.Features.Lobbies;
 using DraftPuck.Application.Features.Lobbies.Management;
 using DraftPuck.Application.Features.Lobbies.Members;
 using DraftPuck.Application.Features.PushNotifications;
 using DraftPuck.Application.Features.Users;
-using DraftPuck.Shared.Firebase;
 using Microsoft.Extensions.Options;
+using System.ComponentModel.DataAnnotations;
 
 namespace DraftPuck.Tests.Application.Lobbies;
 

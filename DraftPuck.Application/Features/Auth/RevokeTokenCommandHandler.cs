@@ -1,5 +1,6 @@
 ﻿using DraftPuck.Application.Common.Exceptions;
-using DraftPuck.Shared.Auth;
+using DraftPuck.Application.Common.Interfaces;
+using DraftPuck.Domain.Auth;
 
 namespace DraftPuck.Application.Features.Auth;
 

@@ -1,9 +1,9 @@
+using DraftPuck.Application.Common.Interfaces;
 using DraftPuck.Application.Features.Achievements;
 using DraftPuck.Application.Features.Achievements.Rules;
 using DraftPuck.Application.Features.Admin.Achievements;
 using DraftPuck.Application.Features.Games;
-using DraftPuck.Shared.Achievements;
-using DraftPuck.Shared.Firebase;
+using DraftPuck.Domain.Achievements;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DraftPuck.Tests.Application.Achievements;

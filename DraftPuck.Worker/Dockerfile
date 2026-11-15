@@ -13,7 +13,7 @@ WORKDIR /src
 
 # Copy csproj files and restore (cached unless dependencies change)
 COPY ["DraftPuck.Worker/DraftPuck.Worker.csproj", "DraftPuck.Worker/"]
-COPY ["DraftPuck.Shared/DraftPuck.Shared.csproj", "DraftPuck.Shared/"]
+COPY ["DraftPuck.Domain/DraftPuck.Domain.csproj", "DraftPuck.Domain/"]
 COPY ["DraftPuck.Application/DraftPuck.Application.csproj", "DraftPuck.Application/"]
 COPY ["DraftPuck.Infrastructure/DraftPuck.Infrastructure.csproj", "DraftPuck.Infrastructure/"]
 RUN dotnet restore "./DraftPuck.Worker/DraftPuck.Worker.csproj"

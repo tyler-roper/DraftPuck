@@ -11,7 +11,7 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
-COPY ./DraftPuck.Shared/DraftPuck.Shared.csproj ./DraftPuck.Shared/
+COPY ./DraftPuck.Domain/DraftPuck.Domain.csproj ./DraftPuck.Domain/
 COPY ./DraftPuck.Application/DraftPuck.Application.csproj ./DraftPuck.Application/
 COPY ./DraftPuck.Infrastructure/DraftPuck.Infrastructure.csproj ./DraftPuck.Infrastructure/
 COPY ./DraftPuck.DiscordBot/DraftPuck.DiscordBot.csproj ./DraftPuck.DiscordBot/

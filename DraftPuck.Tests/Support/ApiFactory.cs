@@ -1,7 +1,8 @@
-using System.Net.Http.Headers;
+using DraftPuck.Application.Common.Interfaces;
+using DraftPuck.Application.Features.Achievements;
+using DraftPuck.Application.Features.Achievements.Rules;
 using DraftPuck.Application.Features.Games;
-using DraftPuck.Shared.Achievements;
-using DraftPuck.Shared.Firebase;
+using DraftPuck.Domain.Achievements;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.Connections;
@@ -10,6 +11,7 @@ using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using System.Net.Http.Headers;
 using Testcontainers.MsSql;
 using Testcontainers.Redis;
 

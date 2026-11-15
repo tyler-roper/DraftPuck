@@ -18,7 +18,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionItems", "SolutionIt
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DraftPuck.Shared", "DraftPuck.Shared\DraftPuck.Shared.csproj", "{8A1AFD98-00B0-4FB6-8F2D-4017C1C92401}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DraftPuck.Domain", "DraftPuck.Domain\DraftPuck.Domain.csproj", "{8A1AFD98-00B0-4FB6-8F2D-4017C1C92401}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DraftPuck.Infrastructure", "DraftPuck.Infrastructure\DraftPuck.Infrastructure.csproj", "{217F3C85-7DC8-4629-8F68-5DDE83041071}"
 EndProject

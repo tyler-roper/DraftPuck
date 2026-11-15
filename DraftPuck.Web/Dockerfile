@@ -14,7 +14,7 @@ WORKDIR /repo
 # Copy csproj files and restore (cached unless dependencies change)
 COPY ./DraftPuck.sln ./
 COPY ./DraftPuck.Web/DraftPuck.Web.csproj ./DraftPuck.Web/
-COPY ./DraftPuck.Shared/DraftPuck.Shared.csproj ./DraftPuck.Shared/
+COPY ./DraftPuck.Domain/DraftPuck.Domain.csproj ./DraftPuck.Domain/
 COPY ./DraftPuck.Application/DraftPuck.Application.csproj ./DraftPuck.Application/
 COPY ./DraftPuck.Infrastructure/DraftPuck.Infrastructure.csproj ./DraftPuck.Infrastructure/
 COPY ./DraftPuck.Worker/DraftPuck.Worker.csproj ./DraftPuck.Worker/

@@ -1,4 +1,4 @@
-﻿using DraftPuck.Shared.Discord;
+﻿using DraftPuck.Application.Features.Discord;
 using DraftPuck.Web.Filters;
 
 namespace DraftPuck.Web.Features.InternalApi;

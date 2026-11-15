@@ -1,4 +1,4 @@
-using DraftPuck.Shared.Firebase;
+using DraftPuck.Application.Common.Interfaces;
 
 namespace DraftPuck.Application.Features.PushNotifications;
 

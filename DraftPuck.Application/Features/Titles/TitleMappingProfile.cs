@@ -1,4 +1,4 @@
-﻿using DraftPuck.Shared.Titles;
+﻿using DraftPuck.Domain.Titles;
 
 namespace DraftPuck.Application.Features.Titles;
 

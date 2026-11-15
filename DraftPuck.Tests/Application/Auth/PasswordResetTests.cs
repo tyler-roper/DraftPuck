@@ -1,8 +1,9 @@
 using DraftPuck.Application.Common.Exceptions;
 using DraftPuck.Application.Common.Interfaces;
+using DraftPuck.Application.Common.Options;
 using DraftPuck.Application.Features.Auth;
 using DraftPuck.Application.Features.Auth.PasswordReset;
-using DraftPuck.Shared.System;
+using DraftPuck.Domain.System;
 using Microsoft.Extensions.Options;
 using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
