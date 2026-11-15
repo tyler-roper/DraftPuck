@@ -6,7 +6,7 @@ import { canPickPlayer, canRemovePick, findPick, hasPicksLeftInGame, isGameInLob
 import { getErrorMessage } from '@/helpers/requestHelpers'
 import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
-import { useToast } from 'vue-toastification'
+import { useToast } from '@/composables/useToast'
 import TeamColors from '@/models/teamColorLookup'
 import { getOrdinal } from '@/helpers/gameHelpers'
 import GameState from '@/enums/gameState'

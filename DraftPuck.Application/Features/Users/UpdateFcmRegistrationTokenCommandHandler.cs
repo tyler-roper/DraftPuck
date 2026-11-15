@@ -6,6 +6,7 @@ public class UpdateFcmRegistrationTokenCommandHandler(IDbContext dbContext, IUse
 {
     public async Task<UserDto> Handle(UpdateFcmRegistrationTokenCommand request, CancellationToken cancellationToken)
     {
+        UserValidationHelpers.ValidateFcmRegistrationToken(request.Token);
         var user = await userRepository.GetById(request.UserId, cancellationToken) ?? throw new NotFoundException($"User not found with ID {request.UserId}");
         user.FcmRegistrationToken = request.Token;
         await dbContext.SaveChangesAsync(cancellationToken);

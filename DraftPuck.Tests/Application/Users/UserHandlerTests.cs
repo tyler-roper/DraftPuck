@@ -26,12 +26,34 @@ public class UserHandlerTests(DatabaseFixture fixture)
         }, default);
     }
 
-    private async Task<UserDto> UpdateAsync(UpdateUserCommand command)
+    private async Task<UserDto> UpdateAsync(UpdateUserCommand command, IAvatarStorageService? avatars = null)
     {
         await using var db = fixture.CreateContext();
-        return await new UpdateUserCommandHandler(db, TestServices.Mapper(), new UserRepository(db), _mediator, Substitute.For<IAvatarStorageService>())
+        return await new UpdateUserCommandHandler(db, TestServices.Mapper(), new UserRepository(db), _mediator,
+                avatars ?? Substitute.For<IAvatarStorageService>(), NullLogger<UpdateUserCommandHandler>.Instance)
             .Handle(command, default);
     }
+
+    // A 1x1 PNG, as the client sends it.
+    private const string PngAvatarData =
+        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+
+    private async Task<UserEntity> AccountWithAvatarAsync(string avatarPath)
+    {
+        var account = await AccountAsync();
+        await using var db = fixture.CreateContext();
+        (await db.Users.SingleAsync(u => u.Id == account.Id)).AvatarPath = avatarPath;
+        await db.SaveChangesAsync();
+        return account;
+    }
+
+    private static UpdateUserCommand NewAvatar(UserEntity account) => new()
+    {
+        RequesterUserId = account.Id,
+        TargetUserId = account.Id,
+        RequesterIsAuthenticated = true,
+        AvatarData = PngAvatarData
+    };
 
     private async Task<UserEntity> GuestAsync()
     {
@@ -130,6 +152,78 @@ public class UserHandlerTests(DatabaseFixture fixture)
     }
 
     // --- Updates ---
+
+    [Fact]
+    public async Task KeepingYourNicknameDoesNotLetYouTakeSomeoneElsesEmail()
+    {
+        // The settings page sends both fields. When the user's own nickname matched first, the other account's email
+        // passed validation and only the unique index on Users.Email stopped it, as a 500 instead of this message.
+        var victim = await AccountAsync();
+        var account = await AccountAsync();
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(() => UpdateAsync(new UpdateUserCommand
+        {
+            RequesterUserId = account.Id,
+            TargetUserId = account.Id,
+            RequesterIsAuthenticated = true,
+            Nickname = account.Nickname,
+            Email = victim.Email
+        }));
+
+        Assert.Equal("Email is already taken.", ex.Message);
+    }
+
+    [Fact]
+    public async Task KeepingYourOwnNicknameAndEmailIsAllowed()
+    {
+        var account = await AccountAsync();
+
+        await UpdateAsync(new UpdateUserCommand
+        {
+            RequesterUserId = account.Id,
+            TargetUserId = account.Id,
+            RequesterIsAuthenticated = true,
+            Nickname = account.Nickname,
+            Email = account.Email
+        });
+    }
+
+    [Fact]
+    public async Task UpdatedNicknamesAreTrimmedLikeNewOnes()
+    {
+        var account = await AccountAsync();
+        var nickname = UniqueName();
+
+        await UpdateAsync(new UpdateUserCommand
+        {
+            RequesterUserId = account.Id,
+            TargetUserId = account.Id,
+            RequesterIsAuthenticated = true,
+            Nickname = $"  {nickname}  "
+        });
+
+        await using var check = fixture.CreateContext();
+        Assert.Equal(nickname, (await check.Users.SingleAsync(u => u.Id == account.Id)).Nickname);
+    }
+
+    [Fact]
+    public async Task RejectsANotificationTokenFarLongerThanARealOne()
+    {
+        var account = await AccountAsync();
+        var tooLong = new string('a', UserValidationHelpers.MaxFcmRegistrationTokenLength + 1);
+
+        await Assert.ThrowsAsync<ValidationException>(() => UpdateAsync(new UpdateUserCommand
+        {
+            RequesterUserId = account.Id,
+            TargetUserId = account.Id,
+            RequesterIsAuthenticated = true,
+            FcmRegistrationToken = tooLong
+        }));
+
+        await using var db = fixture.CreateContext();
+        await Assert.ThrowsAsync<ValidationException>(() => new UpdateFcmRegistrationTokenCommandHandler(db, new UserRepository(db), TestServices.Mapper())
+            .Handle(new UpdateFcmRegistrationTokenCommand { UserId = account.Id, Token = tooLong }, default));
+    }
 
     [Fact]
     public async Task ChangingYourPasswordRequiresTheCurrentOne()
@@ -236,5 +330,36 @@ public class UserHandlerTests(DatabaseFixture fixture)
         await using var check = fixture.CreateContext();
         var equipped = await check.UserBanners.Where(b => b.UserId == account.Id && b.IsEquipped).ToListAsync();
         Assert.Equal(lockedBannerId, Assert.Single(equipped).BannerId);
+    }
+
+    // --- Avatars ---
+
+    [Fact]
+    public async Task AFailedAvatarUploadKeepsTheCurrentAvatar()
+    {
+        var account = await AccountWithAvatarAsync("https://storage.example/avatars/old.png");
+        var avatars = Substitute.For<IAvatarStorageService>();
+        avatars.UploadBlobAsync(default!, default!, default!).ReturnsForAnyArgs<string>(_ => throw new IOException("storage down"));
+
+        await UpdateAsync(NewAvatar(account), avatars);
+
+        await using var check = fixture.CreateContext();
+        Assert.Equal("https://storage.example/avatars/old.png", (await check.Users.SingleAsync(u => u.Id == account.Id)).AvatarPath);
+        await avatars.DidNotReceiveWithAnyArgs().DeleteBlobByUriAsync(default!);
+    }
+
+    [Fact]
+    public async Task FailingToDeleteTheOldAvatarStillSavesTheNewOne()
+    {
+        var account = await AccountWithAvatarAsync("https://storage.example/avatars/old.png");
+        var avatars = Substitute.For<IAvatarStorageService>();
+        avatars.UploadBlobAsync(default!, default!, default!).ReturnsForAnyArgs("https://storage.example/avatars/new.png");
+        avatars.DeleteBlobByUriAsync(default!).ReturnsForAnyArgs(_ => throw new IOException("storage down"));
+
+        await UpdateAsync(NewAvatar(account), avatars);
+
+        await using var check = fixture.CreateContext();
+        Assert.Equal("https://storage.example/avatars/new.png", (await check.Users.SingleAsync(u => u.Id == account.Id)).AvatarPath);
+        await avatars.Received().DeleteBlobByUriAsync("https://storage.example/avatars/old.png");
     }
 }

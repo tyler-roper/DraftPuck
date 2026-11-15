@@ -9,12 +9,9 @@ declare global {
 // Returns number between 0 (inclusive) and 1.0 (exclusive),
 // just like Math.random().
 function random(i: number) {
-  let mw = 123456789
-  let mz = 987654321
   const mask = 0xffffffff
-
-  mw = (123456789 + i) & mask
-  mz = (987654321 - i) & mask
+  let mw = (123456789 + i) & mask
+  let mz = (987654321 - i) & mask
 
   mz = (36969 * (mz & 65535) + (mz >> 16)) & mask
   mw = (18000 * (mw & 65535) + (mw >> 16)) & mask

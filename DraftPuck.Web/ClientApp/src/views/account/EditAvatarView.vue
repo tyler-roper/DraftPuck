@@ -6,7 +6,7 @@ import { storeToRefs } from 'pinia'
 import VUser from '@/components/VUser.vue'
 import '@/extensions/arrayExtensions'
 import VIcon from '@/components/VIcon.vue'
-import { useToast } from 'vue-toastification'
+import { useToast } from '@/composables/useToast'
 import { useRouter } from 'vue-router'
 
 interface SuccessMessage {

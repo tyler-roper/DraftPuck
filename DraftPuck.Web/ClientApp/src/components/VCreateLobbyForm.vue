@@ -17,7 +17,7 @@ import '@/extensions/arrayExtensions'
 import { uniqueInArray } from '@/helpers/validationHelpers'
 import LobbyService from '@/services/LobbyService'
 import CreateLobbyRequest from '@/models/createLobbyRequest'
-import { useToast } from 'vue-toastification'
+import { useToast } from '@/composables/useToast'
 import { useRouter } from 'vue-router'
 import { useGameSummariesStore } from '@/stores/gameSummaries'
 
@@ -120,7 +120,7 @@ function getLogo(team: Team) {
 }
 
 function getTimeString(game: GameSummary) {
-  let time = format(game.dateTime, 'p')
+  const time = format(game.dateTime, 'p')
 
   if (game.gameState === GameState.Upcoming) return time
 

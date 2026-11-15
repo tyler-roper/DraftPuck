@@ -1,19 +1,34 @@
-import parseISO from 'date-fns/parseISO'
+import { formatDuration, intervalToDuration, parseISO } from 'date-fns'
 
 const isoDateFormat = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d*)?(?:[-+]\d{2}:?\d{2}|Z)?$/
 
-export function isIsoDateString(value: object): boolean {
-  return value && typeof value === 'string' && isoDateFormat.test(value)
+export function isIsoDateString(value: unknown): value is string {
+  return typeof value === 'string' && isoDateFormat.test(value)
 }
 
-export function parseAllDates(body: { [key: string]: any }) {
-  if (body === null || body === undefined || typeof body !== 'object') return body
+/**
+ * The time between two moments, in either order, as a countdown label: "45 seconds" under a minute, otherwise days,
+ * hours and minutes ("1 day 2 hours 1 minute") without the seconds.
+ */
+export function formatCountdown(from: Date, to: Date): string {
+  // intervalToDuration gives negative units for a reversed interval and leaves out the zero ones.
+  const [start, end] = from <= to ? [from, to] : [to, from]
+  const duration = intervalToDuration({ start, end })
 
-  for (const key of Object.keys(body)) {
-    let value = body[key]
-    if (isIsoDateString(value)) {
-      if (!value.endsWith('Z')) value += 'Z'
-      body[key] = parseISO(value)
-    } else if (typeof value === 'object') parseAllDates(value)
+  const underAMinute = !duration.years && !duration.months && !duration.days && !duration.hours && !duration.minutes
+  return underAMinute
+    ? formatDuration({ seconds: duration.seconds ?? 0 }, { zero: true })
+    : formatDuration(duration, { format: ['days', 'hours', 'minutes'] })
+}
+
+/** Turns every ISO date string in a parsed JSON body into a Date, in place. Strings without a Z are read as UTC. */
+export function parseAllDates(body: unknown): void {
+  if (body === null || typeof body !== 'object') return
+
+  const record = body as Record<string, unknown>
+  for (const key of Object.keys(record)) {
+    const value = record[key]
+    if (isIsoDateString(value)) record[key] = parseISO(value.endsWith('Z') ? value : value + 'Z')
+    else if (typeof value === 'object') parseAllDates(value)
   }
 }

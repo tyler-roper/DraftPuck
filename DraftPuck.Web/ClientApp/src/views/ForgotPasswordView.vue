@@ -6,7 +6,7 @@ import VIcon from '@/components/VIcon.vue'
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { email, maxLength, required } from '@vuelidate/validators'
 import useVuelidate from '@vuelidate/core'
-import { useToast } from 'vue-toastification'
+import { useToast } from '@/composables/useToast'
 import authService from '@/services/AuthService'
 import { getErrorMessage } from '@/helpers/requestHelpers'
 

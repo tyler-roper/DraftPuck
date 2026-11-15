@@ -77,52 +77,29 @@ $container-max-widths: (
 
 $spacer: 1rem;
 
+// Bootstrap merges this into its own utilities, so the custom colours get bg-, text- and border- classes next to
+// Bootstrap's, emitted once and after them (so ours win where the names overlap, like bg-primary).
+$utilities: (
+  'custom-background-color': (
+    property: background-color,
+    class: bg,
+    values: $custom-colors
+  ),
+  'custom-color': (
+    property: color,
+    class: text,
+    values: $custom-colors
+  ),
+  'custom-border-color': (
+    property: border-color,
+    class: border,
+    values: $custom-colors
+  )
+);
+
 @import 'bootstrap/scss/bootstrap';
 
-$utilities: map-merge(
-  $utilities,
-  (
-    'background-color': (
-      property: background-color,
-      class: bg,
-      values: $custom-colors
-    )
-  )
-);
-
-$utilities: map-merge(
-  $utilities,
-  (
-    'color': (
-      property: color,
-      class: text,
-      values: $custom-colors
-    )
-  )
-);
-
-$utilities: map-merge(
-  $utilities,
-  (
-    'border-color': (
-      property: border-color,
-      class: border,
-      values: $custom-colors
-    )
-  )
-);
-
 $theme-colors: map-merge($theme-colors, $custom-colors);
-$spacers: map-merge(
-  $spacers,
-  (
-    6: $spacer * 5,
-    7: $spacer * 7.5,
-    8: $spacer * 10
-  )
-);
-
-@import 'bootstrap/scss/utilities/api';
 
 @each $color, $value in $theme-colors {
   .btn-#{$color} {

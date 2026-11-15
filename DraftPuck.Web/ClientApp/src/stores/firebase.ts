@@ -4,8 +4,7 @@ import { initializeApp } from 'firebase/app'
 import { getMessaging, getToken, onMessage } from 'firebase/messaging'
 import { useUserStore } from '@/stores/user'
 import { env } from '@/env'
-import { useToast } from 'vue-toastification'
-import VHtmlToast from '@/components/VHtmlToast.vue'
+import { useToast } from '@/composables/useToast'
 import { escapeHtml } from '@/helpers/htmlHelpers'
 import { getForegroundToast } from '@/helpers/pushHelpers'
 import router from '@/router'
@@ -46,16 +45,10 @@ export const useFirebaseStore = defineStore('firebase', () => {
         const body = payload.data?.body
 
         if (type === 'Achievement') {
-          toast(
-            {
-              component: VHtmlToast,
-              props: { title: `<span class='text-primary'>${escapeHtml(title ?? '')}</span>`, message: escapeHtml(body ?? '') }
-            },
-            {
-              toastClassName: 'bg-stone-900',
-              icon: 'fi fi-sr-trophy fs-3 text-primary'
-            }
-          )
+          toast.html(escapeHtml(body ?? ''), {
+            title: `<span class='text-primary'>${escapeHtml(title ?? '')}</span>`,
+            icon: 'fi fi-sr-trophy'
+          })
           userStore.refreshUser()
           return
         }
@@ -65,18 +58,12 @@ export const useFirebaseStore = defineStore('firebase', () => {
         if (!notification) return
 
         const { path } = notification
-        toast(
-          {
-            component: VHtmlToast,
-            // The toast renders HTML and chat pushes carry other members' text, so escape both.
-            props: { title: escapeHtml(notification.title), message: escapeHtml(notification.body) }
-          },
-          {
-            toastClassName: 'bg-stone-900',
-            icon: 'fi fi-sr-bell fs-3 text-primary',
-            onClick: path ? () => router.push(path) : undefined
-          }
-        )
+        // The toast renders HTML and chat pushes carry other members' text, so escape both.
+        toast.html(escapeHtml(notification.body), {
+          title: escapeHtml(notification.title),
+          icon: 'fi fi-sr-bell',
+          onClick: path ? () => router.push(path) : undefined
+        })
       })
 
       const token = await getToken(messaging, {

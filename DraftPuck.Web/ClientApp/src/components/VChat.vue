@@ -55,7 +55,6 @@ function processCommand(message: string) {
   const messageParts = message.split('/')
   if (messageParts.length <= 1) return
 
-  message = message.toLowerCase()
   const commandParts = messageParts[1].split(' ')
   const command = commandParts[0]
   const args = commandParts.slice(1)
@@ -118,7 +117,7 @@ async function sendMessage(e: Event, isSystem: boolean = false) {
       lastSentMessage.value = new Date()
     }
     error.value = ''
-  } catch (exception) {
+  } catch {
     message.value = originalMessage
     await nextTick()
     resizeMessageInput()

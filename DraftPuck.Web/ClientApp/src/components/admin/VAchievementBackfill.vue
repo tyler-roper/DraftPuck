@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { format } from 'date-fns'
-import { useToast } from 'vue-toastification'
+import { useToast } from '@/composables/useToast'
 import VButton from '@/components/VButton.vue'
 import AdminAchievementService from '@/services/admin/AdminAchievementService'
 import { backfillProgress, describeBackfill, type AchievementBackfill } from '@/helpers/backfillHelpers'

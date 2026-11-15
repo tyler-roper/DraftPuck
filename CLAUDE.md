@@ -13,8 +13,9 @@ flow, the domain rules, and where new code goes. `docs/review/2026-11-14.md` lis
 - `build-only:release` rewrites `DraftPuck.Web/Views/App/Index.cshtml`. Restore it afterwards
   (`git restore DraftPuck.Web/Views/App/Index.cshtml`); it's a build output, not a change.
 - Migrations: `dotnet ef migrations add <Name> --project DraftPuck.Infrastructure --startup-project DraftPuck.Infrastructure`.
-  `dotnet-ef` isn't installed globally; install it with `--tool-path` into a temporary folder rather than changing
-  the machine.
+  `dotnet-ef` comes from the repo's tool manifest (`dotnet-tools.json`, pinned to the EF Core version): run
+  `dotnet tool restore` once. Don't install it globally.
+- The client needs Node 22.22+ (or 24.15+).
 
 ## Workflow
 

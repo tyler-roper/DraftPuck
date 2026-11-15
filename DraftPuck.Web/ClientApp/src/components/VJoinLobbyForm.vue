@@ -8,7 +8,7 @@ import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
 import { nickname } from '@/helpers/validationHelpers'
 import LobbyService from '@/services/LobbyService'
-import { useToast } from 'vue-toastification'
+import { useToast } from '@/composables/useToast'
 import { useRouter } from 'vue-router'
 import { getErrorMessage } from '@/helpers/requestHelpers'
 

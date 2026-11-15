@@ -8,8 +8,9 @@ import { useRoute, useRouter } from 'vue-router'
 import VButton from '@/components/VButton.vue'
 import VIcon from '@/components/VIcon.vue'
 import userService from '@/services/UserService'
-import { useToast } from 'vue-toastification'
+import { useToast } from '@/composables/useToast'
 import { nickname, password } from '@/helpers/validationHelpers'
+import { getErrorMessage } from '@/helpers/requestHelpers'
 import { useUserStore } from '@/stores/user'
 import type CreateAccountViewModel from '@/models/interfaces/createAccountViewModel'
 
@@ -60,12 +61,7 @@ async function createAccount(e: Event) {
     return router.push(url)
   } catch (ex: unknown) {
     console.error(ex)
-    let friendlyMessage = 'Sorry, something went wrong.'
-    if (typeof ex === 'object' && ex !== null && 'response' in ex) {
-      const axiosError = ex as any
-      friendlyMessage = axiosError.response?.data?.title ?? friendlyMessage
-    }
-    toast.error(friendlyMessage)
+    toast.error(getErrorMessage(ex, 'Sorry, something went wrong.'))
   } finally {
     isCreatingAccount.value = false
   }

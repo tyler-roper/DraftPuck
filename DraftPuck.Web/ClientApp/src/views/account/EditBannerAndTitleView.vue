@@ -8,7 +8,7 @@ import { useSingleFlip } from '@/composables/useSingleFlip'
 import { howEarned } from '@/helpers/earnedHelpers'
 import HeaderLayout from '@/views/layouts/HeaderLayout.vue'
 import { storeToRefs } from 'pinia'
-import { useToast } from 'vue-toastification'
+import { useToast } from '@/composables/useToast'
 import { useRouter } from 'vue-router'
 
 type View = 'banners' | 'titles'

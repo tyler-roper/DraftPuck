@@ -1,34 +1,32 @@
 import { fileURLToPath, URL } from 'node:url'
-import { defineConfig, splitVendorChunkPlugin, loadEnv } from 'vite' 
+import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
-import move from './scripts/vite-plugin-move'
-import fcm from './scripts/vite-plugin-fcm-sw'
+import move from './scripts/vite-plugin-move.ts'
+import fcm from './scripts/vite-plugin-fcm-sw.ts'
 import fs from 'fs'
 import os from 'os'
 
 export default defineConfig(({ mode }) => {
   const isDev = mode === 'development'
   const fileNamePattern = !isDev ? '[name]-[hash]' : '[name]'
-  const env = loadEnv(mode, process.cwd(), '') 
+  const env = loadEnv(mode, process.cwd(), '')
 
-  const config = {
+  return {
     plugins: [
       vue(),
       move([
         {
-          source: resolve(__dirname, '../wwwroot/index.html'),
-          dest: resolve(__dirname, '../Views/App/Index.cshtml')
+          source: resolve(import.meta.dirname, '../wwwroot/index.html'),
+          dest: resolve(import.meta.dirname, '../Views/App/Index.cshtml')
         }
       ]),
-      splitVendorChunkPlugin(),
       fcm(isDev)
     ],
     css: {
       preprocessorOptions: {
         scss: {
-          api: 'modern-compiler',
-          silenceDeprecations: ['legacy-js-api', 'import', 'global-builtin', 'color-functions']
+          silenceDeprecations: ['import', 'global-builtin', 'color-functions']
         }
       }
     },
@@ -36,7 +34,7 @@ export default defineConfig(({ mode }) => {
       host: 'localhost',
       port: 17010,
       watch: { usePolling: false },
-      https: isDev ? configureHttps(env) : false, 
+      https: isDev ? configureHttps(env) : undefined,
       proxy: {
         '/api': {
           target: 'https://localhost:17000',
@@ -54,36 +52,31 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       outDir: '../wwwroot',
-      emptyOutdir: true,
       sourcemap: false,
-      minify: 'terser' as const,
-      terserOptions: {
-        compress: {
-            drop_console: true,
-            drop_debugger: true
-        },
-        mangle: true
-      },
       chunkSizeWarningLimit: 600,
-      rollupOptions: {
+      rolldownOptions: {
         input: {
           'main': './index.html',
           'firebase-messaging-sw': './src/firebase-messaging-sw.js'
         },
         output: {
-          entryFileNames: (chunkInfo: { name: string }) => {
+          entryFileNames: (chunkInfo) => {
             return chunkInfo.name === 'firebase-messaging-sw'
               ? '[name].js'
               : `${fileNamePattern}.js`
           },
           chunkFileNames: `${fileNamePattern}.js`,
-          assetFileNames: `${fileNamePattern}[extname]`
+          assetFileNames: `${fileNamePattern}[extname]`,
+          minify: { compress: { dropConsole: true, dropDebugger: true } },
+          // Libraries the app loads at startup get their own chunk, which stays cached across deploys. Libraries only
+          // a lazy-loaded view uses (SignalR in the lobby, for one) stay with that view.
+          codeSplitting: {
+            groups: [{ name: 'vendor', test: /[\\/]node_modules[\\/]/, tags: ['$initial'] }]
+          }
         }
       }
     }
   }
-
-  return config
 })
 
 function configureHttps(env: Record<string, string>) {
@@ -96,9 +89,9 @@ function configureHttps(env: Record<string, string>) {
       console.error(`
         ❌ ERROR: Certificate password not found.
         Please ensure '${passwordKey}' is defined in your .env.development file.
-        Falling back to a standard self-signed certificate.
+        Serving over HTTP instead.
       `);
-      return true;
+      return undefined;
   }
 
   const homeDir = os.userInfo().homedir;
@@ -116,9 +109,9 @@ function configureHttps(env: Record<string, string>) {
         🚨 WARNING: Local HTTPS certificate not found at expected ASP.NET locations:
         ${appDataPath}
         ${resolve(homeDir, '.aspnet/https', certificateName)}
-        Run CreateCertificate.ps1 to create it.
+        Run CreateCertificate.ps1 to create it. Serving over HTTP instead.
       `);
-    return true;
+    return undefined;
   }
 
   return {

@@ -6,8 +6,10 @@ using DraftPuck.Infrastructure.Persistence;
 using DraftPuck.Infrastructure.SignalR;
 using DraftPuck.Shared.Discord;
 using DraftPuck.Web.Filters;
+using DraftPuck.Web.Health;
 using DraftPuck.Web.Mvc.App;
 using DraftPuck.Web.RateLimiting;
+using DraftPuck.Web.Security;
 using DraftPuck.Web.Telemetry;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
@@ -25,30 +27,24 @@ builder.Services
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
     });
 
-try
-{
-    builder.Services
-        .Configure<ApplicationOptions>(options => builder.Configuration.Bind(ApplicationOptions.SectionName, options))
-        .Configure<DiscordOptions>(options => builder.Configuration.Bind(DiscordOptions.SectionName, options))
-        .Configure<SystemOptions>(options => builder.Configuration.Bind(SystemOptions.SectionName, options))
-        .AddHttpContextAccessor()
-        .AddInfrastructure(builder.Configuration)
-        .AddEndpointsApiExplorer()
-        .AddApplication(builder.Configuration)
-        .ConfigureAuth(builder.Configuration, builder.Environment)
-        .AddTelemetry(builder.Configuration)
-        .AddDraftPuckRateLimiting();
+// No try/catch: there's no logger yet, and an exception here already crashes startup with its full stack trace.
+builder.Services
+    .Configure<ApplicationOptions>(options => builder.Configuration.Bind(ApplicationOptions.SectionName, options))
+    .Configure<DiscordOptions>(options => builder.Configuration.Bind(DiscordOptions.SectionName, options))
+    .Configure<SystemOptions>(options => builder.Configuration.Bind(SystemOptions.SectionName, options))
+    .AddHttpContextAccessor()
+    .AddInfrastructure(builder.Configuration)
+    .AddEndpointsApiExplorer()
+    .AddApplication(builder.Configuration)
+    .ConfigureAuth(builder.Configuration, builder.Environment)
+    .AddTelemetry(builder.Configuration)
+    .AddDraftPuckRateLimiting()
+    .AddDraftPuckHealthChecks();
 
-    builder.Services
-        .AddOptions<ApplicationOptions>()
-        .Validate(o => o.HasValidBasePath(), "DRAFTPUCK_Application__BasePath must be set to an absolute URL (e.g. https://draftpuck.com).")
-        .ValidateOnStart();
-}
-catch (Exception ex)
-{
-    Console.WriteLine(ex);
-    throw;
-}
+builder.Services
+    .AddOptions<ApplicationOptions>()
+    .Validate(o => o.HasValidBasePath(), "DRAFTPUCK_Application__BasePath must be set to an absolute URL (e.g. https://draftpuck.com).")
+    .ValidateOnStart();
 
 ApplicationStartupInfo.Init();
 builder.WebHost.UseKestrel();
@@ -67,6 +63,7 @@ if (!app.Environment.IsDevelopment())
        .UseHttpsRedirection();
 }
 
+app.UseSecurityHeaders(app.Environment);
 app.UseStaticFiles();
 app.UseRouting();
 
@@ -83,6 +80,7 @@ app.UseWebSockets();
 
 app.MapHub<LobbyHub>("/hub");
 app.MapControllers();
+app.MapDraftPuckHealthChecks();
 // Client routes (any path that isn't a file) get the Vue app. Unknown /api paths don't: AppController.Api 404s them.
 app.MapFallbackToController(nameof(AppController.Index), "App");
 

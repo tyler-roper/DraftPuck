@@ -24,10 +24,11 @@ public static class DiscordBotServiceCollectionExtensions
     public static IServiceCollection AddDiscordBotWorker(this IServiceCollection services, IConfiguration configuration)
     {
         return services
-            .AddSingleton(sp => new DiscordSocketClient(new DiscordSocketConfig() { 
+            // Slash commands only need Guilds. UserJoined events also need GuildMembers, a privileged intent that has to
+            // be enabled for the bot in the Discord developer portal before it's requested here.
+            .AddSingleton(sp => new DiscordSocketClient(new DiscordSocketConfig()
+            {
                 GatewayIntents = Discord.GatewayIntents.Guilds
-                               | Discord.GatewayIntents.GuildMessages
-                               | Discord.GatewayIntents.MessageContent 
             }))
             .AddSingleton<DiscordEventHandler>()
             .Configure<DiscordOptions>(configuration.GetSection(DiscordOptions.SectionName))
