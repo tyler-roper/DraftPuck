@@ -1,3 +1,4 @@
+using DraftPuck.Application.Features.Achievements.Rules;
 using DraftPuck.Shared.Achievements;
 
 namespace DraftPuck.Tests.Application.Achievements;
@@ -6,6 +7,32 @@ namespace DraftPuck.Tests.Application.Achievements;
 public partial class AchievementRulesTests
 {
     private const int Scorer = 100; // TestGames.HomePlayer(0)
+
+    [Fact]
+    public async Task EveryAchievementWithARuleHasABannerWhoseImageExists()
+    {
+        // Verified Contributor is awarded by hand, so it has no rule.
+        var ruleIds = typeof(BaseAchievementRule).Assembly.GetTypes()
+            .Where(t => typeof(IAchievementRule).IsAssignableFrom(t) && !t.IsAbstract)
+            .Select(t => ((IAchievementRule)System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(t)).UniqueIdentifier)
+            .ToList();
+        var bannersFolder = Path.Combine(FindRepoRoot(), "DraftPuck.Web", "ClientApp", "public");
+
+        await using var db = fixture.CreateContext();
+        var banners = await db.Banners.Where(b => b.AchievementId != null)
+            .Select(b => new { Achievement = b.Achievement!.UniqueIdentifier, b.ImagePath })
+            .ToListAsync();
+
+        Assert.All(ruleIds, id => Assert.Contains(banners, b => b.Achievement == id));
+        Assert.All(banners, b => Assert.True(File.Exists(Path.Combine(bannersFolder, b.ImagePath.TrimStart('/'))), $"Missing image {b.ImagePath}"));
+
+        static string FindRepoRoot()
+        {
+            var dir = new DirectoryInfo(AppContext.BaseDirectory);
+            while (dir != null && !File.Exists(Path.Combine(dir.FullName, "DraftPuck.sln"))) dir = dir.Parent;
+            return dir?.FullName ?? throw new InvalidOperationException("Repository root not found.");
+        }
+    }
 
     private static PlayDto Goal(int id, int home, int away, int scorer = Scorer, int teamId = TestGames.HomeTeamId,
         PeriodType periodType = PeriodType.Regulation, string timeRemaining = "10:00", string? situation = "1551")
