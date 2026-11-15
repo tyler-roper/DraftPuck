@@ -1,5 +1,6 @@
 ﻿using DraftPuck.Application.Common.Interfaces;
 using DraftPuck.Application.Features.Games;
+using DraftPuck.Application.Features.Lobbies;
 using Microsoft.Extensions.Options;
 
 namespace DraftPuck.Application.Features.PushNotifications;

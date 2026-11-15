@@ -1,9 +1,11 @@
 ﻿using DraftPuck.Application.Common.Exceptions;
 using DraftPuck.Application.Common.Interfaces;
 using DraftPuck.Application.Common.QueryExtensions;
+using DraftPuck.Application.Features.Lobbies;
 using DraftPuck.Application.Features.Lobbies.Members;
 using DraftPuck.Application.Features.Users;
 using DraftPuck.Domain.Auth;
+
 namespace DraftPuck.Application.Features.Auth;
 
 public class LoginCommandHandler(IDbContext dbContext, ITokenService tokenService, IUserRepository userRepository, IMapper mapper, IMediator mediator) : IRequestHandler<LoginCommand, AuthenticationResultDto>

@@ -1,3 +1,5 @@
+using DraftPuck.Application.Features.Games;
+
 namespace DraftPuck.Application.Features.Lobbies.Events;
 
 /// <summary>

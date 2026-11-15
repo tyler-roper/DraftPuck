@@ -19,7 +19,6 @@ public class GetLobbyByCodeQueryHandler(IDbContext dbContext, IMapper mapper) : 
             .FirstOrDefaultAsync(l => l.JoinCode == request.Code, ct);
 
         if (lobby == null) throw new NotFoundException("Lobby not found.");
-        //if (lobby.IsActive == false) throw new BadRequestException("Lobby is no longer active.");
 
         var lobbyDto = mapper.Map<LobbyDto>(lobby);
         lobbyDto.CanManageAllPicks = await PickPermissions.CanManageAllPicksAsync(dbContext, lobby, request.UserId, ct);

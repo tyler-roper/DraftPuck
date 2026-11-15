@@ -2,7 +2,7 @@
 
 namespace DraftPuck.Application.Features.Lobbies.Members;
 
-public class ChangeLobbyNameCommandHandler(IDbContext dbContext, IMediator mediator) : IRequestHandler<ChangeNameCommand>
+public class ChangeNameCommandHandler(IDbContext dbContext, IMediator mediator) : IRequestHandler<ChangeNameCommand>
 {
     public async Task Handle(ChangeNameCommand request, CancellationToken cancellationToken)
     {

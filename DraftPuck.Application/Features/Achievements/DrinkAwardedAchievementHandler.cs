@@ -1,4 +1,6 @@
-﻿namespace DraftPuck.Application.Features.Achievements;
+﻿using DraftPuck.Application.Features.Lobbies;
+
+namespace DraftPuck.Application.Features.Achievements;
 
 public class DrinkAwardedAchievementHandler(IAchievementQueueService queueService) : INotificationHandler<DrinkAwardedNotification>
 {

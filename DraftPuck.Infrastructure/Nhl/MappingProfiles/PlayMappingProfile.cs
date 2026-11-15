@@ -1,4 +1,5 @@
-﻿using DraftPuck.Infrastructure.Nhl.Models;
+﻿using DraftPuck.Application.Features.Games;
+using DraftPuck.Infrastructure.Nhl.Models;
 
 namespace DraftPuck.Infrastructure.Nhl.MappingProfiles;
 

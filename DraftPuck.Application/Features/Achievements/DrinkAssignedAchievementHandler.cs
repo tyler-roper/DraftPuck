@@ -1,4 +1,6 @@
-﻿namespace DraftPuck.Application.Features.Achievements;
+﻿using DraftPuck.Application.Features.Lobbies;
+
+namespace DraftPuck.Application.Features.Achievements;
 
 /// <summary>Checks who gave and who received the drink, and the host when one of their lobby's bots gave it.</summary>
 public class DrinkAssignedAchievementHandler(IAchievementQueueService queueService) : INotificationHandler<DrinkAssignedNotification>

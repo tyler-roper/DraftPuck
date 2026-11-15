@@ -219,11 +219,6 @@ const v$ = useVuelidate<UpdateUserRequest>(rules, form)
           <VIcon icon="info" class="fs-5 me-2" />
           <span class="d-block">Make it strong! Or don't. We'll never know.</span>
         </div>
-        <!-- <div class="hr"></div>
-        <div class="profile-section">
-          <span class="title">Danger Zone</span>
-          <button class="btn btn-outline-danger">Delete My Account</button>
-        </div> -->
       </form>
 
       <div class="hr"></div>

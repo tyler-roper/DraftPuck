@@ -1,3 +1,5 @@
+using DraftPuck.Application.Features.Lobbies;
+
 namespace DraftPuck.Application.Features.Achievements;
 
 /// <summary>A drink that was already given out lost its goal: checks the giver (False Alarm) and who drank it (Waved Off).</summary>

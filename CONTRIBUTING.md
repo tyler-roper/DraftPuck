@@ -9,6 +9,9 @@ Thank you for your interest in contributing!
 
 All pull requests must target **develop**.
 
+Looking for something to work on? The [open issues](https://github.com/tyler-roper/DraftPuck/issues) are the backlog:
+bugs, planned features and housekeeping.
+
 ## Fork & Clone Workflow
 1. Fork the repository: https://github.com/tyler-roper/DraftPuck
 2. Clone your fork:

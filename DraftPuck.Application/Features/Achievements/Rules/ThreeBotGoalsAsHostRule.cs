@@ -1,6 +1,6 @@
 ﻿namespace DraftPuck.Application.Features.Achievements.Rules;
 
-public class ThreeBotGoalsAsHost(ILogger<ThreeBotGoalsAsHost> logger) : BaseAchievementRule(logger)
+public class ThreeBotGoalsAsHostRule(ILogger<ThreeBotGoalsAsHostRule> logger) : BaseAchievementRule(logger)
 {
     public override string UniqueIdentifier => "puppet_master";
     public override IReadOnlyCollection<AchievementTriggerType> Triggers => [AchievementTriggerType.DrinkAssigned];

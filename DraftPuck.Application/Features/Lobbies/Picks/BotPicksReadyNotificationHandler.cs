@@ -1,4 +1,6 @@
-﻿namespace DraftPuck.Application.Features.Lobbies.Picks;
+﻿using DraftPuck.Application.Features.Games;
+
+namespace DraftPuck.Application.Features.Lobbies.Picks;
 
 public class BotPicksReadyNotificationHandler(IDbContext dbContext, IMediator mediator) : INotificationHandler<BotPicksReadyNotification>
 {

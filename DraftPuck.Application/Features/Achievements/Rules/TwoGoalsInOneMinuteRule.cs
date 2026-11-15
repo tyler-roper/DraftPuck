@@ -1,7 +1,7 @@
 ﻿namespace DraftPuck.Application.Features.Achievements.Rules;
 
 /// <summary>"Have two of your chosen players score in the same minute": two different players, within 60 seconds, in one lobby.</summary>
-public class TwoGoalsInOneMinute(ILogger<TwoGoalsInOneMinute> logger) : BaseAchievementRule(logger)
+public class TwoGoalsInOneMinuteRule(ILogger<TwoGoalsInOneMinuteRule> logger) : BaseAchievementRule(logger)
 {
     public override string UniqueIdentifier => "hot_hand";
     public override IReadOnlyCollection<AchievementTriggerType> Triggers => [AchievementTriggerType.DrinkAwarded];

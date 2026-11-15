@@ -1,4 +1,6 @@
-﻿namespace DraftPuck.Application.Features.Lobbies.Drinks;
+﻿using DraftPuck.Application.Features.Games;
+
+namespace DraftPuck.Application.Features.Lobbies.Drinks;
 
 public class AwardDrinksOnGoalHandler(IDbContext dbContext, IMediator mediator, ILogger<AwardDrinksOnGoalHandler> logger) : INotificationHandler<GoalScoredNotification>
 {

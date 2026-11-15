@@ -1,4 +1,28 @@
 services:
+  # Opt-in local SQL Server, for when you don't run one yourself: `docker compose --profile sql up -d sqlserver`.
+  # Apps in Compose reach it as sqlserver:1433; from your machine (SSMS, Azure Data Studio) it's localhost,14333, so it
+  # doesn't clash with a SQL Server already on 1433. Data lives in the sql_data volume until `docker compose down -v`.
+  # The Web app creates the database and applies migrations when it starts.
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: draftpuck-sql
+    profiles: ["sql"]
+    environment:
+      ACCEPT_EULA: "Y"
+      # Local development only; matches env.development.list.sample.
+      MSSQL_SA_PASSWORD: "DraftPuck-Local-1"
+    ports:
+      - "14333:1433"
+    volumes:
+      - sql_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q 'SELECT 1' -b -o /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+
   azurite:
     image: mcr.microsoft.com/azure-storage/azurite
     command: "azurite --loose --blobHost 0.0.0.0 --blobPort 10000 --queueHost 0.0.0.0 --queuePort 10001 --location /workspace --debug /workspace/debug.log"
@@ -62,3 +86,4 @@ services:
 
 volumes:
   redis_data:
+  sql_data:

@@ -20,7 +20,7 @@ DRAFTPUCK_APPLICATION__TestModeStartDateTimeUtc=<UTC Date>
 
 ## Running Locally
 
-* Use Docker Compose to start Web API, Worker, Redis, and Azurite
+* Use Docker Compose to start Web API, Worker, Redis, and Azurite (and SQL Server, with `docker compose --profile sql up -d sqlserver`)
 * Ensure `.env` variables are correctly set
 * Check logs for errors in backend and worker
 
