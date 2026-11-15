@@ -24,6 +24,31 @@ public class RedisGameCacheTests(RedisFixture fixture)
         Assert.Contains(await Cache().GetAllGamesAsync(), g => g.Id == game.Id);
     }
 
+    // Before plays had one time, a cached play kept the time a poll first saw it in FirstSeenUtc, beside the estimate.
+    [Fact]
+    public async Task GamesCachedWithTheOldFirstSeenTimeKeepIt()
+    {
+        var game = TestGames.Create(Seed.NewGameId(), new DateTime(2026, 11, 13, 0, 0, 0, DateTimeKind.Utc), GameState.Live);
+        var estimated = new DateTime(2026, 11, 13, 0, 15, 0, DateTimeKind.Utc);
+        var seen = new DateTime(2026, 11, 13, 0, 40, 0, DateTimeKind.Utc);
+        game.Plays =
+        [
+            TestGames.Goal(1, 1, "05:00", TestGames.HomePlayer(0), TestGames.HomeTeamId),
+            TestGames.Goal(2, 1, "05:00", TestGames.HomePlayer(0), TestGames.HomeTeamId)
+        ];
+        var json = System.Text.Json.JsonSerializer.SerializeToNode(game)!;
+        foreach (var play in json["Plays"]!.AsArray())
+            play!["DateTime"] = estimated;
+        json["Plays"]![0]!["FirstSeenUtc"] = seen;  // seen happening
+        json["Plays"]![1]!["FirstSeenUtc"] = null;  // already there when we started watching
+        await fixture.Connection.GetDatabase().StringSetAsync($"game:{game.Id}", json.ToJsonString());
+
+        var cached = await Cache().GetGameByIdAsync(game.Id);
+
+        Assert.Equal([seen, estimated], cached!.Plays.Select(p => p.DateTime));
+        Assert.DoesNotContain("FirstSeenUtc", System.Text.Json.JsonSerializer.Serialize(cached)); // only ever read
+    }
+
     [Fact]
     public async Task ListsGamesWithoutScanningKeys()
     {

@@ -58,6 +58,26 @@ public class ProcessGameCommandHandlerTests
     }
 
     [Fact]
+    public async Task AGoalSeenHappeningIsStampedWithTheRealTimeNotTheEstimate()
+    {
+        // Puck dropped half an hour ago, so the estimate for a goal at 0:30 of the first period is ~20 minutes ago. The
+        // game must still be on today's NHL day, so right after the morning cutoff it starts now instead.
+        var start = DateTime.UtcNow.AddMinutes(-30);
+        if (!GameProcessingHelpers.IsGameCurrent(TestGames.Create(0, start), DateTime.UtcNow))
+            start = DateTime.UtcNow;
+        var gameId = Seed.NewGameId();
+        var cached = TestGames.Create(gameId, start, GameState.Live);
+        var updated = TestGames.Create(gameId, start, GameState.Live);
+        updated.Plays = [TestGames.Goal(PlayId, 1, "00:30", Scorer, TestGames.HomeTeamId)];
+
+        var before = DateTime.UtcNow;
+        await PollAsync(cached, updated);
+
+        var goal = Assert.Single(Published<GoalScoredNotification>()).Data.Play;
+        Assert.InRange(goal.DateTime, before, DateTime.UtcNow);
+    }
+
+    [Fact]
     public async Task SameGoalWithSlightlyCorrectedTimePublishesNothing()
     {
         var (cached, updated) = LiveGame(Seed.NewGameId());
