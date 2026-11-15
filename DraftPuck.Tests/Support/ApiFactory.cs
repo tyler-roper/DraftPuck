@@ -42,16 +42,12 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         await _redis.DisposeAsync();
     }
 
+    public string SqlConnectionString => _sql.GetConnectionString();
+    public string RedisConnectionString => _redis.GetConnectionString();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.UseEnvironment("Testing");
-        builder.UseSetting("ConnectionStrings:DefaultConnection", _sql.GetConnectionString());
-        builder.UseSetting("Redis:ConnectionString", _redis.GetConnectionString());
-        builder.UseSetting("Auth:JwtKey", TestServices.AuthOptions.JwtKey);
-        builder.UseSetting("Auth:Issuer", TestServices.AuthOptions.Issuer);
-        builder.UseSetting("Auth:Audience", TestServices.AuthOptions.Audience);
-        builder.UseSetting("Application:BasePath", "https://draftpuck.test");
-        builder.UseSetting("Application:InternalApiKey", InternalApiKey);
+        UseTestSettings(builder, SqlConnectionString, RedisConnectionString);
 
         builder.ConfigureTestServices(services =>
         {
@@ -66,6 +62,19 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         });
     }
 
+    /// <summary>The configuration the app needs to start, pointed at the given SQL Server and Redis.</summary>
+    public static void UseTestSettings(IWebHostBuilder builder, string sqlConnectionString, string redisConnectionString)
+    {
+        builder.UseEnvironment("Testing");
+        builder.UseSetting("ConnectionStrings:DefaultConnection", sqlConnectionString);
+        builder.UseSetting("Redis:ConnectionString", redisConnectionString);
+        builder.UseSetting("Auth:JwtKey", TestServices.AuthOptions.JwtKey);
+        builder.UseSetting("Auth:Issuer", TestServices.AuthOptions.Issuer);
+        builder.UseSetting("Auth:Audience", TestServices.AuthOptions.Audience);
+        builder.UseSetting("Application:BasePath", "https://draftpuck.test");
+        builder.UseSetting("Application:InternalApiKey", InternalApiKey);
+    }
+
     private static void Replace<T>(IServiceCollection services, T instance) where T : class
     {
         services.RemoveAll<T>();
@@ -75,17 +84,24 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     public DraftPuckContext CreateDbContext() => new(
         new DbContextOptionsBuilder<DraftPuckContext>().UseSqlServer(_sql.GetConnectionString()).Options);
 
-    /// <summary>A client over HTTPS (the refresh cookie is Secure), optionally sending a bearer token.</summary>
-    public HttpClient Client(string? jwt = null)
+    private static int _clientCount;
+
+    /// <summary>
+    /// A client over HTTPS (the refresh cookie is Secure), optionally sending a bearer token. Each client looks like a
+    /// different visitor (its own X-Forwarded-For address, as the ingress would send), so tests don't share rate limits.
+    /// </summary>
+    public HttpClient Client(string? jwt = null, string? clientIp = null)
     {
         var client = CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
+        var n = Interlocked.Increment(ref _clientCount);
+        client.DefaultRequestHeaders.Add("X-Forwarded-For", clientIp ?? $"10.{n / 65536 % 256}.{n / 256 % 256}.{n % 256}");
         if (jwt != null)
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
         return client;
     }
 
     public static string JwtFor(UserEntity user) => TestServices.TokenService().GenerateJwtToken(user);
-    public static string GuestJwtFor(Guid userId) => TestServices.TokenService().GenerateGuestJwtToken(userId);
+    public static string GuestJwtFor(Guid userId) => TestServices.TokenService().GenerateJwtToken(new UserEntity { Id = userId, IsGuest = true });
 
     public HubConnection HubConnection(string? jwt) => new HubConnectionBuilder()
         .WithUrl(new Uri(Server.BaseAddress, "hub"), options =>

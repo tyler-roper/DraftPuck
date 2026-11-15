@@ -13,4 +13,10 @@ public class LobbyDto
     public bool IsBotAutoPickingEnabled { get; set; }
     public List<int> GameIds { get; set; } = [];
     public List<LobbyMemberDto> Members { get; set; } = [];
+
+    /// <summary>
+    /// Whether the user who fetched the lobby can remove anyone's pick at any time (host or site admin).
+    /// Depends on who's asking, so it's only set by <see cref="Management.GetLobbyByCodeQueryHandler"/>.
+    /// </summary>
+    public bool CanManageAllPicks { get; set; }
 }

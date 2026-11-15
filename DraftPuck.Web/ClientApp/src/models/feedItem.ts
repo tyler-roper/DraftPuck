@@ -3,11 +3,13 @@ import TeamColorLookup from '@/models/teamColorLookup'
 import FeedItemType from '@/enums/feedItemType'
 import GoalTexts from '@/models/goalTexts'
 import '@/extensions/arrayExtensions'
-import type LobbyEventType from '@/enums/lobbyEventType'
+import LobbyEventType from '@/enums/lobbyEventType'
 import { getOrdinal } from '@/helpers/gameHelpers'
 import PlayType from '@/enums/playType'
 
 export default class FeedItem {
+  /** Identifies the play or lobby event across refetches, so lists can tell new items from existing ones. */
+  key: string
   gameId: number | undefined
   type: FeedItemType
   subType: PlayType | LobbyEventType
@@ -20,6 +22,7 @@ export default class FeedItem {
   player: PlayerSummary | undefined
 
   constructor(
+    key: string,
     gameId: number | undefined,
     type: FeedItemType,
     subType: LobbyEventType,
@@ -31,6 +34,7 @@ export default class FeedItem {
     images: Array<string>,
     player: PlayerSummary | undefined
   ) {
+    this.key = key
     this.gameId = gameId
     this.type = type
     this.subType = subType
@@ -132,11 +136,28 @@ export default class FeedItem {
       text = homeTeamIsWinning ? `${homeAbbreviation} wins ${winningScore}-${losingScore}` : `${awayAbbreviation} wins ${winningScore}-${losingScore}`
     }
 
-    return new this(gameId, FeedItemType.GameEvent, play.type, play.dateTime, title, text, subtext, teamColor, images, player)
+    return new this(
+      `play-${gameId}-${play.id}`,
+      gameId,
+      FeedItemType.GameEvent,
+      play.type,
+      play.dateTime,
+      title,
+      text,
+      subtext,
+      teamColor,
+      images,
+      player
+    )
   }
 
-  static fromLobbyEvent(lobbyEvent: LobbyEvent) {
+  /** @param game The event's game, if any: goal corrections show its team's logo, like the game's own goal items. */
+  static fromLobbyEvent(lobbyEvent: LobbyEvent, game?: Game) {
+    const isGoalCorrection = lobbyEvent.lobbyEventType === LobbyEventType.GoalRemoved || lobbyEvent.lobbyEventType === LobbyEventType.GoalChanged
+    const team = isGoalCorrection ? [game?.homeTeam, game?.awayTeam].find((t) => t && t.id === lobbyEvent.teamId) : undefined
+
     return new this(
+      `event-${lobbyEvent.id}`,
       lobbyEvent.gameId!,
       FeedItemType.LobbyEvent,
       lobbyEvent.lobbyEventType,
@@ -145,7 +166,7 @@ export default class FeedItem {
       lobbyEvent.text,
       lobbyEvent.subtext!,
       lobbyEvent.teamColor,
-      [],
+      team ? [`${team.abbreviation}.png`] : [],
       undefined
     )
   }

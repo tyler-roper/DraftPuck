@@ -1,16 +1,22 @@
 <script setup lang="ts">
-import { useLobbyStore } from '@/stores/lobby'
+import { computed, nextTick, ref, watch, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
-import { computed, nextTick, ref, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { TYPE, useToast } from 'vue-toastification'
-import * as SignalR from '@microsoft/signalr'
-import { compareAsc, addHours, isWithinInterval, differenceInSeconds } from 'date-fns'
-import GameService from '@/services/GameService'
-import LobbyEventType from '@/enums/lobbyEventType'
+import { useLobbyStore } from '@/stores/lobby'
+import { useGamesStore } from '@/stores/games'
+import { useUserStore } from '@/stores/user'
+import { useSystemStore } from '@/stores/system'
+import { useLobbyConnection } from '@/composables/useLobbyConnection'
+import { useLobbyEvents, type LobbyEventTone } from '@/composables/useLobbyEvents'
+import { useLobbyChat } from '@/composables/useLobbyChat'
+import { useDrinkQueue } from '@/composables/useDrinkQueue'
 import { parseAllDates } from '@/helpers/dateHelpers'
 import { parseLobbyEventText } from '@/helpers/lobbyEventTemplateHelpers'
-import FeedItem from '@/models/feedItem'
+import { buildFeedItems } from '@/helpers/feedHelpers'
+import { sortGamesForLobby } from '@/helpers/gameHelpers'
+import { runChatCommand } from '@/helpers/chatCommands'
+import LobbyService from '@/services/LobbyService'
 import LoadingMessages from '@/models/loadingMessages'
 import VInstructionsModal from '@/components/VInstructionsModal.vue'
 import VGameScoreboards from '@/components/VGameScoreboards.vue'
@@ -18,598 +24,203 @@ import VLobbyOverview from '@/components/VLobbyOverview.vue'
 import VScoresRibbon from '@/components/VScoresRibbon.vue'
 import VFeed from '@/components/VFeed.vue'
 import VPicks from '@/components/VPicks.vue'
-import MessageViewModel from '@/models/messageViewModel'
 import VChat from '@/components/VChat.vue'
 import VNotificationSettingsModal from '@/components/VNotificationSettingsModal.vue'
-import LobbyService from '@/services/LobbyService'
-import GameState from '@/enums/gameState'
-import PlayType from '@/enums/playType'
-import PeriodType from '@/enums/periodType'
-import type { ILogger, LogLevel } from '@microsoft/signalr'
+import VJoinLobbyForm from '@/components/VJoinLobbyForm.vue'
+import VLogo from '@/components/VLogo.vue'
 import VUser from '@/components/VUser.vue'
-import { useUserStore } from '@/stores/user'
-import { useSystemStore } from '@/stores/system'
 import VHtmlToast from '@/components/VHtmlToast.vue'
-import type { ToastOptions } from 'vue-toastification/dist/types/types'
-import { getValidJwt } from '@/services/HttpService'
 
-class SignalRLogger implements ILogger {
-  logLevel = 0
-
-  constructor(_logLevel: number) {
-    this.logLevel = _logLevel
-  }
-
-  log(_: LogLevel, message: string) {
-    sendDebugMessage(message, this.logLevel)
-  }
-}
-
-//const
 type View = 'feed' | 'game' | 'lobby' | 'chat' | 'picks'
+// Remembered so the home page's join and create forms can prefill the code and name.
 const LOCAL_STORAGE_KEY = 'latestLobby'
-const ACTIVE_GAME_POLLING_INTERVAL_MS = 10000
-const INACTIVE_GAME_POLLING_INTERVAL_MS = 60000
 const DRINK_ANIMATION_DURATION_MS = 5000
-const HUB_URL = '/hub'
 
-const replaceTemplatedStrings = (lobbyEvent: LobbyEvent) => parseLobbyEventText(lobbyEvent, lobby.value!, games.value)
-
-const lobbyEventHandlers: { [k: string]: (lobbyEvent: LobbyEvent) => void } = {
-  onDrinkAssigned: notifyDrinkAssigned,
-  onDrinkAwarded: notifyDrinkAwarded,
-  onUserJoined: notifyUserJoined
-}
-
-function notifyDrinkAssigned(lobbyEvent: LobbyEvent) {
-  var currentUserIsRecipient = lobbyEvent.lobbyMember2Id === currentLobbyMember.value?.id
-  if (!currentUserIsRecipient) {
-    lobbyEventToast(lobbyEvent)
-    return
-  }
-
-  // "queue up" drink for current user
-  pendingDrinksForCurrentUser.value.push(lobbyEvent)
-  if (pendingDrinksForCurrentUser.value.length === 1) processNextDrinkForCurrentUser()
-}
-
-function notifyDrinkAwarded(lobbyEvent: LobbyEvent) {
-  var isCurrentLobbyMember = lobbyEvent.lobbyMemberId === currentLobbyMember.value?.id
-  lobbyEventToast(lobbyEvent, { type: isCurrentLobbyMember ? TYPE.SUCCESS : TYPE.INFO })
-}
-
-function notifyUserJoined(lobbyEvent: LobbyEvent) {
-  lobbyEventToast(lobbyEvent)
-}
-
-const commands = computed<{ [command: string]: (...args: string[]) => void }>(() => ({
-  debug: (level?: string) => {
-    const newLevel = level == undefined || isNaN(+level) ? 1 : +level
-    const newLevelClamped = Math.min(3, newLevel)
-    setDebugging(newLevelClamped)
-    if (newLevelClamped === 0) sendSystemMessage(`Debugging disabled.`)
-    else sendSystemMessage(`Debugging enabled (Level ${newLevelClamped}).`)
-  },
-  connection: () => {
-    sendSystemMessage(
-      JSON.stringify(
-        {
-          id: hubConnection.connectionId,
-          baseUrl: hubConnection.baseUrl,
-          state: hubConnection.state
-        },
-        undefined,
-        2
-      )
-    )
-  },
-  me: () => {
-    sendSystemMessage(JSON.stringify(getLobbyMemberInfo(), undefined, 2))
-  },
-  user: (...nameParts: string[]) => {
-    const name = nameParts.join(' ')
-    const lobbyMember = lobby.value?.members.find((m) => m.name.toUpperCase() === name.toUpperCase())
-    if (lobbyMember) {
-      sendSystemMessage(JSON.stringify(getLobbyMemberInfo(name), undefined, 2))
-    } else {
-      sendSystemMessage(`User ${name} not found.`)
-    }
-  }
-}))
-
-//data
-const userStore = useUserStore()
-const systemStore = useSystemStore()
-const { isLoggedIn, currentUser } = storeToRefs(userStore)
-const store = useLobbyStore()
+//#region stores
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
-const { lobby, currentUserId, events, systemMessages } = storeToRefs(store)
-const { appIsTestMode } = storeToRefs(systemStore)
-const { getLobby: getLobbyFromStore, getLobbyEvents, addLobbyEvent, addMessageToStore, sendDebugMessage, sendSystemMessage, setDebugging } = store
-const joinCode = ref(route.params.joinCode as string)
-const games = ref<Game[]>([])
+const userStore = useUserStore()
+const store = useLobbyStore()
+const gamesStore = useGamesStore()
+const { isLoggedIn, currentUser } = storeToRefs(userStore)
+const { lobby, currentMember, events, chatMessages } = storeToRefs(store)
+const { appIsTestMode } = storeToRefs(useSystemStore())
+const { games } = storeToRefs(gamesStore)
+const { getLobbyEvents, sendDebugMessage, sendSystemMessage, setDebugging } = store
+//#endregion
+
+//#region page state
+const joinCode = route.params.joinCode as string
+const isLoading = ref(true)
+const isInvalidLobby = ref(false)
+// A guest opened the lobby's link without being a member: ask for their name here, then join.
+const isAskingForName = ref(false)
+const loadingMessage = LoadingMessages.random()
+const currentView = ref<View>('picks')
+const selectedGame = ref<Game>()
 const isInstructionsVisible = ref(false)
 const isNotificationSettingsVisible = ref(false)
-const isInvalidLobby = ref(false)
-const isLoading = ref(true)
-const mappedEvents = computed(() => events.value.map(e => replaceTemplatedStrings(e)));
-const timers = ref<number[]>([])
-const currentView = ref<View>('picks')
-const pendingDrinksForCurrentUser = ref<LobbyEvent[]>([])
-const currentDrink = ref<LobbyEvent>()
-const unseenMessageCount = ref(0)
-const unseenMentionsCount = ref(0)
 const vChat = ref<InstanceType<typeof VChat> | null>(null)
 const shouldAnimateFeed = ref(false)
-const feedAnimationTimer = ref<number>()
-const checkActivityTimer = ref<number>()
-const lastLobbyRetrieval = ref<Date>(new Date())
 const isInitialLoad = ref(true)
-const selectedGame = ref<Game>()
+//#endregion
 
-let hubConnection: SignalR.HubConnection
-let hubGeneration = 0
-let hubStartRetryTimer: number | undefined
-let isResuming = false
-let isUnmounted = false
+//#region live updates
+const { current: currentDrink, enqueue: showDrinkForMe } = useDrinkQueue(DRINK_ANIMATION_DURATION_MS)
+const { unreadCount, unreadMentionCount, onMessage, markRead } = useLobbyChat(() => currentView.value === 'chat')
+const { onLobbyEvent } = useLobbyEvents({
+  refreshLobby: getLobby,
+  showDrinkForMe,
+  notify: toastLobbyEvent,
+  onRemovedFromLobby: (message) => {
+    toast.error(message)
+    router.replace('/')
+  },
+  log: sendDebugMessage
+})
 
-//computed
-const feedItems = computed(getFeedItems)
-const currentLobbyMember = computed(() => lobby.value?.members.find((m) => m.userId === currentUserId.value))
-const loadingMessage = computed(() => LoadingMessages.random())
+// Lobby events, chat messages and game scores are pushed; resync fills in anything missed while not listening.
+const connection = useLobbyConnection({
+  joinCode,
+  handlers: { LobbyEvent: onLobbyEvent, Message: onMessage, LobbyStateChanged: getLobby, GameUpdated: onGameUpdated },
+  resync,
+  log: sendDebugMessage
+})
+//#endregion
+
+//#region computed
+const templatedEvents = computed(() => events.value.map(fillEventTemplate))
+const feedItems = computed(() =>
+  lobby.value ? buildFeedItems(games.value, templatedEvents.value, lobby.value.created, appIsTestMode.value) : []
+)
+const sortedGames = computed(() => sortGamesForLobby(games.value, lobby.value?.gameIds ?? []))
+const pendingDrinkCount = computed(() => currentMember.value?.picks.flatMap((p) => p.drinks.filter((d) => !d.recipientLobbyMemberId)).length ?? 0)
 const isLobbyView = computed(() => currentView.value === 'lobby')
 const isFeedView = computed(() => currentView.value === 'feed')
 const isPicksView = computed(() => currentView.value === 'picks')
 const isGameView = computed(() => currentView.value === 'game')
 const isChatView = computed(() => currentView.value === 'chat')
-const sortedGames = computed(() =>
-  !games.value
-    ? []
-    : [...games.value].sort((a, b) => {
-        if (a.gameState === GameState.Final) return 1
-        if (b.gameState === GameState.Final) return -1
-        if (lobby.value?.gameIds.includes(a.id) && !lobby.value?.gameIds.includes(b.id)) return -1
-        if (!lobby.value?.gameIds.includes(a.id) && lobby.value?.gameIds.includes(b.id)) return 1
-        return compareAsc(a.dateTime, b.dateTime)
-      })
-)
+const isLobbyReady = computed(() => !isLoading.value && !isAskingForName.value)
+//#endregion
 
-const is4Nations = computed(() => {
-  const today = new Date()
-  const firstDay = new Date(2025, 1, 10)
-  const lastDay = new Date(2025, 1, 20)
-  const paddingHours = 12
-  const start = addHours(firstDay, -1 * paddingHours)
-  const end = addHours(lastDay, paddingHours)
-
-  return isWithinInterval(today, { start, end })
-})
-
-const pendingDrinkCount = computed(
-  () => currentLobbyMember.value?.picks.flatMap((p) => p.drinks.filter((d) => !d.recipientLobbyMemberId)).length ?? 0
-)
-const messages = computed(() => {
-  if (!lobby.value) return []
-
-  const lobbyMemberMessages = lobby.value.members.reduce(
-    (messages: MessageViewModel[], member) => [
-      ...messages,
-      ...(member.messages?.map((msg) => new MessageViewModel(member, msg.message, msg.sent, msg.id)) ?? [])
-    ],
-    []
-  )
-
-  const allMessages = [...lobbyMemberMessages, ...systemMessages.value]
-  return allMessages.sort((a, b) => compareAsc(a.sent, b.sent))
-})
-
-//hooks/methods
+//#region loading and joining
 onMounted(async () => {
   try {
-    isLoading.value = true
     await userStore.initialize()
     await getLobby()
 
     if (!lobby.value) return (isInvalidLobby.value = true)
     if (!lobby.value.isActive) {
       isInvalidLobby.value = true
-      router.replace({ name: 'LobbyReview', params: { joinCode: joinCode.value }})
+      router.replace({ name: 'LobbyReview', params: { joinCode } })
       return
     }
 
-    let name: string | null = ''
-
-    if (!currentLobbyMember.value) {
-      if (!isLoggedIn.value) {
-        name = prompt('Welcome! Choose a name...')
-
-        while (name !== null && lobby.value?.members.some((m) => m.name.toLowerCase() === name?.toLowerCase()))
-          name = prompt('Sorry, that name is taken. Try another...')
-
-        if (!name) return router.push({ name: 'Home' })
-      } else {
-        name = currentUser.value!.nickname!
-      }
-
-      await LobbyService.joinLobbyByCode(joinCode.value, name)
+    if (!currentMember.value) {
+      // Logged-in users join under their nickname; guests choose a name first (the join form calls onJoined).
+      if (!isLoggedIn.value) return (isAskingForName.value = true)
+      await LobbyService.joinLobbyByCode(joinCode, currentUser.value!.nickname!)
       await getLobby()
     }
 
-    if (!currentLobbyMember.value) return router.push({ name: 'Home' })
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ joinCode: joinCode.value, name: currentLobbyMember.value.name }))
-
-    await initializeLobbyConnection(true)
-
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    window.addEventListener('pageshow', handleResume)
-    window.addEventListener('online', handleResume)
+    await enterLobby()
   } catch (e) {
-    logError(e as string)
+    reportError(e)
     isInvalidLobby.value = true
   } finally {
     isLoading.value = false
   }
 })
 
-onUnmounted(() => {
-  isUnmounted = true
-  document.removeEventListener('visibilitychange', handleVisibilityChange)
-  window.removeEventListener('pageshow', handleResume)
-  window.removeEventListener('online', handleResume)
-  pauseLobbyConnection()
-})
-
-const isGameInProgress = (game: Game) => game.gameState === GameState.Live
-const isGameOver = (game: Game) => game.gameState === GameState.Final
-const isGameStale = (game: Game) => isGameOver(game)
-
-function handleVisibilityChange() {
-  if (document.hidden) pauseLobbyConnection()
-  else handleResume()
-}
-
-// visibilitychange, pageshow and online can all fire when the app resumes; only run one re-initialization at a time.
-async function handleResume() {
-  if (document.hidden || isUnmounted || isResuming) return
-  if (hubConnection?.state === SignalR.HubConnectionState.Connected) return
-
-  isResuming = true
+async function onJoined() {
+  isAskingForName.value = false
+  isLoading.value = true
   try {
-    await initializeLobbyConnection()
+    await getLobby()
+    await enterLobby()
   } catch (e) {
     reportError(e)
+    isInvalidLobby.value = true
   } finally {
-    isResuming = false
+    isLoading.value = false
   }
 }
 
-function lobbyEventToast(lobbyEvent: LobbyEvent, options?: ToastOptions | undefined) {
-  return toast(
-    {
-      component: VHtmlToast,
-      props: {
-        title: lobbyEvent.title,
-        message: replaceTemplatedStrings(lobbyEvent).text
-      }
-    },
-    options
-  )
+async function enterLobby() {
+  if (!currentMember.value) return router.push({ name: 'Home' })
+  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ joinCode, name: currentMember.value.name }))
+  await connection.start()
 }
 
-function setView(view: View) {
-  currentView.value = view
+async function getLobby() {
+  await store.getLobby(joinCode)
+  sendDebugMessage(`Got lobby ${joinCode}.`, 2)
 }
 
-function initializeActivityChecker() {
-  if (checkActivityTimer.value) window.clearInterval(checkActivityTimer.value)
-  if (isUnmounted) return
-  checkActivityTimer.value = window.setInterval(checkActivity, 3000)
+/** Everything the page shows that may have changed while it wasn't listening. */
+async function resync() {
+  await Promise.all([getLobby(), gamesStore.load()])
+  if (lobby.value) await getLobbyEvents(lobby.value.id)
 }
 
-async function checkActivity() {
-  const secondsSinceLastLobbyRetrieval = Math.abs(differenceInSeconds(new Date(), lastLobbyRetrieval.value))
-  if (secondsSinceLastLobbyRetrieval > 300) {
-    sendDebugMessage(`${secondsSinceLastLobbyRetrieval} seconds since last retrieval.`, 2)
-    initializeLobbyConnection().catch(reportError)
-  }
-}
-
-async function initializeLobbyConnection(skipLobbyRetrieval = false) {
-  sendDebugMessage('Initializing lobby connection.', 2)
-  try {
-    const promises = [initializeHubConnection(), setGames()]
-    if (!skipLobbyRetrieval) promises.push(getLobby())
-    await Promise.all(promises)
-
-    if (lobby.value)
-      await getLobbyEvents(lobby.value.id)
-  } finally {
-    // Always restart the safety net, even if a fetch failed, so the lobby can recover on its own.
-    initializeActivityChecker()
-  }
-}
-
-async function pauseLobbyConnection() {
-  sendDebugMessage('Pausing lobby connection.', 2)
-  // stop polling for game updates
-  timers.value.forEach((t) => window.clearTimeout(t))
-
-  // disconnect hub and cancel any pending start retries
-  hubGeneration++
-  window.clearTimeout(hubStartRetryTimer)
-  await hubConnection?.stop()
-
-  // stop activity polling
-  if (checkActivityTimer.value) window.clearInterval(checkActivityTimer.value)
+function onGameUpdated(game: Game) {
+  parseAllDates(game)
+  gamesStore.applyUpdate(game)
 }
 
 function reportError(error: unknown) {
   console.error(error)
   sendDebugMessage(String(error), 3)
 }
+//#endregion
 
-function logError(error: string) {
-  reportError(error)
-  throw error
+//#region lobby events and chat
+function fillEventTemplate(lobbyEvent: LobbyEvent) {
+  return parseLobbyEventText(lobbyEvent, lobby.value!, games.value)
 }
 
-async function setGames() {
-  timers.value.forEach((t) => window.clearTimeout(t))
+function toastLobbyEvent(lobbyEvent: LobbyEvent, tone?: LobbyEventTone) {
+  const type = tone === 'success' ? TYPE.SUCCESS : tone === 'info' ? TYPE.INFO : undefined
+  toast({ component: VHtmlToast, props: { title: lobbyEvent.title, message: fillEventTemplate(lobbyEvent).text } }, type ? { type } : undefined)
+}
 
-  sendDebugMessage(`Setting games...`, 1)
-  games.value = await GameService.getAllGames()
-  sendDebugMessage(`${games.value.length} games retrieved.`, 1)
-  games.value.forEach((game) => {
-    if (!isGameStale(game)) timers.value.push(window.setTimeout(() => pollForUpdates(game), ACTIVE_GAME_POLLING_INTERVAL_MS))
+function senderName(lobbyEvent: LobbyEvent) {
+  return lobby.value?.members.find((m) => m.id === lobbyEvent.lobbyMemberId)?.name
+}
+
+function handleCommand(command: string, ...args: string[]) {
+  runChatCommand(command, args, {
+    lobby: lobby.value,
+    currentMember: currentMember.value,
+    setDebugging,
+    sendSystemMessage,
+    describeConnection: connection.describe
   })
 }
 
-async function updateGame(gameId: number) {
-  const gameIndex = games.value.findIndex((g) => gameId === g.id)
-  const updatedGame = await getGameData(gameId)
-  Object.assign(games.value[gameIndex], updatedGame)
-}
-
-async function getGameData(gameId: number) {
-  return await GameService.getGame(gameId)
-}
-
-async function pollForUpdates(game: Game, attempts: number = 1) {
-  const MAX_ATTEMPTS = 5
-  const DEBOUNCE_ENABLED = false
-
-  const msgPrefix = `[${game.awayTeam.abbreviation} @ ${game.homeTeam.abbreviation}]`
-  let isSuccess = false
-  let tryAgainIfFailure = attempts < MAX_ATTEMPTS
-
-  try {
-    await updateGame(game.id)
-    isSuccess = true
-  } catch (e) {
-    logError(`${msgPrefix} ${e as string}`)
-  }
-
-  if (isGameStale(game)) {
-    sendDebugMessage(`${msgPrefix} Game is stale. `, 1)
-    return
-  }
-
-  let interval = isGameInProgress(game) ? ACTIVE_GAME_POLLING_INTERVAL_MS : INACTIVE_GAME_POLLING_INTERVAL_MS
-  let debugMessage = `${msgPrefix} Updated. (Next update in ${interval / 1000} seconds)`
-
-  if (!isSuccess && !tryAgainIfFailure) {
-    debugMessage = `${msgPrefix} Stopping updates after ${MAX_ATTEMPTS} failed attempts.`
-  } else if (!isSuccess) {
-    const nextAttempt = attempts + 1
-    if (DEBOUNCE_ENABLED) interval *= nextAttempt
-    debugMessage = `${msgPrefix} Failed to update on attempt #${attempts}. (Trying again in ${interval / 1000} seconds)`
-    timers.value.push(window.setTimeout(() => pollForUpdates(game, nextAttempt), interval))
-  } else if (isSuccess) {
-    timers.value.push(window.setTimeout(() => pollForUpdates(game), interval))
-  }
-
-  sendDebugMessage(debugMessage, 1)
-}
-
-const HUB_MAX_RETRY_DELAY_MS = 30000
-const hubRetryDelay = (retryCount: number) => Math.min(HUB_MAX_RETRY_DELAY_MS, 1000 * 2 ** retryCount)
-
-async function initializeHubConnection() {
-  // Invalidate the previous connection (and any pending start retries for it) before stopping it,
-  // including when it's still connecting or reconnecting, so it can't linger with handlers attached.
-  const generation = ++hubGeneration
-  window.clearTimeout(hubStartRetryTimer)
-  if (hubConnection && hubConnection.state !== SignalR.HubConnectionState.Disconnected) await hubConnection.stop()
-
-  const connection = new SignalR.HubConnectionBuilder()
-    // Negotiates WebSockets first, falling back to SSE then long polling.
-    // The hub requires auth; SignalR calls this before every (re)connect, so expired tokens get refreshed.
-    .withUrl(HUB_URL, { accessTokenFactory: getValidJwt })
-    .configureLogging(new SignalRLogger(1))
-    // The default policy gives up after 4 attempts; keep retrying with backoff (0s, 1s, 2s, 4s ... 30s).
-    .withAutomaticReconnect({ nextRetryDelayInMilliseconds: (ctx) => (ctx.previousRetryCount === 0 ? 0 : hubRetryDelay(ctx.previousRetryCount - 1)) })
-    .build()
-  hubConnection = connection
-
-  connection.on('LobbyEvent', dispatchLobbyEvent)
-  connection.on('Message', onNewMessage)
-  connection.on('LobbyStateChanged', getLobby)
-  connection.onreconnecting(() => sendDebugMessage(`Hub connection reconnecting... (State: ${connection.state})`, 2))
-  // A reconnect gets a new connection ID, so the server no longer has us in the lobby group.
-  // Rejoin it, then refetch whatever was missed while disconnected.
-  connection.onreconnected(async () => {
-    sendDebugMessage(`Hub connection reconnected. (State: ${connection.state})`, 2)
-    try {
-      await joinLobbyGroup(connection)
-      await resyncLobby()
-    } catch (err) {
-      reportError(err)
-    }
-  })
-
-  await startHubConnection(connection, generation)
-}
-
-// Automatic reconnect only covers drops after a successful start, so retry the initial start ourselves
-// (e.g. on resume the network often isn't ready for a second or two).
-async function startHubConnection(connection: SignalR.HubConnection, generation: number, attempt = 1) {
-  if (generation !== hubGeneration) return
-
-  try {
-    if (connection.state === SignalR.HubConnectionState.Disconnected) {
-      await connection.start()
-      sendDebugMessage(`Hub connection started. (State: ${connection.state})`, 2)
-    }
-    await joinLobbyGroup(connection)
-    if (attempt > 1) await resyncLobby()
-  } catch (err) {
-    reportError(err)
-    if (generation !== hubGeneration || document.hidden) return
-    // Automatic reconnect is already handling it and will rejoin in onreconnected.
-    if (connection.state === SignalR.HubConnectionState.Reconnecting) return
-
-    const delay = hubRetryDelay(attempt - 1)
-    sendDebugMessage(`Hub connection failed (attempt #${attempt}). Retrying in ${delay / 1000} seconds.`, 2)
-    hubStartRetryTimer = window.setTimeout(() => startHubConnection(connection, generation, attempt + 1), delay)
-  }
-}
-
-async function joinLobbyGroup(connection: SignalR.HubConnection) {
-  await connection.invoke('JoinLobby', joinCode.value)
-  sendDebugMessage(`Hub connection "Join Lobby" invoked. (State: ${connection.state})`, 2)
-}
-
-async function resyncLobby() {
-  await getLobby()
-  if (lobby.value) await getLobbyEvents(lobby.value.id)
-}
-
-function onNewMessage(message: Message) {
-  if (message.lobbyMemberId === currentLobbyMember.value?.id) return
-  parseAllDates(message)
-  addMessageToStore(message)
-
-  if (currentView.value !== 'chat') {
-    const currentUserIsMentioned = message.message
-      .split(' ')
-      .some((word) => word.toUpperCase() === `@${currentLobbyMember.value?.name.toUpperCase()}`)
-    if (currentUserIsMentioned) unseenMentionsCount.value++
-    unseenMessageCount.value++
-  }
-}
-
-function processNextDrinkForCurrentUser() {
-  if (pendingDrinksForCurrentUser.value.length === 0) return
-  currentDrink.value = pendingDrinksForCurrentUser.value[0]
-
-  window.setTimeout(async () => {
-    pendingDrinksForCurrentUser.value.splice(0, 1)
-    currentDrink.value = undefined
-    await nextTick()
-    processNextDrinkForCurrentUser()
-  }, DRINK_ANIMATION_DURATION_MS)
-}
-
-function getSenderNameByLobbyEvent(lobbyEvent: LobbyEvent) {
-  return lobby.value!.members.find((m) => m.id === lobbyEvent.lobbyMemberId)?.name
-}
-
-async function dispatchLobbyEvent(lobbyEvent: LobbyEvent) {
-  const currentLobbyMemberValue = currentLobbyMember.value!
-
-  sendDebugMessage(`New ${LobbyEventType[lobbyEvent.lobbyEventType]} Event`, 3)
-  sendDebugMessage(JSON.stringify(lobbyEvent, undefined, 4), 2)
-
-  if (
-    [LobbyEventType.UserRemoved, LobbyEventType.UserLeft].includes(lobbyEvent.lobbyEventType) &&
-    lobbyEvent.lobbyMemberId === currentLobbyMemberValue.id
-  ) {
-    const text = lobbyEvent.lobbyEventType === LobbyEventType.UserRemoved ? 'You were removed from the lobby.' : 'You left the lobby.'
-
-    toast.error(text)
-    router.replace('/')
-    return
-  }
-
-  if (lobbyEvent.lobbyEventType != LobbyEventType.NewPick || lobbyEvent.lobbyMemberId !== currentLobbyMemberValue.id) {
-    await getLobby()
-    if (!lobby.value) return
-  }
-
-  parseAllDates(lobbyEvent)
-  addLobbyEvent(lobbyEvent)
-
-  const eventType = LobbyEventType[lobbyEvent.lobbyEventType]
-  const eventHandler = lobbyEventHandlers[`on${eventType}`]
-
-  if (eventHandler) eventHandler(lobbyEvent)
-}
-
-function getFeedItems() {
-  if (!lobby.value) return []
-  const desiredPlayTypes = [PlayType.Goal, PlayType.PeriodStart, PlayType.PeriodEnd, PlayType.GameEnd, PlayType.Challenge, PlayType.Penalty]
-
-  const gameItems = games.value.flatMap((game) => {
-    return game.plays.reduce((items: FeedItem[], play) => {
-      const includedInFilters = desiredPlayTypes.includes(play.type)
-      const happenedAfterLobbyStarted = appIsTestMode.value ? true : play.dateTime >= lobby.value!.created
-      const isShootoutGoal = play.type === PlayType.Goal && play.periodType === PeriodType.Shootout
-      if (includedInFilters && happenedAfterLobbyStarted && !isShootoutGoal) {
-        return [...items, FeedItem.fromPlay(game.id, { away: game.awayTeam, home: game.homeTeam }, play, game.playerSummaries)]
-      } else return items
-    }, [])
-  })
-
-  const lobbyItems = mappedEvents.value.map((evt) => FeedItem.fromLobbyEvent(evt))
-  const feedItems = [...gameItems, ...lobbyItems]
-  feedItems.sort((a, b) => compareAsc(a.time, b.time))
-  return feedItems
-}
-
-async function setViewToChat() {
-  setView('chat')
-  unseenMessageCount.value = 0
-
+async function openChat() {
+  currentView.value = 'chat'
+  markRead()
   await nextTick()
   vChat.value?.focus()
 }
+//#endregion
 
-function animateFeed() {
-  if (isInitialLoad.value) {
-    window.setTimeout(() => (isInitialLoad.value = false), 2000)
-    return
-  }
-
-  shouldAnimateFeed.value = true
-  window.clearTimeout(feedAnimationTimer.value)
-  window.setTimeout(() => (shouldAnimateFeed.value = false), 700)
+//#region page UI
+function setView(view: View) {
+  currentView.value = view
 }
 
-function handleCommand(command: string, ...args: [string]) {
-  if (commands.value[command]) commands.value[command](...args)
-}
-
-function getLobbyMemberInfo(name?: string): Partial<LobbyMember> | undefined {
-  const lobbyMember = name ? lobby.value?.members.find((m) => m.name.toUpperCase() === name.toUpperCase()) : currentLobbyMember.value
-
-  if (!lobbyMember) return
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { messages, picks, ...lobbyMemberInfo } = lobbyMember
-  return lobbyMemberInfo
-}
-
-async function getLobby() {
-  if (!joinCode.value) return
-  lastLobbyRetrieval.value = new Date()
-  await getLobbyFromStore(joinCode.value)
-  sendDebugMessage(`Got lobby ${joinCode.value}.`, 2)
+async function selectGame(game: Game | undefined) {
+  if (!isPicksView.value) setView('picks')
+  await nextTick()
+  if (selectedGame.value?.id !== game?.id) selectedGame.value = game
 }
 
 async function copyInvite() {
-  const code = lobby.value!.joinCode
   try {
+    const code = lobby.value?.joinCode ?? joinCode
     await navigator.clipboard.writeText(`Join my DRAFTPUCK lobby! Code: ${code}\n\nhttps://draftpuck.com/lobby/${code}`)
     toast.success('Copied invite to clipboard!', { timeout: 2000 })
   } catch {
@@ -617,30 +228,20 @@ async function copyInvite() {
   }
 }
 
-async function selectGame(game: Game) {
-  if (!isPicksView.value) setView('picks')
-
-  await nextTick()
-
-  if (game === undefined) {
-    selectedGame.value = undefined
-    return
-  }
-
-  if (selectedGame.value?.id === game.id) return
-
-  selectedGame.value = game
-}
-
-//watch
+// New feed items briefly animate the feed, except while it first fills up.
 watch(
   () => feedItems.value.length,
   (newLength, oldLength) => {
-    if (newLength > oldLength) {
-      animateFeed()
+    if (newLength <= oldLength) return
+    if (isInitialLoad.value) {
+      window.setTimeout(() => (isInitialLoad.value = false), 2000)
+      return
     }
+    shouldAnimateFeed.value = true
+    window.setTimeout(() => (shouldAnimateFeed.value = false), 700)
   }
 )
+//#endregion
 </script>
 
 <template>
@@ -650,8 +251,7 @@ watch(
       <VNotificationSettingsModal v-if="isNotificationSettingsVisible" @close="isNotificationSettingsVisible = false" />
       <div class="bg-stone-900 px-sm-4 px-2 py-2 shadow position-relative d-flex align-items-center justify-content-between" style="z-index: 10">
         <router-link :to="{ name: 'Home' }" class="banner-logo text-stone-0 text-decoration-none" style="cursor: pointer">
-          <img v-if="!is4Nations" src="/img/logo-wide.png" />
-          <img v-if="is4Nations" src="/img/logo-wide-4nations.png" />
+          <VLogo />
         </router-link>
 
         <a
@@ -682,7 +282,15 @@ watch(
       </div>
 
       <div class="d-flex flex-grow-1 overflow-hidden bg-stone-800">
-        <template v-if="!isLoading">
+        <div v-if="isAskingForName" class="d-flex align-items-center justify-content-center w-100 p-3">
+          <div class="bg-stone-900 rounded shadow p-4" style="width: 100%; max-width: 420px">
+            <h2 class="fs-4 fw-bold text-uppercase mb-1">Join lobby {{ lobby?.joinCode ?? joinCode }}</h2>
+            <p class="text-stone-400 mb-3">Choose a name to join as a guest.</p>
+            <VJoinLobbyForm :code="lobby?.joinCode ?? joinCode" @joined="onJoined" />
+          </div>
+        </div>
+
+        <template v-if="isLobbyReady">
           <VGameScoreboards class="full-scoreboard flex-grow-1" :class="{ 'hide-mobile': !isGameView }" :games="sortedGames" style="overflow: auto" />
 
           <div
@@ -703,7 +311,7 @@ watch(
             />
             <VChat
               ref="vChat"
-              :messages="messages"
+              :messages="chatMessages"
               class="flex-grow-1 v-chat"
               :class="{ 'hide-mobile': !isChatView }"
               @command="handleCommand"
@@ -721,7 +329,7 @@ watch(
         </div>
       </div>
 
-      <div class="bottom-nav d-flex d-sm-none bg-stone-900 shadow fw-bold" v-if="!isLoading">
+      <div class="bottom-nav d-flex d-sm-none bg-stone-900 shadow fw-bold" v-if="isLobbyReady">
         <a role="button" class="text-center p-2 text-white" :class="{ active: isLobbyView }" @click="setView('lobby')">
           <i v-if="pendingDrinkCount <= 0" class="fi fi-rr-users-alt"></i>
           <span v-if="pendingDrinkCount > 0" class="drink-badge">🚨 {{ pendingDrinkCount }}</span>
@@ -740,12 +348,12 @@ watch(
           <i class="fi fi-rr-hockey-puck"></i><br />
           <span>SCORES</span>
         </a>
-        <a role="button" class="text-center p-2 text-white" :class="{ active: isChatView }" @click="setViewToChat">
-          <i v-if="unseenMessageCount <= 0" class="fi fi-rr-comment-alt"></i>
-          <span v-if="unseenMessageCount > 0" class="drink-badge" :class="{ 'bg-primary': unseenMentionsCount > 0 }">
-            <span v-if="unseenMentionsCount > 0">📢</span>
-            <span v-if="unseenMentionsCount <= 0">💬</span>
-            <span>{{ unseenMessageCount }}</span>
+        <a role="button" class="text-center p-2 text-white" :class="{ active: isChatView }" @click="openChat">
+          <i v-if="unreadCount <= 0" class="fi fi-rr-comment-alt"></i>
+          <span v-if="unreadCount > 0" class="drink-badge" :class="{ 'bg-primary': unreadMentionCount > 0 }">
+            <span v-if="unreadMentionCount > 0">📢</span>
+            <span v-if="unreadMentionCount <= 0">💬</span>
+            <span>{{ unreadCount }}</span>
           </span>
           <br />
           <span>CHAT</span>
@@ -766,7 +374,7 @@ watch(
         <span class="text-uppercase fw-bold" style="font-size: 100px">Drink!</span>
         <span class="d-block fs-5" style="opacity: 0.5"> Courtesy Of </span>
         <span class="d-block fw-bold fs-2 text-uppercase">
-          {{ getSenderNameByLobbyEvent(currentDrink) }}
+          {{ senderName(currentDrink) }}
         </span>
       </span>
     </div>

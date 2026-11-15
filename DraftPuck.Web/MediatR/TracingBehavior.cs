@@ -23,15 +23,16 @@ public sealed class TracingBehavior<TRequest, TResponse> : IPipelineBehavior<TRe
 
         try
         {
-            _logger.LogInformation("Handling {RequestType}", typeof(TRequest).Name);
+            _logger.LogDebug("Handling {RequestType}", typeof(TRequest).Name);
             var response = await next(ct);
-            _logger.LogInformation("Handled {RequestType}", typeof(TRequest).Name);
+            _logger.LogDebug("Handled {RequestType}", typeof(TRequest).Name);
             return response;
         }
         catch (Exception ex)
         {
+            // Not logged here: every request comes from a controller, and ApiExceptionFilterAttribute
+            // logs the exception at the right level once. Logging here too duplicated every error.
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
-            _logger.LogError(ex, "Failed {RequestType}", typeof(TRequest).Name);
             throw;
         }
     }

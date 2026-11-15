@@ -11,11 +11,38 @@ public class GameProcessingHelpersTests
     [InlineData(-30, true)]
     [InlineData(-1, true)]
     [InlineData(90, true)] // picking stays open once the game has started
-    public void IsPickWindowOpen_OpensThirtyMinutesBeforeStart(int minutesFromStart, bool expected)
+    public void PickingOpensThirtyMinutesBeforeStart(int minutesFromStart, bool expected)
     {
-        var game = TestGames.Create(1, Start);
+        var game = TestGames.Create(1, Start, minutesFromStart > 0 ? GameState.Live : GameState.Upcoming);
 
-        Assert.Equal(expected, GameProcessingHelpers.IsPickWindowOpen(game, Start.AddMinutes(minutesFromStart)));
+        Assert.Equal(Start.AddMinutes(-30), game.PickingOpensUtc);
+        Assert.Equal(expected, game.IsPickingOpen(Start.AddMinutes(minutesFromStart)));
+    }
+
+    [Fact]
+    public void PickingClosesWhenTheGameIsFinal()
+    {
+        var game = TestGames.Create(1, Start, GameState.Final);
+
+        Assert.True(game.IsPickingClosed);
+        Assert.False(game.IsPickingOpen(Start.AddHours(3)));
+    }
+
+    [Theory]
+    [InlineData(GameState.Upcoming, true)]
+    [InlineData(GameState.Live, false)]
+    [InlineData(GameState.Final, false)]
+    public void MembersCanRemoveTheirPicksOnlyBeforePuckDrop(GameState state, bool expected)
+        => Assert.Equal(expected, TestGames.Create(1, Start, state).CanMembersRemovePicks);
+
+    [Fact]
+    public void PickRulesReachClientsAsPartOfTheGame()
+    {
+        var json = System.Text.Json.JsonSerializer.Serialize(TestGames.Create(1, Start, GameState.Final));
+
+        Assert.Contains("\"PickingOpensUtc\"", json);
+        Assert.Contains("\"IsPickingClosed\":true", json);
+        Assert.Contains("\"CanMembersRemovePicks\":false", json);
     }
 
     [Theory]
@@ -41,43 +68,96 @@ public class GameProcessingHelpersTests
     // Playoff overtime periods are full periods, each after a full intermission.
     [InlineData(GameType.Playoffs, 4, "00:00", 10 + 120 + 66)]
     [InlineData(GameType.Playoffs, 5, "00:00", 10 + 160 + 88)]
-    public void SetPlayDateTimes_EstimatesWallClockTime(GameType gameType, int period, string timeInPeriod, double expectedMinutesAfterStart)
+    public void EstimatePlayTime_FromTheScheduledStartAndTheGameClock(GameType gameType, int period, string timeInPeriod, double expectedMinutesAfterStart)
     {
         var game = TestGames.Create(1, Start);
         game.GameType = gameType;
-        game.Plays = [TestGames.Goal(1, period, timeInPeriod, TestGames.HomePlayer(0), TestGames.HomeTeamId)];
+        var play = TestGames.Goal(1, period, timeInPeriod, TestGames.HomePlayer(0), TestGames.HomeTeamId);
 
-        GameProcessingHelpers.SetPlayDateTimes(game, currentUtcTime: Start.AddDays(1), isTestMode: false);
+        Assert.Equal(Start.AddMinutes(expectedMinutesAfterStart), GameProcessingHelpers.EstimatePlayTime(game, play), TimeSpan.FromMilliseconds(1));
+    }
 
-        var expected = Start.AddMinutes(expectedMinutesAfterStart);
-        Assert.Equal(expected, game.Plays[0].DateTime, TimeSpan.FromMilliseconds(1));
+    private static PlayDto GoalPlay(int id, DateTime? dateTime = null, int period = 1, string timeInPeriod = "05:00")
+    {
+        var play = TestGames.Goal(id, period, timeInPeriod, TestGames.HomePlayer(0), TestGames.HomeTeamId);
+        if (dateTime != null)
+            play.DateTime = dateTime.Value;
+        return play;
     }
 
     [Fact]
-    public void SetPlayDateTimes_NeverPlacesPlaysInTheFuture()
+    public void SetPlayTimes_StampsPlaysSeenHappeningWithThePollTimeAndKeepsEarlierOnes()
+    {
+        var seen = Start.AddMinutes(5);
+        var previous = TestGames.Create(1, Start);
+        previous.Plays = [GoalPlay(1, seen)];
+        var game = TestGames.Create(1, Start);
+        // A goal at 01:00 of the first period, which the estimate would put 4 minutes before the earlier one.
+        game.Plays = [GoalPlay(1), GoalPlay(2, timeInPeriod: "01:00")];
+        var now = Start.AddMinutes(50);
+        previous.UpdatedUtc = now.AddSeconds(-10); // polled 10 seconds ago, as while live
+
+        GameProcessingHelpers.SetPlayTimes(game, previous, [], now);
+
+        Assert.Equal(seen, game.Plays[0].DateTime); // kept
+        Assert.Equal(now, game.Plays[1].DateTime);  // new this poll: when we saw it, not the estimate
+    }
+
+    // E.g. the Worker stalled or was down for half an hour mid-game: the previous copy is old, so plays new since then
+    // weren't seen happening. They get the estimate, kept within the gap.
+    [Fact]
+    public void SetPlayTimes_EstimatesPlaysThatHappenedWhileWeWerentPolling()
+    {
+        var previous = TestGames.Create(1, Start);
+        previous.UpdatedUtc = Start.AddMinutes(62);
+        var game = TestGames.Create(1, Start);
+        game.Plays =
+        [
+            GoalPlay(1, period: 2, timeInPeriod: "00:00"),  // estimated at +72: inside the gap
+            GoalPlay(2, period: 1, timeInPeriod: "19:50")   // estimated at +29.8: before the gap, so it can't be right
+        ];
+        var now = Start.AddMinutes(95);
+
+        GameProcessingHelpers.SetPlayTimes(game, previous, [], now);
+
+        Assert.Equal(Start.AddMinutes(72), game.Plays[0].DateTime);
+        Assert.Equal(previous.UpdatedUtc, game.Plays[1].DateTime);
+    }
+
+    [Fact]
+    public void SetPlayTimes_KeepsTheTimeWhenAGoalIsRenumbered()
+    {
+        var seen = Start.AddMinutes(5);
+        var previous = TestGames.Create(1, Start);
+        previous.Plays = [GoalPlay(450, seen)];
+        var game = TestGames.Create(1, Start);
+        game.Plays = [GoalPlay(451)];
+
+        GameProcessingHelpers.SetPlayTimes(game, previous, [new GoalRenumbered(450, 451)], Start.AddMinutes(20));
+
+        Assert.Equal(seen, game.Plays[0].DateTime);
+    }
+
+    [Fact]
+    public void SetPlayTimes_EstimatesPlaysThatHappenedBeforeWeWereWatching()
     {
         var game = TestGames.Create(1, Start);
-        game.Plays = [TestGames.Goal(1, 3, "15:00", TestGames.HomePlayer(0), TestGames.HomeTeamId)];
-        var now = Start.AddMinutes(30); // the estimate would be hours from now
+        game.Plays = [GoalPlay(1, period: 1, timeInPeriod: "05:00")];
 
-        GameProcessingHelpers.SetPlayDateTimes(game, now, isTestMode: false);
+        GameProcessingHelpers.SetPlayTimes(game, previous: null, [], Start.AddHours(2));
 
-        Assert.Equal(now, game.Plays[0].DateTime);
+        Assert.Equal(Start.AddMinutes(15), game.Plays[0].DateTime);
     }
 
     [Fact]
-    public void SetPlayDateTimes_KeepsTimesAlreadyAssignedToCachedPlays()
+    public void SetPlayTimes_NeverEstimatesAPlayIntoTheFuture()
     {
-        var cachedTime = Start.AddMinutes(12);
-        var cached = TestGames.Create(1, Start);
-        cached.Plays = [TestGames.Goal(1, 2, "10:00", TestGames.HomePlayer(0), TestGames.HomeTeamId)];
-        cached.Plays[0].DateTime = cachedTime;
+        var game = TestGames.Create(1, Start);
+        game.Plays = [GoalPlay(1, period: 3, timeInPeriod: "15:00")];
+        var now = Start.AddMinutes(30); // the estimate would be hours from now
 
-        var updated = TestGames.Create(1, Start);
-        updated.Plays = [TestGames.Goal(1, 2, "10:00", TestGames.HomePlayer(0), TestGames.HomeTeamId)];
+        GameProcessingHelpers.SetPlayTimes(game, previous: null, [], now);
 
-        GameProcessingHelpers.SetPlayDateTimes(updated, Start.AddDays(1), isTestMode: false, cached);
-
-        Assert.Equal(cachedTime, updated.Plays[0].DateTime);
+        Assert.Equal(now, game.Plays[0].DateTime);
     }
 }

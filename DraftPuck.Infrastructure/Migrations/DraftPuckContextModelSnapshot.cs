@@ -17,7 +17,7 @@ namespace DraftPuck.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.21")
+                .HasAnnotation("ProductVersion", "10.0.15")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -50,6 +50,39 @@ namespace DraftPuck.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Achievements");
+                });
+
+            modelBuilder.Entity("DraftPuck.Shared.Auth.PasswordResetTokenEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("(newid())");
+
+                    b.Property<DateTime>("Created")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("(getutcdate())");
+
+                    b.Property<DateTime>("Expires")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("PasswordResetTokens");
                 });
 
             modelBuilder.Entity("DraftPuck.Shared.Auth.UserRefreshTokenEntity", b =>
@@ -185,7 +218,7 @@ namespace DraftPuck.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("GameIds")
+                    b.PrimitiveCollection<string>("GameIds")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -452,6 +485,41 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.ToTable("ErrorLogs");
                 });
 
+            modelBuilder.Entity("DraftPuck.Shared.System.EventLogoEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("(newid())");
+
+                    b.Property<DateTime>("EndsUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LogoUrl")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("StartsUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("WideLogoUrl")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StartsUtc", "EndsUtc");
+
+                    b.ToTable("EventLogos");
+                });
+
             modelBuilder.Entity("DraftPuck.Shared.Titles.TitleEntity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -652,6 +720,17 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("UserTitles");
+                });
+
+            modelBuilder.Entity("DraftPuck.Shared.Auth.PasswordResetTokenEntity", b =>
+                {
+                    b.HasOne("DraftPuck.Shared.Users.UserEntity", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("DraftPuck.Shared.Auth.UserRefreshTokenEntity", b =>

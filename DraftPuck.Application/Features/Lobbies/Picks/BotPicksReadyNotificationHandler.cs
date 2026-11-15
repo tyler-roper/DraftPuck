@@ -6,6 +6,11 @@ public class BotPicksReadyNotificationHandler(IDbContext dbContext, IMediator me
     {
         var game = notification.Game;
         var gameId = game.Id;
+        // Deliberately not limited to the picking window: bots pick as soon as rosters are complete, before members can,
+        // so they never compete with members for players.
+        // Bots follow the same closing rule as members (the final poll still announces complete rosters).
+        if (game.IsPickingClosed) return;
+
         // This runs on every poll (every 10 seconds during live games), so only load lobbies where a bot still has
         // picks left for this game. Once every bot is full, this is a single query that returns nothing.
         // Lobbies with auto-picking turned off are skipped: their host picks for the bots.
@@ -21,17 +26,17 @@ public class BotPicksReadyNotificationHandler(IDbContext dbContext, IMediator me
             .AsNoTracking()
             .ToListAsync(ct);
 
-        var lobbyChangedEvents = new List<LobbyStateChangedNotification>();
+        var announcements = new List<BotPicksMadePayload>();
 
         foreach (var lobby in lobbies)
         {
-            var picksMade = false;
+            var botPicks = new List<BotGamePicks>();
             var allPicks = lobby.LobbyMembers
                 .SelectMany(lm => lm.LobbyMemberPicks)
                 .Where(pick => pick.IsActive && pick.GameId == game.Id);
 
             var pickedPlayerIds = allPicks.Select(pick => pick.PlayerId).ToHashSet();
-            var bots = lobby.LobbyMembers.Where(lm => lm.IsBot && !lm.IsRemoved);
+            var bots = lobby.LobbyMembers.Where(lm => lm.IsBot && !lm.IsRemoved).ToList();
 
             foreach (var bot in bots)
             {
@@ -48,30 +53,37 @@ public class BotPicksReadyNotificationHandler(IDbContext dbContext, IMediator me
                 if (homeRemaining <= 0 && awayRemaining <= 0)
                     continue;
 
+                var made = 0;
                 for (int i = 0; i < homeRemaining; i++)
-                    await MakeBotPicks(bot, game, game.HomeTeam, pickedPlayerIds);
+                    if (MakeBotPick(bot, game, game.HomeTeam, pickedPlayerIds)) made++;
 
                 for (int i = 0; i < awayRemaining; i++)
-                    await MakeBotPicks(bot, game, game.AwayTeam, pickedPlayerIds);
+                    if (MakeBotPick(bot, game, game.AwayTeam, pickedPlayerIds)) made++;
 
-                picksMade = true;
+                // Bots fill all their picks for a game at once, so one that already had some is replacing lost picks.
+                if (made > 0)
+                    botPicks.Add(new BotGamePicks(bot, made, IsReplacement: homePicksCount + awayPicksCount > 0));
             }
 
-            if (picksMade)
-                lobbyChangedEvents.Add(new LobbyStateChangedNotification(new LobbyStateChangedPayload(lobby.JoinCode)));
+            if (botPicks.Count > 0)
+                announcements.Add(new BotPicksMadePayload(lobby, game, botPicks, bots.Count));
         }
 
         await dbContext.SaveChangesAsync(ct);
 
-        foreach (var lobbyChangedEvent in lobbyChangedEvents)
-            await mediator.Publish(lobbyChangedEvent, ct);
+        foreach (var announcement in announcements)
+        {
+            await mediator.Publish(new LobbyStateChangedNotification(new LobbyStateChangedPayload(announcement.Lobby.JoinCode)), ct);
+            await mediator.Publish(new BotPicksMadeNotification(announcement), ct);
+        }
     }
 
-    private Task MakeBotPicks(LobbyMemberEntity bot, GameDto game, GameTeamDto team, HashSet<int> alreadyPicked)
+    /// <summary>Adds one pick for the bot from the team's available players; false if none are left.</summary>
+    private bool MakeBotPick(LobbyMemberEntity bot, GameDto game, GameTeamDto team, HashSet<int> alreadyPicked)
     {
         var players = team.Roster;
         var availablePlayers = team.Roster.Where(player => !alreadyPicked.Contains(player.Id)).OrderByDescending(player => player.Goals).ToList();
-        if (availablePlayers.Count == 0) return Task.CompletedTask;
+        if (availablePlayers.Count == 0) return false;
 
         // Bots created before pick styles were required may have none; fall back to the default strategy.
         var strategy = GetStrategy(bot.BotPickStyle ?? BotPickStyle.Best, availablePlayers.Count);
@@ -129,7 +141,7 @@ public class BotPicksReadyNotificationHandler(IDbContext dbContext, IMediator me
             TeamId = team.Id
         });
 
-        return Task.CompletedTask;
+        return true;
     }
 
     private static (int Start, int End, BotFallbackPickStrategy Fallback)

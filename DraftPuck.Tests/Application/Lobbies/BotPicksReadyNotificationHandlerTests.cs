@@ -43,6 +43,100 @@ public class BotPicksReadyNotificationHandlerTests(DatabaseFixture fixture)
             Arg.Is<LobbyStateChangedNotification>(n => n.Data.LobbyJoinCode == code), Arg.Any<CancellationToken>());
     }
 
+    private BotPicksMadePayload? Announced(Guid lobbyId) => _mediator.ReceivedCalls()
+        .Select(c => c.GetArguments()[0])
+        .OfType<BotPicksMadeNotification>()
+        .Select(n => n.Data)
+        .SingleOrDefault(d => d.Lobby.Id == lobbyId);
+
+    [Fact]
+    public async Task AnnouncesTheBotsFirstPicksForAGame()
+    {
+        var gameId = Seed.NewGameId();
+        LobbyEntity lobby;
+        await using (var db = fixture.CreateContext())
+        {
+            var seed = new Seed(db);
+            (lobby, _) = seed.Lobby([gameId]);
+            seed.Bot(lobby);
+            seed.Bot(lobby);
+            await db.SaveChangesAsync();
+        }
+
+        await RunAsync(TestGames.Create(gameId, DateTime.UtcNow.AddMinutes(45)));
+
+        var announced = Assert.IsType<BotPicksMadePayload>(Announced(lobby.Id));
+        Assert.Equal(gameId, announced.Game.Id);
+        Assert.Equal(2, announced.BotCount);
+        Assert.Equal(2, announced.Picks.Count);
+        Assert.All(announced.Picks, p => Assert.Equal((2, false), (p.PickCount, p.IsReplacement)));
+    }
+
+    // E.g. the host added a bot after the other bots had picked: only the new one is announced.
+    [Fact]
+    public async Task AnnouncesOnlyTheBotsThatPicked()
+    {
+        var gameId = Seed.NewGameId();
+        LobbyEntity lobby;
+        Guid newBotId;
+        await using (var db = fixture.CreateContext())
+        {
+            var seed = new Seed(db);
+            (lobby, _) = seed.Lobby([gameId]);
+            var fullBot = seed.Bot(lobby);
+            seed.Pick(fullBot, gameId, TestGames.HomeTeamId, TestGames.HomePlayer(0));
+            seed.Pick(fullBot, gameId, TestGames.AwayTeamId, TestGames.AwayPlayer(0));
+            newBotId = seed.Bot(lobby).Id;
+            await db.SaveChangesAsync();
+        }
+
+        await RunAsync(TestGames.Create(gameId, DateTime.UtcNow.AddMinutes(-20), GameState.Live));
+
+        var announced = Assert.IsType<BotPicksMadePayload>(Announced(lobby.Id));
+        var picks = Assert.Single(announced.Picks);
+        Assert.Equal((newBotId, false), (picks.Bot.Id, picks.IsReplacement));
+        Assert.Equal(2, announced.BotCount);
+    }
+
+    // A bot that already had picks for the game lost one (its player was scratched, or the host removed it).
+    [Fact]
+    public async Task AnnouncesARepickAsAReplacement()
+    {
+        var gameId = Seed.NewGameId();
+        LobbyEntity lobby;
+        await using (var db = fixture.CreateContext())
+        {
+            var seed = new Seed(db);
+            (lobby, _) = seed.Lobby([gameId]);
+            var bot = seed.Bot(lobby);
+            seed.Pick(bot, gameId, TestGames.AwayTeamId, TestGames.AwayPlayer(0));
+            await db.SaveChangesAsync();
+        }
+
+        await RunAsync(TestGames.Create(gameId, DateTime.UtcNow.AddMinutes(-20), GameState.Live));
+
+        var picks = Assert.Single(Assert.IsType<BotPicksMadePayload>(Announced(lobby.Id)).Picks);
+        Assert.Equal((1, true), (picks.PickCount, picks.IsReplacement));
+    }
+
+    [Fact]
+    public async Task BotsDoNotPickOnceTheGameIsFinal()
+    {
+        var gameId = Seed.NewGameId();
+        Guid botId;
+        await using (var db = fixture.CreateContext())
+        {
+            var seed = new Seed(db);
+            var (lobby, _) = seed.Lobby([gameId]);
+            botId = seed.Bot(lobby).Id;
+            await db.SaveChangesAsync();
+        }
+
+        await RunAsync(TestGames.Create(gameId, DateTime.UtcNow.AddHours(-3), GameState.Final));
+
+        Assert.Empty(await PicksForAsync(botId, gameId));
+    }
+
     [Fact]
     public async Task OnlyFillsRemainingPicksAndSkipsPlayersAlreadyTaken()
     {
@@ -109,6 +203,7 @@ public class BotPicksReadyNotificationHandlerTests(DatabaseFixture fixture)
         await RunAsync(TestGames.Create(gameId, DateTime.UtcNow.AddMinutes(20)));
 
         await _mediator.DidNotReceiveWithAnyArgs().Publish<LobbyStateChangedNotification>(default!, default);
+        await _mediator.DidNotReceiveWithAnyArgs().Publish<BotPicksMadeNotification>(default!, default);
     }
 
     [Fact]

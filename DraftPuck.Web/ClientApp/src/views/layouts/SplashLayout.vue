@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import VLogo from '@/components/VLogo.vue'
+
 withDefaults(
   defineProps<{
     showHeaderText?: boolean
@@ -21,7 +23,7 @@ withDefaults(
   <div class="page container-fluid" :class="{ 'increase-contrast': increaseContrast }">
     <div class="content d-flex flex-column h-100" :class="`p-${padding}`">
       <header class="p-5" :class="`m-n${padding}`">
-        <img src="/img/logo.png" class="w-100" />
+        <VLogo variant="standard" class="w-100" />
       </header>
       <div class="mt-3">
         <div class="splash-text text-amber-400 text-center" v-if="showHeaderText">

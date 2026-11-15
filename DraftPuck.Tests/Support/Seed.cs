@@ -75,7 +75,11 @@ public class Seed(DraftPuckContext db)
         return bot;
     }
 
-    public LobbyMemberPickEntity Pick(LobbyMemberEntity member, int gameId, int teamId, int playerId)
+    /// <summary>
+    /// A pick made at <paramref name="created"/> (default: now, by this process's clock, so tests comparing it with goal
+    /// times don't depend on the database container's clock).
+    /// </summary>
+    public LobbyMemberPickEntity Pick(LobbyMemberEntity member, int gameId, int teamId, int playerId, DateTime? created = null)
     {
         var pick = new LobbyMemberPickEntity
         {
@@ -83,7 +87,8 @@ public class Seed(DraftPuckContext db)
             LobbyMemberId = member.Id,
             GameId = gameId,
             TeamId = teamId,
-            PlayerId = playerId
+            PlayerId = playerId,
+            Created = created ?? DateTime.UtcNow
         };
         db.LobbyMemberPicks.Add(pick);
         return pick;

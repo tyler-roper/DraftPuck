@@ -17,4 +17,7 @@ public class LobbyClientEventService(IHubContext<LobbyHub> hubContext) : IClient
 
     public async Task SendLobbyStateChangedNotification(string joinCode, CancellationToken ct)
         => await hubContext.Clients.Group(joinCode).SendAsync("LobbyStateChanged", ct);
+
+    public async Task SendGameUpdated(GameDto game, CancellationToken ct)
+        => await hubContext.Clients.All.SendAsync("GameUpdated", game, ct);
 }

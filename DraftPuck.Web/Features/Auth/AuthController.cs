@@ -1,11 +1,15 @@
-﻿using DraftPuck.Application.Common.Exceptions;
+﻿using DraftPuck.Web.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
+using DraftPuck.Application.Common.Exceptions;
 using DraftPuck.Application.Features.Auth;
+using DraftPuck.Application.Features.Auth.PasswordReset;
 using Microsoft.AspNetCore.Authorization;
 
 namespace DraftPuck.Web.Features.Auth;
 
 public class AuthController(IMediator mediator) : BaseController()
 {
+    [EnableRateLimiting(RateLimits.Login)]
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequestDto request)
     {
@@ -20,6 +24,25 @@ public class AuthController(IMediator mediator) : BaseController()
         var response = await mediator.Send(command);
         SetTokenCookie(response.RefreshToken);
         return Ok(response);
+    }
+
+    /// <summary>Emails a reset link if the email belongs to an account. Responds the same either way.</summary>
+    [AllowAnonymous]
+    [EnableRateLimiting(RateLimits.PasswordReset)]
+    [HttpPost("passwordReset/request")]
+    public async Task<IActionResult> RequestPasswordReset(RequestPasswordResetRequestDto request)
+    {
+        await mediator.Send(new RequestPasswordResetCommand { Email = request.Email });
+        return NoContent();
+    }
+
+    [AllowAnonymous]
+    [EnableRateLimiting(RateLimits.Login)]
+    [HttpPost("passwordReset/complete")]
+    public async Task<IActionResult> ResetPassword(ResetPasswordRequestDto request)
+    {
+        await mediator.Send(new ResetPasswordCommand { Token = request.Token, Password = request.Password });
+        return NoContent();
     }
 
     [HttpPost("logout")]

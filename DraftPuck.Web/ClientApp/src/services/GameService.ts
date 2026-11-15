@@ -13,10 +13,6 @@ class NhlApiService {
     return this._http.get('summaries')
   }
 
-  public async getGame(gameId: number): Promise<Game> {
-    return this._http.get(`${gameId}`)
-  }
-
   public async getAllGames(): Promise<Game[]> {
     return this._http.get('')
   }

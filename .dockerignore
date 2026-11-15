@@ -23,3 +23,5 @@
 **/values.dev.yaml
 LICENSE
 README.md
+# Built by the image from ClientApp; a stale local copy would break the build.
+DraftPuck.Web/wwwroot

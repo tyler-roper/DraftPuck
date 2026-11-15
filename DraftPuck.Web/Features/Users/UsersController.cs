@@ -1,4 +1,6 @@
-﻿using Azure;
+﻿using DraftPuck.Web.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
+using Azure;
 using DraftPuck.Application.Features.Users;
 using Microsoft.AspNetCore.Authorization;
 
@@ -26,6 +28,7 @@ public class UsersController(IMediator mediator) : BaseController()
     }
 
     [AllowAnonymous]
+    [EnableRateLimiting(RateLimits.GuestCreation)]
     [HttpPost]
     public async Task<IActionResult> CreateGuest()
     {

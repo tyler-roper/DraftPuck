@@ -15,6 +15,13 @@ public record DrinkInvalidatedPayload(LobbyEntity Lobby, LobbyMemberEntity Sende
 public record DrinkRemovedPayload(LobbyEntity Lobby, LobbyMemberEntity Member, DrinkEntity Drink);
 public record DrinkAwardedPayload(LobbyEntity Lobby, LobbyMemberEntity Member, DrinkEntity Drink);
 public record LobbyStateChangedPayload(string LobbyJoinCode);
+/// <summary>
+/// One bot's picks for a game from a single run: its first picks (it had none for the game), or replacements for picks
+/// it lost (a scratched player, or the host removing one).
+/// </summary>
+public record BotGamePicks(LobbyMemberEntity Bot, int PickCount, bool IsReplacement);
+/// <summary>The bots that picked for a game in one run, and how many bots the lobby has.</summary>
+public record BotPicksMadePayload(LobbyEntity Lobby, GameDto Game, IReadOnlyList<BotGamePicks> Picks, int BotCount);
 
 //Notifications
 public record LobbyCreatedNotification(LobbyCreatedEventPayload Data) : INotification;
@@ -26,6 +33,8 @@ public record UserLeftNotification(LobbyMemberEventPayload Data) : INotification
 public record UserPromotedNotification(LobbyMemberEventPayload Data) : INotification;
 public record PickMadeNotification(LobbyPickEventPayload Data) : INotification;
 public record PickRemovedNotification(LobbyPickEventPayload Data) : INotification;
+/// <summary>The system removed a pick because its player left the game's lineup (e.g. scratched before puck drop).</summary>
+public record PickScratchedNotification(LobbyPickEventPayload Data) : INotification;
 public record DrinkAssignedNotification(LobbyDrinkEventPayload Data) : INotification;
 public record MessageSentNotification(LobbyMessageEventPayload Data) : INotification;
 public record LobbyEventCreatedNotification(LobbyEventEntity Event, string JoinCode) : INotification;
@@ -36,3 +45,4 @@ public record DrinkAwardedNotification(DrinkAwardedPayload Data) : INotification
 public record LobbyStateChangedNotification(LobbyStateChangedPayload Data) : INotification;
 public record PicksReadyNotification(GameDto Game) : INotification;
 public record BotPicksReadyNotification(GameDto Game) : INotification;
+public record BotPicksMadeNotification(BotPicksMadePayload Data) : INotification;

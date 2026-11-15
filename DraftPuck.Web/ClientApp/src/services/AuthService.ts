@@ -17,6 +17,15 @@ class AuthService {
     return await this._http.post('login', { email, password })
   }
 
+  /** Emails a reset link if the email belongs to an account. Succeeds the same way either way. */
+  public async requestPasswordReset(email: string): Promise<void> {
+    return await this._http.post('passwordReset/request', { email })
+  }
+
+  public async resetPassword(token: string, password: string): Promise<void> {
+    return await this._http.post('passwordReset/complete', { token, password })
+  }
+
   public async logout(): Promise<void> {
     return await this._http.post('logout', undefined)
   }

@@ -1,4 +1,5 @@
-﻿using DraftPuck.Application.Features.Discord;
+﻿using DraftPuck.Application.Common.Exceptions;
+using DraftPuck.Application.Features.Discord;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 
@@ -11,7 +12,8 @@ public class DiscordController(IMediator mediator, IOptions<ApplicationOptions> 
     [HttpGet("link")]
     public async Task<IActionResult> Link()
     {
-        if (!IsSignedIn) throw new UnauthorizedAccessException();
+        // Guests have no account to link. (ForbiddenException maps to a 403; UnauthorizedAccessException was an unhandled 500.)
+        if (!IsSignedIn) throw new ForbiddenException("Create an account to link Discord.");
         var discordRedirectUrl = await mediator.Send(new BeginLinkDiscordUserCommand(CurrentUserId));
         return Ok(new { url = discordRedirectUrl });
     }

@@ -10,6 +10,7 @@ namespace DraftPuck.Application.Common.Interfaces
         DbSet<BannerEntity> Banners { get; }
         DbSet<DrinkEntity> Drinks { get; }
         DbSet<ErrorLogEntity> ErrorLogs { get; }
+        DbSet<EventLogoEntity> EventLogos { get; }
         DbSet<LobbyEntity> Lobbies { get; }
         DbSet<LobbyEventEntity> LobbyEvents { get; }
         DbSet<LobbyMemberEntity> LobbyMembers { get; }
@@ -20,6 +21,7 @@ namespace DraftPuck.Application.Common.Interfaces
         DbSet<UserTitleEntity> UserTitles { get; }
         DbSet<UserEntity> Users { get; }
         DbSet<UserRefreshTokenEntity> UserRefreshTokens { get; }
+        DbSet<PasswordResetTokenEntity> PasswordResetTokens { get; }
         DbSet<TitleEntity> Titles { get; }
 
         DbSet<TEntity> Set<TEntity>() where TEntity : class;

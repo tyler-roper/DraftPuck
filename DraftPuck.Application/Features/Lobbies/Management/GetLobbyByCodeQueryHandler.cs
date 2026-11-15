@@ -1,5 +1,6 @@
 ﻿using DraftPuck.Application.Common.Exceptions;
 using DraftPuck.Application.Common.QueryExtensions;
+using DraftPuck.Application.Features.Lobbies.Picks;
 
 namespace DraftPuck.Application.Features.Lobbies.Management;
 
@@ -21,6 +22,7 @@ public class GetLobbyByCodeQueryHandler(IDbContext dbContext, IMapper mapper) : 
         //if (lobby.IsActive == false) throw new BadRequestException("Lobby is no longer active.");
 
         var lobbyDto = mapper.Map<LobbyDto>(lobby);
+        lobbyDto.CanManageAllPicks = await PickPermissions.CanManageAllPicksAsync(dbContext, lobby, request.UserId, ct);
 
         // Anyone with the code can see a lobby before joining (the join form checks names, and finished lobbies show
         // results), but the chat is for members. Joining is announced to the lobby; reading this endpoint isn't.

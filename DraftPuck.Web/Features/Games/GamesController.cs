@@ -6,14 +6,7 @@ namespace DraftPuck.Web.Features.Games;
 [AllowAnonymous]
 public class GamesController(IMediator mediator) : BaseController()
 {
-    [HttpGet("{gameId}")]
-    public async Task<ActionResult<GameDto>> GetGameById(int gameId)
-    {
-        var query = new GetGameByIdQuery { GameId = gameId };
-        var gameDto = await mediator.Send(query);
-        return Ok(gameDto);
-    }
-
+    // Lobby pages fetch every game on (re)connect; after that each game is pushed over SignalR ("GameUpdated").
     [HttpGet]
     public async Task<ActionResult<List<GameDto>>> GetAllGames()
     {

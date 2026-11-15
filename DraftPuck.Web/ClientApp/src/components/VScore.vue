@@ -1,8 +1,9 @@
 <script setup lang="ts">
 //#region imports
 import { computed } from 'vue'
-import { addMinutes, format } from 'date-fns'
+import { format } from 'date-fns'
 import GamePickableStatus from '@/enums/gamePickableStatus'
+import { getPickableStatus, isGameInLobby } from '@/helpers/pickRules'
 import GameState from '@/enums/gameState'
 import { getOrdinal } from '@/helpers/gameHelpers'
 import PeriodType from '@/enums/periodType'
@@ -35,33 +36,14 @@ const { lobby, currentUserId } = storeToRefs(store)
 const game = computed(() => props.game)
 const currentMember = computed(() => lobby.value!.members.find((member) => member.userId === currentUserId.value)!)
 const isSelected = computed(() => props.isSelected)
-const isLobbyGame = computed(() => lobby.value?.gameIds.includes(game.value.id))
+const isLobbyGame = computed(() => !!lobby.value && isGameInLobby(lobby.value, game.value))
 const isGameStarted = computed(() => game.value.gameState !== GameState.Upcoming)
 const isGameInProgress = computed(() => game.value.gameState === GameState.Live)
 const isGameOver = computed(() => game.value.gameState === GameState.Final)
 
-const currentMemberHasMadeAllPicksForGame = computed(() => {
-  const currentMemberPicks = currentMember.value.picks
-  const currentMemberPicksForThisGame = currentMemberPicks.filter(
-    (pick) =>
-      game.value.homeTeam.roster.some((rosterPlayer) => rosterPlayer.id === pick.playerId) ||
-      game.value.awayTeam.roster.some((rosterPlayer) => rosterPlayer.id === pick.playerId)
-  )
-
-  return currentMemberPicksForThisGame.length < lobby.value!.picksPerTeam * 2
-})
-
-const gamePickableStatusForCurrentMember = computed(() => {
-  if (!isLobbyGame.value) return GamePickableStatus.Locked
-  if (
-    (!isGameStarted.value && game.value.dateTime > addMinutes(currentSystemTime.value, 30)) ||
-    game.value.homeTeam.roster.length + game.value.awayTeam.roster.length === 0
-  )
-    return GamePickableStatus.Upcoming
-  if (isGameOver.value) return GamePickableStatus.GameComplete
-
-  return currentMemberHasMadeAllPicksForGame.value ? GamePickableStatus.PicksAvailable : GamePickableStatus.PicksMade
-})
+const gamePickableStatusForCurrentMember = computed(() =>
+  getPickableStatus(lobby.value!, currentMember.value, game.value, currentSystemTime.value)
+)
 
 const gamePickableStatusForCurrentMemberAsString = computed(() => {
   return GamePickableStatus[gamePickableStatusForCurrentMember.value]
@@ -79,7 +61,7 @@ const gamePickableViewModel = computed(() => {
 
   if (status === GamePickableStatus.Upcoming)
     return {
-      text: format(addMinutes(game.value.dateTime, -30), 'p'),
+      text: format(game.value.pickingOpensUtc, 'p'),
       icon: 'fi-br-alarm-clock',
       color: 'stone-300'
     }

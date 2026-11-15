@@ -5,6 +5,7 @@ public class LobbyMappingProfile : Profile
     public LobbyMappingProfile()
     {
         CreateMap<LobbyEntity, LobbyDto>()
-            .ForMember(dest => dest.Members, opt => opt.MapFrom(src => src.LobbyMembers));
+            .ForMember(dest => dest.Members, opt => opt.MapFrom(src => src.LobbyMembers))
+            .ForMember(dest => dest.CanManageAllPicks, opt => opt.Ignore()); // depends on the viewer; set by GetLobbyByCodeQueryHandler
     }
 }

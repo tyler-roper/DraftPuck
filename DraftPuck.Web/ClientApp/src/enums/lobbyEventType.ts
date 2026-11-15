@@ -14,7 +14,10 @@
   Broadcast,
   PickRemoved,
   UserLeft,
-  UserPromoted
+  UserPromoted,
+  // Mirrors the server's LobbyEventType ints: add new values at the end only.
+  PickScratched,
+  BotPicksMade
 }
 
 export default LobbyEventType

@@ -48,6 +48,18 @@ const router = createRouter({
       meta: { redirectIfLoggedIn: true }
     },
     {
+      path: '/forgot-password',
+      name: 'ForgotPassword',
+      component: () => import('@/views/ForgotPasswordView.vue'),
+      meta: { redirectIfLoggedIn: true }
+    },
+    {
+      // The link in the password reset email. Not redirectIfLoggedIn: the link should work whoever is signed in.
+      path: '/reset-password',
+      name: 'ResetPassword',
+      component: () => import('@/views/ResetPasswordView.vue')
+    },
+    {
       path: '/join',
       name: 'Join',
       component: () => import('@/views/JoinView.vue'),

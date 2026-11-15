@@ -1,11 +1,13 @@
-import { computed, ref } from 'vue'
+import { computed, ref, toRaw } from 'vue'
 import { defineStore } from 'pinia'
 import type Bot from '@/models/bot'
 import LobbyService from '@/services/LobbyService'
 import { compareAsc } from 'date-fns'
 import type PickRequest from '@/models/pickRequest'
 import SystemMessageViewModel from '@/models/systemMessageViewModel'
+import MessageViewModel from '@/models/messageViewModel'
 import { useUserStore } from '@/stores/user'
+import { getErrorMessage } from '@/helpers/requestHelpers'
 
 export const useLobbyStore = defineStore('lobby', () => {
   //#region state
@@ -23,17 +25,10 @@ export const useLobbyStore = defineStore('lobby', () => {
   const setEvents = (_events: LobbyEvent[]) => (events.value = _events)
 
   function addPick(pick: LobbyMemberPick) {
-    lobby.value?.members.find((m) => pick.lobbyMemberId === m.id)?.picks.push(pick)
-  }
-
-  function updatePick(pick: LobbyMemberPick) {
     const member = lobby.value?.members.find((m) => pick.lobbyMemberId === m.id)
-    if (!member) return
-
-    const idx = member.picks.findIndex((p) => p.playerId === pick.playerId && pick.gameId === p.gameId)
-    if (idx === -1) return
-
-    member.picks[idx] = pick
+    // A lobby refetch (e.g. from someone else's event) may already have brought this pick in.
+    if (!member || member.picks.some((p) => p.id === pick.id)) return
+    member.picks.push(pick)
   }
 
   function removePickFromStore(pickId: string) {
@@ -70,13 +65,10 @@ export const useLobbyStore = defineStore('lobby', () => {
     lobby.value.members = lobby.value.members.filter((m) => m.id != lobbyMemberId)
   }
 
-  function addLobbyMember(lobbyMember: LobbyMember) {
-    lobby.value?.members.push(lobbyMember)
-  }
-
+  /** Adds a message, unless a lobby refetch already brought it in. Your own unsent messages have no ID yet. */
   function addMessageToStore(message: Message) {
     const member = lobby.value?.members.find((m) => m.id === message.lobbyMemberId)
-    if (!member) return
+    if (!member || (message.id && member.messages.some((m) => m.id === message.id))) return
     member.messages.push(message)
   }
 
@@ -106,12 +98,25 @@ export const useLobbyStore = defineStore('lobby', () => {
     setEvents(events)
   }
 
-  async function pickPlayer(pickRequest: PickRequest) {
-    if (!lobby.value) return
-    addPick(pickRequest)
+  /**
+   * Makes each pick and adds the ones the server accepts. Nothing is shown before the server answers (the UI shows
+   * them as pending), so a refused pick never appears. Picks are independent: one can fail while others succeed.
+   * Returns each request's outcome, with the server's reason for any refusal.
+   */
+  async function makePicks(pickRequests: PickRequest[]): Promise<{ request: PickRequest; error?: string }[]> {
+    const joinCode = lobby.value?.joinCode
+    if (!joinCode) return pickRequests.map((request) => ({ request, error: 'Not in a lobby.' }))
 
-    const persistedPick = await LobbyService.makePick(lobby.value.joinCode, pickRequest)
-    updatePick(persistedPick)
+    return Promise.all(
+      pickRequests.map(async (request) => {
+        try {
+          addPick(await LobbyService.makePick(joinCode, request))
+          return { request }
+        } catch (error) {
+          return { request, error: getErrorMessage(error, "Couldn't make that pick. Please try again.") }
+        }
+      })
+    )
   }
 
   async function assignDrink(drinkId: string, recipientId: string) {
@@ -120,48 +125,70 @@ export const useLobbyStore = defineStore('lobby', () => {
     setDrinkRecipient(drink)
   }
 
+  // Lobby changes below are applied once the server has made them, and throw its refusal (e.g. a name already taken)
+  // so the caller can show it. Only chat is optimistic: messages appear instantly and are taken back if sending fails.
+
   async function changeName(newName: string) {
     if (!lobby.value) return
 
-    setNewName(newName)
     await LobbyService.changeName(lobby.value.joinCode, newName)
+    setNewName(newName)
   }
 
   async function removeLobbyMember(lobbyMemberId: string) {
     if (!lobby.value) return
 
-    removeLobbyMemberFromStore(lobbyMemberId)
     await LobbyService.removeLobbyMember(lobby.value.joinCode, lobbyMemberId)
+    removeLobbyMemberFromStore(lobbyMemberId)
   }
 
+  /** Removes a pick once the server has. Throws the server's refusal, so the caller can show it. */
   async function removePick(pickId: string) {
     if (!lobby.value) return
 
-    removePickFromStore(pickId)
     await LobbyService.removePick(lobby.value.joinCode, pickId)
+    removePickFromStore(pickId)
   }
 
+  /** Adds a bot, then refetches the lobby so the bot appears as the server created it (with its ID). */
   async function addBot(bot: Bot) {
     if (!lobby.value) return
 
-    addLobbyMember(bot)
-    await LobbyService.addBot(lobby.value.joinCode, bot)
+    const joinCode = lobby.value.joinCode
+    await LobbyService.addBot(joinCode, bot)
+    await getLobby(joinCode)
   }
 
+  /** Shows the message immediately, and takes it back (and rethrows) if the server doesn't accept it. */
   async function sendMessage(messageText: string) {
     if (!lobby.value) return
 
-    const member = lobby.value?.members.find((m) => m.userId === currentUserId.value)
+    const member = lobby.value.members.find((m) => m.userId === currentUserId.value)
     if (!member) return
     const message = { lobbyMemberId: member.id, message: messageText, sent: new Date() } as Message
 
     addMessageToStore(message)
-    await LobbyService.sendMessage(lobby.value.joinCode, message)
+    try {
+      await LobbyService.sendMessage(lobby.value.joinCode, message)
+    } catch (error) {
+      // The stored copy is a reactive proxy of `message`, so compare the raw objects.
+      member.messages = member.messages.filter((m) => toRaw(m) !== message)
+      throw error
+    }
   }
   //#endregion
 
   //#region getters
   const isLobbyAdmin = computed(() => currentUserId.value === lobby.value?.createdBy)
+  const currentMember = computed(() => lobby.value?.members.find((m) => m.userId === currentUserId.value))
+
+  /** Every member's messages plus local system messages (e.g. command output), oldest first. */
+  const chatMessages = computed(() => {
+    const memberMessages = (lobby.value?.members ?? []).flatMap(
+      (member) => member.messages?.map((msg) => new MessageViewModel(member, msg.message, msg.sent, msg.id)) ?? []
+    )
+    return [...memberMessages, ...systemMessages.value].sort((a, b) => compareAsc(a.sent, b.sent))
+  })
   //#endregion
 
   return {
@@ -173,17 +200,15 @@ export const useLobbyStore = defineStore('lobby', () => {
     setLobby,
     setEvents,
     addPick,
-    updatePick,
     removePickFromStore,
     setDrinkRecipient,
     addLobbyEvent,
     setNewName,
     removeLobbyMemberFromStore,
-    addLobbyMember,
     addMessageToStore,
     getLobby,
     getLobbyEvents,
-    pickPlayer,
+    makePicks,
     assignDrink,
     changeName,
     removeLobbyMember,
@@ -191,6 +216,8 @@ export const useLobbyStore = defineStore('lobby', () => {
     addBot,
     sendMessage,
     isLobbyAdmin,
+    currentMember,
+    chatMessages,
     sendDebugMessage,
     sendSystemMessage,
     setDebugging

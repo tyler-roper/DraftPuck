@@ -49,6 +49,23 @@ describe('parseLobbyEventText', () => {
     expect(result.text).toBe("<strong>Ca$h $&amp; $&#039;</strong> joined")
   })
 
+  it('names players who have left the lineup', () => {
+    const withScratch = [{ ...games[0], formerPlayers: [{ id: 29, firstName: 'Leon', lastName: 'Draisaitl' }] }] as unknown as Game[]
+
+    const named = parseLobbyEventText(event('{{player}} was scratched', { playerId: 29 }), lobby(), withScratch)
+    const badge = parseLobbyEventText(event('{{playerBadge}}', { playerId: 29, teamId: 1 }), lobby(), withScratch)
+
+    expect(named.text).toBe('<strong>Leon Draisaitl</strong> was scratched')
+    expect(badge.text).toContain('Draisaitl')
+    expect(badge.text).not.toContain('(Player)')
+  })
+
+  it('keeps the message and uses a placeholder for a player it cannot find', () => {
+    const result = parseLobbyEventText(event("{{player}}'s goal has been called back.", { playerId: 1 }), lobby(), games)
+
+    expect(result.text).toBe("<strong>(Player)</strong>'s goal has been called back.")
+  })
+
   it('uses placeholders for members who are no longer in the lobby', () => {
     const result = parseLobbyEventText(event('{{name}} gave {{recipientName}} a drink'), lobby(), games)
 

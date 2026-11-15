@@ -11,10 +11,14 @@ public class LobbyEventHandler(IDbContext dbContext, IMediator mediator) :
     INotificationHandler<UserPromotedNotification>,
     INotificationHandler<PickMadeNotification>,
     INotificationHandler<PickRemovedNotification>,
+    INotificationHandler<PickScratchedNotification>,
+    INotificationHandler<BotPicksMadeNotification>,
     INotificationHandler<DrinkAssignedNotification>,
     INotificationHandler<DrinkAwardedNotification>,
     INotificationHandler<DrinkRemovedNotification>,
-    INotificationHandler<DrinkInvalidatedNotification>
+    INotificationHandler<DrinkInvalidatedNotification>,
+    INotificationHandler<GoalChangedNotification>,
+    INotificationHandler<GoalRemovedNotification>
 {
     public Task Handle(UserJoinedLobbyNotification n, CancellationToken ct)
     {
@@ -65,6 +69,21 @@ public class LobbyEventHandler(IDbContext dbContext, IMediator mediator) :
             gameId: n.Data.Pick.GameId, playerId: n.Data.Pick.PlayerId, teamId: n.Data.Pick.TeamId);
     }
 
+    public Task Handle(PickScratchedNotification n, CancellationToken ct)
+    {
+        return NewLobbyEvent(n.Data.Lobby, LobbyEventType.PickScratched, ct, lobbyMemberId: n.Data.Member.Id,
+            gameId: n.Data.Pick.GameId, playerId: n.Data.Pick.PlayerId, teamId: n.Data.Pick.TeamId);
+    }
+
+    public async Task Handle(BotPicksMadeNotification n, CancellationToken ct)
+    {
+        // Named on the event when a single bot picked, as with other members' events.
+        var onlyBot = n.Data.Picks.Count == 1 ? n.Data.Picks[0].Bot.Id : (Guid?)null;
+        foreach (var (title, text) in BotPickEventTexts.Describe(n.Data))
+            await NewLobbyEvent(n.Data.Lobby, LobbyEventType.BotPicksMade, ct, lobbyMemberId: onlyBot, gameId: n.Data.Game.Id,
+                title: title, text: text);
+    }
+
     public Task Handle(DrinkAwardedNotification n, CancellationToken ct)
     {
         return NewLobbyEvent(n.Data.Lobby, LobbyEventType.DrinkAwarded, ct, lobbyMemberId: n.Data.Member.Id,
@@ -90,10 +109,29 @@ public class LobbyEventHandler(IDbContext dbContext, IMediator mediator) :
 
     public Task Handle(DrinkRemovedNotification n, CancellationToken ct)
     {
-        return NewLobbyEvent(n.Data.Lobby, LobbyEventType.DrinkInvalidated, ct, lobbyMemberId: n.Data.Member.Id,
-            gameId: n.Data.Drink.LobbyMemberPick.GameId, playerId: n.Data.Drink.LobbyMemberPick.PlayerId, 
+        // Nobody was given this drink yet, so there's no recipient to warn: it's "revoked", not "invalidated".
+        return NewLobbyEvent(n.Data.Lobby, LobbyEventType.DrinkRevoked, ct, lobbyMemberId: n.Data.Member.Id,
+            gameId: n.Data.Drink.LobbyMemberPick.GameId, playerId: n.Data.Drink.LobbyMemberPick.PlayerId,
             teamId: n.Data.Drink.LobbyMemberPick.TeamId, gameEventId: n.Data.Drink.EventId);
     }
+
+    // Goal changes and removals are game events: every lobby with the game hears about them, whether or not anyone picked the scorer.
+    public async Task Handle(GoalChangedNotification n, CancellationToken ct)
+    {
+        foreach (var lobby in await LobbiesWithGameAsync(n.Data.GameId, ct))
+            await NewLobbyEvent(lobby, LobbyEventType.GoalChanged, ct, gameId: n.Data.GameId, gameEventId: n.Data.Play.Id,
+                playerId: n.Data.NewScorer.Id, player2Id: n.Data.OldScorer.Id, teamId: n.Data.NewScorer.TeamId);
+    }
+
+    public async Task Handle(GoalRemovedNotification n, CancellationToken ct)
+    {
+        foreach (var lobby in await LobbiesWithGameAsync(n.Data.GameId, ct))
+            await NewLobbyEvent(lobby, LobbyEventType.GoalRemoved, ct, gameId: n.Data.GameId, gameEventId: n.Data.EventId,
+                playerId: n.Data.Scorer.Id, teamId: n.Data.Scorer.TeamId);
+    }
+
+    private Task<List<LobbyEntity>> LobbiesWithGameAsync(int gameId, CancellationToken ct)
+        => dbContext.Lobbies.Where(l => l.GameIds.Contains(gameId)).ToListAsync(ct);
 
     private async Task NewLobbyEvent(LobbyEntity lobby, LobbyEventType eventType, CancellationToken ct, Guid? lobbyMemberId = null, int? gameEventId = null, int? gameId = null, Guid? lobbyMember2Id = null, int? playerId = null, int? player2Id = null, int? teamId = null, string? title = null, string? text = null)
     {

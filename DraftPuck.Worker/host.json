@@ -4,6 +4,8 @@
     "logLevel": {
       "default": "Warning",
       "Function": "Information",
+      "Function.ProcessGameFunction": "Warning",
+      "Function.ProcessGameFunction.User": "Information",
       "Host.Results": "Warning",
       "Host.Aggregator": "Warning",
       "Microsoft.Azure.WebJobs.Hosting.JobHostService": "Warning",

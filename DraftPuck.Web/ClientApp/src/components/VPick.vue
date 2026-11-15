@@ -1,7 +1,8 @@
 <script setup lang="ts">
 //#region imports
-import { addMinutes, format } from 'date-fns'
+import { format } from 'date-fns'
 import { computed } from 'vue'
+import { canPickPlayer, findPick, isGameInLobby } from '@/helpers/pickRules'
 import TeamColors from '@/models/teamColorLookup'
 import { getOrdinal } from '@/helpers/gameHelpers'
 import GameState from '@/enums/gameState'
@@ -20,12 +21,15 @@ export interface Props {
   isSelected?: boolean
   selectedPlayerCount: number
   isRemoving?: boolean
+  // Being locked in: sent to the server, waiting for its answer.
+  isPending?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   isForPicking: false,
   isSelected: false,
-  isRemoving: false
+  isRemoving: false,
+  isPending: false
 })
 
 //aliasing props
@@ -45,17 +49,9 @@ const { lobby, currentUserId } = storeToRefs(store)
 //#endregion
 
 //#region computed
-const isPlayerPickableByCurrentMember = computed(() => {
-  const isGameStartingWithin30Minutes = game.value.gameState === GameState.Upcoming && game.value.dateTime <= addMinutes(currentSystemTime.value, 30)
-  const isGamePickable = game.value.gameState === GameState.Live || isGameStartingWithin30Minutes
-
-  const team = playerTeam.value
-  const picksPerTeam = lobby.value!.picksPerTeam
-  const picksAlreadyMadeForTeam = currentMember.value.picks.filter((pick) => pick.teamId === team.id).length
-  const hasPicksAvailableForTeam = picksAlreadyMadeForTeam + props.selectedPlayerCount < picksPerTeam
-
-  return !isGameLocked.value && isGamePickable && !isPlayerPicked.value && hasPicksAvailableForTeam
-})
+const isPlayerPickableByCurrentMember = computed(() =>
+  canPickPlayer(lobby.value!, currentMember.value, game.value, { id: player.value.id, teamId: playerTeam.value.id }, currentSystemTime.value, props.selectedPlayerCount)
+)
 
 const playerTeam = computed(() => (game.value.homeTeam.roster.some((p) => p.id === player.value.id) ? game.value.homeTeam : game.value.awayTeam))
 const currentMember = computed(() => lobby.value!.members.find((member) => member.userId === currentUserId.value)!)
@@ -64,11 +60,11 @@ const isFaded = computed(
     (isForPicking.value && !isPlayerPickableByCurrentMember.value && !isSelected.value && !isPlayerPickedByCurrentMember.value) ||
     game.value.gameState === GameState.Final
 )
-const isGameLocked = computed(() => !lobby.value?.gameIds.includes(game.value.id))
-const isPlayerPicked = computed(() => lobby.value!.members.flatMap((member) => member.picks).some((pick) => pick.playerId === player.value.id))
-const isPlayerPickedByCurrentMember = computed(() => currentMember.value.picks.some((pick) => pick.playerId === player.value.id))
+const isGameLocked = computed(() => !isGameInLobby(lobby.value!, game.value))
+const pickedByMember = computed(() => findPick(lobby.value!, game.value.id, player.value.id)?.member)
+const isPlayerPicked = computed(() => pickedByMember.value !== undefined)
+const isPlayerPickedByCurrentMember = computed(() => pickedByMember.value?.id === currentMember.value.id)
 const isPlayerPickedBySomeoneElse = computed(() => isPlayerPicked.value && !isPlayerPickedByCurrentMember.value)
-const pickedByMember = computed(() => lobby.value!.members.find((member) => member.picks.some((pick) => pick.playerId === player.value.id)))
 const teamLogo = computed(() => `/img/logos/${playerTeam.value.abbreviation}.png`)
 const goalString = computed(() => {
   const goalCount = game.value.plays.reduce((count, play) => {
@@ -103,6 +99,7 @@ const gameTime = computed(() => {
 const emit = defineEmits(['onSelected', 'onUnpicked'])
 
 function trySelect() {
+  if (props.isPending) return
   if (!isPlayerPickableByCurrentMember.value && !isSelected.value) return
   emit('onSelected', player.value)
 }
@@ -154,6 +151,13 @@ function trySelect() {
                   <span v-if="isPlayerPickedByCurrentMember" class="text-uppercase fw-bold text-stone-0">My Pick</span>
                   <span v-else>
                     Picked by <span class="text-danger">{{ pickedByMember!.name }}</span>
+                  </span>
+                </template>
+
+                <template v-else-if="isSelected && isPending">
+                  <span class="text-stone-0">
+                    <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                    Locking in...
                   </span>
                 </template>
 

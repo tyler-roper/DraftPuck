@@ -17,7 +17,7 @@ public class RedisOAuthCache(IDatabase redisDb) : IOAuthCache
     {
         var key = $"{DiscordStatePrefix}{state}";
         var value = await redisDb.StringGetDeleteAsync(key);
-        if (value.IsNullOrEmpty || !Guid.TryParse(value, out var result))
+        if (value.IsNullOrEmpty || !Guid.TryParse((string?)value, out var result))
             return null;
 
         return result;

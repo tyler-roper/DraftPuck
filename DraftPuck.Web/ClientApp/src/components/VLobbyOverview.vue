@@ -6,6 +6,8 @@ import { useLobbyStore } from '@/stores/lobby'
 import { storeToRefs } from 'pinia'
 import { ref, computed, nextTick } from 'vue'
 import VLobbyMember from '@/components/VLobbyMember.vue'
+import { useToast } from 'vue-toastification'
+import { getErrorMessage } from '@/helpers/requestHelpers'
 
 //const
 const botPickStyleOptions = [
@@ -20,6 +22,7 @@ const lobbyStore = useLobbyStore()
 
 const { lobby, isLobbyAdmin, currentUserId } = storeToRefs(lobbyStore)
 const { addBot } = lobbyStore
+const toast = useToast()
 const botNameInput = ref<HTMLInputElement | null>(null)
 const isAddingBot = ref(false)
 const botName = ref('')
@@ -39,7 +42,11 @@ async function tryAddBot() {
   if (!botName.value.length || !botPickStyle.value) return
   const bot = new Bot(botName.value, Number(botPickStyle.value))
   cancelAddBot()
-  await addBot(bot)
+  try {
+    await addBot(bot)
+  } catch (error) {
+    toast.error(getErrorMessage(error, "Couldn't add the bot. Please try again."))
+  }
 }
 
 async function showAddBot() {
