@@ -6,8 +6,10 @@ using DraftPuck.Infrastructure.Persistence;
 using DraftPuck.Infrastructure.SignalR;
 using DraftPuck.Shared.Discord;
 using DraftPuck.Web.Filters;
+using DraftPuck.Web.Health;
 using DraftPuck.Web.Mvc.App;
 using DraftPuck.Web.RateLimiting;
+using DraftPuck.Web.Security;
 using DraftPuck.Web.Telemetry;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
@@ -36,7 +38,8 @@ builder.Services
     .AddApplication(builder.Configuration)
     .ConfigureAuth(builder.Configuration, builder.Environment)
     .AddTelemetry(builder.Configuration)
-    .AddDraftPuckRateLimiting();
+    .AddDraftPuckRateLimiting()
+    .AddDraftPuckHealthChecks();
 
 builder.Services
     .AddOptions<ApplicationOptions>()
@@ -60,6 +63,7 @@ if (!app.Environment.IsDevelopment())
        .UseHttpsRedirection();
 }
 
+app.UseSecurityHeaders(app.Environment);
 app.UseStaticFiles();
 app.UseRouting();
 
@@ -76,6 +80,7 @@ app.UseWebSockets();
 
 app.MapHub<LobbyHub>("/hub");
 app.MapControllers();
+app.MapDraftPuckHealthChecks();
 // Client routes (any path that isn't a file) get the Vue app. Unknown /api paths don't: AppController.Api 404s them.
 app.MapFallbackToController(nameof(AppController.Index), "App");
 
