@@ -501,13 +501,16 @@ function selectGame(game?: Game) {
           </div>
           <div v-if="picksRemaining > 0 || (picksRemaining === 0 && selectedPlayers.length > 0)">
             <button
-              class="btn btn-primary fw-bold fs-3 h-100 rounded-0 text-uppercase"
+              class="btn btn-primary fw-bold fs-3 h-100 rounded-0 text-uppercase position-relative"
               :class="{ emphasized: !!selectedPlayers.length }"
               :disabled="!selectedPlayers.length || pendingPlayerIds.size > 0"
               @click="lockIn()"
             >
-              <span v-if="pendingPlayerIds.size > 0" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-              Lock In
+              <!-- While pending, the label stays (hidden) so the button keeps its size, and a spinner sits centered over it. -->
+              <span :class="{ invisible: pendingPlayerIds.size > 0 }">Lock In</span>
+              <span v-if="pendingPlayerIds.size > 0" class="position-absolute top-50 start-50 translate-middle d-flex">
+                <span class="spinner-border" role="status" aria-label="Locking in"></span>
+              </span>
             </button>
           </div>
         </template>
