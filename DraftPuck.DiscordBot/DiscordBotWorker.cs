@@ -1,6 +1,5 @@
 using Discord;
 using Discord.WebSocket;
-using DraftPuck.Application.Features.Discord;
 using DraftPuck.DiscordBot.Services;
 using Microsoft.Extensions.Options;
 
@@ -9,10 +8,10 @@ namespace DraftPuck.DiscordBot;
 public class DiscordBotWorker(
     DiscordSocketClient client,
     DiscordEventHandler handler,
-    IOptions<DiscordOptions> discordConfig,
+    IOptions<DiscordBotOptions> discordConfig,
     ILogger<DiscordBotWorker> logger) : BackgroundService
 {
-    private readonly DiscordOptions _discordConfig = discordConfig.Value;
+    private readonly DiscordBotOptions _discordConfig = discordConfig.Value;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {

@@ -1,6 +1,4 @@
-﻿using DraftPuck.Application.Features.Discord;
-
-namespace DraftPuck.DiscordBot.Interfaces;
+﻿namespace DraftPuck.DiscordBot.Interfaces;
 
 public interface IInternalApiClient
 {

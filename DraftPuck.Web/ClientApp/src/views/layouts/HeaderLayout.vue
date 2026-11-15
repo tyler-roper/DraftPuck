@@ -3,7 +3,7 @@ import VButton from '@/components/VButton.vue'
 import VIcon from '@/components/VIcon.vue'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
-import { useRouter } from 'vue-router';
+import { useBackNavigation } from '@/composables/useBackNavigation'
 withDefaults(
   defineProps<{
     title: string
@@ -22,20 +22,13 @@ withDefaults(
 const userStore = useUserStore()
 const { currentUser } = storeToRefs(userStore)
 const emit = defineEmits(['discard', 'save'])
-const router = useRouter()
 //#endregion
 
 //#region methods
-function onBreadcrumbClick() {
-  try {
-    router.back()
-  } catch {
-    if (currentUser?.value?.nickname)
-      router.replace(`/u/${currentUser.value.nickname}`)
-
-    router.replace(`/`)
-  }
-}
+// Opened directly, these pages go to the user's profile (where their account pages and past lobbies are), or home.
+const onBreadcrumbClick = useBackNavigation(() =>
+  currentUser.value && !currentUser.value.isGuest && currentUser.value.nickname ? `/u/${currentUser.value.nickname}` : '/'
+)
 //#endregion
 </script>
 
