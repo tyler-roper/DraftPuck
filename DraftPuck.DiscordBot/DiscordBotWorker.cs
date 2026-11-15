@@ -1,4 +1,4 @@
-﻿using Discord;
+using Discord;
 using Discord.WebSocket;
 using DraftPuck.DiscordBot.Services;
 using DraftPuck.Shared.Discord;
@@ -6,28 +6,26 @@ using Microsoft.Extensions.Options;
 
 namespace DraftPuck.DiscordBot;
 
-public class DiscordBotWorker(DiscordSocketClient client, DiscordEventHandler handler, IOptions<DiscordOptions> discordConfig) : BackgroundService
+public class DiscordBotWorker(
+    DiscordSocketClient client,
+    DiscordEventHandler handler,
+    IOptions<DiscordOptions> discordConfig,
+    ILogger<DiscordBotWorker> logger) : BackgroundService
 {
     private readonly DiscordOptions _discordConfig = discordConfig.Value;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        try
-        {
-            client.UserJoined += async user => await handler.OnUserJoinedAsync(user, stoppingToken);
-            client.Ready += OnReadyAsync;
-            client.InteractionCreated += OnInteractionAsync;
+        // Discord.Net reports its own problems, including exceptions thrown by event handlers, only through this event.
+        client.Log += OnDiscordLogAsync;
+        client.UserJoined += user => handler.OnUserJoinedAsync(user, stoppingToken);
+        client.Ready += OnReadyAsync;
+        client.InteractionCreated += OnInteractionAsync;
 
-            await client.LoginAsync(TokenType.Bot, _discordConfig.BotToken);
-            await client.StartAsync();
+        await client.LoginAsync(TokenType.Bot, _discordConfig.BotToken);
+        await client.StartAsync();
 
-            await Task.Delay(-1, stoppingToken); // Keep running
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.Message);
-            throw;
-        }
+        await Task.Delay(Timeout.Infinite, stoppingToken);
     }
 
     private async Task OnReadyAsync()
@@ -40,19 +38,28 @@ public class DiscordBotWorker(DiscordSocketClient client, DiscordEventHandler ha
 
         await guild.CreateApplicationCommandAsync(verifyCommand.Build());
 
-        Console.WriteLine("Slash command '/verify' registered.");
+        logger.LogInformation("Slash command /verify registered");
     }
 
     private async Task OnInteractionAsync(SocketInteraction interaction)
     {
-        try
+        if (interaction is SocketSlashCommand slashCommand)
+            await handler.HandleSlashCommandAsync(slashCommand);
+    }
+
+    private Task OnDiscordLogAsync(LogMessage message)
+    {
+        var level = message.Severity switch
         {
-            if (interaction is SocketSlashCommand slashCommand)
-                await handler.HandleSlashCommandAsync(slashCommand);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("Interaction error: " + ex);
-        }
+            LogSeverity.Critical => LogLevel.Critical,
+            LogSeverity.Error => LogLevel.Error,
+            LogSeverity.Warning => LogLevel.Warning,
+            LogSeverity.Info => LogLevel.Information,
+            LogSeverity.Verbose => LogLevel.Debug,
+            _ => LogLevel.Trace
+        };
+
+        logger.Log(level, message.Exception, "Discord {Source}: {Message}", message.Source, message.Message);
+        return Task.CompletedTask;
     }
 }

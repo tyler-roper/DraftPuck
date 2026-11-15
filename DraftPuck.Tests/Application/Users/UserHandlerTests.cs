@@ -26,12 +26,34 @@ public class UserHandlerTests(DatabaseFixture fixture)
         }, default);
     }
 
-    private async Task<UserDto> UpdateAsync(UpdateUserCommand command)
+    private async Task<UserDto> UpdateAsync(UpdateUserCommand command, IAvatarStorageService? avatars = null)
     {
         await using var db = fixture.CreateContext();
-        return await new UpdateUserCommandHandler(db, TestServices.Mapper(), new UserRepository(db), _mediator, Substitute.For<IAvatarStorageService>())
+        return await new UpdateUserCommandHandler(db, TestServices.Mapper(), new UserRepository(db), _mediator,
+                avatars ?? Substitute.For<IAvatarStorageService>(), NullLogger<UpdateUserCommandHandler>.Instance)
             .Handle(command, default);
     }
+
+    // A 1x1 PNG, as the client sends it.
+    private const string PngAvatarData =
+        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+
+    private async Task<UserEntity> AccountWithAvatarAsync(string avatarPath)
+    {
+        var account = await AccountAsync();
+        await using var db = fixture.CreateContext();
+        (await db.Users.SingleAsync(u => u.Id == account.Id)).AvatarPath = avatarPath;
+        await db.SaveChangesAsync();
+        return account;
+    }
+
+    private static UpdateUserCommand NewAvatar(UserEntity account) => new()
+    {
+        RequesterUserId = account.Id,
+        TargetUserId = account.Id,
+        RequesterIsAuthenticated = true,
+        AvatarData = PngAvatarData
+    };
 
     private async Task<UserEntity> GuestAsync()
     {
@@ -236,5 +258,36 @@ public class UserHandlerTests(DatabaseFixture fixture)
         await using var check = fixture.CreateContext();
         var equipped = await check.UserBanners.Where(b => b.UserId == account.Id && b.IsEquipped).ToListAsync();
         Assert.Equal(lockedBannerId, Assert.Single(equipped).BannerId);
+    }
+
+    // --- Avatars ---
+
+    [Fact]
+    public async Task AFailedAvatarUploadKeepsTheCurrentAvatar()
+    {
+        var account = await AccountWithAvatarAsync("https://storage.example/avatars/old.png");
+        var avatars = Substitute.For<IAvatarStorageService>();
+        avatars.UploadBlobAsync(default!, default!, default!).ReturnsForAnyArgs<string>(_ => throw new IOException("storage down"));
+
+        await UpdateAsync(NewAvatar(account), avatars);
+
+        await using var check = fixture.CreateContext();
+        Assert.Equal("https://storage.example/avatars/old.png", (await check.Users.SingleAsync(u => u.Id == account.Id)).AvatarPath);
+        await avatars.DidNotReceiveWithAnyArgs().DeleteBlobByUriAsync(default!);
+    }
+
+    [Fact]
+    public async Task FailingToDeleteTheOldAvatarStillSavesTheNewOne()
+    {
+        var account = await AccountWithAvatarAsync("https://storage.example/avatars/old.png");
+        var avatars = Substitute.For<IAvatarStorageService>();
+        avatars.UploadBlobAsync(default!, default!, default!).ReturnsForAnyArgs("https://storage.example/avatars/new.png");
+        avatars.DeleteBlobByUriAsync(default!).ReturnsForAnyArgs(_ => throw new IOException("storage down"));
+
+        await UpdateAsync(NewAvatar(account), avatars);
+
+        await using var check = fixture.CreateContext();
+        Assert.Equal("https://storage.example/avatars/new.png", (await check.Users.SingleAsync(u => u.Id == account.Id)).AvatarPath);
+        await avatars.Received().DeleteBlobByUriAsync("https://storage.example/avatars/old.png");
     }
 }

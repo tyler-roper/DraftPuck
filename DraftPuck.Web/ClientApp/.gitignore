@@ -29,3 +29,5 @@ coverage
 
 # FCM (this file is only used for dev mode purposes)
 public/firebase-messaging-sw.js
+# TypeScript incremental build info (written by type-check)
+*.tsbuildinfo

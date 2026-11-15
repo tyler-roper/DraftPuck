@@ -4,7 +4,7 @@ using FileTypeChecker.Types;
 
 namespace DraftPuck.Application.Features.Users;
 
-public class UpdateUserCommandHandler(IDbContext dbContext, IMapper mapper, IUserRepository userRepository, IMediator mediator, IAvatarStorageService avatarService) : IRequestHandler<UpdateUserCommand, UserDto>
+public class UpdateUserCommandHandler(IDbContext dbContext, IMapper mapper, IUserRepository userRepository, IMediator mediator, IAvatarStorageService avatarService, ILogger<UpdateUserCommandHandler> logger) : IRequestHandler<UpdateUserCommand, UserDto>
 {
     public async Task<UserDto> Handle(UpdateUserCommand request, CancellationToken cancellationToken)
     {
@@ -146,8 +146,13 @@ public class UpdateUserCommandHandler(IDbContext dbContext, IMapper mapper, IUse
         return await dbContext.UserAchievements.AnyAsync(ua => ua.UserId == userId && ua.AchievementId == achievementId, ct);
     }
 
+    /// <summary>
+    /// Uploads the new avatar and returns its URL, or null (keeping the current avatar) if the upload fails. Once the
+    /// new one is stored, failing to delete the old blob only leaves it orphaned, so it doesn't undo the change.
+    /// </summary>
     private async Task<string?> TryAvatarUpload(Guid userId, string newAvatarData, string? previousAvatarPath)
     {
+        string newAvatarPath;
         try
         {
             var base64 = newAvatarData.Split("base64,")[1];
@@ -158,18 +163,26 @@ public class UpdateUserCommandHandler(IDbContext dbContext, IMapper mapper, IUse
                             ms.Is<JointPhotographicExpertsGroup>() ? "jpg" :
                             throw new Exception("Invalid filetype.");
 
-
-            var newAvatarPath = await avatarService.UploadBlobAsync($"{userId}/{Guid.NewGuid()}.{extension}", ms, $"image/{extension}");
-
-            if (!string.IsNullOrEmpty(previousAvatarPath)) 
-                await avatarService.DeleteBlobByUriAsync(previousAvatarPath);
-
-            return newAvatarPath;
+            newAvatarPath = await avatarService.UploadBlobAsync($"{userId}/{Guid.NewGuid()}.{extension}", ms, $"image/{extension}");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Failed to upload avatar to blob storage: {ex.Message}");
+            logger.LogError(ex, "Failed to upload a new avatar for user {UserId}", userId);
             return null;
         }
+
+        if (!string.IsNullOrEmpty(previousAvatarPath))
+        {
+            try
+            {
+                await avatarService.DeleteBlobByUriAsync(previousAvatarPath);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Failed to delete the previous avatar {AvatarPath} for user {UserId}", previousAvatarPath, userId);
+            }
+        }
+
+        return newAvatarPath;
     }
 }
