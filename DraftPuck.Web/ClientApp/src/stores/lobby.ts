@@ -65,9 +65,10 @@ export const useLobbyStore = defineStore('lobby', () => {
     lobby.value.members = lobby.value.members.filter((m) => m.id != lobbyMemberId)
   }
 
+  /** Adds a message, unless a lobby refetch already brought it in. Your own unsent messages have no ID yet. */
   function addMessageToStore(message: Message) {
     const member = lobby.value?.members.find((m) => m.id === message.lobbyMemberId)
-    if (!member) return
+    if (!member || (message.id && member.messages.some((m) => m.id === message.id))) return
     member.messages.push(message)
   }
 

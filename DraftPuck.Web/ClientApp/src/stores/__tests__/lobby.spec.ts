@@ -155,6 +155,17 @@ describe('lobby store changes', () => {
     expect(store.chatMessages).toEqual([])
   })
 
+  // A refetch that reads the lobby just after a message is saved can arrive before the message's push does.
+  it('does not add a pushed message twice when a lobby refetch already brought it in', () => {
+    const store = setupMembers()
+    const pushed = { id: 'm1', lobbyMemberId: 'other', message: '@Sam hi', sent: new Date(2026, 0, 1, 12, 1) } as Message
+    store.lobby!.members[1].messages.push({ ...pushed })
+
+    store.addMessageToStore(pushed)
+
+    expect(store.chatMessages.map((m) => m.message)).toEqual(['@Sam hi'])
+  })
+
   it('lists every member message and local system message, oldest first', () => {
     const store = setupMembers()
     store.lobby!.members[0].messages.push({ lobbyMemberId: 'me', message: 'second', sent: new Date(2026, 0, 1, 12, 2) } as Message)

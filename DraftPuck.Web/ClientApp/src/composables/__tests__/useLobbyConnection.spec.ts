@@ -4,8 +4,9 @@ import { effectScope } from 'vue'
 // A fake HubConnection per build, so tests can drive start failures, reconnects and incoming events.
 const { connections, HubConnectionState, network } = vi.hoisted(() => {
   const HubConnectionState = { Disconnected: 'Disconnected', Connecting: 'Connecting', Connected: 'Connected', Reconnecting: 'Reconnecting' }
-  // How many upcoming start() calls fail, across connections.
-  return { connections: [] as FakeConnection[], HubConnectionState, network: { failingStarts: 0 } }
+  // How many upcoming start() calls fail, across connections; and, while set, a promise every start() waits for.
+  const network: { failingStarts: number; startGate: Promise<void> | null } = { failingStarts: 0, startGate: null }
+  return { connections: [] as FakeConnection[], HubConnectionState, network }
 })
 
 interface FakeConnection {
@@ -29,6 +30,7 @@ vi.mock('@microsoft/signalr', () => {
       const connection: FakeConnection = {
         state: HubConnectionState.Disconnected,
         start: vi.fn(async () => {
+          if (network.startGate) await network.startGate
           if (network.failingStarts > 0) {
             network.failingStarts--
             throw new Error('network')
@@ -79,6 +81,7 @@ describe('useLobbyConnection', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     connections.length = 0
     network.failingStarts = 0
+    network.startGate = null
     hidden = false
     resync = vi.fn(async () => {})
     onGameUpdated = vi.fn()
@@ -186,5 +189,35 @@ describe('useLobbyConnection', () => {
     expect(connections[0].stop).toHaveBeenCalled()
     expect(connections).toHaveLength(1)
     expect(resync).toHaveBeenCalledOnce()
+  })
+
+  // The lobby page loads the user and lobby before starting, so it can be gone (navigated away, or remounted) by then.
+  // A connection opened then would never be closed, and would deliver every push a second time once the page is back.
+  it('never connects if its component went away before start', async () => {
+    const lobbyConnection = create()
+
+    scope.stop()
+    await flush()
+    await lobbyConnection.start()
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
+
+    expect(connections).toHaveLength(0)
+    expect(resync).not.toHaveBeenCalled()
+  })
+
+  it('closes a connection that finishes starting after its component went away', async () => {
+    let openNetwork!: () => void
+    network.startGate = new Promise((resolve) => (openNetwork = resolve))
+    const starting = create().start()
+    await flush()
+
+    scope.stop()
+    openNetwork()
+    await starting
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
+
+    expect(connections[0].state).toBe(HubConnectionState.Disconnected)
+    expect(connections[0].invoke).not.toHaveBeenCalled()
+    expect(resync).not.toHaveBeenCalled()
   })
 })
