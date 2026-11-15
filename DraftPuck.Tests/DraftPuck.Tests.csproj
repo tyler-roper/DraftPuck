@@ -26,7 +26,7 @@
   <ItemGroup>
     <ProjectReference Include="..\DraftPuck.Application\DraftPuck.Application.csproj" />
     <ProjectReference Include="..\DraftPuck.Infrastructure\DraftPuck.Infrastructure.csproj" />
-    <ProjectReference Include="..\DraftPuck.Shared\DraftPuck.Shared.csproj" />
+    <ProjectReference Include="..\DraftPuck.Domain\DraftPuck.Domain.csproj" />
     <ProjectReference Include="..\DraftPuck.Web\DraftPuck.Web.csproj" />
   </ItemGroup>
 

@@ -1,10 +1,10 @@
 using DraftPuck.Application;
+using DraftPuck.Application.Features.Discord;
 using DraftPuck.Application.Features.Lobbies.Events;
 using DraftPuck.Infrastructure;
 using DraftPuck.Infrastructure.Auth;
 using DraftPuck.Infrastructure.Persistence;
 using DraftPuck.Infrastructure.SignalR;
-using DraftPuck.Shared.Discord;
 using DraftPuck.Web.Filters;
 using DraftPuck.Web.Health;
 using DraftPuck.Web.Mvc.App;

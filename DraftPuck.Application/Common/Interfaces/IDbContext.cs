@@ -1,5 +1,5 @@
-﻿using DraftPuck.Shared.Auth;
-using DraftPuck.Shared.Titles;
+﻿using DraftPuck.Domain.Auth;
+using DraftPuck.Domain.Titles;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace DraftPuck.Application.Common.Interfaces

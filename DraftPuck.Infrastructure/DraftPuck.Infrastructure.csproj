@@ -39,7 +39,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\DraftPuck.Application\DraftPuck.Application.csproj" />
-		<ProjectReference Include="..\DraftPuck.Shared\DraftPuck.Shared.csproj">
+		<ProjectReference Include="..\DraftPuck.Domain\DraftPuck.Domain.csproj">
 			<PrivateAssets>all</PrivateAssets>
 		</ProjectReference>
 	</ItemGroup>

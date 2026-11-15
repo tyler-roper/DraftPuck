@@ -22,7 +22,7 @@ namespace DraftPuck.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("DraftPuck.Shared.Achievements.AchievementBackfillEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Achievements.AchievementBackfillEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -48,7 +48,7 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.ToTable("AchievementBackfills");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Achievements.AchievementEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Achievements.AchievementEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -78,7 +78,7 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.ToTable("Achievements");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Auth.PasswordResetTokenEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Auth.PasswordResetTokenEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -111,7 +111,7 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.ToTable("PasswordResetTokens");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Auth.UserRefreshTokenEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Auth.UserRefreshTokenEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -163,7 +163,7 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.ToTable("UserRefreshTokens");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Banners.BannerEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Banners.BannerEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -190,7 +190,7 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.ToTable("Banners");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Lobbies.DrinkEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Lobbies.DrinkEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -228,7 +228,7 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.ToTable("Drinks");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Lobbies.LobbyEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Lobbies.LobbyEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -287,7 +287,7 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.ToTable("Lobbies");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Lobbies.LobbyEventEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Lobbies.LobbyEventEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -361,7 +361,7 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.ToTable("LobbyEvents");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Lobbies.LobbyMemberEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Lobbies.LobbyMemberEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -423,7 +423,7 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.ToTable("LobbyMembers");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Lobbies.LobbyMemberPickEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Lobbies.LobbyMemberPickEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -466,7 +466,7 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.ToTable("LobbyMemberPicks");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Lobbies.MessageEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Lobbies.MessageEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -498,7 +498,7 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.ToTable("Messages");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.System.ErrorLogEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.System.ErrorLogEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -523,7 +523,7 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.ToTable("ErrorLogs");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.System.EventLogoEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.System.EventLogoEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -558,7 +558,7 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.ToTable("EventLogos");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Titles.TitleEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Titles.TitleEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -585,7 +585,7 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.ToTable("Titles");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Users.UserAchievementEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Users.UserAchievementEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -613,7 +613,7 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.ToTable("UserAchievements");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Users.UserBannerEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Users.UserBannerEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -641,7 +641,7 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.ToTable("UserBanners");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Users.UserEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Users.UserEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -735,7 +735,7 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Users.UserTitleEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Users.UserTitleEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -763,9 +763,9 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.ToTable("UserTitles");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Auth.PasswordResetTokenEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Auth.PasswordResetTokenEntity", b =>
                 {
-                    b.HasOne("DraftPuck.Shared.Users.UserEntity", "User")
+                    b.HasOne("DraftPuck.Domain.Users.UserEntity", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -774,9 +774,9 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Auth.UserRefreshTokenEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Auth.UserRefreshTokenEntity", b =>
                 {
-                    b.HasOne("DraftPuck.Shared.Users.UserEntity", "User")
+                    b.HasOne("DraftPuck.Domain.Users.UserEntity", "User")
                         .WithMany("RefreshTokens")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -785,9 +785,9 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Banners.BannerEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Banners.BannerEntity", b =>
                 {
-                    b.HasOne("DraftPuck.Shared.Achievements.AchievementEntity", "Achievement")
+                    b.HasOne("DraftPuck.Domain.Achievements.AchievementEntity", "Achievement")
                         .WithMany("Banners")
                         .HasForeignKey("AchievementId")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -795,15 +795,15 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.Navigation("Achievement");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Lobbies.DrinkEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Lobbies.DrinkEntity", b =>
                 {
-                    b.HasOne("DraftPuck.Shared.Lobbies.LobbyMemberPickEntity", "LobbyMemberPick")
+                    b.HasOne("DraftPuck.Domain.Lobbies.LobbyMemberPickEntity", "LobbyMemberPick")
                         .WithMany("Drinks")
                         .HasForeignKey("LobbyMemberPickId")
                         .IsRequired()
                         .HasConstraintName("FK_Drinks_LobbyMemberPicks");
 
-                    b.HasOne("DraftPuck.Shared.Lobbies.LobbyMemberEntity", "RecipientLobbyMember")
+                    b.HasOne("DraftPuck.Domain.Lobbies.LobbyMemberEntity", "RecipientLobbyMember")
                         .WithMany("Drinks")
                         .HasForeignKey("RecipientLobbyMemberId")
                         .HasConstraintName("FK_Drinks_LobbyMembers");
@@ -813,9 +813,9 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.Navigation("RecipientLobbyMember");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Lobbies.LobbyEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Lobbies.LobbyEntity", b =>
                 {
-                    b.HasOne("DraftPuck.Shared.Users.UserEntity", "CreatedByUser")
+                    b.HasOne("DraftPuck.Domain.Users.UserEntity", "CreatedByUser")
                         .WithMany("CreatedLobbies")
                         .HasForeignKey("CreatedBy")
                         .IsRequired()
@@ -824,15 +824,15 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.Navigation("CreatedByUser");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Lobbies.LobbyMemberEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Lobbies.LobbyMemberEntity", b =>
                 {
-                    b.HasOne("DraftPuck.Shared.Lobbies.LobbyEntity", "Lobby")
+                    b.HasOne("DraftPuck.Domain.Lobbies.LobbyEntity", "Lobby")
                         .WithMany("LobbyMembers")
                         .HasForeignKey("LobbyId")
                         .IsRequired()
                         .HasConstraintName("FK_LobbyMembers_Lobbies");
 
-                    b.HasOne("DraftPuck.Shared.Users.UserEntity", "User")
+                    b.HasOne("DraftPuck.Domain.Users.UserEntity", "User")
                         .WithMany("LobbyMembers")
                         .HasForeignKey("UserId")
                         .IsRequired()
@@ -843,9 +843,9 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Lobbies.LobbyMemberPickEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Lobbies.LobbyMemberPickEntity", b =>
                 {
-                    b.HasOne("DraftPuck.Shared.Lobbies.LobbyMemberEntity", "LobbyMember")
+                    b.HasOne("DraftPuck.Domain.Lobbies.LobbyMemberEntity", "LobbyMember")
                         .WithMany("LobbyMemberPicks")
                         .HasForeignKey("LobbyMemberId")
                         .IsRequired()
@@ -854,9 +854,9 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.Navigation("LobbyMember");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Lobbies.MessageEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Lobbies.MessageEntity", b =>
                 {
-                    b.HasOne("DraftPuck.Shared.Lobbies.LobbyMemberEntity", "LobbyMember")
+                    b.HasOne("DraftPuck.Domain.Lobbies.LobbyMemberEntity", "LobbyMember")
                         .WithMany("Messages")
                         .HasForeignKey("LobbyMemberId")
                         .IsRequired()
@@ -865,9 +865,9 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.Navigation("LobbyMember");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Titles.TitleEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Titles.TitleEntity", b =>
                 {
-                    b.HasOne("DraftPuck.Shared.Achievements.AchievementEntity", "Achievement")
+                    b.HasOne("DraftPuck.Domain.Achievements.AchievementEntity", "Achievement")
                         .WithMany("Titles")
                         .HasForeignKey("AchievementId")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -875,15 +875,15 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.Navigation("Achievement");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Users.UserAchievementEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Users.UserAchievementEntity", b =>
                 {
-                    b.HasOne("DraftPuck.Shared.Achievements.AchievementEntity", "Achievement")
+                    b.HasOne("DraftPuck.Domain.Achievements.AchievementEntity", "Achievement")
                         .WithMany("UserAchievements")
                         .HasForeignKey("AchievementId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("DraftPuck.Shared.Users.UserEntity", "User")
+                    b.HasOne("DraftPuck.Domain.Users.UserEntity", "User")
                         .WithMany("UserAchievements")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -894,15 +894,15 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Users.UserBannerEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Users.UserBannerEntity", b =>
                 {
-                    b.HasOne("DraftPuck.Shared.Banners.BannerEntity", "Banner")
+                    b.HasOne("DraftPuck.Domain.Banners.BannerEntity", "Banner")
                         .WithMany("UserBanners")
                         .HasForeignKey("BannerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("DraftPuck.Shared.Users.UserEntity", "User")
+                    b.HasOne("DraftPuck.Domain.Users.UserEntity", "User")
                         .WithMany("UserBanners")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -913,15 +913,15 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Users.UserTitleEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Users.UserTitleEntity", b =>
                 {
-                    b.HasOne("DraftPuck.Shared.Titles.TitleEntity", "Title")
+                    b.HasOne("DraftPuck.Domain.Titles.TitleEntity", "Title")
                         .WithMany("UserTitles")
                         .HasForeignKey("TitleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("DraftPuck.Shared.Users.UserEntity", "User")
+                    b.HasOne("DraftPuck.Domain.Users.UserEntity", "User")
                         .WithMany("UserTitles")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -932,7 +932,7 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Achievements.AchievementEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Achievements.AchievementEntity", b =>
                 {
                     b.Navigation("Banners");
 
@@ -941,17 +941,17 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.Navigation("UserAchievements");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Banners.BannerEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Banners.BannerEntity", b =>
                 {
                     b.Navigation("UserBanners");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Lobbies.LobbyEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Lobbies.LobbyEntity", b =>
                 {
                     b.Navigation("LobbyMembers");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Lobbies.LobbyMemberEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Lobbies.LobbyMemberEntity", b =>
                 {
                     b.Navigation("Drinks");
 
@@ -960,17 +960,17 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.Navigation("Messages");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Lobbies.LobbyMemberPickEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Lobbies.LobbyMemberPickEntity", b =>
                 {
                     b.Navigation("Drinks");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Titles.TitleEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Titles.TitleEntity", b =>
                 {
                     b.Navigation("UserTitles");
                 });
 
-            modelBuilder.Entity("DraftPuck.Shared.Users.UserEntity", b =>
+            modelBuilder.Entity("DraftPuck.Domain.Users.UserEntity", b =>
                 {
                     b.Navigation("CreatedLobbies");
 

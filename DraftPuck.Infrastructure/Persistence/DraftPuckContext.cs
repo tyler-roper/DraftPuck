@@ -1,5 +1,6 @@
-﻿using DraftPuck.Shared.Auth;
-using DraftPuck.Shared.Titles;
+﻿﻿using DraftPuck.Application.Common.Interfaces;
+using DraftPuck.Domain.Auth;
+using DraftPuck.Domain.Titles;
 
 namespace DraftPuck.Infrastructure.Persistence;
 

@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DraftPuck.Shared\DraftPuck.Shared.csproj" />
+    <ProjectReference Include="..\DraftPuck.Domain\DraftPuck.Domain.csproj" />
   </ItemGroup>
 
 </Project>

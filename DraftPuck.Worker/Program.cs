@@ -1,6 +1,7 @@
 using DraftPuck.Application;
+using DraftPuck.Application.Common.Options;
+using DraftPuck.Domain.System;
 using DraftPuck.Infrastructure;
-using DraftPuck.Shared.System;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Extensions.Configuration;

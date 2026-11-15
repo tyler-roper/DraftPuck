@@ -44,7 +44,7 @@ DraftPuck uses a Clean Architecture structure:
 - **Web** — API + Vue 3 SPA
 - **Application** — business logic, commands/queries, MediatR
 - **Infrastructure** — SQL Server, Redis, Blob storage, external integrations
-- **Shared** — entities, DTOs, enums and notifications shared by every project
+- **Domain** — the database entities and the enums they use
 - **Worker** — Azure Functions: loading the daily schedule, polling games, awarding achievements, deactivating stale lobbies
 - **DiscordBot** — the Discord bot
 

@@ -1,4 +1,4 @@
-﻿using DraftPuck.Shared.Firebase;
+﻿using DraftPuck.Application.Common.Interfaces;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.Extensions.Configuration;

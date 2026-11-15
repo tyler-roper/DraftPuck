@@ -7,9 +7,9 @@ contribution workflow see [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 | Project | What it holds | Depends on |
 |---|---|---|
-| `DraftPuck.Shared` | Entities, DTOs, enums, MediatR notifications, and small rules that belong to the data (e.g. `GameDto.IsPickingOpen`) | — |
-| `DraftPuck.Application` | Features as MediatR commands, queries and notification handlers, one folder per area under `Features/` | Shared |
-| `DraftPuck.Infrastructure` | EF Core (`DraftPuckContext`, migrations), Redis, SignalR, the NHL API client, Azure Storage, Firebase | Application, Shared |
+| `DraftPuck.Domain` | The database entities and the enums they use. Nothing else, and no dependencies | — |
+| `DraftPuck.Application` | Features as MediatR commands, queries and notification handlers, one folder per area under `Features/`, with their DTOs (including the NHL game model in `Features/Games`), notifications and queue messages. Service interfaces in `Common/Interfaces`, options in `Common/Options` | Domain |
+| `DraftPuck.Infrastructure` | EF Core (`DraftPuckContext`, migrations), Redis, SignalR, the NHL API client, Azure Storage, Firebase | Application, Domain |
 | `DraftPuck.Web` | ASP.NET Core API (`Features/*Controller.cs`), the SignalR hub endpoint, and the Vue app in `ClientApp/` | all |
 | `DraftPuck.Worker` | Azure Functions: the daily schedule load, game polling, achievement checks | Application, Infrastructure |
 | `DraftPuck.DiscordBot` | The Discord bot; tells Web about Discord events through the internal API (`api/internal`, API-key protected) | Application, Infrastructure |
@@ -103,7 +103,7 @@ Everything under `helpers/`, `stores/` and `composables/` has tests in a sibling
 
 1. **Server**: a folder under `Application/Features/<Area>/` with the command or query, its handler, and DTOs. Add a
    thin controller action in `Web/Features/<Area>/`.
-2. **Data**: change the entity in `Shared`, configure it in `DraftPuckContext`, and add a migration
+2. **Data**: change the entity in `Domain`, configure it in `DraftPuckContext`, and add a migration
    (`dotnet tool restore` once, then `dotnet ef migrations add <Name> --project DraftPuck.Infrastructure
    --startup-project DraftPuck.Infrastructure`). The Web app applies migrations at startup,
    one replica at a time (EF Core's migration lock), and doesn't start if they fail.

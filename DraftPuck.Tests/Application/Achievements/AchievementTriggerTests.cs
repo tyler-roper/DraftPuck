@@ -1,5 +1,7 @@
+using DraftPuck.Application.Common.Interfaces;
 using DraftPuck.Application.Features.Achievements;
-using DraftPuck.Shared.Achievements;
+using DraftPuck.Application.Features.Achievements.Rules;
+using DraftPuck.Domain.Achievements;
 
 namespace DraftPuck.Tests.Application.Achievements;
 

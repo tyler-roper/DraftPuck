@@ -1,4 +1,4 @@
-﻿using DraftPuck.Shared.Utils;
+﻿using DraftPuck.Application.Common;
 using System.ComponentModel.DataAnnotations;
 
 namespace DraftPuck.Application.Features.Users;

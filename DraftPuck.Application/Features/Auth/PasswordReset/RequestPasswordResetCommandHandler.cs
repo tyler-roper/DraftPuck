@@ -1,4 +1,5 @@
-using DraftPuck.Shared.Auth;
+using DraftPuck.Application.Common.Interfaces;
+using DraftPuck.Domain.Auth;
 using Microsoft.Extensions.Options;
 using System.ComponentModel.DataAnnotations;
 

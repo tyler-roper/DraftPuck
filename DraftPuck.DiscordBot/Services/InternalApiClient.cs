@@ -1,5 +1,5 @@
-﻿using DraftPuck.DiscordBot.Interfaces;
-using DraftPuck.Shared.Discord;
+﻿using DraftPuck.Application.Features.Discord;
+using DraftPuck.DiscordBot.Interfaces;
 using System.Net.Http.Json;
 
 namespace DraftPuck.DiscordBot.Services;

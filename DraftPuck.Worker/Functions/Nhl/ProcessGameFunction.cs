@@ -1,5 +1,5 @@
-﻿using DraftPuck.Application.Features.Games;
-using DraftPuck.Shared.Games;
+﻿using DraftPuck.Application.Common.Interfaces;
+using DraftPuck.Application.Features.Games;
 using MediatR;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;

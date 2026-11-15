@@ -1,8 +1,10 @@
 using DraftPuck.Application;
+using DraftPuck.Application.Common.Interfaces;
+using DraftPuck.Application.Features.Achievements;
+using DraftPuck.Application.Features.Achievements.Rules;
 using DraftPuck.Application.Features.Games;
 using DraftPuck.Application.Features.Lobbies.Drinks;
-using DraftPuck.Shared.Achievements;
-using DraftPuck.Shared.Firebase;
+using DraftPuck.Domain.Achievements;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
