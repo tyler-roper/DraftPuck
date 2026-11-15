@@ -454,6 +454,7 @@ public class AchievementRulesTests(DatabaseFixture fixture)
 
         await using var db = fixture.CreateContext();
         Assert.True(await db.UserTitles.AnyAsync(ut => ut.UserId == drinker && ut.Title.UniqueIdentifier == "waved_off"));
+        Assert.True(await db.UserBanners.AnyAsync(ub => ub.UserId == drinker && ub.Banner.ImagePath == "/img/banners/waved-off.png"));
     }
 
     [Theory]
