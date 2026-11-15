@@ -1,3 +1,5 @@
+using DraftPuck.Application.Features.Lobbies;
+
 namespace DraftPuck.Application.Features.Achievements;
 
 public class NameChangedAchievementHandler(IAchievementQueueService queueService) : INotificationHandler<UserNameChangedNotification>

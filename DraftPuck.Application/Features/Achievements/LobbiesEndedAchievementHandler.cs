@@ -1,3 +1,5 @@
+using DraftPuck.Application.Features.Lobbies;
+
 namespace DraftPuck.Application.Features.Achievements;
 
 /// <summary>When lobbies end, checks their human members (The Cup is decided once a lobby is over).</summary>

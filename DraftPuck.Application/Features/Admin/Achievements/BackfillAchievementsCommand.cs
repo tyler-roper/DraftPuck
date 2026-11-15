@@ -1,3 +1,5 @@
+using DraftPuck.Application.Features.Achievements;
+
 namespace DraftPuck.Application.Features.Admin.Achievements;
 
 /// <summary>A backfill run and how far along it is.</summary>

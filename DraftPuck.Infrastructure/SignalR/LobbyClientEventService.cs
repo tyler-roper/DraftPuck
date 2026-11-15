@@ -1,4 +1,5 @@
-﻿using DraftPuck.Application.Features.Lobbies.Events;
+﻿using DraftPuck.Application.Features.Games;
+using DraftPuck.Application.Features.Lobbies.Events;
 using DraftPuck.Application.Features.Lobbies.Messages;
 using Microsoft.AspNetCore.SignalR;
 

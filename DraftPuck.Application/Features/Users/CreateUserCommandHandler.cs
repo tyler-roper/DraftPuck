@@ -1,4 +1,6 @@
-﻿namespace DraftPuck.Application.Features.Users;
+﻿using DraftPuck.Application.Features.Lobbies;
+
+namespace DraftPuck.Application.Features.Users;
 
 public class CreateUserCommandHandler(IDbContext dbContext, IMapper mapper, IMediator mediator) : IRequestHandler<CreateUserCommand, UserDto>
 {

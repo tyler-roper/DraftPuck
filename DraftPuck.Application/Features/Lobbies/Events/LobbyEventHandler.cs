@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using DraftPuck.Application.Features.Games;
+using System.Net;
 
 namespace DraftPuck.Application.Features.Lobbies.Events;
 
