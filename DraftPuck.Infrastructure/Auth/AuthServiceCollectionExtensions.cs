@@ -1,5 +1,6 @@
-﻿using DraftPuck.Infrastructure.Nhl;
-using DraftPuck.Shared.Auth;
+﻿using DraftPuck.Application.Common.Interfaces;
+using DraftPuck.Domain.Auth;
+using DraftPuck.Infrastructure.Nhl;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;

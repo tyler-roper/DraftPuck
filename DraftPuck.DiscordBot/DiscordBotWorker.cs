@@ -1,7 +1,7 @@
 using Discord;
 using Discord.WebSocket;
+using DraftPuck.Application.Features.Discord;
 using DraftPuck.DiscordBot.Services;
-using DraftPuck.Shared.Discord;
 using Microsoft.Extensions.Options;
 
 namespace DraftPuck.DiscordBot;

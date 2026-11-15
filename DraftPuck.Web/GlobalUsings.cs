@@ -2,10 +2,14 @@
 
 // Application + Shared
 global using DraftPuck.Application.Common.Interfaces;
-global using DraftPuck.Shared.Games;
-global using DraftPuck.Shared.Lobbies;
-global using DraftPuck.Shared.System;
-global using DraftPuck.Shared.Users;
+global using DraftPuck.Application.Common.Options;
+global using DraftPuck.Application.Features.Games;
+global using DraftPuck.Application.Features.Lobbies;
+global using DraftPuck.Application.Features.Lobbies.Picks;
+global using DraftPuck.Application.Features.Users;
+global using DraftPuck.Domain.Lobbies;
+global using DraftPuck.Domain.System;
+global using DraftPuck.Domain.Users;
 // MediatR
 global using MediatR;
 // ASP.NET Core

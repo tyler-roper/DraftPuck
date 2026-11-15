@@ -1,4 +1,4 @@
-﻿using DraftPuck.Shared.Discord;
+﻿using DraftPuck.Application.Features.Discord;
 
 namespace DraftPuck.DiscordBot.Interfaces;
 

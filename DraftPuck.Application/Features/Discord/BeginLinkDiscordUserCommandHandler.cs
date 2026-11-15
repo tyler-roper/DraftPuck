@@ -1,4 +1,3 @@
-﻿using DraftPuck.Shared.Discord;
 using Microsoft.Extensions.Options;
 
 namespace DraftPuck.Application.Features.Discord;

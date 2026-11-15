@@ -1,4 +1,4 @@
-﻿using DraftPuck.Shared.Firebase;
+﻿using DraftPuck.Application.Common.Interfaces;
 using FirebaseAdmin;
 using FirebaseAdmin.Messaging;
 using Microsoft.Extensions.Logging;

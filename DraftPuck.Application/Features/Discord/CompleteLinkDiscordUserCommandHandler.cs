@@ -1,4 +1,3 @@
-﻿using DraftPuck.Shared.Discord;
 using Microsoft.Extensions.Options;
 using System.Text.Json;
 using Http = System.Net.Http;

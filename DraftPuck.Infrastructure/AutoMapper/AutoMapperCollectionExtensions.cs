@@ -1,4 +1,5 @@
-using DraftPuck.Shared.System;
+using DraftPuck.Application.Common.Options;
+using DraftPuck.Domain.System;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
