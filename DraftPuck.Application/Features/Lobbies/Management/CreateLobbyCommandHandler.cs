@@ -27,6 +27,8 @@ public class CreateLobbyCommandHandler(IDbContext dbContext, IMapper mapper, IMe
             UserId = request.CreatorUserId,
             Name = hostName
         };
+        if (await dbContext.Users.FirstOrDefaultAsync(u => u.Id == request.CreatorUserId, ct) is { } host)
+            MemberNotificationPreferences.StampDefaults(hostMember, host);
         dbContext.LobbyMembers.Add(hostMember);
 
         var botNotifications = new List<LobbyMemberEventPayload>();

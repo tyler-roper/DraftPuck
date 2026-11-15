@@ -345,6 +345,15 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.Property<int?>("BotPickStyle")
                         .HasColumnType("int");
 
+                    b.Property<int>("ChatNotificationPreference")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DrinkAwardedNotificationPreference")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DrinkReceivedNotificationPreference")
+                        .HasColumnType("int");
+
                     b.Property<bool>("IsBot")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
@@ -367,6 +376,9 @@ namespace DraftPuck.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("PickingStartedNotificationPreference")
+                        .HasColumnType("int");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");

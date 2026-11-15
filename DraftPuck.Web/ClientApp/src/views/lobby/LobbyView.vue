@@ -248,7 +248,7 @@ watch(
   <div class="d-flex overflow-hidden flex-column" style="height: 100%">
     <template v-if="!isInvalidLobby">
       <VInstructionsModal v-if="isInstructionsVisible" :join-code="lobby?.joinCode" @close="isInstructionsVisible = false" />
-      <VNotificationSettingsModal v-if="isNotificationSettingsVisible" @close="isNotificationSettingsVisible = false" />
+      <VNotificationSettingsModal v-if="isNotificationSettingsVisible" :join-code="joinCode" @close="isNotificationSettingsVisible = false" />
       <div class="bg-stone-900 px-sm-4 px-2 py-2 shadow position-relative d-flex align-items-center justify-content-between" style="z-index: 10">
         <router-link :to="{ name: 'Home' }" class="banner-logo text-stone-0 text-decoration-none" style="cursor: pointer">
           <VLogo />

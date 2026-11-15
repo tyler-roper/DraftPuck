@@ -1,4 +1,4 @@
-﻿using DraftPuck.Shared.Firebase;
+using DraftPuck.Shared.Firebase;
 
 namespace DraftPuck.Application.Features.PushNotifications;
 
@@ -8,25 +8,29 @@ public class DrinkAwardedPushNotificationHandler(IPushNotificationService fireba
     {
         var (lobby, sender) = (notification.Data.Lobby, notification.Data.Member);
 
-        var userIds = lobby.LobbyMembers
+        // Each member's settings for this lobby decide whether they hear about it.
+        var members = lobby.LobbyMembers
             .Where(lm => !lm.IsBot && !lm.IsRemoved)
-            .Select(lm => lm.UserId);
+            .ToDictionary(lm => lm.UserId);
 
+        var userIds = members.Keys.ToList();
         var users = await dbContext.Users
             .Where(u => userIds.Contains(u.Id) && u.FcmRegistrationToken != null)
             .ToListAsync(ct);
 
         await Parallel.ForEachAsync(users, ct, async (user, _) =>
         {
+            var preference = members[user.Id].DrinkAwardedNotificationPreference;
             var isSender = user.Id == sender.UserId;
             var text = $"Drink awarded to {sender.Name}!";
 
-            if (!isSender && user.DrinkAwardedNotificationPreference == NotificationPreference.All)
+            if (!isSender && preference == NotificationPreference.All)
             {
                 var data = new Dictionary<string, string> { { "lobbyEventType", "DrinkAwarded" }, { "isRelevant", "false" } };
                 await firebaseService.SendLobbyEventNotification(lobby.JoinCode, "Drink Awarded", text, user.FcmRegistrationToken!, data);
             }
-            else if (isSender && user.DrinkReceivedNotificationPreference != NotificationPreference.None)
+            // "Notify me if it's mine": your own player scored, so you have a drink to give out.
+            else if (isSender && preference != NotificationPreference.None)
             {
                 var data = new Dictionary<string, string> { { "lobbyEventType", "DrinkAwarded" }, { "isRelevant", "true" } };
                 await firebaseService.SendLobbyEventNotification(lobby.JoinCode, "Drink Awarded", "Your player scored - give out a drink!", user.FcmRegistrationToken!, data);

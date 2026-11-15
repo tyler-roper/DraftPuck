@@ -1,4 +1,4 @@
-﻿using DraftPuck.Web.RateLimiting;
+using DraftPuck.Web.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using Azure;
 using DraftPuck.Application.Features.Users;
@@ -48,11 +48,6 @@ public class UsersController(IMediator mediator) : BaseController()
             Email = request.Email,
             Nickname = request.Nickname,
             FcmRegistrationToken = request.FcmRegistrationToken,
-            DrinkReceivedNotificationPreference = request.DrinkReceivedNotificationPreference,
-            DrinkAwardedNotificationPreference = request.DrinkAwardedNotificationPreference,
-            ChatNotificationPreference = request.ChatNotificationPreference,
-            PickingStartedNotificationPreference = request.PickingStartedNotificationPreference,
-            AchievementAwardedNotificationPreference = request.AchievementAwardedNotificationPreference,
             BannerId = request.BannerId,
             TitleId = request.TitleId,
             Password = request.Password,
@@ -62,6 +57,23 @@ public class UsersController(IMediator mediator) : BaseController()
 
         var updatedUserDto = await mediator.Send(command);
         return Ok(updatedUserDto);
+    }
+
+    /// <summary>Sets the caller's default notification settings, optionally applying them to their active lobbies too.</summary>
+    [HttpPut("me/notificationPreferences")]
+    public async Task<ActionResult<UserDto>> UpdateNotificationPreferences(UpdateNotificationPreferencesRequestDto request)
+    {
+        var user = await mediator.Send(new UpdateNotificationPreferencesCommand
+        {
+            UserId = CurrentUserId,
+            DrinkReceivedNotificationPreference = request.DrinkReceivedNotificationPreference,
+            DrinkAwardedNotificationPreference = request.DrinkAwardedNotificationPreference,
+            ChatNotificationPreference = request.ChatNotificationPreference,
+            PickingStartedNotificationPreference = request.PickingStartedNotificationPreference,
+            AchievementAwardedNotificationPreference = request.AchievementAwardedNotificationPreference,
+            ApplyToActiveLobbies = request.ApplyToActiveLobbies
+        });
+        return Ok(user);
     }
 
     [HttpPost("signup")]

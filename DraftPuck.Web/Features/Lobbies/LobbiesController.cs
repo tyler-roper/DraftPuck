@@ -155,6 +155,22 @@ public class LobbiesController(IMediator mediator) : BaseController()
         return NoContent();
     }
 
+    [HttpGet("{code}/member/me/notificationPreferences")]
+    public async Task<ActionResult<LobbyNotificationPreferencesDto>> GetNotificationPreferences(string code)
+        => Ok(await mediator.Send(new GetLobbyNotificationPreferencesQuery { Code = code, UserId = CurrentUserId }));
+
+    [HttpPut("{code}/member/me/notificationPreferences")]
+    public async Task<ActionResult<LobbyNotificationPreferencesDto>> UpdateNotificationPreferences(string code, UpdateLobbyNotificationPreferencesRequestDto request)
+        => Ok(await mediator.Send(new UpdateLobbyNotificationPreferencesCommand
+        {
+            Code = code,
+            UserId = CurrentUserId,
+            DrinkReceivedNotificationPreference = request.DrinkReceivedNotificationPreference,
+            DrinkAwardedNotificationPreference = request.DrinkAwardedNotificationPreference,
+            ChatNotificationPreference = request.ChatNotificationPreference,
+            PickingStartedNotificationPreference = request.PickingStartedNotificationPreference
+        }));
+
     [HttpDelete("{code}/member/me")]
     public async Task<IActionResult> LeaveLobby(string code)
     {
