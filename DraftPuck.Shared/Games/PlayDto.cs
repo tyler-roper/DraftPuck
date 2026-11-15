@@ -30,6 +30,11 @@ public class PlayDto
     public PlayType Type { get; set; }
     public int? PrimaryPlayerId { get; set; }
     public int? PrimaryTeamId { get; set; }
+    /// <summary>
+    /// Who was on the ice, as the NHL sends it: four digits, away goalie, away skaters, home skaters, home goalie
+    /// ("1451" is a home power play; a 0 for a goalie is an empty net). Null on plays cached before it was kept.
+    /// </summary>
+    public string? SituationCode { get; set; }
     public int HomeScore { get; set; }
     public int AwayScore { get; set; }
     public string? Penalty { get; set; }

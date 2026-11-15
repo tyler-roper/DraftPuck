@@ -36,7 +36,7 @@ public class AchievementTriggerTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task BotsJoiningAndTheHostCreatingCheckNobody()
+    public async Task ABotJoiningChecksOnlyTheHostAndTheHostCreatingChecksNobody()
     {
         var (lobby, host, _, bot) = Lobby();
         var handler = new LobbyJoinedAchievementHandler(_queue);
@@ -44,7 +44,48 @@ public class AchievementTriggerTests(DatabaseFixture fixture)
         await handler.Handle(new UserJoinedLobbyNotification(new(lobby, bot)), default);
         await handler.Handle(new UserJoinedLobbyNotification(new(lobby, host)), default);
 
-        Assert.Empty(Queued());
+        Assert.Equal([(host.UserId, AchievementTriggerType.HostedLobbyJoined)], Queued()); // Bot Army
+    }
+
+    [Fact]
+    public async Task ScratchesAndChatCheckTheMemberButNotBots()
+    {
+        var (lobby, _, human, bot) = Lobby();
+        var pick = new LobbyMemberPickEntity();
+
+        await new PickScratchedAchievementHandler(_queue).Handle(new PickScratchedNotification(new(lobby, human, pick)), default);
+        await new PickScratchedAchievementHandler(_queue).Handle(new PickScratchedNotification(new(lobby, bot, pick)), default);
+        await new MessageSentAchievementHandler(_queue).Handle(new MessageSentNotification(new(lobby, human, new MessageEntity())), default);
+
+        Assert.Equal([(human.UserId, AchievementTriggerType.PickScratched), (human.UserId, AchievementTriggerType.MessageSent)], Queued());
+    }
+
+    [Fact]
+    public async Task AFinishedGameChecksTheHumansWithAPickInIt()
+    {
+        var gameId = Seed.NewGameId();
+        Guid picker, otherGame, removed;
+        await using (var db = fixture.CreateContext())
+        {
+            var s = new Seed(db);
+            var (lobby, host) = s.Lobby([gameId]);
+            picker = host.UserId;
+            s.Pick(host, gameId, TestGames.HomeTeamId, 100);
+            var elsewhere = s.Member(lobby);
+            otherGame = elsewhere.UserId;
+            s.Pick(elsewhere, Seed.NewGameId(), TestGames.HomeTeamId, 101);
+            var gone = s.Member(lobby);
+            gone.IsRemoved = true;
+            removed = gone.UserId;
+            s.Pick(gone, gameId, TestGames.HomeTeamId, 102);
+            s.Pick(s.Bot(lobby), gameId, TestGames.HomeTeamId, 103);
+            await db.SaveChangesAsync();
+        }
+
+        await using (var db = fixture.CreateContext())
+            await new GameFinishedAchievementHandler(_queue, db).Handle(new GameFinishedNotification(TestGames.Create(gameId, DateTime.UtcNow, GameState.Final)), default);
+
+        Assert.Equal([(picker, AchievementTriggerType.GameFinished)], Queued());
     }
 
     [Fact]

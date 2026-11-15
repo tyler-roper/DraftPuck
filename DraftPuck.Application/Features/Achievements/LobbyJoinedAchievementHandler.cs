@@ -7,8 +7,20 @@ public class LobbyJoinedAchievementHandler(IAchievementQueueService queueService
     {
         var (lobby, member) = (notification.Data.Lobby, notification.Data.Member);
 
-        // The host "joins" when they create the lobby; that's LobbyCreated. Bots joining don't earn or count toward anything.
-        if (member.IsBot || lobby.CreatedBy == member.UserId) return;
+        // The host "joins" when they create the lobby; that's LobbyCreated.
+        if (lobby.CreatedBy == member.UserId) return;
+
+        // A bot joining earns nothing itself, but grows the host's lobby (Bot Army).
+        if (member.IsBot)
+        {
+            await queueService.SendMessageAsync(new CheckAchievementsMessage
+            {
+                UserId = lobby.CreatedBy,
+                TriggerType = AchievementTriggerType.HostedLobbyJoined,
+                QueuedTimeUtc = DateTime.UtcNow
+            }, ct: cancellationToken);
+            return;
+        }
 
         await queueService.SendMessageAsync(new CheckAchievementsMessage
         {
