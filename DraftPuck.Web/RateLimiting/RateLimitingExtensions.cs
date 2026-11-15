@@ -19,6 +19,8 @@ public static class RateLimits
     public const string GuestCreation = "guest-creation";
     /// <summary>Chat messages, per user: 30 a minute.</summary>
     public const string Chat = "chat";
+    /// <summary>"Forgot password" emails, per IP: 5 every 15 minutes, so the form can't be used to flood an inbox.</summary>
+    public const string PasswordReset = "password-reset";
 
     public static IServiceCollection AddDraftPuckRateLimiting(this IServiceCollection services)
     {
@@ -50,6 +52,7 @@ public static class RateLimits
             options.AddPolicy(Login, context => FixedWindow(ClientIp(context), 10, TimeSpan.FromMinutes(1)));
             options.AddPolicy(GuestCreation, context => FixedWindow(ClientIp(context), 60, TimeSpan.FromHours(1)));
             options.AddPolicy(Chat, context => FixedWindow(UserIdOrIp(context), 30, TimeSpan.FromMinutes(1)));
+            options.AddPolicy(PasswordReset, context => FixedWindow(ClientIp(context), 5, TimeSpan.FromMinutes(15)));
         });
     }
 

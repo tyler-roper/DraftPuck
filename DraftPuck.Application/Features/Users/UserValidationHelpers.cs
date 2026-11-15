@@ -34,7 +34,7 @@ public static class UserValidationHelpers
             throw new ValidationException("Invalid nickname.");
     }
 
-    private static void ValidatePassword(string? password, bool allowNull = false)
+    public static void ValidatePassword(string? password, bool allowNull = false)
     {
         if (allowNull && password == null) return;
         if (password == null || password.Trim().Length < 8 || password.Length > 25)

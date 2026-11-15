@@ -4,6 +4,7 @@ using DraftPuck.Application.Features.Users;
 using DraftPuck.Infrastructure.Auth;
 using DraftPuck.Infrastructure.AutoMapper;
 using DraftPuck.Infrastructure.AzureStorage;
+using DraftPuck.Infrastructure.Email;
 using DraftPuck.Infrastructure.Firebase;
 using DraftPuck.Infrastructure.Nhl;
 using DraftPuck.Infrastructure.Nhl.MappingProfiles;
@@ -25,6 +26,7 @@ public static class InfrastructureServiceCollectionExtensions
             .AddRedisAndSignalR(configuration)
             .AddQueueServices(configuration)
             .AddBlobStorageServices(configuration)
+            .AddEmail(configuration)
             .AddAutoMapperLicensed(configuration, typeof(UserMappingProfile).Assembly, typeof(GameMappingProfile).Assembly)
             .AddSingleton<IOAuthCache, RedisOAuthCache>()
             .AddSingleton<IGameCache, RedisGameCache>()
