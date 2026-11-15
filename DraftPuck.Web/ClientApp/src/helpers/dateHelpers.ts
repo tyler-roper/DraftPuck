@@ -2,18 +2,18 @@ import parseISO from 'date-fns/parseISO'
 
 const isoDateFormat = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d*)?(?:[-+]\d{2}:?\d{2}|Z)?$/
 
-export function isIsoDateString(value: object): boolean {
-  return value && typeof value === 'string' && isoDateFormat.test(value)
+export function isIsoDateString(value: unknown): value is string {
+  return typeof value === 'string' && isoDateFormat.test(value)
 }
 
-export function parseAllDates(body: { [key: string]: any }) {
-  if (body === null || body === undefined || typeof body !== 'object') return body
+/** Turns every ISO date string in a parsed JSON body into a Date, in place. Strings without a Z are read as UTC. */
+export function parseAllDates(body: unknown): void {
+  if (body === null || typeof body !== 'object') return
 
-  for (const key of Object.keys(body)) {
-    let value = body[key]
-    if (isIsoDateString(value)) {
-      if (!value.endsWith('Z')) value += 'Z'
-      body[key] = parseISO(value)
-    } else if (typeof value === 'object') parseAllDates(value)
+  const record = body as Record<string, unknown>
+  for (const key of Object.keys(record)) {
+    const value = record[key]
+    if (isIsoDateString(value)) record[key] = parseISO(value.endsWith('Z') ? value : value + 'Z')
+    else if (typeof value === 'object') parseAllDates(value)
   }
 }

@@ -19,7 +19,7 @@ describe('getOrdinal', () => {
 
 describe('parseAllDates', () => {
   it('turns ISO strings into Dates throughout the response, treating them as UTC', () => {
-    const body: any = {
+    const body = {
       created: '2026-11-13T00:00:00',
       lobby: { members: [{ joined: '2026-11-13T01:30:00.123Z', name: 'Sam' }] },
       count: 3
@@ -34,7 +34,8 @@ describe('parseAllDates', () => {
   })
 
   it('ignores strings that only look partly like dates', () => {
-    expect(isIsoDateString('2026-11-13' as any)).toBe(false)
-    expect(isIsoDateString('Game on 2026-11-13T00:00:00' as any)).toBe(false)
+    expect(isIsoDateString('2026-11-13')).toBe(false)
+    expect(isIsoDateString('Game on 2026-11-13T00:00:00')).toBe(false)
+    expect(isIsoDateString(42)).toBe(false)
   })
 })

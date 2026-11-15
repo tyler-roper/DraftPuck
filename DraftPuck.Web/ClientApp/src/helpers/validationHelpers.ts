@@ -1,6 +1,6 @@
 import { helpers } from '@vuelidate/validators'
 
-export function uniqueInArray(arrayGetter: () => any[]) {
+export function uniqueInArray(arrayGetter: () => unknown[]) {
   return helpers.withMessage('Value must be unique', (value) => {
     if (value == null || value === '') return true // Don't validate empty values (let required handle it)
     const arr = arrayGetter()

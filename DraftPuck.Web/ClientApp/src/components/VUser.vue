@@ -24,7 +24,7 @@ const props = withDefaults(
 )
 
 interface UserLink {
-  action?: Function
+  action?: () => unknown
   path?: string
   text: string
   class?: string

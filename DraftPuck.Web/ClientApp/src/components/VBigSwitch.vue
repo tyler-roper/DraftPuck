@@ -2,7 +2,7 @@
 import { computed, getCurrentInstance } from 'vue'
 
 const props = defineProps<{
-  modelValue: any
+  modelValue: TValue
   options: Array<{ value: TValue; label: string }>
 }>()
 const emit = defineEmits(['update:modelValue'])

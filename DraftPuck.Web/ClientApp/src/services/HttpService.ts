@@ -1,10 +1,9 @@
 import { parseAllDates } from '@/helpers/dateHelpers'
-import axios, { type AxiosInstance, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
+import axios, { isAxiosError, type AxiosError, type AxiosInstance, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
 import TokenService from './TokenService'
 
 export interface IHttpService {
   get<T>(endpoint: string, id?: string): Promise<T>
-  getWithParams<T>(endpoint: string, params: {}): Promise<T>
   post<T, R>(endpoint: string, data: T): Promise<R>
   postAsFormData<T, R>(endpoint: string, data: T): Promise<R>
   patch<T, R>(endpoint: string, data: T): Promise<R>
@@ -18,12 +17,14 @@ const refreshTokenUrl = `${apiBasePath}auth/refreshTokens/use`
 
 let refreshPromise: Promise<AuthResponse> | null = null
 
-function isRefreshableError(error: any): boolean {
-  const status = error.response?.status
-  const url = error.config?.url
-  const hasBeenRetried = error.config?._hasBeenRetried
+type RetriableRequestConfig = InternalAxiosRequestConfig & { _hasBeenRetried?: boolean }
 
-  return status === 401 && url !== refreshTokenUrl && !hasBeenRetried
+/** A 401 on a request other than the refresh itself that hasn't already been retried after a refresh. */
+function isRefreshableError(error: unknown): error is AxiosError & { config: RetriableRequestConfig } {
+  if (!isAxiosError(error) || !error.config) return false
+
+  const config: RetriableRequestConfig = error.config
+  return error.response?.status === 401 && config.url !== refreshTokenUrl && !config._hasBeenRetried
 }
 
 async function refreshTokens(): Promise<AuthResponse> {
@@ -63,7 +64,7 @@ export async function getValidJwt(): Promise<string> {
   return authResponse.jwtToken
 }
 
-function handleRefreshFailure(error: any): never {
+function handleRefreshFailure(error: unknown): never {
   TokenService.clearTokens()
 
   if (window.location.pathname !== '/login')
@@ -96,7 +97,7 @@ export default class HttpService implements IHttpService {
     return response
   }
 
-  private async handleResponseError(error: any): Promise<any> {
+  private async handleResponseError(error: unknown): Promise<AxiosResponse> {
     if (!isRefreshableError(error)) {
       return Promise.reject(error)
     }
@@ -132,12 +133,6 @@ export default class HttpService implements IHttpService {
     if (endpoint && endpoint.length && !endpoint.includes('?')) endpoint += '/'
     const rel = id && id.length > 0 ? endpoint + id : endpoint
     const response = await this._axios.get<T>(`${this._basePath}${rel}`)
-    return response.data
-  }
-
-  public async getWithParams<T>(endpoint: string, params: {}): Promise<T> {
-    const queryString = new URLSearchParams(params).toString()
-    const response = await this._axios.get<T>(`${this._basePath}${endpoint}?${queryString}`)
     return response.data
   }
 
