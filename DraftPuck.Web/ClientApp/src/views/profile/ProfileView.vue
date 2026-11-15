@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { useBackNavigation } from '@/composables/useBackNavigation'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useUserStore } from '@/stores/user'
 import userService from '@/services/UserService'
@@ -13,7 +13,6 @@ const props = defineProps<{
 }>()
 
 //#region data
-const router = useRouter()
 const userStore = useUserStore()
 const { currentUser, isLoggedIn } = storeToRefs(userStore)
 const profileUser = ref<User>()
@@ -66,13 +65,7 @@ async function fetchProfileData(username: string) {
   }
 }
 
-function onBreadcrumbClick() {
-  try {
-    router.back()
-  } catch {
-    router.push('/')
-  }
-}
+const onBreadcrumbClick = useBackNavigation(() => '/')
 
 async function logout() {
   await userStore.logout()
