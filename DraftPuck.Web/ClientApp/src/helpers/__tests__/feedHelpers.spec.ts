@@ -73,6 +73,18 @@ describe('buildFeedItems', () => {
     expect(buildFeedItems([game(10, [early, late])], [], lobbyCreated, true)).toHaveLength(2)
   })
 
+  // The feed animates new items by key, so keys must survive refetches and never collide across games.
+  it('keys each item by its game and play, or its lobby event', () => {
+    const items = buildFeedItems(
+      [game(10, [play(1, PlayType.Goal, at(1))]), game(20, [play(1, PlayType.Goal, at(2))])],
+      [lobbyEvent('e1', at(3))],
+      lobbyCreated,
+      false
+    )
+
+    expect(items.map((i) => i.key)).toEqual(['play-10-1', 'play-20-1', 'event-e1'])
+  })
+
   it('leaves out shootout goals', () => {
     const shootoutGoal = play(1, PlayType.Goal, at(1), { periodType: PeriodType.Shootout })
 

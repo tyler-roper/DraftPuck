@@ -8,6 +8,8 @@ import { getOrdinal } from '@/helpers/gameHelpers'
 import PlayType from '@/enums/playType'
 
 export default class FeedItem {
+  /** Identifies the play or lobby event across refetches, so lists can tell new items from existing ones. */
+  key: string
   gameId: number | undefined
   type: FeedItemType
   subType: PlayType | LobbyEventType
@@ -20,6 +22,7 @@ export default class FeedItem {
   player: PlayerSummary | undefined
 
   constructor(
+    key: string,
     gameId: number | undefined,
     type: FeedItemType,
     subType: LobbyEventType,
@@ -31,6 +34,7 @@ export default class FeedItem {
     images: Array<string>,
     player: PlayerSummary | undefined
   ) {
+    this.key = key
     this.gameId = gameId
     this.type = type
     this.subType = subType
@@ -132,11 +136,24 @@ export default class FeedItem {
       text = homeTeamIsWinning ? `${homeAbbreviation} wins ${winningScore}-${losingScore}` : `${awayAbbreviation} wins ${winningScore}-${losingScore}`
     }
 
-    return new this(gameId, FeedItemType.GameEvent, play.type, play.dateTime, title, text, subtext, teamColor, images, player)
+    return new this(
+      `play-${gameId}-${play.id}`,
+      gameId,
+      FeedItemType.GameEvent,
+      play.type,
+      play.dateTime,
+      title,
+      text,
+      subtext,
+      teamColor,
+      images,
+      player
+    )
   }
 
   static fromLobbyEvent(lobbyEvent: LobbyEvent) {
     return new this(
+      `event-${lobbyEvent.id}`,
       lobbyEvent.gameId!,
       FeedItemType.LobbyEvent,
       lobbyEvent.lobbyEventType,
