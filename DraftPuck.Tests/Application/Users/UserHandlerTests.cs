@@ -157,7 +157,7 @@ public class UserHandlerTests(DatabaseFixture fixture)
     public async Task KeepingYourNicknameDoesNotLetYouTakeSomeoneElsesEmail()
     {
         // The settings page sends both fields. When the user's own nickname matched first, the other account's email
-        // slipped through, and with two accounts on one email that person's login and password reset broke.
+        // passed validation and only the unique index on Users.Email stopped it, as a 500 instead of this message.
         var victim = await AccountAsync();
         var account = await AccountAsync();
 
