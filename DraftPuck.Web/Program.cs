@@ -34,7 +34,7 @@ try
         .AddHttpContextAccessor()
         .AddInfrastructure(builder.Configuration)
         .AddEndpointsApiExplorer()
-        .AddApplication()
+        .AddApplication(builder.Configuration)
         .ConfigureAuth(builder.Configuration, builder.Environment)
         .AddTelemetry(builder.Configuration)
         .AddDraftPuckRateLimiting();
