@@ -5,6 +5,8 @@ public class DrinkAwardedAchievementHandler(IAchievementQueueService queueServic
     public async Task Handle(DrinkAwardedNotification notification, CancellationToken ct)
     {
         var member = notification.Data.Member;
+        if (member.IsBot) return;
+
         await queueService.SendMessageAsync(new CheckAchievementsMessage()
         {
             UserId = member.UserId,

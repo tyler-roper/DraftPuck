@@ -44,5 +44,7 @@ public record DrinkRemovedNotification(DrinkRemovedPayload Data) : INotification
 public record DrinkAwardedNotification(DrinkAwardedPayload Data) : INotification;
 public record LobbyStateChangedNotification(LobbyStateChangedPayload Data) : INotification;
 public record PicksReadyNotification(GameDto Game) : INotification;
+/// <summary>These lobbies were just deactivated at the daily cutoff: their games are over.</summary>
+public record LobbiesEndedNotification(IReadOnlyList<Guid> LobbyIds) : INotification;
 public record BotPicksReadyNotification(GameDto Game) : INotification;
 public record BotPicksMadeNotification(BotPicksMadePayload Data) : INotification;

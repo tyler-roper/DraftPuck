@@ -259,14 +259,25 @@ public class LobbyActivityTests(DatabaseFixture fixture)
             await db.Lobbies.Where(l => l.Id == old.Id).ExecuteUpdateAsync(x => x.SetProperty(l => l.Created, DateTime.UtcNow.AddDays(-2)));
         }
 
-        await using (var db = fixture.CreateContext())
+        var mediator = Substitute.For<IMediator>();
+        async Task DeactivateAsync()
         {
-            await new DeactivateStaleLobbiesCommandHandler(db, Options.Create(new ApplicationOptions()), NullLogger<DeactivateStaleLobbiesCommandHandler>.Instance)
+            await using var db = fixture.CreateContext();
+            await new DeactivateStaleLobbiesCommandHandler(db, mediator, Options.Create(new ApplicationOptions()), NullLogger<DeactivateStaleLobbiesCommandHandler>.Instance)
                 .Handle(new DeactivateStaleLobbiesCommand(), default);
         }
 
+        await DeactivateAsync();
+
         await using var check = fixture.CreateContext();
+        var oldId = (await check.Lobbies.SingleAsync(l => l.JoinCode == oldCode)).Id;
         Assert.False((await check.Lobbies.SingleAsync(l => l.JoinCode == oldCode)).IsActive);
         Assert.True((await check.Lobbies.SingleAsync(l => l.JoinCode == s.Code)).IsActive);
+
+        // The ended lobby is announced once (it decides The Cup); the next run doesn't announce it again.
+        await mediator.Received(1).Publish(Arg.Is<LobbiesEndedNotification>(n => n.LobbyIds.Contains(oldId)), Arg.Any<CancellationToken>());
+        mediator.ClearReceivedCalls();
+        await DeactivateAsync();
+        await mediator.DidNotReceive().Publish(Arg.Is<LobbiesEndedNotification>(n => n.LobbyIds.Contains(oldId)), Arg.Any<CancellationToken>());
     }
 }
