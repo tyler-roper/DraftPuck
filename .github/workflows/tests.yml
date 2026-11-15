@@ -9,8 +9,11 @@ on:
   workflow_call:
   workflow_dispatch:
 
+# A newer push to a PR replaces that PR's older run. Every other run (pushes to develop, the deploy calling these
+# tests) gets a group of its own, so nothing else can cancel it: a release PR re-running its checks once cancelled
+# the deploy's tests.
 concurrency:
-  group: tests-${{ github.ref }}
+  group: tests-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
