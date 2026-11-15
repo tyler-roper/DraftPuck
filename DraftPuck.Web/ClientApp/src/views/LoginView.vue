@@ -104,6 +104,11 @@ async function login(e: Event) {
           <VButton class="btn btn-light w-100" :is-loading="isLoggingIn" type="submit" loading-text="Logging in...">Log In</VButton>
         </div>
       </div>
+      <div class="row mt-2">
+        <div class="col fs-7 text-end">
+          <router-link :to="{ name: 'ForgotPassword' }" class="text-stone-400">Forgot password?</router-link>
+        </div>
+      </div>
       <div class="row mt-3">
         <div class="col fs-7 text-center">
           <span class="text-stone-400">Tired of sitting on the bench?</span>

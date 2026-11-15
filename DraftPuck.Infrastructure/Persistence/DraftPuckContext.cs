@@ -29,6 +29,7 @@ public partial class DraftPuckContext : DbContext, IDbContext
     public DbSet<UserTitleEntity> UserTitles { get; set; }
     public DbSet<UserEntity> Users { get; set; }
     public DbSet<UserRefreshTokenEntity> UserRefreshTokens { get; set; }
+    public DbSet<PasswordResetTokenEntity> PasswordResetTokens { get; set; }
     public DbSet<TitleEntity> Titles { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -253,6 +254,18 @@ public partial class DraftPuckContext : DbContext, IDbContext
 
             entity.HasIndex(e => e.UserId)
                 .HasDatabaseName("IX_UserRefreshTokens_UserId");
+        });
+
+        modelBuilder.Entity<PasswordResetTokenEntity>(entity =>
+        {
+            entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
+            entity.Property(e => e.Created).HasDefaultValueSql("(getutcdate())");
+            entity.Property(e => e.TokenHash).HasMaxLength(64);
+
+            entity.HasIndex(e => e.TokenHash).IsUnique();
+            entity.HasIndex(e => e.UserId);
+
+            entity.HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<UserTitleEntity>(entity =>

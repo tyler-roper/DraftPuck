@@ -41,6 +41,10 @@ DRAFTPUCK_ConnectionStrings__DefaultConnection="Server=localhost;Database=DraftP
 DRAFTPUCK_AUTH__JWTKEY=<JWT_KEY> // The JWT_KEY can be any string you choose (generating a GUID is recommended)
 ```
 
+Email (password reset links) is optional locally. Without `DRAFTPUCK_Email__ConnectionString` (an Azure
+Communication Services connection string), emails are written to the log instead of sent, so you can copy a reset
+link from the console.
+
 Update `CreateCertificate.ps1`, using the same `PFX_PASSWORD` from `env.web.development.list`:
 
 ```powershell

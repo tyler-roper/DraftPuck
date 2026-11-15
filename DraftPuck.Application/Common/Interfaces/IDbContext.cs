@@ -21,6 +21,7 @@ namespace DraftPuck.Application.Common.Interfaces
         DbSet<UserTitleEntity> UserTitles { get; }
         DbSet<UserEntity> Users { get; }
         DbSet<UserRefreshTokenEntity> UserRefreshTokens { get; }
+        DbSet<PasswordResetTokenEntity> PasswordResetTokens { get; }
         DbSet<TitleEntity> Titles { get; }
 
         DbSet<TEntity> Set<TEntity>() where TEntity : class;
