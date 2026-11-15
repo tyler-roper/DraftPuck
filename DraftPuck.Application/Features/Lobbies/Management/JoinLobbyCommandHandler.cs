@@ -29,8 +29,7 @@ public class JoinLobbyCommandHandler(IDbContext dbContext, IMapper mapper, IMedi
             if (lobby.CreatedBy != request.UserId)
                 throw new ForbiddenException("Only the lobby host can add bots.");
 
-            if (request.BotPickStyle == null)
-                throw new BadRequestException("Bots require a pick style.");
+            LobbyRules.ValidateBotPickStyle(request.BotPickStyle);
 
             LobbyRules.ValidateBotCount(lobby.LobbyMembers.Count(lm => lm.IsBot && !lm.IsRemoved) + 1);
 
@@ -41,6 +40,9 @@ public class JoinLobbyCommandHandler(IDbContext dbContext, IMapper mapper, IMedi
         var existingLobbyMember = await dbContext.LobbyMembers
             .Include(lm => lm.LobbyMemberPicks)
             .FirstOrDefaultAsync(lm => lm.LobbyId == lobby.Id && lm.UserId == memberUserId, ct);
+
+        // Joining again under your own name is fine; taking someone else's isn't.
+        LobbyMemberNames.EnsureAvailable(lobby.LobbyMembers, name, existingLobbyMember?.Id);
 
         if (existingLobbyMember == null)
         {

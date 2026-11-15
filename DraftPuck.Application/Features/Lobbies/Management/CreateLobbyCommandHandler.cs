@@ -1,4 +1,5 @@
 ﻿using DraftPuck.Application.Features.Lobbies.Members;
+using System.ComponentModel.DataAnnotations;
 
 namespace DraftPuck.Application.Features.Lobbies.Management;
 
@@ -33,9 +34,13 @@ public class CreateLobbyCommandHandler(IDbContext dbContext, IMapper mapper, IMe
 
         var botNotifications = new List<LobbyMemberEventPayload>();
 
+        var takenNames = new HashSet<string>([hostName], StringComparer.OrdinalIgnoreCase);
         foreach (var botRequest in request.Bots)
         {
             var botName = LobbyMemberNames.Normalize(botRequest.Nickname);
+            if (!takenNames.Add(botName))
+                throw new ValidationException($"The name '{botName}' is already taken in this lobby.");
+            LobbyRules.ValidateBotPickStyle(botRequest.PickStyle);
             var botUser = new UserEntity
             {
                 Id = Guid.NewGuid(),

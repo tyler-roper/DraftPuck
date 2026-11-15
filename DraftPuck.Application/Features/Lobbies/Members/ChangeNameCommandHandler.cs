@@ -1,5 +1,4 @@
 ﻿using DraftPuck.Application.Common.Exceptions;
-using System.ComponentModel.DataAnnotations;
 
 namespace DraftPuck.Application.Features.Lobbies.Members;
 
@@ -19,8 +18,7 @@ public class ChangeLobbyNameCommandHandler(IDbContext dbContext, IMediator media
         if (lobbyMember.Name == newName)
             return;
 
-        if (lobby.LobbyMembers.Any(lm => lm.Id != lobbyMember.Id && !lm.IsRemoved && lm.Name.Equals(newName, StringComparison.OrdinalIgnoreCase)))
-            throw new ValidationException($"The name '{newName}' is already taken in this lobby.");
+        LobbyMemberNames.EnsureAvailable(lobby.LobbyMembers, newName, lobbyMember.Id);
 
         var oldName = lobbyMember.Name;
         lobbyMember.Name = newName;

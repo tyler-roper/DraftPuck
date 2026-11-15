@@ -154,6 +154,78 @@ public class UserHandlerTests(DatabaseFixture fixture)
     // --- Updates ---
 
     [Fact]
+    public async Task KeepingYourNicknameDoesNotLetYouTakeSomeoneElsesEmail()
+    {
+        // The settings page sends both fields. When the user's own nickname matched first, the other account's email
+        // slipped through, and with two accounts on one email that person's login and password reset broke.
+        var victim = await AccountAsync();
+        var account = await AccountAsync();
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(() => UpdateAsync(new UpdateUserCommand
+        {
+            RequesterUserId = account.Id,
+            TargetUserId = account.Id,
+            RequesterIsAuthenticated = true,
+            Nickname = account.Nickname,
+            Email = victim.Email
+        }));
+
+        Assert.Equal("Email is already taken.", ex.Message);
+    }
+
+    [Fact]
+    public async Task KeepingYourOwnNicknameAndEmailIsAllowed()
+    {
+        var account = await AccountAsync();
+
+        await UpdateAsync(new UpdateUserCommand
+        {
+            RequesterUserId = account.Id,
+            TargetUserId = account.Id,
+            RequesterIsAuthenticated = true,
+            Nickname = account.Nickname,
+            Email = account.Email
+        });
+    }
+
+    [Fact]
+    public async Task UpdatedNicknamesAreTrimmedLikeNewOnes()
+    {
+        var account = await AccountAsync();
+        var nickname = UniqueName();
+
+        await UpdateAsync(new UpdateUserCommand
+        {
+            RequesterUserId = account.Id,
+            TargetUserId = account.Id,
+            RequesterIsAuthenticated = true,
+            Nickname = $"  {nickname}  "
+        });
+
+        await using var check = fixture.CreateContext();
+        Assert.Equal(nickname, (await check.Users.SingleAsync(u => u.Id == account.Id)).Nickname);
+    }
+
+    [Fact]
+    public async Task RejectsANotificationTokenFarLongerThanARealOne()
+    {
+        var account = await AccountAsync();
+        var tooLong = new string('a', UserValidationHelpers.MaxFcmRegistrationTokenLength + 1);
+
+        await Assert.ThrowsAsync<ValidationException>(() => UpdateAsync(new UpdateUserCommand
+        {
+            RequesterUserId = account.Id,
+            TargetUserId = account.Id,
+            RequesterIsAuthenticated = true,
+            FcmRegistrationToken = tooLong
+        }));
+
+        await using var db = fixture.CreateContext();
+        await Assert.ThrowsAsync<ValidationException>(() => new UpdateFcmRegistrationTokenCommandHandler(db, new UserRepository(db), TestServices.Mapper())
+            .Handle(new UpdateFcmRegistrationTokenCommand { UserId = account.Id, Token = tooLong }, default));
+    }
+
+    [Fact]
     public async Task ChangingYourPasswordRequiresTheCurrentOne()
     {
         var account = await AccountAsync();

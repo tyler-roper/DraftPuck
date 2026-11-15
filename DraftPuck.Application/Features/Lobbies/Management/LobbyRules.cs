@@ -28,6 +28,12 @@ public static class LobbyRules
         ValidateBotCount(botCount);
     }
 
+    public static void ValidateBotPickStyle(BotPickStyle? pickStyle)
+    {
+        if (pickStyle is not { } style || !Enum.IsDefined(style))
+            throw new ValidationException("Bots need a valid pick style.");
+    }
+
     public static void ValidateBotCount(int botCount)
     {
         if (botCount > MaxBots)
