@@ -38,8 +38,10 @@ function select(key: NotificationKey, value: NotificationPreference) {
 
 <style scoped lang="scss">
 @import '@/assets/scss/custom-colors.scss';
+// The questions are light cards, so they set their own dark text instead of inheriting the page's (white on dark pages).
 .notification-form-container {
   margin-bottom: -0.5rem;
+  color: map-get($custom-colors, 'stone-900');
 }
 
 .notification-form-container .question {

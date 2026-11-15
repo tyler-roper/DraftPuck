@@ -8,6 +8,8 @@ import useVuelidate from '@vuelidate/core'
 import { required, requiredIf, email, maxLength, sameAs } from '@vuelidate/validators'
 import { nickname, optionalPassword } from '@/helpers/validationHelpers'
 import { getErrorMessage } from '@/helpers/requestHelpers'
+import { allNotificationKeys, hasPreferenceChanges, pickPreferences, type NotificationPreferences } from '@/helpers/notificationSettings'
+import UserService from '@/services/UserService'
 import VIcon from '@/components/VIcon.vue'
 import VDefaultNotificationSettings from '@/components/VDefaultNotificationSettings.vue'
 import { useRouter } from 'vue-router'
@@ -29,6 +31,8 @@ function discard() {
   form.currentPassword = ''
   form.password = ''
   form.confirmPassword = ''
+  notificationDefaults.value = { ...savedNotificationDefaults.value }
+  applyDefaultsToActiveLobbies.value = false
 }
 
 async function triggerFormSubmission() {
@@ -41,16 +45,25 @@ async function updateAccount() {
     if (v$.value.$error) return
     isUpdatingAccount.value = true
 
-    // Only send password fields when changing it; the server treats any password value as a change.
-    const request: UpdateUserRequest = { nickname: form.nickname, email: form.email }
-    if (form.password) {
-      request.password = form.password
-      request.currentPassword = form.currentPassword
+    if (isAccountDirty.value) {
+      // Only send password fields when changing it; the server treats any password value as a change.
+      const request: UpdateUserRequest = { nickname: form.nickname, email: form.email }
+      if (form.password) {
+        request.password = form.password
+        request.currentPassword = form.currentPassword
+      }
+
+      await userStore.updateUser(request)
     }
 
-    await userStore.updateUser(request)
+    const appliedToActiveLobbies = applyDefaultsToActiveLobbies.value
+    if (areNotificationDefaultsDirty.value) {
+      userStore.setCurrentUser(await UserService.updateNotificationPreferences(notificationDefaults.value, appliedToActiveLobbies))
+      applyDefaultsToActiveLobbies.value = false
+    }
+
     router.replace(`/u/${currentUser.value?.nickname}`)
-    toast.success('Profile updated!', { timeout: 2000 })
+    toast.success(appliedToActiveLobbies ? 'Saved, and applied to your active lobbies!' : 'Profile updated!', { timeout: 2000 })
   } catch (ex: unknown) {
     console.error(ex)
     toast.error(getErrorMessage(ex, 'Sorry, something went wrong.'))
@@ -80,7 +93,7 @@ const rules = computed(() => ({
   confirmPassword: { sameAs: sameAs(computed(() => form.password)) }
 }))
 
-const isDirty = computed(() => {
+const isAccountDirty = computed(() => {
   if (form.nickname !== currentUser.value!.nickname!) return true
   if (form.email !== currentUser.value!.email!) return true
   if (form.currentPassword !== '') return true
@@ -88,6 +101,16 @@ const isDirty = computed(() => {
   if (form.confirmPassword !== '') return true
   return false
 })
+
+// What each lobby the user joins starts with. Saved with the rest of the page.
+const savedNotificationDefaults = computed(() => pickPreferences(currentUser.value ?? {}, allNotificationKeys))
+const notificationDefaults = ref<NotificationPreferences>({ ...savedNotificationDefaults.value })
+const applyDefaultsToActiveLobbies = ref(false)
+const areNotificationDefaultsDirty = computed(
+  () => hasPreferenceChanges(notificationDefaults.value, savedNotificationDefaults.value, allNotificationKeys) || applyDefaultsToActiveLobbies.value
+)
+
+const isDirty = computed(() => isAccountDirty.value || areNotificationDefaultsDirty.value)
 
 const v$ = useVuelidate<UpdateUserRequest>(rules, form)
 //#endregion
@@ -206,7 +229,7 @@ const v$ = useVuelidate<UpdateUserRequest>(rules, form)
       <div class="hr"></div>
       <div class="profile-section">
         <span class="title">Default Notifications</span>
-        <VDefaultNotificationSettings />
+        <VDefaultNotificationSettings v-model:preferences="notificationDefaults" v-model:apply-to-active-lobbies="applyDefaultsToActiveLobbies" />
       </div>
     </div>
   </HeaderLayout>
