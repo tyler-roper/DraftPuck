@@ -86,15 +86,14 @@ public class ProcessGameCommandHandler(
         // On the initial schedule load, skip fetching every player so the queue isn't blocked until each game is cached.
         await rosterSync.SyncAsync(previous ?? game, game, fetchChangedRosters: !request.IsInitialPopulation, ct);
 
-        GameProcessingHelpers.SetPlayDateTimes(game, _appConfig.CurrentTimeUtc, _appConfig.IsTestMode, previous ?? game);
         GameProcessingHelpers.HandleTestMode(game, _appConfig);
 
         // With no previous poll every goal is treated as new. Awarding skips goals that already have drinks,
         // so this only fills in goals missed while there was no cached copy.
         var goalChanges = GoalMatcher.Compare(previous == null ? [] : TrackedGoal.CountedIn(previous), TrackedGoal.CountedIn(game));
 
-        // Drinks only go to picks made before a goal happened, which this time is the best record of.
-        GameProcessingHelpers.SetFirstSeenTimes(game, previous, goalChanges.OfType<GoalRenumbered>(), DateTime.UtcNow);
+        // Before the goal changes are published: drinks only go to picks made before the goal happened.
+        GameProcessingHelpers.SetPlayTimes(game, previous, goalChanges.OfType<GoalRenumbered>(), DateTime.UtcNow);
 
         game.UpdatedUtc = DateTime.UtcNow;
         await gameCache.UpdateGameAsync(game);

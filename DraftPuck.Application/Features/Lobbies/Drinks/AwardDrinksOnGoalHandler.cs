@@ -8,7 +8,7 @@ public class AwardDrinksOnGoalHandler(IDbContext dbContext, IMediator mediator, 
         var data = notification.Data;
         // Members can pick after puck drop, but a pick only earns drinks for goals that happen after it's made. This
         // matters when a goal is announced again: credited to a new scorer, or re-found after the cached game was lost.
-        var goalHappenedUtc = data.Play.HappenedUtc;
+        var goalHappenedUtc = data.Play.DateTime;
 
         var picksToReward = await dbContext.LobbyMemberPicks
             .Include(p => p.Drinks)

@@ -36,14 +36,20 @@ public static class GameProcessingHelpers
     }
 
     /// <summary>
-    /// Carries each play's first-seen time forward from the previous poll (by play ID, and across renumbered goals), and
-    /// stamps plays that are new since then with <paramref name="utcNow"/>. Without a previous poll nothing is known, so
-    /// plays stay unstamped and fall back to their estimated time.
+    /// Sets when each play happened (<see cref="PlayDto.DateTime"/>). A play from the previous poll keeps its time (by
+    /// play ID, and across renumbered goals). A play that's new since then happened while we were watching, so it gets
+    /// <paramref name="utcNow"/>, the real time of this poll. Without a previous poll (the first time we see the game, or
+    /// the cached copy was lost) we weren't watching, so every play gets an estimate from the game clock instead.
     /// </summary>
     /// <param name="utcNow">Real time, not test mode's simulated clock: it's compared with when picks were saved.</param>
-    public static void SetFirstSeenTimes(GameDto game, GameDto? previous, IEnumerable<GoalRenumbered> renumbers, DateTime utcNow)
+    public static void SetPlayTimes(GameDto game, GameDto? previous, IEnumerable<GoalRenumbered> renumbers, DateTime utcNow)
     {
-        if (previous == null) return;
+        if (previous == null)
+        {
+            foreach (var play in game.Plays)
+                play.DateTime = Min(EstimatePlayTime(game, play), utcNow);
+            return;
+        }
 
         var previousById = previous.Plays.DistinctBy(p => p.Id).ToDictionary(p => p.Id);
         var renumberedFrom = renumbers.ToDictionary(r => r.NewPlayId, r => r.OldPlayId);
@@ -51,15 +57,20 @@ public static class GameProcessingHelpers
         foreach (var play in game.Plays)
         {
             if (previousById.TryGetValue(play.Id, out var same))
-                play.FirstSeenUtc = same.FirstSeenUtc;
+                play.DateTime = same.DateTime;
             else if (renumberedFrom.TryGetValue(play.Id, out var oldId) && previousById.TryGetValue(oldId, out var old))
-                play.FirstSeenUtc = old.FirstSeenUtc;
+                play.DateTime = old.DateTime;
             else
-                play.FirstSeenUtc = utcNow;
+                play.DateTime = utcNow;
         }
     }
 
-    public static void SetPlayDateTimes(GameDto updatedGame, DateTime currentUtcTime, bool isTestMode = false, GameDto? cachedGame = null)
+    /// <summary>
+    /// When a play probably happened, from the scheduled start and the game clock: puck drop 10 minutes after the
+    /// scheduled start, 40 minutes per period and 22 per intermission (shorter in regular-season overtime). Real games
+    /// rarely keep that pace, so it can be well off; it's only for plays we didn't see happen, and test mode's replay.
+    /// </summary>
+    public static DateTime EstimatePlayTime(GameDto game, PlayDto play)
     {
         const int FULL_PERIOD_DURATION_MINS = 40;
         const int SHORT_PERIOD_DURATION_MINS = 7;
@@ -67,41 +78,24 @@ public static class GameProcessingHelpers
         const int SHORT_INTERMISSION_MINS = 2;
         const int PRE_GAME_BUFFER_MINS = 10;
 
-        DateTime estimatedStartTime = updatedGame.DateTime.AddMinutes(PRE_GAME_BUFFER_MINS);
+        var durationBeforePeriod = CalculateTimeBeforePeriod(play.Period, game.GameType,
+                                                             FULL_PERIOD_DURATION_MINS,
+                                                             SHORT_PERIOD_DURATION_MINS,
+                                                             FULL_INTERMISSION_MINS,
+                                                             SHORT_INTERMISSION_MINS);
 
-        foreach (var play in updatedGame.Plays.OrderBy(p => p.Id))
-        {
-            if (cachedGame != null)
-            {
-                var cachedPlay = cachedGame.Plays.FirstOrDefault(p => p.Id == play.Id);
-                if (cachedPlay != null && cachedPlay.DateTime != DateTime.MinValue)
-                {
-                    play.DateTime = cachedPlay.DateTime;
-                    continue;
-                }
-            }
-
-            var durationBeforePeriod = CalculateTimeBeforePeriod(play.Period, updatedGame.GameType,
-                                                                       FULL_PERIOD_DURATION_MINS,
-                                                                       SHORT_PERIOD_DURATION_MINS,
-                                                                       FULL_INTERMISSION_MINS,
-                                                                       SHORT_INTERMISSION_MINS);
-
-            var timeInCurrentPeriod = ParsePeriodTime(play.TimeInPeriod);
-
-            var totalOffset = durationBeforePeriod + timeInCurrentPeriod;
-            var calculatedTime = estimatedStartTime.Add(totalOffset);
-            play.DateTime = isTestMode
-                ? calculatedTime
-                : Min(calculatedTime, currentUtcTime);
-        }
+        return game.DateTime.AddMinutes(PRE_GAME_BUFFER_MINS) + durationBeforePeriod + ParsePeriodTime(play.TimeInPeriod);
     }
 
+    /// <summary>
+    /// Test mode replays a past game on a simulated clock: only the plays whose estimated time has come are kept, and the
+    /// game's state, clock and score are rebuilt from them.
+    /// </summary>
     public static void HandleTestMode(GameDto game, ApplicationOptions appConfig)
     {
         if (!appConfig.IsTestMode) return;
 
-        game.Plays = game.Plays.Where(play => play.DateTime <= appConfig.CurrentTimeUtc).ToList();
+        game.Plays = game.Plays.Where(play => EstimatePlayTime(game, play) <= appConfig.CurrentTimeUtc).ToList();
 
         var gameStarted = appConfig.CurrentTimeUtc >= game.DateTime;
         var gameEndedPlay = game.Plays.FirstOrDefault(play => play.Type == PlayType.GameEnd);

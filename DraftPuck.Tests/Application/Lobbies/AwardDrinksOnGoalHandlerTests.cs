@@ -14,7 +14,7 @@ public class AwardDrinksOnGoalHandlerTests(DatabaseFixture fixture)
     private static GoalScoredNotification GoalBy(int gameId, int scorerId, DateTime? happenedUtc = null)
     {
         var goal = TestGames.Goal(PlayId, 1, "05:00", scorerId, TestGames.HomeTeamId);
-        goal.FirstSeenUtc = happenedUtc ?? DateTime.UtcNow;
+        goal.DateTime = happenedUtc ?? DateTime.UtcNow;
         return new(new GoalEventPayload(gameId, goal, new PlayerDto { Id = scorerId, TeamId = TestGames.HomeTeamId }));
     }
 
