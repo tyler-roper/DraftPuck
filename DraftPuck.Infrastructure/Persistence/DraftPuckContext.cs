@@ -15,6 +15,7 @@ public partial class DraftPuckContext : DbContext, IDbContext
     }
 
     public DbSet<AchievementEntity> Achievements { get; set; }
+    public DbSet<AchievementBackfillEntity> AchievementBackfills { get; set; }
     public DbSet<BannerEntity> Banners { get; set; }
     public DbSet<DrinkEntity> Drinks { get; set; }
     public DbSet<ErrorLogEntity> ErrorLogs { get; set; }

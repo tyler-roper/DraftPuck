@@ -4,7 +4,8 @@ public class AchievementAwardService(IDbContext dbContext, IEnumerable<IAchievem
 {
     private readonly IReadOnlyDictionary<string, IAchievementRule> _rules = allRules.ToDictionary(rule => rule.UniqueIdentifier, StringComparer.OrdinalIgnoreCase);
 
-    public async Task<List<AchievementEntity>> CheckAndAwardAllAsync(Guid userId, AchievementTriggerType triggerType, CancellationToken cancellationToken)
+    /// <summary>Awards what the user has earned, checking the rules for <paramref name="triggerType"/>, or every rule when it's null (a backfill).</summary>
+    public async Task<List<AchievementEntity>> CheckAndAwardAllAsync(Guid userId, AchievementTriggerType? triggerType, CancellationToken cancellationToken)
     {
         var user = await userRepository.GetById(userId, cancellationToken);
 
@@ -18,7 +19,10 @@ public class AchievementAwardService(IDbContext dbContext, IEnumerable<IAchievem
         var context = new AchievementContext { User = user, DbContext = dbContext };
         var newlyAwarded = new List<AchievementEntity>();
 
-        foreach (var rule in _rules.Values.Where(rule => rule.Triggers.Contains(triggerType) && !owned.Contains(rule.UniqueIdentifier)))
+        var rules = _rules.Values.Where(rule =>
+            (triggerType == null ? rule.CanBackfill : rule.Triggers.Contains(triggerType.Value))
+            && !owned.Contains(rule.UniqueIdentifier));
+        foreach (var rule in rules)
         {
             if (!await rule.IsCriteriaMetAsync(context))
                 continue;

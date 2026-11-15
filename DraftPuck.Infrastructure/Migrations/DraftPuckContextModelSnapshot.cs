@@ -22,6 +22,32 @@ namespace DraftPuck.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("DraftPuck.Shared.Achievements.AchievementBackfillEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AchievementsAwarded")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("StartedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("StartedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UsersChecked")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UsersQueued")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AchievementBackfills");
+                });
+
             modelBuilder.Entity("DraftPuck.Shared.Achievements.AchievementEntity", b =>
                 {
                     b.Property<Guid>("Id")
