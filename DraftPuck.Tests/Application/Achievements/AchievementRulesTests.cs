@@ -427,6 +427,138 @@ public class AchievementRulesTests(DatabaseFixture fixture)
         Assert.DoesNotContain("the_cup", await CheckAsync(stillGoing, AchievementTriggerType.LobbyEnded));
     }
 
+    // --- Achievements added after the first fixes ---
+
+    [Fact]
+    public async Task FalseAlarmGoesToTheGiverAndWavedOffToWhoDrankIt()
+    {
+        Guid giver = default, drinker = default;
+        await SeedAsync((s, db) =>
+        {
+            var (lobby, host) = s.Lobby([Seed.NewGameId()]);
+            var other = s.Member(lobby);
+            (giver, drinker) = (host.UserId, other.UserId);
+            // The lobby event a goal correction records for a drink that was already given out.
+            db.LobbyEvents.Add(new LobbyEventEntity
+            {
+                Id = Guid.NewGuid(), LobbyId = lobby.Id, LobbyEventType = LobbyEventType.DrinkInvalidated,
+                LobbyMemberId = host.Id, LobbyMember2Id = other.Id, Title = "Drink Invalidated", Text = "x", TimeUtc = DateTime.UtcNow, IsSent = true
+            });
+        });
+
+        var giverAwards = await CheckAsync(giver, AchievementTriggerType.DrinkInvalidated);
+        var drinkerAwards = await CheckAsync(drinker, AchievementTriggerType.DrinkInvalidated);
+
+        Assert.Equal(["false_alarm"], giverAwards);
+        Assert.Equal(["waved_off"], drinkerAwards);
+
+        await using var db = fixture.CreateContext();
+        Assert.True(await db.UserTitles.AnyAsync(ut => ut.UserId == drinker && ut.Title.UniqueIdentifier == "waved_off"));
+    }
+
+    [Theory]
+    [InlineData(2, true)]
+    [InlineData(4, false)]
+    public async Task FullAutoIsThreeDrinksGivenInUnderThreeMinutes(int minutesForThree, bool expected)
+    {
+        Guid user = default;
+        await SeedAsync((s, db) =>
+        {
+            var (lobby, host) = s.Lobby([Seed.NewGameId()]);
+            var other = s.Member(lobby);
+            user = host.UserId;
+            var pick = Pick(s, host);
+            var start = DateTime.UtcNow.AddHours(-1);
+            Drink(db, pick, recipient: other, assigned: start);
+            Drink(db, pick, recipient: other, assigned: start.AddSeconds(30));
+            Drink(db, pick, recipient: other, assigned: start.AddMinutes(minutesForThree));
+        });
+
+        Assert.Equal(expected, (await CheckAsync(user, AchievementTriggerType.DrinkAssigned)).Contains("full_auto"));
+    }
+
+    [Theory]
+    [InlineData(3, true)]
+    [InlineData(2, false)]
+    public async Task RandomNumberGeneratorIsThreeBotDrinksInOneLobby(int botDrinks, bool expected)
+    {
+        Guid user = default;
+        await SeedAsync((s, db) =>
+        {
+            var (lobby, host) = s.Lobby([Seed.NewGameId()]);
+            user = host.UserId;
+            var botPick = Pick(s, s.Bot(lobby));
+            for (var i = 0; i < botDrinks; i++) Drink(db, botPick, recipient: host);
+        });
+
+        Assert.Equal(expected, (await CheckAsync(user, AchievementTriggerType.DrinkAssigned)).Contains("random_number_generator"));
+    }
+
+    [Theory]
+    [InlineData(10, true)]
+    [InlineData(9, false)]
+    public async Task RoyaltyIsLobbiesCreatedOnTenDifferentDays(int days, bool expected)
+    {
+        Guid host = default;
+        await SeedAsync((s, db) =>
+        {
+            var hostUser = s.User();
+            host = hostUser.Id;
+            for (var day = 0; day < days; day++)
+            {
+                // Two lobbies on each day: a second one the same day doesn't count again.
+                for (var copy = 0; copy < 2; copy++)
+                {
+                    var (lobby, _) = s.Lobby([Seed.NewGameId()]);
+                    lobby.CreatedBy = host;
+                    lobby.Created = DateTime.UtcNow.Date.AddDays(-day).AddHours(20 + copy); // evenings, after the cutoff
+                }
+            }
+        });
+
+        Assert.Equal(expected, (await CheckAsync(host, AchievementTriggerType.LobbyCreated)).Contains("royalty"));
+    }
+
+    [Theory]
+    [InlineData(2, 2, true)]   // two picks, both scored
+    [InlineData(2, 1, false)]  // one didn't score
+    [InlineData(3, 3, false)]  // more than two picks
+    public async Task SnakeEyesIsExactlyTwoPicksThatBothScoreOnceTheLobbyEnds(int picks, int scored, bool expected)
+    {
+        Guid user = default;
+        await SeedAsync((s, db) =>
+        {
+            var (_, host) = s.Lobby([Seed.NewGameId()], isActive: false);
+            user = host.UserId;
+            for (var i = 0; i < picks; i++)
+            {
+                var pick = Pick(s, host, 100 + i);
+                if (i < scored) Drink(db, pick);
+            }
+        });
+
+        Assert.Equal(expected, (await CheckAsync(user, AchievementTriggerType.LobbyEnded)).Contains("snake_eyes"));
+    }
+
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public async Task InPlainSightIsThreeDrinksGivenWithoutReceivingOneInThatLobby(bool hitBack, bool expected)
+    {
+        Guid user = default;
+        await SeedAsync((s, db) =>
+        {
+            var (lobby, host) = s.Lobby([Seed.NewGameId()]);
+            var other = s.Member(lobby);
+            user = host.UserId;
+            var pick = Pick(s, host);
+            for (var i = 0; i < 3; i++) Drink(db, pick, recipient: other);
+            if (hitBack) Drink(db, Pick(s, other, 101), recipient: host);
+        });
+
+        Assert.Equal(expected, (await CheckAsync(user, AchievementTriggerType.DrinkAssigned)).Contains("in_plain_sight"));
+    }
+
     // --- Awarding ---
 
     [Fact]

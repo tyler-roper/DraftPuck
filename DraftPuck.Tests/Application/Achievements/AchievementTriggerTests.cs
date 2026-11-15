@@ -89,6 +89,21 @@ public class AchievementTriggerTests(DatabaseFixture fixture)
     }
 
     [Fact]
+    public async Task AnInvalidatedDrinkChecksTheGiverAndTheDrinkerButNotBots()
+    {
+        var (lobby, host, human, bot) = Lobby();
+        var handler = new DrinkInvalidatedAchievementHandler(_queue);
+
+        await handler.Handle(new DrinkInvalidatedNotification(new(lobby, human, host, new DrinkEntity())), default);
+        await handler.Handle(new DrinkInvalidatedNotification(new(lobby, bot, human, new DrinkEntity())), default);
+
+        Assert.Equal([
+            (human.UserId, AchievementTriggerType.DrinkInvalidated),
+            (host.UserId, AchievementTriggerType.DrinkInvalidated),
+            (human.UserId, AchievementTriggerType.DrinkInvalidated)], Queued());
+    }
+
+    [Fact]
     public async Task AnEndedLobbyChecksItsCurrentHumans()
     {
         Guid lobbyId, host, human, removed, bot;
