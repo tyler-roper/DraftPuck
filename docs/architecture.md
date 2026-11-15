@@ -45,7 +45,9 @@ Notifications are published in-process, in order, and run synchronously. A handl
      live, 1 min near puck drop, 10 min before that).
 3. Polling stops once the game is final.
 
-Failures schedule a 2-minute retry. NHL API outages log a warning; anything else logs an error.
+Failures schedule a 2-minute retry. NHL API outages log a warning; anything else logs an error. If a game's chain of
+poll messages stops anyway (a message moved to the poison queue), `RestartStalledPollingFunction` notices within a
+minute or so of the next poll being 5 minutes overdue and queues a poll to restart it.
 
 ## Real time
 
