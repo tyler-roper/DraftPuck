@@ -4,6 +4,7 @@ import HeaderLayout from '@/views/layouts/HeaderLayout.vue'
 import { storeToRefs } from 'pinia'
 import { format } from 'date-fns'
 import VIcon from '@/components/VIcon.vue'
+import VAchievementBackfill from '@/components/admin/VAchievementBackfill.vue'
 
 //#region data
 const systemStore = useSystemStore()
@@ -32,6 +33,15 @@ const { gitSha, appIsTestMode, currentSystemTime } = storeToRefs(systemStore)
         </div>
       </div>
       <div class="hr my-3"></div>
+      <div class="rounded-lg border border-stone-500 overflow-hidden mb-3">
+        <div class="px-3 py-2 border-bottom border-stone-500 bg-stone-900 fs-6">
+          <VIcon icon="trophy" prefix="sr" class="me-2" />
+          <span class="fw-bold">Achievements</span>
+        </div>
+        <div class="p-3">
+          <VAchievementBackfill />
+        </div>
+      </div>
       <div class="rounded-lg border border-stone-500 overflow-hidden">
         <div class="px-3 py-2 border-bottom border-stone-500 bg-stone-900 fs-6">
           <VIcon icon="gears" prefix="sr" class="me-2" />

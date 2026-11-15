@@ -7,6 +7,7 @@ namespace DraftPuck.Application.Common.Interfaces
     public interface IDbContext
     {
         DbSet<AchievementEntity> Achievements { get; }
+        DbSet<AchievementBackfillEntity> AchievementBackfills { get; }
         DbSet<BannerEntity> Banners { get; }
         DbSet<DrinkEntity> Drinks { get; }
         DbSet<ErrorLogEntity> ErrorLogs { get; }

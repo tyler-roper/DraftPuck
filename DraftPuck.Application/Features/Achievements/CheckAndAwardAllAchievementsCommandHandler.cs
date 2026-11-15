@@ -8,9 +8,22 @@ public class CheckAndAwardAllAchievementsCommandHandler(AchievementAwardService 
     {
         var awarded = await awardService.CheckAndAwardAllAsync(
             request.UserId,
-            request.TriggerType,
+            request.BackfillId == null ? request.TriggerType : null,
             cancellationToken
         );
+
+        if (request.BackfillId is { } backfillId)
+        {
+            // Counted in one statement, so checks running in parallel don't overwrite each other's counts.
+            await dbContext.AchievementBackfills
+                .Where(b => b.Id == backfillId)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(b => b.UsersChecked, b => b.UsersChecked + 1)
+                    .SetProperty(b => b.AchievementsAwarded, b => b.AchievementsAwarded + awarded.Count), cancellationToken);
+
+            // A backfill awards what people earned in the past; a burst of notifications for it would just be noise.
+            return;
+        }
 
         if (awarded.Count == 0) return;
 

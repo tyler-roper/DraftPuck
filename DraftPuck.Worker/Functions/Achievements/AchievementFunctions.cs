@@ -30,7 +30,8 @@ public class AchievementFunctions(ILogger<AchievementFunctions> logger, IMediato
             var command = new CheckAndAwardAllAchievementsCommand
             {
                 UserId = message.UserId,
-                TriggerType = message.TriggerType
+                TriggerType = message.TriggerType,
+                BackfillId = message.BackfillId
             };
 
             await mediator.Send(command);
