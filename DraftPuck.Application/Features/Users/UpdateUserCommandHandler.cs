@@ -17,6 +17,7 @@ public class UpdateUserCommandHandler(IDbContext dbContext, IMapper mapper, IUse
         if (isRequesterSpoofed || (!isUpdatingSelf && !requester.IsAdmin))
             throw new ForbiddenException("Invalid action.");
 
+        request.Nickname = request.Nickname?.Trim();
         await UserValidationHelpers.ValidateUpdateUserRequest(dbContext, request, cancellationToken);
 
         var userToUpdate = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == userIdToUpdate, cancellationToken) ?? throw new NotFoundException("Target user not found.");

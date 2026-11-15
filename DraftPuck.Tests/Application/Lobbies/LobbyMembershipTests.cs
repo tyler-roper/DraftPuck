@@ -152,7 +152,7 @@ public class LobbyMembershipTests(DatabaseFixture fixture)
         await JoinAsync(lobby.JoinCode, member.Id);
 
         await Assert.ThrowsAsync<ForbiddenException>(() => JoinAsync(lobby.JoinCode, member.Id, "Bot", isBot: true, BotPickStyle.Best));
-        await Assert.ThrowsAsync<BadRequestException>(() => JoinAsync(lobby.JoinCode, host.Id, "Bot", isBot: true, style: null));
+        await Assert.ThrowsAsync<ValidationException>(() => JoinAsync(lobby.JoinCode, host.Id, "Bot", isBot: true, style: null));
 
         await JoinAsync(lobby.JoinCode, host.Id, "Bot", isBot: true, BotPickStyle.Worst);
         var bot = Assert.Single(await MembersAsync(lobby.JoinCode), m => m.IsBot);
@@ -267,6 +267,72 @@ public class LobbyMembershipTests(DatabaseFixture fixture)
 
         await RemoveAsync(lobby.JoinCode, host.Id, memberEntity.Id);
         Assert.True((await MembersAsync(lobby.JoinCode)).Single(m => m.Id == memberEntity.Id).IsRemoved);
+    }
+
+    // --- Names on join ---
+
+    [Fact]
+    public async Task JoiningRejectsANameAnotherMemberUses()
+    {
+        var host = await UserAsync();
+        var lobby = await CreateAsync(host.Id, "Taken");
+        var joiner = await UserAsync();
+
+        await Assert.ThrowsAsync<ValidationException>(() => JoinAsync(lobby.JoinCode, joiner.Id, "TAKEN"));
+        Assert.DoesNotContain(await MembersAsync(lobby.JoinCode), m => m.UserId == joiner.Id);
+    }
+
+    [Fact]
+    public async Task JoiningAgainUnderYourOwnNameIsFine()
+    {
+        var host = await UserAsync();
+        var lobby = await CreateAsync(host.Id);
+        var joiner = await UserAsync();
+
+        await JoinAsync(lobby.JoinCode, joiner.Id, "Sam");
+        await JoinAsync(lobby.JoinCode, joiner.Id, "sam");
+
+        Assert.Single(await MembersAsync(lobby.JoinCode), m => m.UserId == joiner.Id);
+    }
+
+    [Fact]
+    public async Task ARemovedMembersNameIsFreeAgain()
+    {
+        var host = await UserAsync();
+        var lobby = await CreateAsync(host.Id);
+        var leaver = await UserAsync();
+        await JoinAsync(lobby.JoinCode, leaver.Id, "Sam");
+        await LeaveAsync(lobby.JoinCode, leaver.Id);
+
+        var newcomer = await UserAsync();
+        await JoinAsync(lobby.JoinCode, newcomer.Id, "Sam");
+
+        Assert.Contains(await MembersAsync(lobby.JoinCode), m => m.UserId == newcomer.Id && m.Name == "Sam");
+    }
+
+    [Fact]
+    public async Task BotsNeedAnUnusedNameAndARealPickStyle()
+    {
+        var host = await UserAsync();
+        var lobby = await CreateAsync(host.Id, "Host");
+
+        await Assert.ThrowsAsync<ValidationException>(() => JoinAsync(lobby.JoinCode, host.Id, "host", isBot: true, style: BotPickStyle.Best));
+        await Assert.ThrowsAsync<ValidationException>(() => JoinAsync(lobby.JoinCode, host.Id, "Robo", isBot: true, style: null));
+        await Assert.ThrowsAsync<ValidationException>(() => JoinAsync(lobby.JoinCode, host.Id, "Robo", isBot: true, style: (BotPickStyle)99));
+
+        await JoinAsync(lobby.JoinCode, host.Id, "Robo", isBot: true, style: BotPickStyle.Random);
+        Assert.Contains(await MembersAsync(lobby.JoinCode), m => m.IsBot && m.Name == "Robo");
+    }
+
+    [Fact]
+    public async Task NewLobbiesNeedDistinctNamesAndRealPickStyles()
+    {
+        var host = await UserAsync();
+
+        await Assert.ThrowsAsync<ValidationException>(() => CreateAsync(host.Id, "Host", new BotDto { Nickname = "HOST", PickStyle = BotPickStyle.Best }));
+        await Assert.ThrowsAsync<ValidationException>(() => CreateAsync(host.Id, "Host",
+            new BotDto { Nickname = "Robo", PickStyle = BotPickStyle.Best }, new BotDto { Nickname = "robo", PickStyle = BotPickStyle.Bad }));
+        await Assert.ThrowsAsync<ValidationException>(() => CreateAsync(host.Id, "Host", new BotDto { Nickname = "Robo", PickStyle = (BotPickStyle)99 }));
     }
 
     // --- Rename ---

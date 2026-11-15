@@ -25,4 +25,11 @@ public static class LobbyMemberNames
 
         return trimmed;
     }
+
+    /// <summary>Throws if another member still in the lobby uses the name, ignoring case.</summary>
+    public static void EnsureAvailable(IEnumerable<LobbyMemberEntity> members, string name, Guid? exceptMemberId = null)
+    {
+        if (members.Any(m => m.Id != exceptMemberId && !m.IsRemoved && m.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+            throw new ValidationException($"The name '{name}' is already taken in this lobby.");
+    }
 }
