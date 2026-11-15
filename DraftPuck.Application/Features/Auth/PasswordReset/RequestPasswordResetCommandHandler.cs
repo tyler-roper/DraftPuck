@@ -32,7 +32,8 @@ public class RequestPasswordResetCommandHandler(IDbContext dbContext, IEmailSend
         });
         await dbContext.SaveChangesAsync(ct);
 
-        var link = appOptions.Value.GetAbsoluteUrl($"reset-password?token={token}");
-        await emailSender.SendAsync(PasswordResetEmail.Create(user.Email!, user.Nickname ?? "there", link), ct);
+        var app = appOptions.Value;
+        var link = app.GetAbsoluteUrl($"reset-password?token={token}");
+        await emailSender.SendAsync(PasswordResetEmail.Create(user.Email!, user.Nickname ?? "there", link, app), ct);
     }
 }

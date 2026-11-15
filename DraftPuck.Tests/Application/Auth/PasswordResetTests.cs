@@ -71,6 +71,23 @@ public class PasswordResetTests(DatabaseFixture fixture)
     }
 
     [Fact]
+    public void TheEmailIsBrandedAndEscapesTheNickname()
+    {
+        var app = new ApplicationOptions { BasePath = "https://draftpuck.test" };
+        const string link = "https://draftpuck.test/reset-password?token=ABC123";
+
+        var email = PasswordResetEmail.Create("someone@example.com", "<b>Gritty</b>", link, app);
+
+        Assert.Equal(PasswordResetEmail.Subject, email.Subject);
+        Assert.Contains("&lt;b&gt;Gritty&lt;/b&gt;", email.Html);
+        Assert.DoesNotContain("<b>Gritty</b>", email.Html);
+        Assert.Contains("src=\"https://draftpuck.test/img/icons/icon-512.png\"", email.Html);
+        Assert.Contains($"href=\"{link}\"", email.Html);
+        Assert.Contains(link, email.PlainText);
+        Assert.Contains("<b>Gritty</b>", email.PlainText); // plain text isn't HTML, so it's left as typed
+    }
+
+    [Fact]
     public async Task OnlyAHashOfTheTokenIsStored()
     {
         var account = await AccountAsync();
