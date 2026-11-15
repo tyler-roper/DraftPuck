@@ -25,30 +25,23 @@ builder.Services
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
     });
 
-try
-{
-    builder.Services
-        .Configure<ApplicationOptions>(options => builder.Configuration.Bind(ApplicationOptions.SectionName, options))
-        .Configure<DiscordOptions>(options => builder.Configuration.Bind(DiscordOptions.SectionName, options))
-        .Configure<SystemOptions>(options => builder.Configuration.Bind(SystemOptions.SectionName, options))
-        .AddHttpContextAccessor()
-        .AddInfrastructure(builder.Configuration)
-        .AddEndpointsApiExplorer()
-        .AddApplication(builder.Configuration)
-        .ConfigureAuth(builder.Configuration, builder.Environment)
-        .AddTelemetry(builder.Configuration)
-        .AddDraftPuckRateLimiting();
+// No try/catch: there's no logger yet, and an exception here already crashes startup with its full stack trace.
+builder.Services
+    .Configure<ApplicationOptions>(options => builder.Configuration.Bind(ApplicationOptions.SectionName, options))
+    .Configure<DiscordOptions>(options => builder.Configuration.Bind(DiscordOptions.SectionName, options))
+    .Configure<SystemOptions>(options => builder.Configuration.Bind(SystemOptions.SectionName, options))
+    .AddHttpContextAccessor()
+    .AddInfrastructure(builder.Configuration)
+    .AddEndpointsApiExplorer()
+    .AddApplication(builder.Configuration)
+    .ConfigureAuth(builder.Configuration, builder.Environment)
+    .AddTelemetry(builder.Configuration)
+    .AddDraftPuckRateLimiting();
 
-    builder.Services
-        .AddOptions<ApplicationOptions>()
-        .Validate(o => o.HasValidBasePath(), "DRAFTPUCK_Application__BasePath must be set to an absolute URL (e.g. https://draftpuck.com).")
-        .ValidateOnStart();
-}
-catch (Exception ex)
-{
-    Console.WriteLine(ex);
-    throw;
-}
+builder.Services
+    .AddOptions<ApplicationOptions>()
+    .Validate(o => o.HasValidBasePath(), "DRAFTPUCK_Application__BasePath must be set to an absolute URL (e.g. https://draftpuck.com).")
+    .ValidateOnStart();
 
 ApplicationStartupInfo.Init();
 builder.WebHost.UseKestrel();
