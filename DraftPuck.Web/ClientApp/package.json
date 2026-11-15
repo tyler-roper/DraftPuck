@@ -28,7 +28,7 @@
     "@vuelidate/validators": "^2.0.4",
     "axios": "^1.5.1",
     "bootstrap": "^5.3.2",
-    "date-fns": "^2.30.0",
+    "date-fns": "^4.4.0",
     "fast-json-patch": "^3.1.1",
     "firebase": "^11.10.0",
     "pinia": "^2.1.6",

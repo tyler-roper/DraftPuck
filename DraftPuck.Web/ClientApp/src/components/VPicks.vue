@@ -4,7 +4,8 @@ import { useLobbyStore } from '@/stores/lobby'
 import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import VPick from '@/components/VPick.vue'
-import { differenceInMilliseconds, formatDuration, intervalToDuration } from 'date-fns'
+import { differenceInMilliseconds } from 'date-fns'
+import { formatCountdown } from '@/helpers/dateHelpers'
 import GamePickableStatus from '@/enums/gamePickableStatus'
 import { canRemovePick, findPick, getPickableStatus, hasPicksLeftInGame, picksRemaining } from '@/helpers/pickRules'
 import { getErrorMessage } from '@/helpers/requestHelpers'
@@ -110,12 +111,8 @@ const selectedTeamRosterSorted = computed(() => {
 function getGameCountdowns() {
   gameCountdowns.value = games.value.reduce<Record<number, { asString: string; asMilliseconds: number }>>((acc, game) => {
     const pickTime = game.pickingOpensUtc
-    const duration = intervalToDuration({ start: pickTime, end: currentSystemTime.value })
-    const lessThanOneMinute = duration.hours === 0 && duration.minutes == 0
     acc[game.id] = {
-      asString: lessThanOneMinute
-        ? formatDuration(duration, { format: ['seconds'], zero: true })
-        : formatDuration(duration, { format: ['hours', 'minutes'] }),
+      asString: formatCountdown(pickTime, currentSystemTime.value),
       asMilliseconds: differenceInMilliseconds(pickTime, currentSystemTime.value)
     }
 
