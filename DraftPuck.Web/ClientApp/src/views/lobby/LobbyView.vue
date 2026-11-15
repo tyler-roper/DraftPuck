@@ -2,7 +2,7 @@
 import { computed, nextTick, ref, watch, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter, useRoute } from 'vue-router'
-import { TYPE, useToast } from 'vue-toastification'
+import { useToast } from '@/composables/useToast'
 import { useLobbyStore } from '@/stores/lobby'
 import { useGamesStore } from '@/stores/games'
 import { useUserStore } from '@/stores/user'
@@ -29,7 +29,6 @@ import VNotificationSettingsModal from '@/components/VNotificationSettingsModal.
 import VJoinLobbyForm from '@/components/VJoinLobbyForm.vue'
 import VLogo from '@/components/VLogo.vue'
 import VUser from '@/components/VUser.vue'
-import VHtmlToast from '@/components/VHtmlToast.vue'
 
 type View = 'feed' | 'game' | 'lobby' | 'chat' | 'picks'
 // Remembered so the home page's join and create forms can prefill the code and name.
@@ -181,8 +180,7 @@ function fillEventTemplate(lobbyEvent: LobbyEvent) {
 }
 
 function toastLobbyEvent(lobbyEvent: LobbyEvent, tone?: LobbyEventTone) {
-  const type = tone === 'success' ? TYPE.SUCCESS : tone === 'info' ? TYPE.INFO : undefined
-  toast({ component: VHtmlToast, props: { title: lobbyEvent.title, message: fillEventTemplate(lobbyEvent).text } }, type ? { type } : undefined)
+  toast.html(fillEventTemplate(lobbyEvent).text, { title: lobbyEvent.title, type: tone ?? 'default' })
 }
 
 function senderName(lobbyEvent: LobbyEvent) {

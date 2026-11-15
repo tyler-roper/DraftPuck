@@ -6,7 +6,7 @@ import { maxLength, required } from '@vuelidate/validators'
 import useVuelidate from '@vuelidate/core'
 import { useUserStore } from '@/stores/user'
 import { useRoute, useRouter } from 'vue-router'
-import { useToast } from 'vue-toastification'
+import { useToast } from '@/composables/useToast'
 import VButton from '@/components/VButton.vue'
 import VIcon from '@/components/VIcon.vue'
 

@@ -4,7 +4,7 @@ import VButton from '@/components/VButton.vue'
 import VNotificationPreferenceFields from '@/components/VNotificationPreferenceFields.vue'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
-import { useToast } from 'vue-toastification'
+import { useToast } from '@/composables/useToast'
 import { useFirebaseStore } from '@/stores/firebase'
 import LobbyService from '@/services/LobbyService'
 import { getErrorMessage } from '@/helpers/requestHelpers'
@@ -69,7 +69,7 @@ const close = () => {
 
 async function enableAndSave() {
   isSaving.value = true
-  const waitingNotice = toast('Waiting on permissions...')
+  const waitingNotice = toast.show('Waiting on permissions...', { timeout: false })
   await Notification.requestPermission()
   toast.dismiss(waitingNotice)
 

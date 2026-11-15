@@ -8,7 +8,7 @@ import { differenceInMilliseconds, formatDuration, intervalToDuration } from 'da
 import GamePickableStatus from '@/enums/gamePickableStatus'
 import { canRemovePick, findPick, getPickableStatus, hasPicksLeftInGame, picksRemaining } from '@/helpers/pickRules'
 import { getErrorMessage } from '@/helpers/requestHelpers'
-import { useToast } from 'vue-toastification'
+import { useToast } from '@/composables/useToast'
 import PickRequest from '@/models/pickRequest'
 import GameState from '@/enums/gameState'
 import { useSystemStore } from '@/stores/system'

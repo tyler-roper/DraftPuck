@@ -7,6 +7,7 @@ import { format } from 'date-fns'
 import { useSystemStore } from '@/stores/system'
 import { useFirebaseStore } from '@/stores/firebase'
 import { useGameSummariesStore } from './stores/gameSummaries'
+import VToaster from '@/components/VToaster.vue'
 
 const systemStore = useSystemStore()
 const { loadGameSummaries: initializeGameSummaries } = useGameSummariesStore()
@@ -31,6 +32,7 @@ onMounted(async () => {
       {{ format(currentSystemTime, 'Pp') }}
     </div>
     <RouterView />
+    <VToaster />
   </div>
 </template>
 

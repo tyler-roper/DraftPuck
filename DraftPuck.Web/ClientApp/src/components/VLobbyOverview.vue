@@ -6,7 +6,7 @@ import { useLobbyStore } from '@/stores/lobby'
 import { storeToRefs } from 'pinia'
 import { ref, computed, nextTick } from 'vue'
 import VLobbyMember from '@/components/VLobbyMember.vue'
-import { useToast } from 'vue-toastification'
+import { useToast } from '@/composables/useToast'
 import { getErrorMessage } from '@/helpers/requestHelpers'
 
 //const

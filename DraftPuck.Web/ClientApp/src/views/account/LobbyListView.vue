@@ -5,7 +5,7 @@ import { storeToRefs } from 'pinia'
 import { compareAsc, differenceInDays, isYesterday } from 'date-fns'
 import VIcon from '@/components/VIcon.vue'
 import LobbyService from '@/services/LobbyService'
-import { useToast } from 'vue-toastification'
+import { useToast } from '@/composables/useToast'
 import HeaderLayout from '@/views/layouts/HeaderLayout.vue'
 
 //#region data
