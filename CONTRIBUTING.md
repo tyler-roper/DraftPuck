@@ -39,6 +39,13 @@ git push origin feature/my-feature
 - Base branch: `develop`
 - Compare branch: your feature branch
 
+## Tools
+Run `dotnet tool restore` once after cloning. It installs the tools pinned in `dotnet-tools.json`, so `dotnet ef`
+matches the project's EF Core version without a global install. Add a migration with:
+```bash
+dotnet ef migrations add <Name> --project DraftPuck.Infrastructure --startup-project DraftPuck.Infrastructure
+```
+
 ## Code Style & Testing
 - Use C# primary constructors
 - Follow `.editorconfig`
