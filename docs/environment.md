@@ -5,7 +5,7 @@
 * Visual Studio 2026 (2022 can't build .NET 10 projects)
 * .NET 10 SDK
 * SQL Server & SSMS
-* Node.js & npm
+* Node.js 22.22+ or 24.15+, with npm (Vite 8 and the client tests need it; the Docker build uses Alpine's Node 22)
 * Docker Desktop
 * Optional: Azure Storage Explorer, Redis Insight, Vue DevTools, MediatR VS Extension
 
