@@ -95,11 +95,33 @@ public class GameProcessingHelpersTests
         // A goal at 01:00 of the first period, which the estimate would put 4 minutes before the earlier one.
         game.Plays = [GoalPlay(1), GoalPlay(2, timeInPeriod: "01:00")];
         var now = Start.AddMinutes(50);
+        previous.UpdatedUtc = now.AddSeconds(-10); // polled 10 seconds ago, as while live
 
         GameProcessingHelpers.SetPlayTimes(game, previous, [], now);
 
         Assert.Equal(seen, game.Plays[0].DateTime); // kept
         Assert.Equal(now, game.Plays[1].DateTime);  // new this poll: when we saw it, not the estimate
+    }
+
+    // E.g. the Worker stalled or was down for half an hour mid-game: the previous copy is old, so plays new since then
+    // weren't seen happening. They get the estimate, kept within the gap.
+    [Fact]
+    public void SetPlayTimes_EstimatesPlaysThatHappenedWhileWeWerentPolling()
+    {
+        var previous = TestGames.Create(1, Start);
+        previous.UpdatedUtc = Start.AddMinutes(62);
+        var game = TestGames.Create(1, Start);
+        game.Plays =
+        [
+            GoalPlay(1, period: 2, timeInPeriod: "00:00"),  // estimated at +72: inside the gap
+            GoalPlay(2, period: 1, timeInPeriod: "19:50")   // estimated at +29.8: before the gap, so it can't be right
+        ];
+        var now = Start.AddMinutes(95);
+
+        GameProcessingHelpers.SetPlayTimes(game, previous, [], now);
+
+        Assert.Equal(Start.AddMinutes(72), game.Plays[0].DateTime);
+        Assert.Equal(previous.UpdatedUtc, game.Plays[1].DateTime);
     }
 
     [Fact]

@@ -36,10 +36,18 @@ public static class GameProcessingHelpers
     }
 
     /// <summary>
+    /// The longest gap between polls that still counts as watching the game: live games are polled every 10 seconds,
+    /// and a failed poll is retried after 2 minutes.
+    /// </summary>
+    public static readonly TimeSpan MaxWatchedGap = TimeSpan.FromMinutes(2);
+
+    /// <summary>
     /// Sets when each play happened (<see cref="PlayDto.DateTime"/>). A play from the previous poll keeps its time (by
-    /// play ID, and across renumbered goals). A play that's new since then happened while we were watching, so it gets
-    /// <paramref name="utcNow"/>, the real time of this poll. Without a previous poll (the first time we see the game, or
-    /// the cached copy was lost) we weren't watching, so every play gets an estimate from the game clock instead.
+    /// play ID, and across renumbered goals). A play that's new since then gets <paramref name="utcNow"/>, the real time
+    /// of this poll, if we were watching: the previous poll was at most <see cref="MaxWatchedGap"/> ago. Otherwise it
+    /// happened while we weren't (the Worker was down or stalled), so it gets an estimate from the game clock, kept
+    /// between the previous poll and now. Without a previous poll at all (the first time we see the game, or the cached
+    /// copy was lost), every play gets the estimate.
     /// </summary>
     /// <param name="utcNow">Real time, not test mode's simulated clock: it's compared with when picks were saved.</param>
     public static void SetPlayTimes(GameDto game, GameDto? previous, IEnumerable<GoalRenumbered> renumbers, DateTime utcNow)
@@ -53,6 +61,7 @@ public static class GameProcessingHelpers
 
         var previousById = previous.Plays.DistinctBy(p => p.Id).ToDictionary(p => p.Id);
         var renumberedFrom = renumbers.ToDictionary(r => r.NewPlayId, r => r.OldPlayId);
+        var wasWatching = utcNow - previous.UpdatedUtc <= MaxWatchedGap;
 
         foreach (var play in game.Plays)
         {
@@ -60,8 +69,10 @@ public static class GameProcessingHelpers
                 play.DateTime = same.DateTime;
             else if (renumberedFrom.TryGetValue(play.Id, out var oldId) && previousById.TryGetValue(oldId, out var old))
                 play.DateTime = old.DateTime;
-            else
+            else if (wasWatching)
                 play.DateTime = utcNow;
+            else
+                play.DateTime = Max(previous.UpdatedUtc, Min(EstimatePlayTime(game, play), utcNow));
         }
     }
 
@@ -178,10 +189,9 @@ public static class GameProcessingHelpers
         return TimeSpan.Zero;
     }
 
-    private static DateTime Min(DateTime dt1, DateTime dt2)
-    {
-        return dt1 < dt2 ? dt1 : dt2;
-    }
+    private static DateTime Min(DateTime dt1, DateTime dt2) => dt1 < dt2 ? dt1 : dt2;
+
+    private static DateTime Max(DateTime dt1, DateTime dt2) => dt1 > dt2 ? dt1 : dt2;
 
     private static int MapMinutesRemaining(string timeRemaining)
     {

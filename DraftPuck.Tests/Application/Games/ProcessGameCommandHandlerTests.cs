@@ -67,6 +67,7 @@ public class ProcessGameCommandHandlerTests
             start = DateTime.UtcNow;
         var gameId = Seed.NewGameId();
         var cached = TestGames.Create(gameId, start, GameState.Live);
+        cached.UpdatedUtc = DateTime.UtcNow.AddSeconds(-10); // the previous poll, as while watching a live game
         var updated = TestGames.Create(gameId, start, GameState.Live);
         updated.Plays = [TestGames.Goal(PlayId, 1, "00:30", Scorer, TestGames.HomeTeamId)];
 
