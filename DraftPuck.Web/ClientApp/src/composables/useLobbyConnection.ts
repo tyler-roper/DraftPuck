@@ -38,9 +38,16 @@ export function useLobbyConnection(options: LobbyConnectionOptions) {
   let resyncTimer: number | undefined
   let isActive = false
   let isResuming = false
+  // Set once the calling component is gone. It may still call start() afterwards (it loads data first), and a
+  // connection opened then would never be closed: it would stay in the lobby group and deliver every push again.
+  let isDisposed = false
 
-  /** Connects and loads the page's data. Resync errors here propagate, so the page can show that loading failed. */
+  /**
+   * Connects and loads the page's data. Resync errors here propagate, so the page can show that loading failed.
+   * Does nothing once the calling component is gone.
+   */
   async function start() {
+    if (isDisposed) return
     isActive = true
     document.addEventListener('visibilitychange', onVisibilityChange)
     window.addEventListener('pageshow', resume)
@@ -58,6 +65,8 @@ export function useLobbyConnection(options: LobbyConnectionOptions) {
 
   async function connectAndSync() {
     const joined = await connect()
+    // Stopped while connecting (the component went away): don't load data or schedule resyncs for it.
+    if (!isActive) return
     if (!joined) await options.resync()
 
     window.clearInterval(resyncTimer)
@@ -104,6 +113,11 @@ export function useLobbyConnection(options: LobbyConnectionOptions) {
       if (next.state === SignalR.HubConnectionState.Disconnected) {
         await next.start()
         log(`Hub connection started. (State: ${next.state})`, 2)
+      }
+      // Replaced, paused or stopped while starting: close it rather than leave it joined to the group.
+      if (thisGeneration !== generation) {
+        await next.stop()
+        return false
       }
       await joinAndSync(next)
       return true
@@ -173,6 +187,7 @@ export function useLobbyConnection(options: LobbyConnectionOptions) {
   }
 
   onScopeDispose(() => {
+    isDisposed = true
     stop().catch(report)
   })
 
