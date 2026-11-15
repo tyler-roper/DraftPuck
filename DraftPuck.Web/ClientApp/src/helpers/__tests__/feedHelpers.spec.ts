@@ -3,6 +3,7 @@ import { buildFeedItems } from '@/helpers/feedHelpers'
 import FeedItemType from '@/enums/feedItemType'
 import PlayType from '@/enums/playType'
 import PeriodType from '@/enums/periodType'
+import LobbyEventType from '@/enums/lobbyEventType'
 
 const lobbyCreated = new Date('2026-11-13T23:00:00Z')
 const at = (minute: number) => new Date(Date.UTC(2026, 10, 13, 23, minute))
@@ -35,8 +36,8 @@ function game(id: number, plays: Play[]): Game {
   } as unknown as Game
 }
 
-function lobbyEvent(id: string, timeUtc: Date): LobbyEvent {
-  return { id, timeUtc, title: 'Event', text: 'text', lobbyEventType: 1 } as unknown as LobbyEvent
+function lobbyEvent(id: string, timeUtc: Date, extra: Partial<LobbyEvent> = {}): LobbyEvent {
+  return { id, timeUtc, title: 'Event', text: 'text', lobbyEventType: 1, ...extra } as unknown as LobbyEvent
 }
 
 describe('buildFeedItems', () => {
@@ -83,6 +84,20 @@ describe('buildFeedItems', () => {
     )
 
     expect(items.map((i) => i.key)).toEqual(['play-10-1', 'play-20-1', 'event-e1'])
+  })
+
+  // Like the game's own goal items: the logo of the team whose goal it was (the new scorer's, for a changed goal).
+  it("shows the team's logo on goal corrections, and no logo on other lobby events", () => {
+    const events = [
+      lobbyEvent('removed', at(1), { lobbyEventType: LobbyEventType.GoalRemoved, gameId: 10, teamId: 2 }),
+      lobbyEvent('changed', at(2), { lobbyEventType: LobbyEventType.GoalChanged, gameId: 10, teamId: 1 }),
+      lobbyEvent('joined', at(3), { lobbyEventType: LobbyEventType.UserJoined, gameId: 10, teamId: 1 }),
+      lobbyEvent('unknown game', at(4), { lobbyEventType: LobbyEventType.GoalRemoved, gameId: 99, teamId: 1 })
+    ]
+
+    const items = buildFeedItems([game(10, [])], events, lobbyCreated, false)
+
+    expect(items.map((i) => i.images)).toEqual([['CGY.png'], ['EDM.png'], [], []])
   })
 
   it('leaves out shootout goals', () => {

@@ -22,7 +22,12 @@ export function buildFeedItems(games: Game[], lobbyEvents: LobbyEvent[], lobbyCr
       .map((play) => FeedItem.fromPlay(game.id, { away: game.awayTeam, home: game.homeTeam }, play, game.playerSummaries))
   )
 
-  const eventItems = lobbyEvents.map((lobbyEvent) => FeedItem.fromLobbyEvent(lobbyEvent))
+  const eventItems = lobbyEvents.map((lobbyEvent) =>
+    FeedItem.fromLobbyEvent(
+      lobbyEvent,
+      games.find((g) => g.id === lobbyEvent.gameId)
+    )
+  )
 
   return [...playItems, ...eventItems].sort((a, b) => compareAsc(a.time, b.time))
 }

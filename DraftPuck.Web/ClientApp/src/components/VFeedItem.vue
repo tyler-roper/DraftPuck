@@ -14,7 +14,8 @@ const props = defineProps<{
 
 //computed
 const itemStyle = computed(() => {
-  if (props.item.subType !== PlayType.Goal) return {}
+  // Only game goals: lobby event types share numbers with play types (UserRemoved is the same number as Goal).
+  if (isLobbyEvent.value || props.item.subType !== PlayType.Goal) return {}
 
   return {
     backgroundColor: `${props.item.teamColor} !important`,
@@ -70,7 +71,8 @@ function formatAsTime(date: Date | string) {
 <template>
   <div class="d-flex align-items-center feed-item" :class="itemClass" :style="itemStyle">
     <div class="image-container py-2 px-2">
-      <VIcon v-if="isLobbyEvent" class="feed-item-icon" :prefix="itemIcon.prefix" :icon="itemIcon.icon" />
+      <!-- Lobby events show their icon, except goal corrections, which show the team logo like goal items do. -->
+      <VIcon v-if="isLobbyEvent && !item.images.length" class="feed-item-icon" :prefix="itemIcon.prefix" :icon="itemIcon.icon" />
       <div v-else class="logo-container">
         <img v-for="(image, idx) in item.images" :key="idx" :src="getLogo(image)" />
       </div>

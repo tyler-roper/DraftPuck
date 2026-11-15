@@ -3,7 +3,7 @@ import TeamColorLookup from '@/models/teamColorLookup'
 import FeedItemType from '@/enums/feedItemType'
 import GoalTexts from '@/models/goalTexts'
 import '@/extensions/arrayExtensions'
-import type LobbyEventType from '@/enums/lobbyEventType'
+import LobbyEventType from '@/enums/lobbyEventType'
 import { getOrdinal } from '@/helpers/gameHelpers'
 import PlayType from '@/enums/playType'
 
@@ -151,7 +151,11 @@ export default class FeedItem {
     )
   }
 
-  static fromLobbyEvent(lobbyEvent: LobbyEvent) {
+  /** @param game The event's game, if any: goal corrections show its team's logo, like the game's own goal items. */
+  static fromLobbyEvent(lobbyEvent: LobbyEvent, game?: Game) {
+    const isGoalCorrection = lobbyEvent.lobbyEventType === LobbyEventType.GoalRemoved || lobbyEvent.lobbyEventType === LobbyEventType.GoalChanged
+    const team = isGoalCorrection ? [game?.homeTeam, game?.awayTeam].find((t) => t && t.id === lobbyEvent.teamId) : undefined
+
     return new this(
       `event-${lobbyEvent.id}`,
       lobbyEvent.gameId!,
@@ -162,7 +166,7 @@ export default class FeedItem {
       lobbyEvent.text,
       lobbyEvent.subtext!,
       lobbyEvent.teamColor,
-      [],
+      team ? [`${team.abbreviation}.png`] : [],
       undefined
     )
   }
