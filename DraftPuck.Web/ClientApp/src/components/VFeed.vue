@@ -9,6 +9,7 @@ import { parseISO, format } from 'date-fns'
 import VFeedItem from '@/components/VFeedItem.vue'
 import PlayType from '@/enums/playType'
 import FeedItemType from '@/enums/feedItemType'
+import { useNewArrivals } from '@/composables/useNewArrivals'
 
 //const
 type View = 'feed' | 'list' | 'settings'
@@ -72,6 +73,9 @@ const filteredItems = computed(() => {
     return shouldShow && !isDuplicate
   })
 })
+
+// Only items that just arrived slide in; not the first render, a load, or items a filter brings back.
+const arrivals = useNewArrivals(() => filteredItems.value.map((item) => item.key))
 
 const assignedDrinks = computed(() =>
   lobby
@@ -362,8 +366,44 @@ function formatAsTime(date: Date | string) {
       </template>
 
       <template v-if="currentView === 'feed'">
-        <VFeedItem v-for="(item, idx) in filteredItems" :key="idx" :item="item"></VFeedItem>
+        <!-- Keyed by item, not index, so an item inserted mid-list doesn't shift every key after it. -->
+        <TransitionGroup name="feed-slide">
+          <VFeedItem
+            v-for="item in filteredItems"
+            :key="item.key"
+            :item="item"
+            :class="{ 'is-new': arrivals.isNew(item.key) }"
+            :style="{ '--arrival': Math.max(arrivals.arrivalOrder(item.key), 0) }"
+          />
+        </TransitionGroup>
       </template>
     </div>
   </div>
 </template>
+
+<style scoped>
+/* New arrivals slide down into place at the top (newest first, 80ms apart), and the items below glide down to make
+   room. Nothing animates when items leave. */
+.feed-slide-enter-active.is-new {
+  transition:
+    opacity 0.35s ease,
+    transform 0.35s ease;
+  transition-delay: calc(var(--arrival) * 80ms);
+}
+
+.feed-slide-enter-from.is-new {
+  opacity: 0;
+  transform: translateY(-100%);
+}
+
+.feed-slide-move {
+  transition: transform 0.35s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feed-slide-enter-active.is-new,
+  .feed-slide-move {
+    transition: none;
+  }
+}
+</style>
