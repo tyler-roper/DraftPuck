@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 
 const props = defineProps<{
-  modelValue: any
+  modelValue: boolean
   id: string
 }>()
 const emit = defineEmits(['update:modelValue'])

@@ -7,6 +7,7 @@ import VInputWrapper from '@/components/VInputWrapper.vue'
 import useVuelidate from '@vuelidate/core'
 import { required, requiredIf, email, maxLength, sameAs } from '@vuelidate/validators'
 import { nickname, optionalPassword } from '@/helpers/validationHelpers'
+import { getErrorMessage } from '@/helpers/requestHelpers'
 import VIcon from '@/components/VIcon.vue'
 import VDefaultNotificationSettings from '@/components/VDefaultNotificationSettings.vue'
 import { useRouter } from 'vue-router'
@@ -23,7 +24,11 @@ const formElement = ref<HTMLFormElement | null>()
 
 //#region methods
 function discard() {
-  ;((form.nickname = currentUser.value!.nickname!), (form.email = currentUser.value!.email!), (form.currentPassword = ''), (form.password = ''), (form.confirmPassword = ''))
+  form.nickname = currentUser.value!.nickname!
+  form.email = currentUser.value!.email!
+  form.currentPassword = ''
+  form.password = ''
+  form.confirmPassword = ''
 }
 
 async function triggerFormSubmission() {
@@ -48,12 +53,7 @@ async function updateAccount() {
     toast.success('Profile updated!', { timeout: 2000 })
   } catch (ex: unknown) {
     console.error(ex)
-    let friendlyMessage = 'Sorry, something went wrong.'
-    if (typeof ex === 'object' && ex !== null && 'response' in ex) {
-      const axiosError = ex as any
-      friendlyMessage = axiosError.response?.data?.detail ?? axiosError.response?.data?.title ?? friendlyMessage
-    }
-    toast.error(friendlyMessage)
+    toast.error(getErrorMessage(ex, 'Sorry, something went wrong.'))
   } finally {
     isUpdatingAccount.value = false
   }

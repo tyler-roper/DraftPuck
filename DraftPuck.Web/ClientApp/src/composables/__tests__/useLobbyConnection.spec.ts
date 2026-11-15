@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
+import type { HubEventHandler } from '@/composables/useLobbyConnection'
 
 // A fake HubConnection per build, so tests can drive start failures, reconnects and incoming events.
 const { connections, HubConnectionState, network } = vi.hoisted(() => {
@@ -14,9 +15,9 @@ interface FakeConnection {
   start: ReturnType<typeof vi.fn>
   stop: ReturnType<typeof vi.fn>
   invoke: ReturnType<typeof vi.fn>
-  handlers: Record<string, (...args: any[]) => void>
+  handlers: Record<string, HubEventHandler>
   reconnected?: () => Promise<void>
-  on(event: string, handler: (...args: any[]) => void): void
+  on(event: string, handler: HubEventHandler): void
   onreconnecting(cb: () => void): void
   onreconnected(cb: () => Promise<void>): void
 }

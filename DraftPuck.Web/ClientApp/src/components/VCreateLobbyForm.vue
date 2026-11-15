@@ -120,7 +120,7 @@ function getLogo(team: Team) {
 }
 
 function getTimeString(game: GameSummary) {
-  let time = format(game.dateTime, 'p')
+  const time = format(game.dateTime, 'p')
 
   if (game.gameState === GameState.Upcoming) return time
 

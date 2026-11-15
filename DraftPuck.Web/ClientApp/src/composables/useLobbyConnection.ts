@@ -9,10 +9,17 @@ const RESYNC_INTERVAL_MS = 5 * 60_000
 /** 0s, 1s, 2s, 4s ... capped at 30s. */
 export const retryDelay = (retryCount: number) => Math.min(MAX_RETRY_DELAY_MS, 1000 * 2 ** retryCount)
 
+/**
+ * Handles one hub event. SignalR delivers untyped JSON, and each handler declares the payload it expects; `any` is what
+ * lets a handler with typed parameters fit here (`unknown` would reject it).
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type HubEventHandler = (...args: any[]) => void
+
 export interface LobbyConnectionOptions {
   joinCode: string
   /** Hub events to listen for, by name. */
-  handlers: Record<string, (...args: any[]) => void>
+  handlers: Record<string, HubEventHandler>
   /**
    * Fetches everything that may have been missed while not listening. Called after every join of the lobby group
    * (first connect, reconnect, resume), every few minutes as a safety net for lost pushes, and when a connection
