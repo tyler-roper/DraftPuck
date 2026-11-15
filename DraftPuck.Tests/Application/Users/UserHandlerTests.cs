@@ -158,11 +158,11 @@ public class UserHandlerTests(DatabaseFixture fixture)
             RequesterUserId = account.Id,
             TargetUserId = account.Id,
             RequesterIsAuthenticated = true,
-            ChatNotificationPreference = NotificationPreference.All
+            FcmRegistrationToken = "new-device-token"
         });
 
         await using var check = fixture.CreateContext();
-        Assert.Equal(NotificationPreference.All, (await check.Users.SingleAsync(u => u.Id == account.Id)).ChatNotificationPreference);
+        Assert.Equal("new-device-token", (await check.Users.SingleAsync(u => u.Id == account.Id)).FcmRegistrationToken);
     }
 
     [Fact]

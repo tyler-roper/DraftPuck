@@ -52,6 +52,8 @@ public class JoinLobbyCommandHandler(IDbContext dbContext, IMapper mapper, IMedi
                 IsBot = request.IsBot,
                 BotPickStyle = request.BotPickStyle
             };
+            if (!request.IsBot && await dbContext.Users.FirstOrDefaultAsync(u => u.Id == memberUserId, ct) is { } user)
+                MemberNotificationPreferences.StampDefaults(lobbyMember, user);
             dbContext.LobbyMembers.Add(lobbyMember);
             await dbContext.SaveChangesAsync(ct);
 

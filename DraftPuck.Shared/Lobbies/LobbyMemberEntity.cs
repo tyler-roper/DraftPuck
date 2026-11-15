@@ -20,6 +20,13 @@ public partial class LobbyMemberEntity
 
     public BotPickStyle? BotPickStyle { get; set; }
 
+    // This member's push notification settings for this lobby. Copied from the user's defaults when they join
+    // (see MemberNotificationPreferences), then changed per lobby. Achievements aren't per lobby, so they stay on the user.
+    public NotificationPreference DrinkReceivedNotificationPreference { get; set; }
+    public NotificationPreference DrinkAwardedNotificationPreference { get; set; }
+    public NotificationPreference ChatNotificationPreference { get; set; }
+    public NotificationPreference PickingStartedNotificationPreference { get; set; }
+
     public virtual ICollection<DrinkEntity> Drinks { get; } = [];
 
     public virtual LobbyEntity Lobby { get; set; } = null!;

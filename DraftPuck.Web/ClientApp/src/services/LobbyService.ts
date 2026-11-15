@@ -3,6 +3,7 @@ import BotPickStyle from '@/enums/botPickStyle'
 import type PickRequest from '@/models/pickRequest'
 import type Bot from '@/models/bot'
 import type CreateLobbyRequest from '@/models/createLobbyRequest'
+import type { LobbyNotificationPreferences } from '@/helpers/notificationSettings'
 
 const controller = 'lobbies'
 
@@ -23,6 +24,15 @@ class LobbyService {
 
   public async getLobbyByCode(code: string): Promise<Lobby> {
     return this._http.get('', code)
+  }
+
+  /** The current user's notification settings for this lobby. */
+  public async getNotificationPreferences(code: string): Promise<LobbyNotificationPreferences> {
+    return this._http.get(`${code}/member/me/notificationPreferences`)
+  }
+
+  public async updateNotificationPreferences(code: string, preferences: LobbyNotificationPreferences): Promise<LobbyNotificationPreferences> {
+    return this._http.put(`${code}/member/me/notificationPreferences`, preferences)
   }
 
   public async getLobbyEventsById(lobbyId: string): Promise<Array<LobbyEvent>> {
