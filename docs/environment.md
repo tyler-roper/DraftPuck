@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-* Visual Studio 2022+
+* Visual Studio 2026 (2022 can't build .NET 10 projects)
 * .NET 10 SDK
 * SQL Server & SSMS
 * Node.js & npm

@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# The client build (wwwroot) only exists in Release images; Debug images rely on the Vite dev server instead.
+mkdir -p /opt/app/wwwroot
+
 cat <<EOF > /opt/app/wwwroot/env.js
 window.env = {
   VITE_FIREBASE_VAPID_KEY: "${DRAFTPUCK_FIREBASE__VapidKey}",

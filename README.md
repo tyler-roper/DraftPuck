@@ -22,8 +22,12 @@ cd DraftPuck
 ### Backend
 The backend can be run either:
 
-- **Using Docker Compose (recommended)**: Set the startup project in Visual Studio to `docker-compose` and use the Docker Compose launch profile. This starts DraftPuck.Web, DraftPuck.Worker, Redis, and Azurite.
-- **Running Web API Only**: Set `DraftPuck.Web` as the startup project with the Docker launch profile.
+- **Using Docker Compose (recommended)**: Set the startup project in Visual Studio to `docker-compose` and use the Docker Compose launch profile. This starts DraftPuck.Web, DraftPuck.Worker, Redis, and Azurite on one Docker network. The `docker-compose` project isn't in `DraftPuck.sln`: add it once with **Add → Existing Project → `docker-compose.dcproj`**.
+- **Without Visual Studio**: `docker compose up --build` from the repository root starts the same containers (without the debugger attached).
+
+Don't run `DraftPuck.Web` on its own with its Docker launch profile: that container isn't on the Compose network, so it can't reach Redis (`redis:6379`) and every request times out.
+
+SQL Server runs on your machine, not in Docker (see [environment.md](./docs/environment.md)). The Web app won't start if it can't apply the database migrations.
 
 ### Frontend (Vue 3)
 ```bash
