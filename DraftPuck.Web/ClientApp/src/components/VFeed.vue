@@ -54,7 +54,7 @@ const gameEventFilterLookup = ref({
 const lobbyEventFilterLookup = ref({
   showUserJoin: LobbyEventType.UserJoined,
   showNameChange: LobbyEventType.UserNameChanged,
-  showPicks: LobbyEventType.NewPick,
+  showPicks: [LobbyEventType.NewPick, LobbyEventType.BotPicksMade],
   showDrinkAwarded: LobbyEventType.DrinkAwarded,
   showDrinkAssigned: LobbyEventType.DrinkAssigned
 })
@@ -64,7 +64,8 @@ const filteredItems = computed(() => {
   return props.items.filter((item, idx, array) => {
     const relevantFilterLookups = item.type === FeedItemType.GameEvent ? gameEventFilterLookup.value : lobbyEventFilterLookup.value
 
-    const filterLookup = Object.entries(relevantFilterLookups).find(([_key, value]) => value === item.subType)
+    // A filter covers one event type, or several (e.g. Picks covers members' and bots' picks).
+    const filterLookup = Object.entries(relevantFilterLookups).find(([_key, value]) => [value].flat().includes(item.subType))
     const shouldShow = filterLookup ? filters.value[filterLookup[0]] : true
 
     const isDuplicate =
