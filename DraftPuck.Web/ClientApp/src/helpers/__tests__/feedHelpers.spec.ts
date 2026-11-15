@@ -100,6 +100,16 @@ describe('buildFeedItems', () => {
     expect(items.map((i) => i.images)).toEqual([['CGY.png'], ['EDM.png'], [], []])
   })
 
+  it("titles a goal with the score, leader first, and marks the scoring team's number", () => {
+    // EDM (home, id 1) trails 5-4 after scoring.
+    const goal = play(1, PlayType.Goal, at(1), { primaryTeamId: 1, homeScore: 4, awayScore: 5 })
+
+    const [item] = buildFeedItems([game(10, [goal])], [], lobbyCreated, false)
+
+    expect(item.title).toBe('5-4')
+    expect(item.score).toEqual({ first: 5, second: 4, highlighted: 'second' })
+  })
+
   it('leaves out shootout goals', () => {
     const shootoutGoal = play(1, PlayType.Goal, at(1), { periodType: PeriodType.Shootout })
 

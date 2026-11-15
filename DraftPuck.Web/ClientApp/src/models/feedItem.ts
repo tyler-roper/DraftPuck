@@ -6,6 +6,7 @@ import '@/extensions/arrayExtensions'
 import LobbyEventType from '@/enums/lobbyEventType'
 import { getOrdinal } from '@/helpers/gameHelpers'
 import PlayType from '@/enums/playType'
+import { goalScoreline, type Scoreline } from '@/helpers/scorelineHelpers'
 
 export default class FeedItem {
   /** Identifies the play or lobby event across refetches, so lists can tell new items from existing ones. */
@@ -20,6 +21,8 @@ export default class FeedItem {
   teamColor: string | undefined
   images: Array<string>
   player: PlayerSummary | undefined
+  /** Goals only: the score after it, with the scoring team's number highlighted. */
+  score?: Scoreline
 
   constructor(
     key: string,
@@ -92,16 +95,11 @@ export default class FeedItem {
     }
 
     //set title
+    let score: Scoreline | undefined
     if (play.type === PlayType.Goal) {
-      const winningScore = Math.max(play.awayScore, play.homeScore)
-      const losingScore = Math.min(play.awayScore, play.homeScore)
-
-      if (winningScore === losingScore) {
-        title = `${winningScore}-${losingScore} TIE`
-      } else {
-        const homeTeamIsWinning = winningScore === play.homeScore
-        title = homeTeamIsWinning ? `${winningScore}-${losingScore} ${homeAbbreviation}` : `${winningScore}-${losingScore} ${awayAbbreviation}`
-      }
+      // Shown with the scoring team's number highlighted; who scored is the item's color and logo.
+      score = goalScoreline(play, teams.home.id)
+      title = `${score.first}-${score.second}`
 
       if (player != null) text = this.getRandomGoalText(`${player.firstName} ${player.lastName}`, play)
       else text = 'Scorer not yet assigned...'
@@ -136,7 +134,7 @@ export default class FeedItem {
       text = homeTeamIsWinning ? `${homeAbbreviation} wins ${winningScore}-${losingScore}` : `${awayAbbreviation} wins ${winningScore}-${losingScore}`
     }
 
-    return new this(
+    const item = new this(
       `play-${gameId}-${play.id}`,
       gameId,
       FeedItemType.GameEvent,
@@ -149,6 +147,8 @@ export default class FeedItem {
       images,
       player
     )
+    item.score = score
+    return item
   }
 
   /** @param game The event's game, if any: goal corrections show its team's logo, like the game's own goal items. */

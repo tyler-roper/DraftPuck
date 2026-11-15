@@ -57,6 +57,11 @@ const itemIcon = computed(() => {
 
 const isLobbyEvent = computed(() => props.item.type === FeedItemType.LobbyEvent)
 
+/** The chip's number takes the team's color, inverted against the item's team-colored background. */
+function chipStyle(position: 'first' | 'second') {
+  return props.item.score?.highlighted === position ? { color: props.item.teamColor } : {}
+}
+
 //hooks/methods
 function getLogo(img: string) {
   return `/img/logos/${img}`
@@ -79,7 +84,15 @@ function formatAsTime(date: Date | string) {
     </div>
     <div class="py-2 px-2 content-container flex-grow-1">
       <div class="d-flex justify-content-between">
-        <span class="d-block fw-bold text-uppercase">{{ item.title }}</span>
+        <!-- Goals: the score, leader first, with the scoring team's number as a chip in their color. -->
+        <span v-if="item.score?.highlighted" class="d-block fw-bold scoreline" :aria-label="item.title">
+          <span :class="item.score.highlighted === 'first' ? 'score-chip' : 'score-other'" :style="chipStyle('first')">{{ item.score.first }}</span>
+          <span class="score-dash">–</span>
+          <span :class="item.score.highlighted === 'second' ? 'score-chip' : 'score-other'" :style="chipStyle('second')">{{
+            item.score.second
+          }}</span>
+        </span>
+        <span v-else class="d-block fw-bold text-uppercase">{{ item.title }}</span>
         <span class="d-block o-75">
           <span>{{ item.subtext }}</span>
           <span v-if="item.subtext" class="mx-2">|</span>
@@ -229,5 +242,27 @@ function formatAsTime(date: Date | string) {
 
 .feed-item-icon {
   font-size: 36px;
+}
+
+// A goal's score: the scoring team's number as a white chip in their color, the other number a step back.
+.scoreline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 1.1em;
+  line-height: 1;
+}
+
+.score-chip {
+  background-color: white;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 1.15em;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.score-other,
+.score-dash {
+  opacity: 0.75;
 }
 </style>
