@@ -11,7 +11,7 @@ namespace DraftPuck.Tests.Application.Achievements;
 /// against the real database.
 /// </summary>
 [Collection(DatabaseCollection.Name)]
-public class AchievementRulesTests(DatabaseFixture fixture)
+public partial class AchievementRulesTests(DatabaseFixture fixture)
 {
     private readonly InMemoryGameCache _cache = new();
 

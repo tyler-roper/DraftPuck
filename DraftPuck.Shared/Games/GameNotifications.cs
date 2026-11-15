@@ -16,5 +16,7 @@ public record GoalRemovedNotification(GoalRemovedEventPayload Data) : INotificat
 /// <summary>The NHL gave an unchanged goal a new play ID. Not a game event: nothing is announced.</summary>
 public record GoalRenumberedNotification(int GameId, int OldEventId, int NewEventId) : INotification;
 public record UpcomingPicksNotification(UpcomingPicksPayload Data) : INotification;
+/// <summary>A poll found the game final (the first one to, or the first poll of a game that was already over).</summary>
+public record GameFinishedNotification(GameDto Game) : INotification;
 
 public record CheckUpcomingPicksRequest() : INotification;

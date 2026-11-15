@@ -101,6 +101,9 @@ public class ProcessGameCommandHandler(
         await mediator.Publish(new GameUpdatedNotification(game), ct);
         await PublishGoalChangesAsync(game.Id, goalChanges, ct);
 
+        if (game.GameState == GameState.Final && previous?.GameState != GameState.Final)
+            await mediator.Publish(new GameFinishedNotification(game), ct);
+
         var pollAgainDelay = GameProcessingHelpers.GetPollDelay(game, _appConfig.CurrentTimeUtc, request.IsInitialPopulation);
         logger.LogInformation("Processing {matchup} complete. {polling}", matchup,
             pollAgainDelay == null ? "Stopping polling." : $"Polling again in {pollAgainDelay.Value.TotalSeconds} seconds.");
