@@ -12,7 +12,7 @@ contribution workflow see [CONTRIBUTING.md](../CONTRIBUTING.md).
 | `DraftPuck.Infrastructure` | EF Core (`DraftPuckContext`, migrations), Redis, SignalR, the NHL API client, Azure Storage, Firebase | Application, Domain |
 | `DraftPuck.Web` | ASP.NET Core API (`Features/*Controller.cs`), the SignalR hub endpoint, and the Vue app in `ClientApp/` | all |
 | `DraftPuck.Worker` | Azure Functions: the daily schedule load, game polling, achievement checks | Application, Infrastructure |
-| `DraftPuck.DiscordBot` | The Discord bot; tells Web about Discord events through the internal API (`api/internal`, API-key protected) | Application, Infrastructure |
+| `DraftPuck.DiscordBot` | The Discord bot; tells Web about Discord events through the internal API (`api/internal`, API-key protected). A client of that API only, with its own options and request type: it needs no database, cache or other app services | — |
 | `DraftPuck.Tests` | xUnit tests against real SQL Server and Redis (Testcontainers) | all |
 
 Controllers stay thin: they turn a request into a command or query and `mediator.Send` it. Business rules live in
