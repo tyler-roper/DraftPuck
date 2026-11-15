@@ -2,32 +2,30 @@
 
 namespace DraftPuck.Application.Features.Achievements.Rules;
 
+/// <summary>"Join or create a lobby 3+ hours before the first game starts": the lobby's own first game.</summary>
 public class JoinLobbyEarlyRule(ILogger<JoinLobbyEarlyRule> logger, IGameCache gameCache) : BaseAchievementRule(logger)
 {
     public override string UniqueIdentifier => "early_riser";
     public override IReadOnlyCollection<AchievementTriggerType> Triggers => [AchievementTriggerType.LobbyJoined, AchievementTriggerType.LobbyCreated];
+
     protected override async Task<bool> IsCriteriaMetAsync(IDbContext dbContext, UserEntity user)
     {
-        var earliestGameTime = (await gameCache.GetAllGamesAsync())
-                .Where(g => g.GameState == GameState.Upcoming)
-                .OrderBy(g => g.DateTime)
-                .Select(g => g.DateTime)
-                .FirstOrDefault();
+        var memberships = await dbContext.LobbyMembers
+            .Where(lm => lm.UserId == user.Id && !lm.IsRemoved && lm.Lobby.IsActive)
+            .Select(lm => new { lm.Joined, lm.Lobby.GameIds })
+            .ToListAsync();
 
-        if (earliestGameTime == DateTime.MinValue) return false;
-        var threeHoursBeforeGame = earliestGameTime.AddHours(-3);
+        foreach (var membership in memberships)
+        {
+            var starts = new List<DateTime>();
+            foreach (var gameId in membership.GameIds)
+                if (await gameCache.GetGameByIdAsync(gameId) is { } game)
+                    starts.Add(game.DateTime);
 
-        var earliestLobbyJoinTime = await dbContext.LobbyMembers
-                .Where(lm =>
-                    lm.UserId == user.Id &&
-                    !lm.IsRemoved &&
-                    lm.Lobby.IsActive)
-                .OrderBy(lm => lm.Joined)
-                .Select(lm => lm.Joined)
-                .FirstOrDefaultAsync();
+            if (starts.Count > 0 && membership.Joined <= starts.Min().AddHours(-3))
+                return true;
+        }
 
-        if (earliestLobbyJoinTime == DateTime.MinValue) return false;
-
-        return earliestLobbyJoinTime <= threeHoursBeforeGame;
+        return false;
     }
 }

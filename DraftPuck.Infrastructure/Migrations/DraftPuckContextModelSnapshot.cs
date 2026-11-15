@@ -581,7 +581,8 @@ namespace DraftPuck.Infrastructure.Migrations
 
                     b.HasIndex("AchievementId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "AchievementId")
+                        .IsUnique();
 
                     b.ToTable("UserAchievements");
                 });
@@ -608,7 +609,8 @@ namespace DraftPuck.Infrastructure.Migrations
 
                     b.HasIndex("BannerId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "BannerId")
+                        .IsUnique();
 
                     b.ToTable("UserBanners");
                 });
@@ -729,7 +731,8 @@ namespace DraftPuck.Infrastructure.Migrations
 
                     b.HasIndex("TitleId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "TitleId")
+                        .IsUnique();
 
                     b.ToTable("UserTitles");
                 });

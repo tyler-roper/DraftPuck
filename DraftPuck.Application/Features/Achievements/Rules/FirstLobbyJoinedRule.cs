@@ -7,6 +7,7 @@ public class FirstLobbyJoinedRule(ILogger<FirstLobbyJoinedRule> logger) : BaseAc
 
     protected override async Task<bool> IsCriteriaMetAsync(IDbContext dbContext, UserEntity user)
     {
-        return await dbContext.LobbyMembers.AnyAsync(lm => lm.UserId == user.Id && !lm.IsRemoved);
+        // "Join" means someone else's lobby: hosting your own doesn't count.
+        return await dbContext.LobbyMembers.AnyAsync(lm => lm.UserId == user.Id && !lm.IsRemoved && lm.Lobby.CreatedBy != user.Id);
     }
 }
