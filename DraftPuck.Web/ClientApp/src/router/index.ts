@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory, RouterView } from 'vue-router'
 import { setPageMetaTags, setPageTitle } from '@/helpers/routerHelpers'
+import { browserReloadDeps, isStaleAppError, reloadForNewVersion } from '@/helpers/staleAppHelpers'
 import { useUserStore } from '@/stores/user'
 
 const requiresLogin = true
@@ -208,6 +209,12 @@ router.beforeEach(async (to, _from, next) => {
   setPageMetaTags((to.meta?.metaTags as MetaTag[]) ?? [], to.params)
   setPageTitle(to.meta?.title as string, to.params)
   next()
+})
+
+// A page's code that no longer exists means a deploy happened since this tab loaded: reload into the new version, at
+// the page the user was going to, instead of silently staying put.
+router.onError((error, to) => {
+  if (isStaleAppError(error)) reloadForNewVersion(to.fullPath, browserReloadDeps())
 })
 
 export default router
