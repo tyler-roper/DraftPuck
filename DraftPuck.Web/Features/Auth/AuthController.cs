@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace DraftPuck.Web.Features.Auth;
 
-public class AuthController(IMediator mediator) : BaseController()
+public class AuthController(IMediator mediator, ILogger<AuthController> logger) : BaseController()
 {
     [EnableRateLimiting(RateLimits.Login)]
     [HttpPost("login")]
@@ -51,6 +51,7 @@ public class AuthController(IMediator mediator) : BaseController()
         var command = new LogoutCommand
         {
             UserId = CurrentUserId,
+            RefreshToken = Request.Cookies[RefreshTokenName],
             IpAddress = GetIpAddress()
         };
 
@@ -83,6 +84,10 @@ public class AuthController(IMediator mediator) : BaseController()
         }
         catch (Exception ex)
         {
+            // Users report being signed out; this says which way a refresh failed, and on what device. Never the tokens.
+            logger.LogWarning("Refresh failed: {Reason} (cookie sent: {HasCookie}, CSRF header sent: {HasCsrfHeader}, user agent: {UserAgent})",
+                ex.Message, Request.Cookies.ContainsKey(RefreshTokenName), Request.Headers.ContainsKey(AntiCsrfHeaderName),
+                Request.Headers.UserAgent.ToString());
             throw new UnauthorizedException(ex.Message, ex);
         }
     }

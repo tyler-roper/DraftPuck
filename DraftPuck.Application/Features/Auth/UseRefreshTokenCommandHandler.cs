@@ -7,6 +7,12 @@ namespace DraftPuck.Application.Features.Auth;
 
 public class UseRefreshTokenCommandHandler(IDbContext dbContext, ITokenService tokenService, IUserRepository userRepository, IMapper mapper) : IRequestHandler<UseRefreshTokenCommand, AuthenticationResultDto>
 {
+    /// <summary>
+    /// A token that comes back this soon after being replaced is the same app refreshing twice at once (on start, a 401,
+    /// the live connection), not theft. It's refused, but the session it was replaced in carries on.
+    /// </summary>
+    public static readonly TimeSpan ConcurrentRefreshGrace = TimeSpan.FromSeconds(30);
+
     public async Task<AuthenticationResultDto> Handle(UseRefreshTokenCommand request, CancellationToken cancellationToken)
     {
         var userEntity = await GetUserByRefreshToken(request.RefreshToken, cancellationToken);
@@ -17,6 +23,10 @@ public class UseRefreshTokenCommandHandler(IDbContext dbContext, ITokenService t
 
         if (!refreshTokenEntity.IsValid)
         {
+            var justReplaced = refreshTokenEntity.ReplacedByToken != null && refreshTokenEntity.Revoked > DateTime.UtcNow - ConcurrentRefreshGrace;
+            if (justReplaced)
+                throw new UnauthorizedException("Refresh token was just replaced by a concurrent refresh.");
+
             RevokeDescendantRefreshTokens(refreshTokenEntity, userEntity, request.IpAddress!, $"Attempted reuse of revoked ancestor token: {request.RefreshToken}");
             await dbContext.SaveChangesAsync(cancellationToken);
             throw new UnauthorizedException("Session terminated due to reuse of revoked or expired refresh token.");
