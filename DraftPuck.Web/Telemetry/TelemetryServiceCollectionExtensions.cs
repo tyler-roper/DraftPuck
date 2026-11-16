@@ -17,14 +17,16 @@ public static class TelemetryServiceCollectionExtensions
     {
         services.Configure<TelemetryOptions>(config.GetSection(TelemetryOptions.SectionName));
         var options = config.GetSection(TelemetryOptions.SectionName).Get<TelemetryOptions>() ?? new TelemetryOptions();
-        if (string.IsNullOrWhiteSpace(options.ConnectionString))
+        // APPLICATIONINSIGHTS_CONNECTION_STRING is Azure's standard name, which the worker and bot use too.
+        var connectionString = options.ConnectionString ?? config["APPLICATIONINSIGHTS_CONNECTION_STRING"];
+        if (string.IsNullOrWhiteSpace(connectionString))
             return services;
 
         services.AddOpenTelemetry()
             .ConfigureResource(resource => resource.AddService("DraftPuck.Web"))
             .UseAzureMonitor(o =>
             {
-                o.ConnectionString = options.ConnectionString;
+                o.ConnectionString = connectionString;
                 o.SamplingRatio = options.SampleRate;
             })
             .WithTracing(tracer => tracer

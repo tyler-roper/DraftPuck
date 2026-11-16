@@ -38,7 +38,8 @@ public class StartupTests(ApiFactory factory)
         await using var app = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             ApiFactory.UseTestSettings(builder, factory.SqlConnectionString, factory.RedisConnectionString);
-            builder.UseSetting("Telemetry:ConnectionString",
+            // The standard Azure name, as all three apps are configured in Azure.
+            builder.UseSetting("APPLICATIONINSIGHTS_CONNECTION_STRING",
                 "InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://127.0.0.1:9/");
         });
 
