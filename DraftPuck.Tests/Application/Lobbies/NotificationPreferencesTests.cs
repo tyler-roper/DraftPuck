@@ -25,12 +25,14 @@ public class NotificationPreferencesTests(DatabaseFixture fixture)
     private const NotificationPreference Relevant = NotificationPreference.Relevant;
     private const NotificationPreference All = NotificationPreference.All;
 
+    private static string TokenOf(UserEntity user) => "token-" + user.Id;
+
     /// <summary>A registered user with a push token and these defaults (drink received, drink awarded, chat, picking).</summary>
     private async Task<UserEntity> UserWithDefaultsAsync(NotificationPreference received, NotificationPreference awarded, NotificationPreference chat, NotificationPreference picking)
     {
         await using var db = fixture.CreateContext();
         var user = await SeedAccounts.AccountAsync(db);
-        user.FcmRegistrationToken = "token-" + user.Id;
+        db.UserDevices.Add(new UserDeviceEntity { UserId = user.Id, Token = TokenOf(user), LastSeenUtc = DateTime.UtcNow });
         user.DrinkReceivedNotificationPreference = received;
         user.DrinkAwardedNotificationPreference = awarded;
         user.ChatNotificationPreference = chat;
@@ -226,7 +228,7 @@ public class NotificationPreferencesTests(DatabaseFixture fixture)
         await AwardDrinkAsync(lobby.JoinCode, scorer.Id);
 
         await _push.Received(1).SendLobbyEventNotification(lobby.JoinCode, "Drink Awarded", "Your player scored - give out a drink!",
-            scorer.FcmRegistrationToken!, Arg.Any<Dictionary<string, string>?>(), Arg.Any<CancellationToken>());
+            PushArgs.Devices(TokenOf(scorer)), Arg.Any<Dictionary<string, string>?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -255,9 +257,24 @@ public class NotificationPreferencesTests(DatabaseFixture fixture)
         await AwardDrinkAsync(quiet.JoinCode, scorer.Id);
 
         await _push.Received(1).SendLobbyEventNotification(loud.JoinCode, "Drink Awarded", Arg.Any<string>(),
-            watcher.FcmRegistrationToken!, Arg.Any<Dictionary<string, string>?>(), Arg.Any<CancellationToken>());
+            PushArgs.Devices(TokenOf(watcher)), Arg.Any<Dictionary<string, string>?>(), Arg.Any<CancellationToken>());
         await _push.DidNotReceive().SendLobbyEventNotification(quiet.JoinCode, Arg.Any<string>(), Arg.Any<string>(),
-            watcher.FcmRegistrationToken!, Arg.Any<Dictionary<string, string>?>(), Arg.Any<CancellationToken>());
+            PushArgs.Devices(TokenOf(watcher)), Arg.Any<Dictionary<string, string>?>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task APushReachesEveryDeviceTheUserHas()
+    {
+        // The phone missed "time to pick" because the computer's token had replaced it.
+        var scorer = await UserWithDefaultsAsync(received: None, awarded: Relevant, chat: None, picking: None);
+        await using (var db = fixture.CreateContext())
+            await SeedAccounts.AddDeviceAsync(db, scorer.Id, "phone-" + scorer.Id);
+        var lobby = await CreateLobbyAsync(scorer.Id);
+
+        await AwardDrinkAsync(lobby.JoinCode, scorer.Id);
+
+        await _push.Received(1).SendLobbyEventNotification(lobby.JoinCode, "Drink Awarded", Arg.Any<string>(),
+            PushArgs.Devices(TokenOf(scorer), "phone-" + scorer.Id), Arg.Any<Dictionary<string, string>?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -268,7 +285,7 @@ public class NotificationPreferencesTests(DatabaseFixture fixture)
         var muted = await CreateLobbyAsync(user.Id, gameId);
         var on = await CreateLobbyAsync(user.Id, gameId);
         await SetLobbySettingsAsync(muted.JoinCode, user.Id, None, None, None, None);
-        _push.SendLobbyEventNotification(default!, default!, default!, default!).ReturnsForAnyArgs(true);
+        _push.SendLobbyEventNotification(default!, default!, default!, default!).ReturnsForAnyArgs(1);
 
         await using (var db = fixture.CreateContext())
         {
@@ -278,9 +295,9 @@ public class NotificationPreferencesTests(DatabaseFixture fixture)
         }
 
         await _push.Received(1).SendLobbyEventNotification(on.JoinCode, "Time to pick players!", Arg.Any<string>(),
-            user.FcmRegistrationToken!, Arg.Any<Dictionary<string, string>?>(), Arg.Any<CancellationToken>());
+            PushArgs.Devices(TokenOf(user)), Arg.Any<Dictionary<string, string>?>(), Arg.Any<CancellationToken>());
         await _push.DidNotReceive().SendLobbyEventNotification(muted.JoinCode, Arg.Any<string>(), Arg.Any<string>(),
-            Arg.Any<string>(), Arg.Any<Dictionary<string, string>?>(), Arg.Any<CancellationToken>());
+            Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<Dictionary<string, string>?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

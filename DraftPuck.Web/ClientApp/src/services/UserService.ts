@@ -31,6 +31,16 @@ class UserService {
     return this._http.patch(id, request)
   }
 
+  /** Registers this device (its push token) to get the current user's push notifications. */
+  public async registerDevice(token: string, isInstalledApp: boolean): Promise<void> {
+    await this._http.post('me/devices', { token, isInstalledApp })
+  }
+
+  /** Stops this device getting the current user's push notifications. */
+  public async forgetDevice(token: string): Promise<void> {
+    await this._http.post('me/devices/forget', { token })
+  }
+
   /** Sets the current user's default notification settings, optionally applying them to their active lobbies. */
   public async updateNotificationPreferences(preferences: NotificationPreferences, applyToActiveLobbies: boolean): Promise<User> {
     return this._http.put('me/notificationPreferences', { ...preferences, applyToActiveLobbies })

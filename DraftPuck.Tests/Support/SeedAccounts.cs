@@ -23,4 +23,12 @@ public static class SeedAccounts
         await db.SaveChangesAsync();
         return user;
     }
+
+    /// <summary>Registers a device (push token) for the user.</summary>
+    public static async Task<string> AddDeviceAsync(DraftPuckContext db, Guid userId, string token)
+    {
+        db.UserDevices.Add(new UserDeviceEntity { UserId = userId, Token = token, LastSeenUtc = DateTime.UtcNow });
+        await db.SaveChangesAsync();
+        return token;
+    }
 }

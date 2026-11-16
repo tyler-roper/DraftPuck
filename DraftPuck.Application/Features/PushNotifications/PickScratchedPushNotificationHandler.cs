@@ -15,13 +15,13 @@ public class PickScratchedPushNotificationHandler(IDbContext dbContext, IGameCac
         var (lobby, member, pick) = notification.Data;
         if (member.IsBot || member.IsRemoved || member.PickingStartedNotificationPreference == NotificationPreference.None) return;
 
-        var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == member.UserId, ct);
-        if (user?.FcmRegistrationToken == null)
+        var user = await dbContext.Users.Include(u => u.Devices).FirstOrDefaultAsync(u => u.Id == member.UserId, ct);
+        if (user == null || user.Devices.Count == 0)
             return;
 
         var data = new Dictionary<string, string> { { "lobbyEventType", nameof(LobbyEventType.PickScratched) }, { "isRelevant", "true" } };
         await pushService.SendLobbyEventNotification(lobby.JoinCode, "Pick scratched",
-            $"{await PlayerNameAsync(pick)} isn't playing. Pick someone else!", user.FcmRegistrationToken, data, ct);
+            $"{await PlayerNameAsync(pick)} isn't playing. Pick someone else!", user.PushTokens(), data, ct);
     }
 
     // The cache still holds the previous poll here, which had the player in its lineup.

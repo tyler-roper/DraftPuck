@@ -13,7 +13,6 @@ interface User {
   ownedTitles: Array<Title>
   achievements: Array<UserAchievement>
   avatarPath?: string
-  fcmRegistrationToken?: string
   discordUserId?: string
   discordUserLinkedDate?: Date
   drinkReceivedNotificationPreference: NotificationPreference

@@ -16,7 +16,8 @@ public class MessageSentPushNotificationHandler(IPushNotificationService firebas
 
         var userIds = members.Keys.ToList();
         var users = await dbContext.Users
-            .Where(u => userIds.Contains(u.Id) && u.FcmRegistrationToken != null)
+            .Include(u => u.Devices)
+            .Where(u => userIds.Contains(u.Id) && u.Devices.Any())
             .ToListAsync(ct);
 
         await Parallel.ForEachAsync(users, ct, async (user, _) =>
@@ -28,12 +29,12 @@ public class MessageSentPushNotificationHandler(IPushNotificationService firebas
             if (!isMentioned && preference == NotificationPreference.All)
             {
                 var data = new Dictionary<string, string> { { "lobbyEventType", "chatMessage" }, { "isRelevant", "false" } };
-                await firebaseService.SendLobbyEventNotification(lobby.JoinCode, sender.Name, message.Message, user.FcmRegistrationToken!, data);
+                await firebaseService.SendLobbyEventNotification(lobby.JoinCode, sender.Name, message.Message, user.PushTokens(), data);
             }
             else if (isMentioned && preference != NotificationPreference.None)
             {
                 var data = new Dictionary<string, string> { { "lobbyEventType", "chatMessage" }, { "isRelevant", "true" } };
-                await firebaseService.SendLobbyEventNotification(lobby.JoinCode, $"{sender.Name} mentioned you.", message.Message, user.FcmRegistrationToken!, data);
+                await firebaseService.SendLobbyEventNotification(lobby.JoinCode, $"{sender.Name} mentioned you.", message.Message, user.PushTokens(), data);
             }
         });
     }

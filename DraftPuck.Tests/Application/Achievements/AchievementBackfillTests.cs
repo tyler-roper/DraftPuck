@@ -62,7 +62,7 @@ public class AchievementBackfillTests(DatabaseFixture fixture)
         var (own, host) = s.Lobby([Seed.NewGameId()]);
         var (other, _) = s.Lobby([Seed.NewGameId()]);
         var user = await db.Users.FindAsync(host.UserId);
-        user!.FcmRegistrationToken = "token";
+        db.UserDevices.Add(new UserDeviceEntity { UserId = user!.Id, Token = "token-" + user.Id, LastSeenUtc = DateTime.UtcNow });
         user.AchievementAwardedNotificationPreference = NotificationPreference.All;
         user.DiscordUserId = "123"; // linked Discord, but nothing says they joined the server
         s.Member(other, user);

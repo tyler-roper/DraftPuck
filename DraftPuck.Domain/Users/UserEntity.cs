@@ -15,7 +15,6 @@ public partial class UserEntity
     public bool IsBot { get; set; } = false;
     public string? AvatarPath { get; set; }
     public DateTime Created { get; set; }
-    public string? FcmRegistrationToken { get; set; }
     public NotificationPreference DrinkReceivedNotificationPreference { get; set; } = NotificationPreference.None;
     public NotificationPreference DrinkAwardedNotificationPreference { get; set; } = NotificationPreference.None;
     public NotificationPreference ChatNotificationPreference { get; set; } = NotificationPreference.None;
@@ -32,4 +31,9 @@ public partial class UserEntity
     public ICollection<LobbyMemberEntity> LobbyMembers { get; } = [];
     public ICollection<LobbyEntity> CreatedLobbies { get; } = [];
     public ICollection<UserRefreshTokenEntity> RefreshTokens { get; set; } = [];
+    /// <summary>The devices that receive this user's push notifications.</summary>
+    public ICollection<UserDeviceEntity> Devices { get; set; } = [];
+
+    /// <summary>The Firebase tokens of this user's devices (load <see cref="Devices"/> first).</summary>
+    public IReadOnlyCollection<string> PushTokens() => [.. Devices.Select(d => d.Token)];
 }

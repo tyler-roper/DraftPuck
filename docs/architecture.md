@@ -85,6 +85,10 @@ refetches everything (`resync`). Games carry an `UpdatedUtc` stamp so an older c
   | Time-only correction, renumbered play | Nothing |
 
   A revoke is "drink invalidated" if the drink was already given to someone, otherwise "drink revoked".
+- **Push notifications** go to every device a user has (`UserDevices`: one Firebase token each, with a readable
+  description). The app registers its device on start, sign-in and sign-out, and forgets it before signing out.
+  `IPushNotificationService` takes all of a user's tokens and removes devices Firebase says are gone. What a user hears
+  in a lobby is decided by that lobby's notification settings for them.
 
 ## The client (`DraftPuck.Web/ClientApp`)
 

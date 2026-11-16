@@ -36,9 +36,6 @@ public class UpdateUserCommandHandler(IDbContext dbContext, IMapper mapper, IUse
         if (request.Nickname != null)
             userToUpdate.Nickname = request.Nickname;
 
-        if (request.FcmRegistrationToken != null)
-            userToUpdate.FcmRegistrationToken = request.FcmRegistrationToken;
-
         if (request.BannerId.HasValue || request.TitleId.HasValue)
             await UpdateEquippedItems(userToUpdate, request.BannerId, request.TitleId, cancellationToken);
 

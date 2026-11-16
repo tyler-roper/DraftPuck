@@ -16,7 +16,8 @@ public class DrinkAwardedPushNotificationHandler(IPushNotificationService fireba
 
         var userIds = members.Keys.ToList();
         var users = await dbContext.Users
-            .Where(u => userIds.Contains(u.Id) && u.FcmRegistrationToken != null)
+            .Include(u => u.Devices)
+            .Where(u => userIds.Contains(u.Id) && u.Devices.Any())
             .ToListAsync(ct);
 
         await Parallel.ForEachAsync(users, ct, async (user, _) =>
@@ -28,13 +29,13 @@ public class DrinkAwardedPushNotificationHandler(IPushNotificationService fireba
             if (!isSender && preference == NotificationPreference.All)
             {
                 var data = new Dictionary<string, string> { { "lobbyEventType", "DrinkAwarded" }, { "isRelevant", "false" } };
-                await firebaseService.SendLobbyEventNotification(lobby.JoinCode, "Drink Awarded", text, user.FcmRegistrationToken!, data);
+                await firebaseService.SendLobbyEventNotification(lobby.JoinCode, "Drink Awarded", text, user.PushTokens(), data);
             }
             // "Notify me if it's mine": your own player scored, so you have a drink to give out.
             else if (isSender && preference != NotificationPreference.None)
             {
                 var data = new Dictionary<string, string> { { "lobbyEventType", "DrinkAwarded" }, { "isRelevant", "true" } };
-                await firebaseService.SendLobbyEventNotification(lobby.JoinCode, "Drink Awarded", "Your player scored - give out a drink!", user.FcmRegistrationToken!, data);
+                await firebaseService.SendLobbyEventNotification(lobby.JoinCode, "Drink Awarded", "Your player scored - give out a drink!", user.PushTokens(), data);
             }
         });
     }
