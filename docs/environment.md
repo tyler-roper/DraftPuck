@@ -74,6 +74,20 @@ Now run the certificate script:
 .\CreateCertificate.ps1
 ```
 
+## Production configuration
+
+The three apps (`dp-web-container-app`, `dp-worker-container-app`, `dp-discord-bot-container-app`) read their
+settings from environment variables. Secrets live **once** in the `kv-draftpuck` Key Vault; each app's secrets are
+references to it (`keyvaultref:`), read through the shared `id-draftpuck` managed identity, which also pulls images
+from the `acrtroper` registry. Public values (Firebase's browser config, Discord IDs) are plain environment variables.
+
+* **Rotate a secret:** add a new version in Key Vault. Apps pick it up within about 30 minutes, or right away after a
+  restart (`az containerapp revision restart`).
+* **Add a secret:** add it to Key Vault, add it to the app's secrets as a Key Vault reference (with the
+  `id-draftpuck` identity), and point an environment variable at it with `secretref:`.
+* **Application Insights:** all three apps use `APPLICATIONINSIGHTS_CONNECTION_STRING`. The console logs are also in
+  the container apps environment's Log Analytics workspace (`ContainerAppConsoleLogs_CL`).
+
 ## Frontend
 
 ```bash
