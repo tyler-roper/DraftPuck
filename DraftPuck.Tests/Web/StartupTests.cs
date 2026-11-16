@@ -29,4 +29,21 @@ public class StartupTests(ApiFactory factory)
 
         Assert.Contains("There is already an object named 'Achievements'", error.GetBaseException().Message);
     }
+
+    [Fact]
+    public async Task TheAppStartsAndServesWithTelemetryOn()
+    {
+        // Production has a connection string; tests normally don't, so this is the only run of the exporter setup.
+        // The endpoint is unreachable, so exports fail quietly in the background.
+        await using var app = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+        {
+            ApiFactory.UseTestSettings(builder, factory.SqlConnectionString, factory.RedisConnectionString);
+            builder.UseSetting("Telemetry:ConnectionString",
+                "InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://127.0.0.1:9/");
+        });
+
+        var response = await app.CreateClient().GetAsync("/health/live");
+
+        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+    }
 }

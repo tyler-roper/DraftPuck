@@ -25,8 +25,19 @@ builder.Services
     .Configure<ApplicationOptions>(options => builder.Configuration.Bind(ApplicationOptions.SectionName, options))
     .AddInfrastructure(builder.Configuration)
     .AddApplication(builder.Configuration)
+    // Reads APPLICATIONINSIGHTS_CONNECTION_STRING, which the Functions host also uses for its own telemetry.
     .AddApplicationInsightsTelemetryWorkerService()
     .ConfigureFunctionsApplicationInsights();
+
+// The Application Insights SDK adds a rule that only lets Warning and above through, which hid every
+// Information log (picks-ready notifications sent, games processed). Our own Logging filters decide instead.
+builder.Logging.Services.Configure<LoggerFilterOptions>(options =>
+{
+    var defaultRule = options.Rules.FirstOrDefault(rule =>
+        rule.ProviderName == "Microsoft.Extensions.Logging.ApplicationInsights.ApplicationInsightsLoggerProvider");
+    if (defaultRule != null)
+        options.Rules.Remove(defaultRule);
+});
 
 builder.Services
     .AddOptions<ApplicationOptions>()
