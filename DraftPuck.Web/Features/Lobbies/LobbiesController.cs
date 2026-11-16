@@ -1,4 +1,5 @@
 ﻿using DraftPuck.Web.RateLimiting;
+using DraftPuck.Application.Features.Lobbies.Recap;
 using Microsoft.AspNetCore.RateLimiting;
 using DraftPuck.Application.Features.Lobbies;
 using DraftPuck.Application.Features.Lobbies.Drinks;
@@ -45,6 +46,11 @@ public class LobbiesController(IMediator mediator) : BaseController()
         var lobbyDto = await mediator.Send(query);
         return Ok(lobbyDto);
     }
+
+    /// <summary>The lobby's end-of-night awards (best pick, bartender, thirstiest, ice cold).</summary>
+    [HttpGet("{code}/recap")]
+    public async Task<ActionResult<LobbyRecapDto>> GetRecap(string code) =>
+        Ok(await mediator.Send(new GetLobbyRecapQuery { Code = code }));
 
     [HttpGet("{id}/events")]
     public async Task<IActionResult> GetLobbyEventsById(Guid id)

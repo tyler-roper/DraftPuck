@@ -8,6 +8,10 @@ import { useRoute } from 'vue-router'
 import HeaderLayout from '@/views/layouts/HeaderLayout.vue'
 import CountUp from 'vue-countup-v3'
 import { differenceInDays, isYesterday } from 'date-fns'
+import { awardStyle, buildRecapCard } from '@/helpers/recapHelpers'
+import { useRecapShare } from '@/composables/useRecapShare'
+import { useToast } from '@/composables/useToast'
+import VIcon from '@/components/VIcon.vue'
 
 interface LobbyMemberWithStats extends LobbyMember {
   results: LobbyMemberResults
@@ -26,6 +30,9 @@ const lobby = ref<Lobby>()
 const isLoading = ref(false)
 const joinCode = ref(route.params.joinCode as string)
 const members = ref<LobbyMemberWithStats[]>([])
+const awards = ref<LobbyAward[]>([])
+const { isSharing, share } = useRecapShare()
+const toast = useToast()
 const userStore = useUserStore()
 const { currentUser } = storeToRefs(userStore)
 
@@ -38,6 +45,10 @@ onMounted(async () => {
     if (!joinCode.value) return
 
     isLoading.value = true
+    // The awards are extra: the page shows without them if they fail.
+    LobbyService.getRecap(joinCode.value)
+      .then((recap) => (awards.value = recap.awards))
+      .catch((ex) => console.error('Failed to load the recap:', ex))
     lobby.value = await LobbyService.getLobbyByCode(joinCode.value)
     setMembers()
     startFadeIns()
@@ -61,6 +72,23 @@ function setMembers() {
     } as LobbyMemberWithStats))
     .sort((b, a) => a.results.totalDrinksGiven - b.results.totalDrinksGiven)
     ?? []
+}
+
+async function shareRecap() {
+  if (!lobby.value) return
+  const card = buildRecapCard(
+    joinCode.value,
+    ago(lobby.value.created),
+    { games: lobby.value.gameIds.length, players: members.value.length, picks: totalPicks.value, drinks: totalDrinks.value },
+    awards.value,
+    members.value.map((m) => ({ name: m.name, given: m.results.totalDrinksGiven, taken: m.results.totalDrinksTaken ?? 0 }))
+  )
+  try {
+    if ((await share(card, joinCode.value)) === 'downloaded') toast.success('Recap image downloaded.', { timeout: 2500 })
+  } catch (ex) {
+    console.error(ex)
+    toast.error("Couldn't create the recap image.")
+  }
 }
 
 function startFadeIns() {
@@ -154,7 +182,25 @@ function ago(date: Date) {
           </div>
         </div>
       </div>
+      <div v-if="awards.length" class="px-3 pt-3">
+        <span class="d-block fs-7 fw-bold text-uppercase text-stone-400 ls-2 mb-2">Awards</span>
+        <div v-for="award in awards" :key="award.key" class="award d-flex align-items-center mb-2 p-2"
+          :style="{ '--award-color': awardStyle(award.key).color }">
+          <VIcon :icon="awardStyle(award.key).icon" prefix="sr" class="award-icon fs-3 mx-2" />
+          <div class="flex-grow-1">
+            <span class="d-block fs-9 fw-bold text-uppercase ls-2 award-title">{{ award.title }}</span>
+            <span class="d-block fw-bold">{{ award.memberName }}</span>
+            <span class="d-block fs-7 text-stone-300">{{ award.detail }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="px-3 pt-2">
+        <button type="button" class="btn btn-primary fw-bold w-100 py-2" :disabled="isSharing" @click="shareRecap">
+          <VIcon icon="share" prefix="sr" class="me-2" />{{ isSharing ? 'Creating image…' : 'Share recap' }}
+        </button>
+      </div>
       <div class="p-3">
+        <span class="d-block fs-7 fw-bold text-uppercase text-stone-400 ls-2 mb-2">Standings</span>
         <div class="d-flex member align-items-center w-100" v-for="(member, index) in members" :key="member.id"
           :class="member.class">
           <div class="pe-2 fs-3 fw-bold">{{ index + 1 }}</div>
@@ -301,5 +347,16 @@ function ago(date: Date) {
     opacity: 1;
     transform: translateY(0)
   }
+}
+
+.award {
+  background: map-get($custom-colors, 'stone-850');
+  border-left: 4px solid var(--award-color);
+  border-radius: 10px;
+}
+
+.award-icon,
+.award-title {
+  color: var(--award-color);
 }
 </style>
