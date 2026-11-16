@@ -9,13 +9,28 @@ on:
       - ".github/workflows/autodeploytrigger.yml"
   workflow_dispatch:
 
+# Tests and the three image builds run side by side, and the deploy needs all of them: a failing test still blocks the
+# release, without making the builds wait for it. (Images from a failing commit are pushed under its SHA but never
+# deployed.)
 jobs:
   tests:
     uses: ./.github/workflows/tests.yml
 
   build:
     runs-on: ubuntu-latest
-    needs: tests
+    strategy:
+      matrix:
+        include:
+          - app: web
+            image: draftpuck-web
+            dockerfile: DraftPuck.Web/Dockerfile
+          - app: worker
+            image: draftpuck-worker
+            dockerfile: DraftPuck.Worker/Dockerfile
+          - app: discord
+            image: draftpuck-discord-bot
+            dockerfile: DraftPuck.DiscordBot/Dockerfile
+    name: Build ${{ matrix.app }}
 
     steps:
       - name: Checkout repository
@@ -31,48 +46,37 @@ jobs:
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
-      - name: Build and push Web App image
+      # Each image keeps its own layer cache (restore and npm install are reused until their inputs change).
+      - name: Build and push the ${{ matrix.app }} image
         uses: docker/build-push-action@v7
         with:
           context: .
           push: true
-          tags: ${{ secrets.ACR_LOGIN_SERVER }}/draftpuck-web:${{ github.sha }}
-          file: DraftPuck.Web/Dockerfile
-          cache-from: type=gha,scope=web
-          cache-to: type=gha,mode=max,scope=web
+          tags: ${{ secrets.ACR_LOGIN_SERVER }}/${{ matrix.image }}:${{ github.sha }}
+          file: ${{ matrix.dockerfile }}
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
           build-args: |
             GIT_SHA=${{ github.sha }}
-
-      - name: Build and push Worker Function image
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          push: true
-          tags: ${{ secrets.ACR_LOGIN_SERVER }}/draftpuck-worker:${{ github.sha }}
-          file: DraftPuck.Worker/Dockerfile
-          cache-from: type=gha,scope=worker
-          cache-to: type=gha,mode=max,scope=worker
-          build-args: |
-            GIT_SHA=${{ github.sha }}
-
-      - name: Build and push Discord Bot
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          push: true
-          tags: ${{ secrets.ACR_LOGIN_SERVER }}/draftpuck-discord-bot:${{ github.sha }}
-          file: DraftPuck.DiscordBot/Dockerfile
-          cache-from: type=gha,scope=discord
-          cache-to: type=gha,mode=max,scope=discord
-          build-args: |
-            GIT_SHA=${{ github.sha }}
-
-      - name: Git SHA
-        run: "echo 'Git SHA for this build: ${{ github.sha }}'"
 
   deploy:
     runs-on: ubuntu-latest
-    needs: build
+    needs: [tests, build]
+    strategy:
+      # One app failing to roll out shouldn't cancel the others mid-update.
+      fail-fast: false
+      matrix:
+        include:
+          - app: web
+            image: draftpuck-web
+            name_secret: CONTAINER_APP_WEB_NAME
+          - app: worker
+            image: draftpuck-worker
+            name_secret: CONTAINER_APP_WORKER_NAME
+          - app: discord
+            image: draftpuck-discord-bot
+            name_secret: CONTAINER_APP_DISCORD_BOT_NAME
+    name: Deploy ${{ matrix.app }}
 
     steps:
       - name: Log in to Azure
@@ -85,20 +89,9 @@ jobs:
       - name: Install the Container Apps CLI extension
         run: az extension add --name containerapp --upgrade --only-show-errors
 
-      - name: Deploy Web App to Container Apps
+      - name: Deploy the ${{ matrix.app }} app
         run: >-
           az containerapp update --only-show-errors -o none
-          -g "${{ secrets.AZURE_RESOURCE_GROUP }}" -n "${{ secrets.CONTAINER_APP_WEB_NAME }}"
-          --image "${{ secrets.ACR_LOGIN_SERVER }}/draftpuck-web:${{ github.sha }}"
-
-      - name: Deploy Worker to Container Apps
-        run: >-
-          az containerapp update --only-show-errors -o none
-          -g "${{ secrets.AZURE_RESOURCE_GROUP }}" -n "${{ secrets.CONTAINER_APP_WORKER_NAME }}"
-          --image "${{ secrets.ACR_LOGIN_SERVER }}/draftpuck-worker:${{ github.sha }}"
-
-      - name: Deploy Discord Bot to Container Apps
-        run: >-
-          az containerapp update --only-show-errors -o none
-          -g "${{ secrets.AZURE_RESOURCE_GROUP }}" -n "${{ secrets.CONTAINER_APP_DISCORD_BOT_NAME }}"
-          --image "${{ secrets.ACR_LOGIN_SERVER }}/draftpuck-discord-bot:${{ github.sha }}"
+          -g "${{ secrets.AZURE_RESOURCE_GROUP }}" -n "${{ secrets[matrix.name_secret] }}"
+          --image "${{ secrets.ACR_LOGIN_SERVER }}/${{ matrix.image }}:${{ github.sha }}"
+          && echo "Deployed ${{ matrix.image }}:${{ github.sha }}"
