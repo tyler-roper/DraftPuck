@@ -19,20 +19,20 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to Azure Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ${{ secrets.ACR_LOGIN_SERVER }}
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
       - name: Build and push Web App image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true
@@ -44,7 +44,7 @@ jobs:
             GIT_SHA=${{ github.sha }}
 
       - name: Build and push Worker Function image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true
@@ -56,7 +56,7 @@ jobs:
             GIT_SHA=${{ github.sha }}
 
       - name: Build and push Discord Bot
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true
@@ -76,27 +76,29 @@ jobs:
 
     steps:
       - name: Log in to Azure
-        uses: azure/login@v2
+        uses: azure/login@v3
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      # Plain Azure CLI rather than azure/container-apps-deploy-action, whose last release (2023) still runs on a
+      # retired Node version. Images are pulled with the apps' managed identity, so no registry credentials here.
+      - name: Install the Container Apps CLI extension
+        run: az extension add --name containerapp --upgrade --only-show-errors
+
       - name: Deploy Web App to Container Apps
-        uses: azure/container-apps-deploy-action@v1
-        with:
-          resourceGroup: ${{ secrets.AZURE_RESOURCE_GROUP }}
-          containerAppName: ${{ secrets.CONTAINER_APP_WEB_NAME }}
-          imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/draftpuck-web:${{ github.sha }}
+        run: >-
+          az containerapp update --only-show-errors -o none
+          -g "${{ secrets.AZURE_RESOURCE_GROUP }}" -n "${{ secrets.CONTAINER_APP_WEB_NAME }}"
+          --image "${{ secrets.ACR_LOGIN_SERVER }}/draftpuck-web:${{ github.sha }}"
 
       - name: Deploy Worker to Container Apps
-        uses: azure/container-apps-deploy-action@v1
-        with:
-          resourceGroup: ${{ secrets.AZURE_RESOURCE_GROUP }}
-          containerAppName: ${{ secrets.CONTAINER_APP_WORKER_NAME }}
-          imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/draftpuck-worker:${{ github.sha }}
+        run: >-
+          az containerapp update --only-show-errors -o none
+          -g "${{ secrets.AZURE_RESOURCE_GROUP }}" -n "${{ secrets.CONTAINER_APP_WORKER_NAME }}"
+          --image "${{ secrets.ACR_LOGIN_SERVER }}/draftpuck-worker:${{ github.sha }}"
 
       - name: Deploy Discord Bot to Container Apps
-        uses: azure/container-apps-deploy-action@v1
-        with:
-          resourceGroup: ${{ secrets.AZURE_RESOURCE_GROUP }}
-          containerAppName: ${{ secrets.CONTAINER_APP_DISCORD_BOT_NAME }}
-          imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/draftpuck-discord-bot:${{ github.sha }}
+        run: >-
+          az containerapp update --only-show-errors -o none
+          -g "${{ secrets.AZURE_RESOURCE_GROUP }}" -n "${{ secrets.CONTAINER_APP_DISCORD_BOT_NAME }}"
+          --image "${{ secrets.ACR_LOGIN_SERVER }}/draftpuck-discord-bot:${{ github.sha }}"
