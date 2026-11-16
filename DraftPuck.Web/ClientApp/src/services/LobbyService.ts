@@ -26,6 +26,11 @@ class LobbyService {
     return this._http.get('', code)
   }
 
+  /** The lobby's end-of-night awards. */
+  public async getRecap(code: string): Promise<LobbyRecap> {
+    return this._http.get(code, 'recap')
+  }
+
   /** The current user's notification settings for this lobby. */
   public async getNotificationPreferences(code: string): Promise<LobbyNotificationPreferences> {
     return this._http.get(`${code}/member/me/notificationPreferences`)
