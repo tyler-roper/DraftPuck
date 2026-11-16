@@ -1,5 +1,6 @@
 ﻿using DraftPuck.Application.Features.Discord;
 using DraftPuck.Application.Features.Games;
+using DraftPuck.Application.Features.Lobbies.Recap;
 using DraftPuck.Application.Features.Users;
 using DraftPuck.Infrastructure.Auth;
 using DraftPuck.Infrastructure.AutoMapper;
@@ -30,6 +31,7 @@ public static class InfrastructureServiceCollectionExtensions
             .AddAutoMapperLicensed(configuration, typeof(UserMappingProfile).Assembly, typeof(GameMappingProfile).Assembly)
             .AddSingleton<IOAuthCache, RedisOAuthCache>()
             .AddSingleton<IGameCache, RedisGameCache>()
+            .AddSingleton<ILobbyRecapCache, RedisLobbyRecapCache>()
             .AddTokenService(configuration);
     }
 }

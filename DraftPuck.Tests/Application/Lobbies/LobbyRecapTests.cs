@@ -17,11 +17,69 @@ public class LobbyRecapTests(DatabaseFixture fixture)
         Created = DateTime.UtcNow
     };
 
-    private async Task<LobbyRecapDto> RecapAsync(string code, IGameCache cache, INhlClient? nhl = null)
+    private async Task<LobbyRecapDto> RecapAsync(string code, IGameCache cache, INhlClient? nhl = null, ILobbyRecapCache? recapCache = null)
     {
         await using var db = fixture.CreateContext();
-        return await new GetLobbyRecapQueryHandler(db, cache, nhl ?? Substitute.For<INhlClient>(), NullLogger<GetLobbyRecapQueryHandler>.Instance)
+        return await new GetLobbyRecapQueryHandler(db, cache, nhl ?? Substitute.For<INhlClient>(), recapCache ?? new InMemoryLobbyRecapCache(),
+                NullLogger<GetLobbyRecapQueryHandler>.Instance)
             .Handle(new GetLobbyRecapQuery { Code = code }, default);
+    }
+
+    /// <summary>A lobby whose host's pick (in a cached game) earned one drink.</summary>
+    private async Task<(Guid LobbyId, string Code, LobbyMemberPickEntity Pick)> OneDrinkLobbyAsync(int gameId, bool isActive, DateTime created)
+    {
+        await using var db = fixture.CreateContext();
+        var seed = new Seed(db);
+        var (lobby, host) = seed.Lobby([gameId], isActive: isActive);
+        lobby.Created = created;
+        var pick = seed.Pick(host, gameId, TestGames.HomeTeamId, TestGames.HomePlayer(0));
+        db.Drinks.Add(Drink(pick));
+        await db.SaveChangesAsync();
+        return (lobby.Id, lobby.JoinCode, pick);
+    }
+
+    private async Task AddDrinkAsync(LobbyMemberPickEntity pick)
+    {
+        await using var db = fixture.CreateContext();
+        db.Drinks.Add(Drink(pick));
+        await db.SaveChangesAsync();
+    }
+
+    [Theory]
+    [InlineData(2, 30 * 24 * 60)] // ended days ago: cached for weeks
+    [InlineData(0, 10)] // still its night: achievements can arrive, so only briefly
+    public async Task AFinishedLobbysRecapIsCached(int daysAgo, int expectedMinutes)
+    {
+        var gameId = Seed.NewGameId();
+        var games = new InMemoryGameCache();
+        // Puck drop after the pick, so it's not a buzzer beater.
+        await games.AddGameAsync(TestGames.Create(gameId, DateTime.UtcNow.AddHours(2), GameState.Final));
+        var (lobbyId, code, pick) = await OneDrinkLobbyAsync(gameId, isActive: false, DateTime.UtcNow.AddDays(-daysAgo).AddHours(-1));
+        var recapCache = new InMemoryLobbyRecapCache();
+
+        var first = await RecapAsync(code, games, recapCache: recapCache);
+        await AddDrinkAsync(pick);
+        var second = await RecapAsync(code, games, recapCache: recapCache);
+
+        Assert.EndsWith("earned 1 drink", Assert.Single(second.Awards).Detail); // the cached recap, not the new drink
+        Assert.Equal(first.Awards.Single().Detail, second.Awards.Single().Detail);
+        Assert.Equal(TimeSpan.FromMinutes(expectedMinutes), recapCache.Expiries[lobbyId]);
+    }
+
+    [Fact]
+    public async Task AnActiveLobbysRecapIsNotCached()
+    {
+        var gameId = Seed.NewGameId();
+        var games = new InMemoryGameCache();
+        await games.AddGameAsync(TestGames.Create(gameId, DateTime.UtcNow.AddHours(2), GameState.Live));
+        var (lobbyId, code, pick) = await OneDrinkLobbyAsync(gameId, isActive: true, DateTime.UtcNow.AddHours(-1));
+        var recapCache = new InMemoryLobbyRecapCache();
+
+        await RecapAsync(code, games, recapCache: recapCache);
+        await AddDrinkAsync(pick);
+
+        Assert.EndsWith("earned 2 drinks", Assert.Single((await RecapAsync(code, games, recapCache: recapCache)).Awards).Detail);
+        Assert.Empty(recapCache.Expiries);
     }
 
     [Fact]
@@ -94,14 +152,17 @@ public class LobbyRecapTests(DatabaseFixture fixture)
         await using (var db = fixture.CreateContext())
         {
             var seed = new Seed(db);
-            var (lobby, host) = seed.Lobby([gameId]);
+            var (lobby, host) = seed.Lobby([gameId], isActive: false);
+            lobby.Created = DateTime.UtcNow.AddDays(-3);
             var pick = seed.Pick(host, gameId, TestGames.HomeTeamId, TestGames.HomePlayer(0));
             db.Drinks.Add(Drink(pick));
             await db.SaveChangesAsync();
             code = lobby.JoinCode;
         }
 
-        var best = Assert.Single((await RecapAsync(code, new InMemoryGameCache(), nhl)).Awards);
+        var recapCache = new InMemoryLobbyRecapCache();
+        var best = Assert.Single((await RecapAsync(code, new InMemoryGameCache(), nhl, recapCache)).Awards);
         Assert.Equal("a player earned 1 drink", best.Detail);
+        Assert.Empty(recapCache.Expiries); // not cached: the next view tries the game again
     }
 }

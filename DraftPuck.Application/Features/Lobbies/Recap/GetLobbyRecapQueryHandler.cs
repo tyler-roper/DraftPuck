@@ -3,16 +3,32 @@ using DraftPuck.Application.Features.Games;
 
 namespace DraftPuck.Application.Features.Lobbies.Recap;
 
-public class GetLobbyRecapQueryHandler(IDbContext dbContext, IGameCache gameCache, INhlClient nhlClient, ILogger<GetLobbyRecapQueryHandler> logger)
+public class GetLobbyRecapQueryHandler(IDbContext dbContext, IGameCache gameCache, INhlClient nhlClient, ILobbyRecapCache recapCache,
+    ILogger<GetLobbyRecapQueryHandler> logger)
     : IRequestHandler<GetLobbyRecapQuery, LobbyRecapDto>
 {
     /// <summary>Achievements earned this long after the lobby was created count as earned that night.</summary>
     public static readonly TimeSpan Night = TimeSpan.FromDays(1);
 
+    /// <summary>How long a finished lobby's recap is cached: briefly during its night (achievements can still arrive), then for weeks.</summary>
+    public static readonly TimeSpan CacheDuringNight = TimeSpan.FromMinutes(10);
+    public static readonly TimeSpan CacheAfterNight = TimeSpan.FromDays(30);
+
     public async Task<LobbyRecapDto> Handle(GetLobbyRecapQuery request, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(request.Code))
             throw new BadRequestException("Lobby code is required.");
+
+        var summary = await dbContext.Lobbies
+            .Where(l => l.JoinCode == request.Code)
+            .Select(l => new { l.Id, l.IsActive })
+            .FirstOrDefaultAsync(ct)
+            ?? throw new NotFoundException("Lobby not found.");
+
+        // A finished lobby's recap doesn't change (bar achievements during its night), and building it can take a dozen
+        // NHL API calls for an old lobby.
+        if (!summary.IsActive && await recapCache.GetAsync(summary.Id) is { } cached)
+            return cached;
 
         var lobby = await dbContext.Lobbies
             .AsNoTracking()
@@ -20,12 +36,12 @@ public class GetLobbyRecapQueryHandler(IDbContext dbContext, IGameCache gameCach
                 .ThenInclude(m => m.LobbyMemberPicks.Where(p => p.IsActive))
                     .ThenInclude(p => p.Drinks)
             .AsSplitQuery()
-            .FirstOrDefaultAsync(l => l.JoinCode == request.Code, ct)
-            ?? throw new NotFoundException("Lobby not found.");
+            .SingleAsync(l => l.Id == summary.Id, ct);
 
-        var games = new Dictionary<int, GameDto?>();
-        foreach (var gameId in lobby.LobbyMembers.SelectMany(m => m.LobbyMemberPicks).Select(p => p.GameId).Distinct())
-            games[gameId] = await GameAsync(gameId);
+        // All at once: an old lobby's games each come from the NHL API.
+        var gameIds = lobby.LobbyMembers.SelectMany(m => m.LobbyMemberPicks).Select(p => p.GameId).Distinct().ToList();
+        var loaded = await Task.WhenAll(gameIds.Select(GameAsync));
+        var games = gameIds.Zip(loaded).ToDictionary(x => x.First, x => x.Second);
 
         var input = new RecapInput(
             [.. lobby.LobbyMembers.Select(m => new RecapMember(m.Id, m.Name, m.IsBot))],
@@ -76,7 +92,16 @@ public class GetLobbyRecapQueryHandler(IDbContext dbContext, IGameCache gameCach
             })
             .ToList();
 
-        return new LobbyRecapDto { Awards = awards };
+        var recap = new LobbyRecapDto { Awards = awards };
+
+        // Cache a finished lobby's recap, unless a game couldn't be loaded (the next view tries again).
+        if (!lobby.IsActive && games.Values.All(g => g != null))
+        {
+            var duringNight = DateTime.UtcNow < lobby.Created + Night;
+            await recapCache.SetAsync(lobby.Id, recap, duringNight ? CacheDuringNight : CacheAfterNight);
+        }
+
+        return recap;
     }
 
     private static readonly Dictionary<string, string> Titles = new()

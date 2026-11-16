@@ -408,8 +408,8 @@ FodyWeavers.xsd
 *.sln.iml
 
 # Azurite / Redis
-azurite/
-redis/
+/azurite/
+/redis/
 DraftPuck.Web/ClientApp/public/env-sw.js
 DraftPuck.Web/ClientApp/public/env.js
 /.claude
