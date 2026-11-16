@@ -31,6 +31,7 @@ const isLoading = ref(false)
 const joinCode = ref(route.params.joinCode as string)
 const members = ref<LobbyMemberWithStats[]>([])
 const awards = ref<LobbyAward[]>([])
+const isLoadingAwards = ref(true)
 const { isSharing, share } = useRecapShare()
 const toast = useToast()
 const userStore = useUserStore()
@@ -49,6 +50,7 @@ onMounted(async () => {
     LobbyService.getRecap(joinCode.value)
       .then((recap) => (awards.value = recap.awards))
       .catch((ex) => console.error('Failed to load the recap:', ex))
+      .finally(() => (isLoadingAwards.value = false))
     lobby.value = await LobbyService.getLobbyByCode(joinCode.value)
     setMembers()
     startFadeIns()
@@ -182,10 +184,14 @@ function ago(date: Date) {
           </div>
         </div>
       </div>
-      <div v-if="awards.length" class="px-3 pt-3">
+      <div v-if="isLoadingAwards || awards.length" class="px-3 pt-3">
         <span class="d-block fs-7 fw-bold text-uppercase text-stone-400 ls-2 mb-2">Awards</span>
-        <div v-for="award in awards" :key="award.key" class="award d-flex align-items-center mb-2 p-2"
-          :style="{ '--award-color': awardStyle(award.key).color }">
+        <!-- Placeholders hold the awards' place while they load, so the page doesn't jump when they arrive. -->
+        <template v-if="isLoadingAwards">
+          <div v-for="n in 3" :key="n" class="award award-placeholder mb-2" aria-hidden="true"></div>
+        </template>
+        <div v-for="(award, index) in awards" :key="award.key" class="award award-in d-flex align-items-center mb-2 p-2"
+          :style="{ '--award-color': awardStyle(award.key).color, animationDelay: `${index * 80}ms` }">
           <VIcon :icon="awardStyle(award.key).icon" prefix="sr" class="award-icon fs-3 mx-2" />
           <div class="flex-grow-1">
             <span class="d-block fs-9 fw-bold text-uppercase ls-2 award-title">{{ award.title }}</span>
@@ -195,7 +201,7 @@ function ago(date: Date) {
         </div>
       </div>
       <div class="px-3 pt-2">
-        <button type="button" class="btn btn-primary fw-bold w-100 py-2" :disabled="isSharing" @click="shareRecap">
+        <button type="button" class="btn btn-primary fw-bold w-100 py-2" :disabled="isSharing || isLoadingAwards" @click="shareRecap">
           <VIcon icon="share" prefix="sr" class="me-2" />{{ isSharing ? 'Creating image…' : 'Share recap' }}
         </button>
       </div>
@@ -358,5 +364,45 @@ function ago(date: Date) {
 .award-icon,
 .award-title {
   color: var(--award-color);
+}
+
+// The same height as an award card, with a slow shimmer.
+.award-placeholder {
+  height: 72px;
+  --award-color: #{map-get($custom-colors, 'stone-700')};
+  background: linear-gradient(90deg, map-get($custom-colors, 'stone-850') 25%, map-get($custom-colors, 'stone-800') 50%, map-get($custom-colors, 'stone-850') 75%);
+  background-size: 200% 100%;
+  animation: award-shimmer 1.4s ease-in-out infinite;
+}
+
+.award-in {
+  animation: award-in 0.35s ease-out both;
+}
+
+@keyframes award-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes award-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .award-placeholder,
+  .award-in {
+    animation: none;
+  }
 }
 </style>
