@@ -1,5 +1,6 @@
 using Azure.Monitor.OpenTelemetry.Exporter;
 using DraftPuck.DiscordBot;
+using OpenTelemetry.Resources;
 
 var builder = Host.CreateApplicationBuilder(args);
 builder.Configuration.AddEnvironmentVariables("DRAFTPUCK_");
@@ -10,6 +11,8 @@ if (!string.IsNullOrWhiteSpace(builder.Configuration["APPLICATIONINSIGHTS_CONNEC
     builder.Logging.AddOpenTelemetry(otel =>
     {
         otel.IncludeFormattedMessage = true;
+        // Without a service name, Application Insights lists the bot as "unknown_service:dotnet".
+        otel.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("dp-discord-bot-container-app"));
         otel.AddAzureMonitorLogExporter();
     });
 }
