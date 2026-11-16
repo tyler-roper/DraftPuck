@@ -1,6 +1,7 @@
 ﻿using DraftPuck.Application.Common.Interfaces;
 using DraftPuck.Domain.Auth;
 using DraftPuck.Domain.Titles;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace DraftPuck.Infrastructure.Persistence;
 
@@ -326,6 +327,15 @@ public partial class DraftPuckContext : DbContext, IDbContext
             entity.HasIndex(e => e.Nickname)
                 .HasDatabaseName("IX_Users_Nickname");
         });
+
+        // Columns whose database default is 0 / false, the same as the CLR default: EF can't tell "false" from "use
+        // the default" there and warns on every startup. Sending the value always gives the same result, so they aren't
+        // database-generated. (The defaults stay in the schema for rows inserted by hand.)
+        foreach (var property in modelBuilder.Model.GetEntityTypes().SelectMany(e => e.GetProperties()))
+        {
+            if (property.GetDefaultValueSql() == "((0))" && (property.ClrType == typeof(bool) || property.ClrType.IsEnum))
+                property.ValueGenerated = ValueGenerated.Never;
+        }
 
         OnModelCreatingPartial(modelBuilder);
     }
