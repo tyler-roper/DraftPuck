@@ -6,6 +6,8 @@ import BannerService from '@/services/BannerService'
 import TitleService from '@/services/TitleService'
 import TokenService from '@/services/TokenService'
 import { useFirebaseStore } from '@/stores/firebase'
+import { restoreSession } from '@/helpers/sessionHelpers'
+import { useToast } from '@/composables/useToast'
 
 export const useUserStore = defineStore('user', () => {
   //#region state
@@ -49,10 +51,16 @@ export const useUserStore = defineStore('user', () => {
   }
 
   const initUser = async () => {
-    let authResponse
-    try {
-      authResponse = await AuthService.useRefreshToken()
-    } catch {
+    const restored = await restoreSession(() => AuthService.useRefreshToken())
+    let authResponse = restored.ok ? restored.value : undefined
+
+    if (!restored.ok) {
+      // Couldn't reach DraftPuck: keep the session (and its cookie) for next time rather than starting over as a guest.
+      if (!restored.rejected) {
+        useToast().error("Couldn't reach DraftPuck. Check your connection and reopen the app.", { timeout: false })
+        throw new Error('Could not reach the server to restore the session.')
+      }
+      // No session, or it's no longer valid: carry on as a new guest.
       authResponse = await UserService.createGuest()
     }
 

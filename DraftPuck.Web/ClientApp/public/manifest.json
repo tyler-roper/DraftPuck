@@ -1,4 +1,7 @@
 {
+    "id": "/",
+    "start_url": "/",
+    "scope": "/",
     "display": "standalone",
     "description": "DRAFTPUCK - A live hockey drinking game",
     "name": "DRAFTPUCK",

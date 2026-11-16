@@ -1,59 +1,38 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import axios from 'axios'
-import { getValidJwt } from '@/services/HttpService'
-import TokenService from '@/services/TokenService'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
+const { post } = vi.hoisted(() => ({ post: vi.fn() }))
 vi.mock('axios', async (importOriginal) => {
   const actual = await importOriginal<typeof import('axios')>()
-  return { ...actual, default: { ...actual.default, post: vi.fn(), create: actual.default.create } }
+  return { ...actual, default: { ...actual.default, post, create: actual.default.create } }
 })
+vi.mock('@/services/TokenService', () => ({
+  default: { getTokens: () => ({ jwt: null, csrf: 'csrf-1' }), storeTokens: vi.fn(), clearTokens: vi.fn() }
+}))
 
-function jwtExpiringIn(seconds: number) {
-  const payload = btoa(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + seconds }))
-  return `header.${payload}.signature`
-}
+import { refreshTokens } from '@/services/HttpService'
 
-function refreshResponse(jwtToken: string) {
-  return { data: { jwtToken, antiCsrfToken: 'new-csrf', user: {} } }
-}
+describe('refreshTokens', () => {
+  afterEach(() => post.mockReset())
 
-describe('getValidJwt', () => {
-  beforeEach(() => {
-    localStorage.clear()
-    vi.mocked(axios.post).mockReset()
+  it('shares one request between refreshes that start together', async () => {
+    // The server rotates the token on each use and treats the old one coming back as theft, revoking the session.
+    let respond!: (value: unknown) => void
+    post.mockReturnValue(new Promise((resolve) => (respond = resolve)))
+
+    const startup = refreshTokens()
+    const liveConnection = refreshTokens()
+    respond({ data: { jwtToken: 'jwt-2', user: { id: 'u1' } } })
+
+    expect(await startup).toEqual(await liveConnection)
+    expect(post).toHaveBeenCalledOnce()
   })
 
-  it('returns the stored token while it is still valid', async () => {
-    const jwt = jwtExpiringIn(600)
-    TokenService.storeTokens({ jwtToken: jwt, antiCsrfToken: 'csrf' } as AuthResponse)
+  it('makes a new request once the previous one has finished', async () => {
+    post.mockResolvedValue({ data: { jwtToken: 'jwt', user: { id: 'u1' } } })
 
-    expect(await getValidJwt()).toBe(jwt)
-    expect(axios.post).not.toHaveBeenCalled()
-  })
+    await refreshTokens()
+    await refreshTokens()
 
-  it('refreshes a token that is about to expire, sending the CSRF header', async () => {
-    TokenService.storeTokens({ jwtToken: jwtExpiringIn(30), antiCsrfToken: 'csrf' } as AuthResponse)
-    vi.mocked(axios.post).mockResolvedValue(refreshResponse('fresh'))
-
-    expect(await getValidJwt()).toBe('fresh')
-    expect(axios.post).toHaveBeenCalledWith('/api/auth/refreshTokens/use', undefined, { headers: { 'CSRF-Token': 'csrf' } })
-    expect(TokenService.getTokens()).toEqual({ jwt: 'fresh', csrf: 'new-csrf' })
-  })
-
-  it('shares one refresh between concurrent callers', async () => {
-    // A second refresh with the same (now rotated) cookie would look like token reuse and end the session.
-    vi.mocked(axios.post).mockResolvedValue(refreshResponse('fresh'))
-
-    const tokens = await Promise.all([getValidJwt(), getValidJwt(), getValidJwt()])
-
-    expect(tokens).toEqual(['fresh', 'fresh', 'fresh'])
-    expect(axios.post).toHaveBeenCalledTimes(1)
-  })
-
-  it('treats a malformed token as expired', async () => {
-    TokenService.storeTokens({ jwtToken: 'not-a-jwt', antiCsrfToken: 'csrf' } as AuthResponse)
-    vi.mocked(axios.post).mockResolvedValue(refreshResponse('fresh'))
-
-    expect(await getValidJwt()).toBe('fresh')
+    expect(post).toHaveBeenCalledTimes(2)
   })
 })

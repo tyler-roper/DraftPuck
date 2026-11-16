@@ -1,4 +1,4 @@
-﻿import HttpService, { type IHttpService } from '@/services/HttpService'
+﻿import HttpService, { refreshTokens, type IHttpService } from '@/services/HttpService'
 
 const controller = 'auth'
 
@@ -9,8 +9,9 @@ class AuthService {
     this._http = new HttpService(controller)
   }
 
+  /** Restores the session from the refresh-token cookie, sharing any refresh already in flight. */
   public async useRefreshToken(): Promise<AuthResponse> {
-    return await this._http.post('refreshTokens/use', {})
+    return await refreshTokens()
   }
 
   public async login(email: string, password: string): Promise<AuthResponse> {

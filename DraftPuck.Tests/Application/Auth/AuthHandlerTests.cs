@@ -176,19 +176,6 @@ public class AuthHandlerTests(DatabaseFixture fixture)
         await Assert.ThrowsAsync<UnauthorizedException>(() => RefreshAsync(login.RefreshToken, login.AntiCsrfToken.ToString()));
     }
 
-    [Fact]
-    public async Task ReusingARotatedTokenRevokesTheWholeChain()
-    {
-        // A stolen, already-used token must also kill the token that replaced it.
-        var account = await AccountAsync();
-        var login = await LoginAsync(account.Email!, SeedAccounts.Password);
-        var refreshed = await RefreshAsync(login.RefreshToken, login.AntiCsrfToken.ToString());
-
-        await Assert.ThrowsAsync<UnauthorizedException>(() => RefreshAsync(login.RefreshToken, login.AntiCsrfToken.ToString()));
-
-        await Assert.ThrowsAsync<UnauthorizedException>(() => RefreshAsync(refreshed.RefreshToken, refreshed.AntiCsrfToken.ToString()));
-    }
-
     [Theory]
     [InlineData(null)]
     [InlineData("00000000-0000-0000-0000-000000000000")]
@@ -212,19 +199,51 @@ public class AuthHandlerTests(DatabaseFixture fixture)
     // --- Logout and revoke ---
 
     [Fact]
-    public async Task LogoutRevokesEverySession()
+    public async Task LogoutEndsOnlyThatDevicesSession()
     {
+        // It used to end every session, so signing out on the laptop signed the user out on their phone too.
         var account = await AccountAsync();
         var phone = await LoginAsync(account.Email!, SeedAccounts.Password);
         var laptop = await LoginAsync(account.Email!, SeedAccounts.Password);
 
         await using (var db = fixture.CreateContext())
         {
-            await new LogoutCommandHandler(db).Handle(new LogoutCommand { UserId = account.Id }, default);
+            await new LogoutCommandHandler(db).Handle(new LogoutCommand { UserId = account.Id, RefreshToken = laptop.RefreshToken, IpAddress = Ip }, default);
         }
 
-        await Assert.ThrowsAsync<UnauthorizedException>(() => RefreshAsync(phone.RefreshToken, phone.AntiCsrfToken.ToString()));
         await Assert.ThrowsAsync<UnauthorizedException>(() => RefreshAsync(laptop.RefreshToken, laptop.AntiCsrfToken.ToString()));
+        Assert.NotNull(await RefreshAsync(phone.RefreshToken, phone.AntiCsrfToken.ToString()));
+    }
+
+    [Fact]
+    public async Task TwoRefreshesAtOnceDoNotEndTheSession()
+    {
+        // The app refreshed on start and again for its live connection, both with the same token. The second used to be
+        // treated as theft and end the session, signing the user out.
+        var account = await AccountAsync();
+        var session = await LoginAsync(account.Email!, SeedAccounts.Password);
+
+        var first = await RefreshAsync(session.RefreshToken, session.AntiCsrfToken.ToString());
+        await Assert.ThrowsAsync<UnauthorizedException>(() => RefreshAsync(session.RefreshToken, session.AntiCsrfToken.ToString()));
+
+        Assert.NotNull(await RefreshAsync(first.RefreshToken, first.AntiCsrfToken.ToString()));
+    }
+
+    [Fact]
+    public async Task ReusingAnOldTokenLaterStillEndsTheSession()
+    {
+        var account = await AccountAsync();
+        var session = await LoginAsync(account.Email!, SeedAccounts.Password);
+        var next = await RefreshAsync(session.RefreshToken, session.AntiCsrfToken.ToString());
+        await using (var db = fixture.CreateContext())
+        {
+            var replaced = await db.UserRefreshTokens.SingleAsync(t => t.Token == session.RefreshToken);
+            replaced.Revoked = DateTime.UtcNow - UseRefreshTokenCommandHandler.ConcurrentRefreshGrace - TimeSpan.FromSeconds(1);
+            await db.SaveChangesAsync();
+        }
+
+        await Assert.ThrowsAsync<UnauthorizedException>(() => RefreshAsync(session.RefreshToken, session.AntiCsrfToken.ToString()));
+        await Assert.ThrowsAsync<UnauthorizedException>(() => RefreshAsync(next.RefreshToken, next.AntiCsrfToken.ToString()));
     }
 
     [Fact]
