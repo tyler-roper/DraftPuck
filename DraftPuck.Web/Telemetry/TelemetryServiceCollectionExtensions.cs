@@ -1,5 +1,6 @@
-﻿using Azure.Monitor.OpenTelemetry.Exporter;
+using Azure.Monitor.OpenTelemetry.AspNetCore;
 using DraftPuck.Web.MediatR;
+using OpenTelemetry.Instrumentation.AspNetCore;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -8,47 +9,38 @@ namespace DraftPuck.Web.Telemetry;
 
 public static class TelemetryServiceCollectionExtensions
 {
+    /// <summary>
+    /// Sends requests, dependencies, metrics and logs to Application Insights through the Azure Monitor OpenTelemetry
+    /// distro, when a connection string is configured. Logs go at the levels in appsettings' Logging section.
+    /// </summary>
     public static IServiceCollection AddTelemetry(this IServiceCollection services, IConfiguration config)
     {
-        var telemetryOptions = config.GetSection(TelemetryOptions.SectionName).Get<TelemetryOptions>() ?? new TelemetryOptions();
         services.Configure<TelemetryOptions>(config.GetSection(TelemetryOptions.SectionName));
-
-        var isProd = config.GetValue<string>("ASPNETCORE_ENVIRONMENT") == "Production";
-        if (!isProd || !telemetryOptions.EnableTracing)
+        var options = config.GetSection(TelemetryOptions.SectionName).Get<TelemetryOptions>() ?? new TelemetryOptions();
+        // APPLICATIONINSIGHTS_CONNECTION_STRING is Azure's standard name, which the worker and bot use too.
+        var connectionString = options.ConnectionString ?? config["APPLICATIONINSIGHTS_CONNECTION_STRING"];
+        if (string.IsNullOrWhiteSpace(connectionString))
             return services;
 
-        var serviceName = "DraftPuck";
-        var serviceVersion = "1.0.0";
-
         services.AddOpenTelemetry()
-            .ConfigureResource(resource => resource.AddService(serviceName, serviceVersion: serviceVersion))
-            .WithTracing(tracer =>
+            .ConfigureResource(resource => resource.AddService("DraftPuck.Web"))
+            .UseAzureMonitor(o =>
             {
-                tracer
-                    .AddAspNetCoreInstrumentation(options => options.RecordException = true)
-                    .AddHttpClientInstrumentation()
-                    .AddSqlClientInstrumentation(options => options.RecordException = true)
-                    .AddEntityFrameworkCoreInstrumentation()
-                    .AddSource("MediatR")
-                    .AddSource("DraftPuck")
-                    .AddAzureMonitorTraceExporter(o =>
-                    {
-                        o.ConnectionString = telemetryOptions.ConnectionString;
-                    });
-
-                tracer.SetSampler(new ParentBasedSampler(new TraceIdRatioBasedSampler(telemetryOptions.SampleRate)));
+                o.ConnectionString = connectionString;
+                o.SamplingRatio = options.SampleRate;
             })
-            .WithMetrics(metrics =>
-            {
-                metrics
-                    .AddAspNetCoreInstrumentation()
-                    .AddHttpClientInstrumentation()
-                    .AddRuntimeInstrumentation()
-                    .AddAzureMonitorMetricExporter(o =>
-                    {
-                        o.ConnectionString = telemetryOptions.ConnectionString;
-                    });
-            });
+            .WithTracing(tracer => tracer
+                .AddEntityFrameworkCoreInstrumentation()
+                .AddSource("MediatR")
+                .AddSource("DraftPuck"))
+            .WithMetrics(metrics => metrics.AddRuntimeInstrumentation());
+
+        // Container probes call these every few seconds; recording them would bury real traffic.
+        services.Configure<AspNetCoreTraceInstrumentationOptions>(o =>
+        {
+            o.RecordException = true;
+            o.Filter = context => !context.Request.Path.StartsWithSegments("/health");
+        });
 
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TracingBehavior<,>));
         return services;

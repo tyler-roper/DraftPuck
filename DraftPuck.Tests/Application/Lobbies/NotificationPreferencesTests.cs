@@ -278,6 +278,46 @@ public class NotificationPreferencesTests(DatabaseFixture fixture)
     }
 
     [Fact]
+    public async Task TimeToPickNamesTheUsersGamesOpeningTogether()
+    {
+        // One push for the games whose picks open now (or within its 15-minute window), naming them; not later games.
+        var start = DateTime.UtcNow.AddMinutes(20);
+        GameDto Game(string away, string home, DateTime startUtc)
+        {
+            var game = TestGames.Create(Seed.NewGameId(), startUtc, GameState.Upcoming);
+            game.AwayTeam.Abbreviation = away;
+            game.HomeTeam.Abbreviation = home;
+            return game;
+        }
+        var (edm, fla, late) = (Game("EDM", "PHI", start), Game("FLA", "DAL", start.AddMinutes(5)), Game("VAN", "VGK", start.AddHours(2)));
+        var cache = new InMemoryGameCache();
+        foreach (var g in new[] { edm, fla, late }) await cache.AddGameAsync(g);
+
+        var user = await UserWithDefaultsAsync(None, None, None, All);
+        await using (var db = fixture.CreateContext())
+            await new CreateLobbyCommandHandler(db, TestServices.Mapper(), _mediator).Handle(new CreateLobbyCommand
+            {
+                CreatorUserId = user.Id,
+                Name = "Host",
+                PicksPerTeam = 1,
+                GameIds = [edm.Id, fla.Id, late.Id]
+            }, default);
+        _push.SendLobbyEventNotification(default!, default!, default!, default!).ReturnsForAnyArgs(1);
+
+        await using (var db = fixture.CreateContext())
+        {
+            var handler = new NotifyUsersPicksReadyNotificationHandler(db, cache, _push,
+                Options.Create(new ApplicationOptions()), NullLogger<NotifyUsersPicksReadyNotificationHandler>.Instance);
+            await handler.Handle(new PicksReadyNotification(edm), default);
+            await handler.Handle(new PicksReadyNotification(fla), default);
+        }
+
+        await _push.Received(1).SendLobbyEventNotification(Arg.Any<string>(), "Time to pick players!",
+            "Picks are open for EDM @ PHI and FLA @ DAL.", PushArgs.Devices(TokenOf(user)),
+            Arg.Any<Dictionary<string, string>?>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task TimeToPickUsesALobbyWherePickingNotificationsAreOn()
     {
         var gameId = Seed.NewGameId();
