@@ -641,6 +641,43 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.ToTable("UserBanners");
                 });
 
+            modelBuilder.Entity("DraftPuck.Domain.Users.UserDeviceEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("(newid())");
+
+                    b.Property<DateTime>("Created")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("(getutcdate())");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("LastSeenUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserDevices");
+                });
+
             modelBuilder.Entity("DraftPuck.Domain.Users.UserEntity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -687,9 +724,6 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.Property<string>("Email")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
-
-                    b.Property<string>("FcmRegistrationToken")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
@@ -913,6 +947,17 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("DraftPuck.Domain.Users.UserDeviceEntity", b =>
+                {
+                    b.HasOne("DraftPuck.Domain.Users.UserEntity", "User")
+                        .WithMany("Devices")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("DraftPuck.Domain.Users.UserTitleEntity", b =>
                 {
                     b.HasOne("DraftPuck.Domain.Titles.TitleEntity", "Title")
@@ -973,6 +1018,8 @@ namespace DraftPuck.Infrastructure.Migrations
             modelBuilder.Entity("DraftPuck.Domain.Users.UserEntity", b =>
                 {
                     b.Navigation("CreatedLobbies");
+
+                    b.Navigation("Devices");
 
                     b.Navigation("LobbyMembers");
 

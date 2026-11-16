@@ -6,11 +6,14 @@ import { useUserStore } from '@/stores/user'
 import { env } from '@/env'
 import { useToast } from '@/composables/useToast'
 import { escapeHtml } from '@/helpers/htmlHelpers'
-import { getForegroundToast } from '@/helpers/pushHelpers'
+import { getForegroundToast, isRunningAsInstalledApp } from '@/helpers/pushHelpers'
+import UserService from '@/services/UserService'
 import router from '@/router'
 
 export const useFirebaseStore = defineStore('firebase', () => {
   const isInitialized = ref(false)
+  // This device's Firebase token, once notifications are allowed.
+  const currentToken = ref<string>()
   const notificationsSupported = ref('Notification' in window)
   const toast = useToast()
 
@@ -19,10 +22,9 @@ export const useFirebaseStore = defineStore('firebase', () => {
   async function initialize() {
     if (isInitialized.value) return
 
-    if (!notificationsSupported.value || !isPermissionGranted()) {
-      await clearUserFcmToken()
-      return
-    }
+    // Without permission this device simply doesn't register. (It used to clear the account's one token, which
+    // stopped the user's other devices getting pushes too.)
+    if (!notificationsSupported.value || !isPermissionGranted()) return
 
     const firebaseConfig = {
       apiKey: env.VITE_FIREBASE_API_KEY,
@@ -66,11 +68,11 @@ export const useFirebaseStore = defineStore('firebase', () => {
         })
       })
 
-      const token = await getToken(messaging, {
+      currentToken.value = await getToken(messaging, {
         vapidKey: env.VITE_FIREBASE_VAPID_KEY
       })
 
-      await userStore.updateUser({ fcmRegistrationToken: token })
+      await registerCurrentDevice()
 
       isInitialized.value = true
     } catch (err) {
@@ -78,14 +80,31 @@ export const useFirebaseStore = defineStore('firebase', () => {
     }
   }
 
-  async function clearUserFcmToken() {
-    const userStore = useUserStore()
-    await userStore.updateUser({ fcmRegistrationToken: '' })
+  /** Registers this device for whoever is signed in now: on start, and again after signing in or out. */
+  async function registerCurrentDevice() {
+    if (!currentToken.value) return
+    try {
+      await UserService.registerDevice(currentToken.value, isRunningAsInstalledApp())
+    } catch (err) {
+      console.error('Registering this device for push notifications failed', err)
+    }
+  }
+
+  /** Stops this device getting the signed-in user's pushes, before they sign out. */
+  async function forgetCurrentDevice() {
+    if (!currentToken.value) return
+    try {
+      await UserService.forgetDevice(currentToken.value)
+    } catch (err) {
+      console.error('Forgetting this device failed', err)
+    }
   }
 
   return {
     isInitialized,
     notificationsSupported,
-    initialize
+    initialize,
+    registerCurrentDevice,
+    forgetCurrentDevice
   }
 })

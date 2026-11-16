@@ -14,7 +14,6 @@ public class UserDto
     public DateTime Created { get; set; }
     public bool IsGuest { get; set; }
     public bool IsBot { get; set; }
-    public string? FcmRegistrationToken { get; set; }
     public BannerDto? Banner { get; set; }
     public TitleDto? Title { get; set; }
     public List<BannerDto> OwnedBanners { get; set; } = [];

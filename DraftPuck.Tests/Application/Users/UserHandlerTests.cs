@@ -210,25 +210,6 @@ public class UserHandlerTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task RejectsANotificationTokenFarLongerThanARealOne()
-    {
-        var account = await AccountAsync();
-        var tooLong = new string('a', UserValidationHelpers.MaxFcmRegistrationTokenLength + 1);
-
-        await Assert.ThrowsAsync<ValidationException>(() => UpdateAsync(new UpdateUserCommand
-        {
-            RequesterUserId = account.Id,
-            TargetUserId = account.Id,
-            RequesterIsAuthenticated = true,
-            FcmRegistrationToken = tooLong
-        }));
-
-        await using var db = fixture.CreateContext();
-        await Assert.ThrowsAsync<ValidationException>(() => new UpdateFcmRegistrationTokenCommandHandler(db, new UserRepository(db), TestServices.Mapper())
-            .Handle(new UpdateFcmRegistrationTokenCommand { UserId = account.Id, Token = tooLong }, default));
-    }
-
-    [Fact]
     public async Task ChangingYourPasswordRequiresTheCurrentOne()
     {
         var account = await AccountAsync();
@@ -255,11 +236,11 @@ public class UserHandlerTests(DatabaseFixture fixture)
             RequesterUserId = account.Id,
             TargetUserId = account.Id,
             RequesterIsAuthenticated = true,
-            FcmRegistrationToken = "new-device-token"
+            Nickname = "renamed" + account.Nickname
         });
 
         await using var check = fixture.CreateContext();
-        Assert.Equal("new-device-token", (await check.Users.SingleAsync(u => u.Id == account.Id)).FcmRegistrationToken);
+        Assert.Equal("renamed" + account.Nickname, (await check.Users.SingleAsync(u => u.Id == account.Id)).Nickname);
     }
 
     [Fact]

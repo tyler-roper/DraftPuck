@@ -3,7 +3,6 @@ interface UpdateUserRequest {
   requesterUserId?: string
   email?: string
   nickname?: string
-  fcmRegistrationToken?: string
   bannerId?: string
   titleId?: string
   password?: string

@@ -362,11 +362,14 @@ public class GoalCorrectionPipelineTests(DatabaseFixture fixture)
         await PollAsync(withoutJohn);
     }
 
+    private string JohnPickerToken => "john-picker-" + _johnPickerUserId;
+
     private async Task SetJohnPickerNotificationsAsync(NotificationPreference pickingStarted)
     {
         await using var db = fixture.CreateContext();
         var user = await db.Users.SingleAsync(u => u.Id == _johnPickerUserId);
-        user.FcmRegistrationToken = "john-picker-token";
+        if (!await db.UserDevices.AnyAsync(d => d.UserId == user.Id))
+            db.UserDevices.Add(new UserDeviceEntity { UserId = user.Id, Token = JohnPickerToken, LastSeenUtc = DateTime.UtcNow });
         // Notification settings are per lobby member.
         var member = await db.LobbyMembers.SingleAsync(m => m.Id == _johnPicker);
         member.PickingStartedNotificationPreference = pickingStarted;
@@ -424,7 +427,7 @@ public class GoalCorrectionPipelineTests(DatabaseFixture fixture)
         await ScratchJohnAsync();
 
         await _push.Received(1).SendLobbyEventNotification(_joinCode, "Pick scratched", "Player 1-2 isn't playing. Pick someone else!",
-            "john-picker-token", Arg.Any<Dictionary<string, string>?>(), Arg.Any<CancellationToken>());
+            PushArgs.Devices(JohnPickerToken), Arg.Any<Dictionary<string, string>?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

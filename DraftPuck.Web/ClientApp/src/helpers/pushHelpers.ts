@@ -34,3 +34,13 @@ function samePath(a: string, b: string) {
   const normalize = (p: string) => p.replace(/\/+$/, '').toLowerCase()
   return normalize(a) === normalize(b)
 }
+
+/**
+ * Whether DraftPuck is running as an installed app (from the home screen on iOS or Android, or installed from Chrome
+ * or Edge on a computer) rather than in a browser tab. Sent with a device's registration so it can be described.
+ */
+export function isRunningAsInstalledApp(win: Pick<Window, 'matchMedia' | 'navigator'> = window): boolean {
+  if (win.matchMedia?.('(display-mode: standalone)').matches) return true
+  // Safari on iOS predates display-mode and uses its own flag.
+  return (win.navigator as Navigator & { standalone?: boolean }).standalone === true
+}

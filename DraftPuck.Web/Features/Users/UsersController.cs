@@ -47,7 +47,6 @@ public class UsersController(IMediator mediator) : BaseController()
             RequesterIsAuthenticated = IsSignedIn,
             Email = request.Email,
             Nickname = request.Nickname,
-            FcmRegistrationToken = request.FcmRegistrationToken,
             BannerId = request.BannerId,
             TitleId = request.TitleId,
             Password = request.Password,
@@ -74,6 +73,28 @@ public class UsersController(IMediator mediator) : BaseController()
             ApplyToActiveLobbies = request.ApplyToActiveLobbies
         });
         return Ok(user);
+    }
+
+    /// <summary>Registers the device the caller is on (its push token), so it gets their push notifications.</summary>
+    [HttpPost("me/devices")]
+    public async Task<IActionResult> RegisterDevice(DeviceRequestDto request)
+    {
+        await mediator.Send(new RegisterDeviceCommand
+        {
+            UserId = CurrentUserId,
+            Token = request.Token,
+            UserAgent = Request.Headers.UserAgent.ToString(),
+            IsInstalledApp = request.IsInstalledApp
+        });
+        return NoContent();
+    }
+
+    /// <summary>Stops the given device getting the caller's push notifications (on sign-out).</summary>
+    [HttpPost("me/devices/forget")]
+    public async Task<IActionResult> ForgetDevice(DeviceRequestDto request)
+    {
+        await mediator.Send(new ForgetDeviceCommand { UserId = CurrentUserId, Token = request.Token });
+        return NoContent();
     }
 
     [HttpPost("signup")]

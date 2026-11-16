@@ -1,5 +1,5 @@
-﻿﻿using DraftPuck.Application.Common.Interfaces;
-﻿using DraftPuck.Application.Features.Users;
+﻿using DraftPuck.Application.Common.Interfaces;
+using DraftPuck.Application.Features.Users;
 using DraftPuck.Domain.Users;
 using MediatR;
 

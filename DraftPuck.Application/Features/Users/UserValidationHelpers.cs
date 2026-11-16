@@ -17,7 +17,6 @@ public static class UserValidationHelpers
         ValidateEmail(request.Email, true);
         ValidateNickname(request.Nickname, true);
         ValidatePassword(request.Password, true);
-        ValidateFcmRegistrationToken(request.FcmRegistrationToken);
         await ValidateUniqueness(dbContext, request.Nickname, request.Email, cancellationToken, request.TargetUserId);
     }
 
@@ -42,18 +41,8 @@ public static class UserValidationHelpers
             throw new ValidationException("Invalid password.");
     }
 
-    /// <summary>Firebase registration tokens are a few hundred characters; anything far longer isn't one.</summary>
-    public const int MaxFcmRegistrationTokenLength = 4096;
-
-    public static void ValidateFcmRegistrationToken(string? token)
-    {
-        if (token?.Length > MaxFcmRegistrationTokenLength)
-            throw new ValidationException("Invalid notification token.");
-    }
-
     // Only other users count: the user being updated keeps their own nickname and email. (Checking just the first
-    // match let an email that belonged to someone else through whenever the user's own nickname matched first, and
-    // login and password reset expect one account per email.)
+    // match let another account's email or nickname through whenever the user's own row matched first.)
     private static async Task ValidateUniqueness(IDbContext dbContext, string? nickname, string? email, CancellationToken cancellationToken, Guid? userId = null)
     {
         if (nickname == null && email == null) return;

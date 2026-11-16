@@ -1,4 +1,4 @@
-﻿﻿using DraftPuck.Application.Common.Interfaces;
+﻿using DraftPuck.Application.Common.Interfaces;
 using DraftPuck.Application.Features.Games;
 using MediatR;
 

@@ -5,6 +5,7 @@ import AuthService from '@/services/AuthService'
 import BannerService from '@/services/BannerService'
 import TitleService from '@/services/TitleService'
 import TokenService from '@/services/TokenService'
+import { useFirebaseStore } from '@/stores/firebase'
 
 export const useUserStore = defineStore('user', () => {
   //#region state
@@ -82,15 +83,21 @@ export const useUserStore = defineStore('user', () => {
       const authResponse = await AuthService.login(email, password)
       TokenService.storeTokens(authResponse)
       setCurrentUser(authResponse.user)
+      // This device now gets the account's pushes instead of the guest's.
+      await useFirebaseStore().registerCurrentDevice()
     } catch {
       //noop
     }
   }
 
   const logout = async () => {
+    const firebase = useFirebaseStore()
+    // Before signing out, while the request can still say whose device it is.
+    await firebase.forgetCurrentDevice()
     await AuthService.logout()
     TokenService.clearTokens()
     await initUser()
+    await firebase.registerCurrentDevice()
   }
 
   const updateUser = async (request: UpdateUserRequest) => {

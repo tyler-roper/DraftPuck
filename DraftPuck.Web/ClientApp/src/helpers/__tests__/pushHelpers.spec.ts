@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getForegroundToast } from '@/helpers/pushHelpers'
+import { getForegroundToast, isRunningAsInstalledApp } from '@/helpers/pushHelpers'
 
 const picksReady = {
   type: 'LobbyEvent',
@@ -36,5 +36,23 @@ describe('getForegroundToast', () => {
   it('ignores pushes with no title', () => {
     expect(getForegroundToast({ type: 'LobbyEvent', body: 'x' }, '/')).toBeNull()
     expect(getForegroundToast(undefined, '/')).toBeNull()
+  })
+})
+
+describe('isRunningAsInstalledApp', () => {
+  const windowWith = (standaloneMedia: boolean, iosStandalone?: boolean) =>
+    ({ matchMedia: () => ({ matches: standaloneMedia }), navigator: { standalone: iosStandalone } }) as unknown as Window
+
+  it('is true when opened as an installed app', () => {
+    expect(isRunningAsInstalledApp(windowWith(true))).toBe(true)
+  })
+
+  it("uses Safari's own flag on iOS", () => {
+    expect(isRunningAsInstalledApp(windowWith(false, true))).toBe(true)
+  })
+
+  it('is false in a browser tab', () => {
+    expect(isRunningAsInstalledApp(windowWith(false))).toBe(false)
+    expect(isRunningAsInstalledApp(windowWith(false, false))).toBe(false)
   })
 })

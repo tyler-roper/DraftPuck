@@ -1,4 +1,4 @@
-﻿﻿using DraftPuck.Application.Features.Users;
+﻿using DraftPuck.Application.Features.Users;
 using DraftPuck.Domain.Users;
 
 namespace DraftPuck.Application.Common.Interfaces;
