@@ -27,17 +27,17 @@ public class CheckAndAwardAllAchievementsCommandHandler(AchievementAwardService 
 
         if (awarded.Count == 0) return;
 
-        var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == request.UserId, cancellationToken);
+        var user = await dbContext.Users.Include(u => u.Devices).FirstOrDefaultAsync(u => u.Id == request.UserId, cancellationToken);
 
         if (user == null
-            || string.IsNullOrEmpty(user.FcmRegistrationToken)
+            || user.Devices.Count == 0
             || user.AchievementAwardedNotificationPreference == NotificationPreference.None)
             return;
 
         foreach (var achievement in awarded)
         {
             await pushService.SendAchievementNotification(
-                user.FcmRegistrationToken,
+                user.PushTokens(),
                 achievement,
                 cancellationToken
             );

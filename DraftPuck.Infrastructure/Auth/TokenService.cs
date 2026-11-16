@@ -1,4 +1,4 @@
-﻿﻿using DraftPuck.Application.Common.Interfaces;
+﻿using DraftPuck.Application.Common.Interfaces;
 using DraftPuck.Domain.Auth;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;

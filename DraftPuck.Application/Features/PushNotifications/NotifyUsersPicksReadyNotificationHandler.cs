@@ -27,7 +27,8 @@ public class NotifyUsersPicksReadyNotificationHandler(IDbContext dbContext, IGam
 
         var userIds = lobbyByUser.Keys.ToList();
         var usersWithPushNotificationsEnabled = await dbContext.Users
-            .Where(u => userIds.Contains(u.Id) && !string.IsNullOrEmpty(u.FcmRegistrationToken))
+            .Include(u => u.Devices)
+            .Where(u => userIds.Contains(u.Id) && u.Devices.Any())
             .ToDictionaryAsync(u => u.Id, u => u, ct);
 
         foreach (var (userId, userLobby) in lobbyByUser)
@@ -47,11 +48,11 @@ public class NotifyUsersPicksReadyNotificationHandler(IDbContext dbContext, IGam
                 userLobby.JoinCode,
                 "Time to pick players!",
                 "One or more games is about to start! Make your picks now.",
-                user.FcmRegistrationToken!,
+                user.PushTokens(),
                 ct: ct
             );
 
-            if (!sent)
+            if (sent == 0)
             {
                 logger.LogWarning("Failed to send picks-ready notification to User {userId} for game {gameId} via lobby {lobbyCode}.",
                     userId, game.Id, userLobby.JoinCode);

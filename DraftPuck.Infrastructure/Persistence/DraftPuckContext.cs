@@ -1,4 +1,4 @@
-﻿﻿using DraftPuck.Application.Common.Interfaces;
+﻿using DraftPuck.Application.Common.Interfaces;
 using DraftPuck.Domain.Auth;
 using DraftPuck.Domain.Titles;
 
@@ -31,6 +31,7 @@ public partial class DraftPuckContext : DbContext, IDbContext
     public DbSet<UserTitleEntity> UserTitles { get; set; }
     public DbSet<UserEntity> Users { get; set; }
     public DbSet<UserRefreshTokenEntity> UserRefreshTokens { get; set; }
+    public DbSet<UserDeviceEntity> UserDevices { get; set; }
     public DbSet<PasswordResetTokenEntity> PasswordResetTokens { get; set; }
     public DbSet<TitleEntity> Titles { get; set; }
 
@@ -262,6 +263,23 @@ public partial class DraftPuckContext : DbContext, IDbContext
                 .HasDatabaseName("IX_UserRefreshTokens_UserId");
         });
 
+        modelBuilder.Entity<UserDeviceEntity>(entity =>
+        {
+            entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
+            entity.Property(e => e.Created).HasDefaultValueSql("(getutcdate())");
+            entity.Property(e => e.Token).HasMaxLength(UserDeviceEntity.MaxTokenLength);
+            entity.Property(e => e.Description).HasMaxLength(UserDeviceEntity.MaxDescriptionLength);
+
+            // A token is one device, so it belongs to one user at a time; registering it again moves it.
+            entity.HasIndex(e => e.Token).IsUnique();
+            entity.HasIndex(e => e.UserId);
+
+            entity.HasOne(e => e.User)
+                .WithMany(u => u.Devices)
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
         modelBuilder.Entity<PasswordResetTokenEntity>(entity =>
         {
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
@@ -289,7 +307,6 @@ public partial class DraftPuckContext : DbContext, IDbContext
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.Created).HasDefaultValueSql("(getutcdate())");
             entity.Property(e => e.IsBot).HasDefaultValueSql("((0))");
-            entity.Property(e => e.FcmRegistrationToken).HasColumnType("nvarchar(max)");
             entity.Property(e => e.DrinkReceivedNotificationPreference).HasDefaultValueSql("((0))");
             entity.Property(e => e.DrinkAwardedNotificationPreference).HasDefaultValueSql("((0))");
             entity.Property(e => e.ChatNotificationPreference).HasDefaultValueSql("((0))");
