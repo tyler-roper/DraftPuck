@@ -45,4 +45,29 @@ public class RoutingTests(ApiFactory factory)
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
+
+    [Fact]
+    public async Task WwwRedirectsToTheSitesOwnHostKeepingThePath()
+    {
+        // The two hosts have separate cookies, so a session on one was missing on the other.
+        var request = new HttpRequestMessage(HttpMethod.Get, "/lobby/ABCD?from=push");
+        request.Headers.Host = "www.draftpuck.test";
+
+        var response = await factory.Client().SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.MovedPermanently, response.StatusCode);
+        Assert.Equal("https://draftpuck.test/lobby/ABCD?from=push", response.Headers.Location?.AbsoluteUri);
+    }
+
+    [Fact]
+    public async Task TheSitesOwnHostAndOtherHostsAreServedAsUsual()
+    {
+        foreach (var host in new[] { "draftpuck.test", "dp-web-container-app.internal" })
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, "/health/live");
+            request.Headers.Host = host;
+
+            Assert.Equal(HttpStatusCode.OK, (await factory.Client().SendAsync(request)).StatusCode);
+        }
+    }
 }

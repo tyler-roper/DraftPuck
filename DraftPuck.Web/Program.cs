@@ -7,6 +7,7 @@ using DraftPuck.Infrastructure.Persistence;
 using DraftPuck.Infrastructure.SignalR;
 using DraftPuck.Web.Filters;
 using DraftPuck.Web.Health;
+using DraftPuck.Web.Hosting;
 using DraftPuck.Web.Mvc.App;
 using DraftPuck.Web.RateLimiting;
 using DraftPuck.Web.Security;
@@ -63,6 +64,7 @@ if (!app.Environment.IsDevelopment())
        .UseHttpsRedirection();
 }
 
+app.UseCanonicalHost();
 app.UseSecurityHeaders(app.Environment);
 app.UseStaticFiles();
 app.UseRouting();

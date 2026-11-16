@@ -1,6 +1,7 @@
 import { parseAllDates } from '@/helpers/dateHelpers'
 import axios, { isAxiosError, type AxiosError, type AxiosInstance, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
 import TokenService from './TokenService'
+import { isSessionRejected } from '@/helpers/sessionHelpers'
 
 export interface IHttpService {
   get<T>(endpoint: string, id?: string): Promise<T>
@@ -27,7 +28,12 @@ function isRefreshableError(error: unknown): error is AxiosError & { config: Ret
   return error.response?.status === 401 && config.url !== refreshTokenUrl && !config._hasBeenRetried
 }
 
-async function refreshTokens(): Promise<AuthResponse> {
+/**
+ * Exchanges the refresh-token cookie for a new session. One at a time: the server rotates the token on every use and
+ * treats an old one coming back as theft, revoking the whole session, so concurrent refreshes (app start, a 401, the
+ * live connection) must share one request.
+ */
+export async function refreshTokens(): Promise<AuthResponse> {
   if (refreshPromise) return refreshPromise
 
   const { csrf } = TokenService.getTokens()
@@ -65,11 +71,12 @@ export async function getValidJwt(): Promise<string> {
 }
 
 function handleRefreshFailure(error: unknown): never {
-  TokenService.clearTokens()
+  // Only a rejected session signs the user out. A network or server error fails this request and keeps the session.
+  if (isSessionRejected(error)) {
+    TokenService.clearTokens()
+    if (window.location.pathname !== '/login') window.location.href = '/login'
+  }
 
-  if (window.location.pathname !== '/login')
-    window.location.href = '/login'
-  
   throw error
 }
 
