@@ -19,7 +19,7 @@ const isPushAllowedHere = 'Notification' in window && Notification.permission ==
         <template v-if="!isPushAllowedHere"> Notifications aren't turned on for this device yet; turn them on from a lobby.</template>
       </span>
     </div>
-    <VNotificationPreferenceFields v-model="preferences" :keys="allNotificationKeys" id-prefix="defaults" />
+    <VNotificationPreferenceFields v-model="preferences" :keys="allNotificationKeys" id-prefix="defaults" dark />
     <div class="form-check mt-4">
       <input id="applyToActiveLobbies" v-model="applyToActiveLobbies" class="form-check-input" type="checkbox" />
       <label class="form-check-label" for="applyToActiveLobbies">Also apply to the lobbies I'm in now</label>
