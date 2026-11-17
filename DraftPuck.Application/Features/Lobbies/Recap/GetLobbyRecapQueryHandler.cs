@@ -63,6 +63,7 @@ public class GetLobbyRecapQueryHandler(IDbContext dbContext, IGameCache gameCach
                 Key = award.Key,
                 Title = Titles[award.Key],
                 MemberId = award.MemberId,
+                OtherMemberId = award.Key == LobbyAwards.Rivalry ? award.OtherMemberId : null,
                 MemberName = award.Key == LobbyAwards.Rivalry ? $"{NameOf(award.MemberId)} vs {NameOf(award.OtherMemberId)}" : NameOf(award.MemberId),
                 Detail = award.Key switch
                 {
@@ -92,7 +93,13 @@ public class GetLobbyRecapQueryHandler(IDbContext dbContext, IGameCache gameCach
             })
             .ToList();
 
-        var recap = new LobbyRecapDto { Awards = awards };
+        var players = lobby.LobbyMembers.SelectMany(m => m.LobbyMemberPicks)
+            .Select(p => (p.GameId, p.PlayerId)).Distinct()
+            .Select(p => RecapPlayer(games[p.GameId], p.GameId, p.PlayerId))
+            .OfType<RecapPlayerDto>()
+            .ToList();
+
+        var recap = new LobbyRecapDto { Awards = awards, Players = players };
 
         // Cache a finished lobby's recap, unless a game couldn't be loaded (the next view tries again).
         if (!lobby.IsActive && games.Values.All(g => g != null))
@@ -187,6 +194,16 @@ public class GetLobbyRecapQueryHandler(IDbContext dbContext, IGameCache gameCach
     /// <summary>The player's goals on the season before tonight, from the roster (synced before the game), if known.</summary>
     private static int? SeasonGoals(GameDto? game, int playerId) =>
         game?.HomeTeam.Roster.Concat(game.AwayTeam.Roster).FirstOrDefault(p => p.Id == playerId)?.Goals;
+
+    /// <summary>A picked player's full name and team, or null when the game couldn't be loaded.</summary>
+    private static RecapPlayerDto? RecapPlayer(GameDto? game, int gameId, int playerId)
+    {
+        var player = game?.PlayerSummaries.Concat(game.FormerPlayers).FirstOrDefault(p => p.Id == playerId);
+        if (game == null || player == null) return null;
+
+        var team = player.TeamId == game.HomeTeam.Id ? game.HomeTeam.Abbreviation : game.AwayTeam.Abbreviation;
+        return new RecapPlayerDto { GameId = gameId, PlayerId = playerId, Name = $"{player.FirstName} {player.LastName}", Team = team };
+    }
 
     /// <summary>"McDavid (EDM)", or "a player" when the game couldn't be loaded.</summary>
     private static string PlayerName(GameDto? game, int playerId)

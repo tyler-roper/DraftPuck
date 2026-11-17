@@ -53,7 +53,7 @@ public static class LobbyAwards
     public const string OverAchiever = "over_achiever";
 
     /// <summary>Bump when the rules or wording change, so cached recaps are recomputed.</summary>
-    public const int Version = 1;
+    public const int Version = 2;
 
     public const int MinAwards = 3;
     public const int MaxAwards = 7;
