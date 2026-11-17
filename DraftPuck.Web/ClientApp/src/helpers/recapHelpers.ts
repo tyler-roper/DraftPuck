@@ -1,25 +1,35 @@
-/** Each award's icon (a Flaticon solid-rounded name) and accent colour. Unknown awards get a star. */
-const awardStyles: Record<string, { icon: string; color: string }> = {
-  best_pick: { icon: 'trophy', color: '#ffb100' },
-  hat_trick: { icon: 'hockey-sticks', color: '#ffb100' },
-  sleeper: { icon: 'moon-stars', color: '#a78bfa' },
-  perfect_night: { icon: 'crown', color: '#ffb100' },
-  buzzer_beater: { icon: 'stopwatch', color: '#22c55e' },
-  ice_cold: { icon: 'snowflake', color: '#00ccff' },
-  bully: { icon: 'hand-back-fist', color: '#dc3545' },
-  rivalry: { icon: 'sword', color: '#f97316' },
-  spreading_the_love: { icon: 'heart', color: '#ec4899' },
-  thirstiest: { icon: 'glass-cheers', color: '#dc3545' },
-  designated_driver: { icon: 'car-side', color: '#22c55e' },
-  hoarder: { icon: 'treasure-chest', color: '#f59e0b' },
-  chatterbox: { icon: 'comment-dots', color: '#38bdf8' },
-  silent_assassin: { icon: 'user-ninja', color: '#a8a29e' },
-  beaten_by_a_robot: { icon: 'robot', color: '#a8a29e' },
-  over_achiever: { icon: 'medal', color: '#ffb100' }
+/** How an award's icon moves on the post-game page (looping, small). */
+export type AwardMotion = 'bob' | 'shiver' | 'beat' | 'jab' | 'clash' | 'swing' | 'wobble' | 'tick' | 'twinkle' | 'bounce'
+
+export interface AwardStyle {
+  /** A Flaticon solid-rounded icon. */
+  icon: string
+  color: string
+  motion: AwardMotion
 }
 
-export function awardStyle(key: string) {
-  return awardStyles[key] ?? { icon: 'star', color: '#ffb100' }
+/** Each award's icon, accent colour and motion. Unknown awards get a twinkling star. */
+const awardStyles: Record<string, AwardStyle> = {
+  best_pick: { icon: 'trophy', color: '#ffb100', motion: 'bob' },
+  hat_trick: { icon: 'hockey-sticks', color: '#ffb100', motion: 'clash' },
+  sleeper: { icon: 'moon-stars', color: '#a78bfa', motion: 'twinkle' },
+  perfect_night: { icon: 'crown', color: '#ffb100', motion: 'bob' },
+  buzzer_beater: { icon: 'stopwatch', color: '#22c55e', motion: 'tick' },
+  ice_cold: { icon: 'snowflake', color: '#00ccff', motion: 'shiver' },
+  bully: { icon: 'hand-back-fist', color: '#dc3545', motion: 'jab' },
+  rivalry: { icon: 'sword', color: '#f97316', motion: 'clash' },
+  spreading_the_love: { icon: 'heart', color: '#ec4899', motion: 'beat' },
+  thirstiest: { icon: 'glass-cheers', color: '#dc3545', motion: 'wobble' },
+  designated_driver: { icon: 'car-side', color: '#22c55e', motion: 'bob' },
+  hoarder: { icon: 'treasure-chest', color: '#f59e0b', motion: 'wobble' },
+  chatterbox: { icon: 'comment-dots', color: '#38bdf8', motion: 'bounce' },
+  silent_assassin: { icon: 'user-ninja', color: '#a8a29e', motion: 'twinkle' },
+  beaten_by_a_robot: { icon: 'robot', color: '#a8a29e', motion: 'wobble' },
+  over_achiever: { icon: 'medal', color: '#ffb100', motion: 'swing' }
+}
+
+export function awardStyle(key: string): AwardStyle {
+  return awardStyles[key] ?? { icon: 'star', color: '#ffb100', motion: 'twinkle' }
 }
 
 export interface RecapStanding {
