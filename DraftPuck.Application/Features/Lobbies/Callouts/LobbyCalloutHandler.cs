@@ -71,7 +71,14 @@ public class LobbyCalloutHandler(IDbContext dbContext, LobbyEventWriter writer, 
         const string name = NameToken;
         var detail = $"{earned.Count} drinks in {MinutesSince(earned.Min(), now)}";
         await writer.AddAsync(lobbyId, joinCode, LobbyEventType.OnFire, ct, lobbyMemberId: memberId, title: "On Fire",
-            text: Pick($"{name} is on fire: {detail}!", $"{name} can't miss: {detail}.", $"Somebody cool {name} down: {detail}."));
+            text: Pick(
+                $"{name} is on fire: {detail}!",
+                $"{name} can't miss: {detail}.",
+                $"Somebody cool {name} down: {detail}.",
+                $"{name} is heating up: {detail}.",
+                $"Call the fire department, {name} has {detail}.",
+                $"{name} is a one-person power play: {detail}.",
+                $"Everything {name} touches goes in: {detail}."));
     }
 
     // --- Drinking streak ---
@@ -89,8 +96,14 @@ public class LobbyCalloutHandler(IDbContext dbContext, LobbyEventWriter writer, 
         const string name = NameToken;
         var detail = $"{taken.Count} drinks in {MinutesSince(taken.Min(), now)}";
         await writer.AddAsync(lobbyId, joinCode, LobbyEventType.DrinkingStreak, ct, lobbyMemberId: memberId, title: "Drinking Streak",
-            text: Pick($"{name} has taken {detail}. Pace yourself!", $"Rough stretch for {name}: {detail}.",
-                $"Someone get {name} some water: {detail}."));
+            text: Pick(
+                $"{name} has taken {detail}. Pace yourself!",
+                $"Rough stretch for {name}: {detail}.",
+                $"Someone get {name} some water: {detail}.",
+                $"{name} can't catch a break: {detail}.",
+                $"Thoughts and prayers for {name}: {detail}.",
+                $"{name} is getting hemmed in their own zone: {detail}.",
+                $"Is everyone picking on {name}? {detail}."));
     }
 
     // --- Rivalry ---
@@ -118,8 +131,14 @@ public class LobbyCalloutHandler(IDbContext dbContext, LobbyEventWriter writer, 
         var score = $"{given}–{back}";
         await writer.AddAsync(lobbyId, joinCode, LobbyEventType.RivalryBrewing, ct, lobbyMemberId: sender, lobbyMember2Id: recipient,
             title: "Rivalry Brewing",
-            text: Pick($"A rivalry is brewing between {a} and {b}: {score}.", $"{a} and {b} won't stop sending each other drinks: {score}.",
-                $"It's getting personal between {a} and {b}: {score}."));
+            text: Pick(
+                $"A rivalry is brewing between {a} and {b}: {score}.",
+                $"{a} and {b} won't stop sending each other drinks: {score}.",
+                $"It's getting personal between {a} and {b}: {score}.",
+                $"Bad blood between {a} and {b}: {score}.",
+                $"{a} vs {b}. Somebody get the gloves: {score}.",
+                $"This is a playoff series now, {a} vs {b}: {score}.",
+                $"{a} and {b} need to talk it out. Or keep drinking: {score}."));
     }
 
     // --- Ice cold ---
@@ -152,9 +171,16 @@ public class LobbyCalloutHandler(IDbContext dbContext, LobbyEventWriter writer, 
             const string name = NameToken;
             var matchup = $"{game.AwayTeam.Abbreviation} @ {game.HomeTeam.Abbreviation}";
             var text = isOver
-                ? Pick($"{name} went 0 for {coldest.Picks} in {matchup}.", $"{coldest.Picks} picks in {matchup}, not one goal for {name}.")
-                : Pick($"Under {IceColdMinutesLeft} minutes left in {matchup} and {name}'s {coldest.Picks} picks still haven't scored.",
-                    $"{name}'s picks in {matchup} are ice cold: {coldest.Picks} picks, no goals.");
+                ? Pick(
+                    $"{name} went 0 for {coldest.Picks} in {matchup}.",
+                    $"{coldest.Picks} picks in {matchup}, not one goal for {name}.",
+                    $"Shut out: {name}'s {coldest.Picks} picks in {matchup}.",
+                    $"{name}'s {matchup} picks have gone fishing.")
+                : Pick(
+                    $"Under {IceColdMinutesLeft} minutes left in {matchup} and {name}'s {coldest.Picks} picks still haven't scored.",
+                    $"{name}'s picks in {matchup} are ice cold: {coldest.Picks} picks, no goals.",
+                    $"Clock's ticking, {name}: {coldest.Picks} picks in {matchup}, still nothing.",
+                    $"{name}'s picks in {matchup} need a miracle.");
             await writer.AddAsync(lobby.Id, lobby.JoinCode, LobbyEventType.IceCold, ct, lobbyMemberId: coldest.LobbyMemberId, gameId: game.Id,
                 title: "Ice Cold", text: text);
         }

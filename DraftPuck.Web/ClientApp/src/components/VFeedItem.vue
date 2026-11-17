@@ -43,6 +43,7 @@ const itemIcon = computed(() => {
   if (callout.value) return { prefix: 'sr', icon: callout.value.icon }
 
   const icons: Record<number, { prefix: string; icon: string }> = {
+    [LobbyEventType.LobbyCreated]: { prefix: 'sr', icon: 'flag-checkered' },
     [LobbyEventType.UserJoined]: { prefix: 'sr', icon: 'user-add' },
     [LobbyEventType.UserRejoined]: { prefix: 'sr', icon: 'user-add' },
     [LobbyEventType.NewPick]: { prefix: 'rr', icon: 'badge-check' },
