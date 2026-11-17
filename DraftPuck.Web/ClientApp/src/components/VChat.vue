@@ -36,7 +36,6 @@ const error = ref<string>()
 const lastSentMessage = ref(new Date(-1))
 const isLockedToBottom = ref(true)
 const errorTimer = ref<number>()
-const isIos = /(iPad|iPhone|iPod)/.test(window.navigator.userAgent)
 // Mentions: who an "@..." being typed at the cursor could be for (other people in the lobby, not bots).
 const mention = ref<MentionQuery>()
 const mentionIndex = ref(0)
@@ -202,19 +201,6 @@ async function focus() {
   scrollToBottom()
 }
 
-function handleIphoneKeyboard() {
-  if (!isIos) return
-  setTimeout(() => {
-    document.body.style.paddingBottom = `${document.documentElement.clientHeight - window.visualViewport!.height}px`
-    document.body.scrollTop = document.documentElement.scrollTop = 0
-  }, 200)
-}
-
-async function focusOut() {
-  if (!isIos) return
-  setTimeout(() => (document.body.style.paddingBottom = '0px'), 200)
-}
-
 //watchers
 watch(
   () => props.messages,
@@ -269,8 +255,7 @@ defineExpose({ focus })
         @keyup="(e) => ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key) && updateMention()"
         @keydown="onMentionKeydown"
         @keydown.enter="onEnterKeydown"
-        @focus="handleIphoneKeyboard"
-        @focusout="focusOut(); mention = undefined"
+        @focusout="mention = undefined"
       ></textarea>
       <div class="d-flex align-items-center justify-content-end">
         <span class="d-block text-danger me-2 fw-bold">{{ error }}</span>

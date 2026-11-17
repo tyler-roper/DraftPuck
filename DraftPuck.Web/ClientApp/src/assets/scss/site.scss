@@ -13,7 +13,7 @@ body {
 html {
   height: 100vh;
   height: 100dvh;
-  // --app-height is kept in sync with window.innerHeight by the script in index.html
+  // --app-height is the visible height (above the keyboard, when it's open), kept in sync by public/app-height.js
   height: var(--app-height, 100dvh);
 }
 
