@@ -1,14 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
-import { useDrinkQueue } from '@/composables/useDrinkQueue'
+import { useEventQueue } from '@/composables/useEventQueue'
 
 const drink = (id: string) => ({ id }) as LobbyEvent
 
-describe('useDrinkQueue', () => {
+describe('useEventQueue', () => {
   let scope: ReturnType<typeof effectScope>
   const create = () => {
     scope = effectScope()
-    return scope.run(() => useDrinkQueue(5000))!
+    return scope.run(() => useEventQueue(5000))!
   }
 
   beforeEach(() => vi.useFakeTimers())
