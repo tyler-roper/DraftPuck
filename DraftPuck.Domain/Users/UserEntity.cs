@@ -20,6 +20,8 @@ public partial class UserEntity
     public NotificationPreference ChatNotificationPreference { get; set; } = NotificationPreference.None;
     public NotificationPreference PickingStartedNotificationPreference { get; set; } = NotificationPreference.None;
     public NotificationPreference AchievementAwardedNotificationPreference { get; set; } = NotificationPreference.None;
+    /// <summary>The push the day after a lobby, when its recap is ready. On by default: it only reaches devices with push allowed.</summary>
+    public NotificationPreference RecapNotificationPreference { get; set; } = NotificationPreference.All;
     [JsonIgnore]
     public string? PasswordHash { get; set; }
     public string? DiscordUserId { get; set; }

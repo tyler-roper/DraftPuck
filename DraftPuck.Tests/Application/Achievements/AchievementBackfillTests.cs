@@ -114,6 +114,31 @@ public class AchievementBackfillTests(DatabaseFixture fixture)
     }
 
     [Fact]
+    public async Task AchievementsFromALobbyEndingAreAwardedWithoutAPush()
+    {
+        // Lobbies end overnight; the next day's recap push names these instead of waking anyone.
+        Guid userId;
+        await using (var db = fixture.CreateContext())
+        {
+            var s = new Seed(db);
+            var gameId = Seed.NewGameId();
+            var (_, host) = s.Lobby([gameId], isActive: false);
+            for (var i = 0; i < 4; i++)
+                s.Pick(host, gameId, TestGames.HomeTeamId, TestGames.HomePlayer(i)); // four picks, no goals: a goose egg
+            var user = await db.Users.FindAsync(host.UserId);
+            db.UserDevices.Add(new UserDeviceEntity { UserId = user!.Id, Token = "token-" + user.Id, LastSeenUtc = DateTime.UtcNow });
+            user.AchievementAwardedNotificationPreference = NotificationPreference.All;
+            await db.SaveChangesAsync();
+            userId = user.Id;
+        }
+
+        await CheckAsync(userId, isBackfill: false, AchievementTriggerType.LobbyEnded);
+
+        Assert.Contains("goose_egg", await OwnedAsync(userId));
+        await _push.DidNotReceiveWithAnyArgs().SendAchievementNotification(default!, default!, default);
+    }
+
+    [Fact]
     public async Task ANormalCheckStillOnlyRunsItsTriggersRulesAndNotifies()
     {
         var user = await PlayerAsync();

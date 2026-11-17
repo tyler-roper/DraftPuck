@@ -9,5 +9,7 @@ namespace DraftPuck.Application.Common.Interfaces;
 public interface IPushNotificationService
 {
     Task<int> SendAchievementNotification(IReadOnlyCollection<string> tokens, AchievementEntity achievement, CancellationToken ct);
+    /// <summary>The day-after push for a lobby; tapping it opens the lobby's post-game page.</summary>
+    Task<int> SendRecapNotification(string lobbyCode, string title, string message, IReadOnlyCollection<string> tokens, CancellationToken ct = default);
     Task<int> SendLobbyEventNotification(string lobbyCode, string title, string message, IReadOnlyCollection<string> tokens, Dictionary<string, string>? data = null, CancellationToken ct = default);
 }

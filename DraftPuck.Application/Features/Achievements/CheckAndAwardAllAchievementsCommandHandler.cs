@@ -25,7 +25,9 @@ public class CheckAndAwardAllAchievementsCommandHandler(AchievementAwardService 
             return;
         }
 
-        if (awarded.Count == 0) return;
+        // Lobbies end overnight (see DeactivateStaleLobbiesCommandHandler): those achievements are awarded quietly, and the
+        // next day's recap push names them (SendRecapNotificationsCommandHandler), rather than waking anyone up.
+        if (awarded.Count == 0 || request.TriggerType == AchievementTriggerType.LobbyEnded) return;
 
         var user = await dbContext.Users.Include(u => u.Devices).FirstOrDefaultAsync(u => u.Id == request.UserId, cancellationToken);
 

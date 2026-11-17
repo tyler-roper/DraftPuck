@@ -7,8 +7,8 @@ export type LobbyNotificationKey =
   | 'chatNotificationPreference'
   | 'pickingStartedNotificationPreference'
 
-/** Every setting a user has defaults for: the lobby ones, plus achievements (which aren't tied to a lobby). */
-export type NotificationKey = LobbyNotificationKey | 'achievementAwardedNotificationPreference'
+/** Every setting a user has defaults for: the lobby ones, plus achievements and the recap (which aren't tied to a lobby). */
+export type NotificationKey = LobbyNotificationKey | 'achievementAwardedNotificationPreference' | 'recapNotificationPreference'
 
 export type LobbyNotificationPreferences = Record<LobbyNotificationKey, NotificationPreference>
 export type NotificationPreferences = Record<NotificationKey, NotificationPreference>
@@ -48,6 +48,11 @@ export const notificationSettings: NotificationSetting[] = [
     key: 'achievementAwardedNotificationPreference',
     question: '🏆 When I earn a new achievement...',
     options: [off, always]
+  },
+  {
+    key: 'recapNotificationPreference',
+    question: "📊 The day after a lobby, when its recap is ready...",
+    options: [off, always]
   }
 ]
 
@@ -58,7 +63,7 @@ export const lobbyNotificationKeys: LobbyNotificationKey[] = [
   'pickingStartedNotificationPreference'
 ]
 
-export const allNotificationKeys: NotificationKey[] = [...lobbyNotificationKeys, 'achievementAwardedNotificationPreference']
+export const allNotificationKeys: NotificationKey[] = [...lobbyNotificationKeys, 'achievementAwardedNotificationPreference', 'recapNotificationPreference']
 
 /** Just the given settings, copied out of something that has them (a user, or a lobby's settings). */
 export function pickPreferences<K extends NotificationKey>(source: Partial<Record<K, NotificationPreference>>, keys: K[]): Record<K, NotificationPreference> {

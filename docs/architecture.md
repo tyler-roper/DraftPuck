@@ -32,7 +32,8 @@ Notifications are published in-process, in order, and run synchronously. A handl
 
 1. **10:01 UTC**, `ApplyCutoffFunction` (Worker): deactivates yesterday's lobbies and loads today's schedule
    (`RefreshScheduleCommand`), queuing one `ProcessGameMessage` per game. The "NHL day" switches at 10:00 UTC
-   (`GameProcessingHelpers.CutoffHours`).
+   (`GameProcessingHelpers.CutoffHours`). The achievements a lobby's end awards are given without a push (it's the
+   early hours in North America); the recap push names them.
 2. **Each poll**, `ProcessGameFunction` → `ProcessGameCommandHandler`:
    - fetches the game from the NHL API and the previous poll's copy from Redis (`IGameCache`);
    - syncs rosters (`GameRosterSync`): refetches changed lineups, and removes picks of players who left the lineup
@@ -44,6 +45,9 @@ Notifications are published in-process, in order, and run synchronously. A handl
    - sends pregame alerts and bot picks, and queues the next poll (`GameProcessingHelpers.GetPollDelay`: 10s while
      live, 1 min near puck drop, 10 min before that).
 3. Polling stops once the game is final.
+4. **Noon Eastern**, `SendRecapNotificationsFunction` (Worker, fires at 16:00 and 17:00 UTC for daylight saving):
+   one push per player from last night's lobbies that saw drinks, naming their awards and lobby-end achievements and
+   opening the post-game page (`SendRecapNotificationsCommandHandler`). Players can turn it off (Recap setting).
 
 Failures schedule a 2-minute retry. NHL API outages log a warning; anything else logs an error. If a game's chain of
 poll messages stops anyway (a message moved to the poison queue), `RestartStalledPollingFunction` notices within a

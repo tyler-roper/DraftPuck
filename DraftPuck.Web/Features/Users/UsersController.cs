@@ -70,6 +70,7 @@ public class UsersController(IMediator mediator) : BaseController()
             ChatNotificationPreference = request.ChatNotificationPreference,
             PickingStartedNotificationPreference = request.PickingStartedNotificationPreference,
             AchievementAwardedNotificationPreference = request.AchievementAwardedNotificationPreference,
+            RecapNotificationPreference = request.RecapNotificationPreference,
             ApplyToActiveLobbies = request.ApplyToActiveLobbies
         });
         return Ok(user);

@@ -315,6 +315,7 @@ public partial class DraftPuckContext : DbContext, IDbContext
             entity.Property(e => e.ChatNotificationPreference).HasDefaultValueSql("((0))");
             entity.Property(e => e.PickingStartedNotificationPreference).HasDefaultValueSql("((0))");
             entity.Property(e => e.AchievementAwardedNotificationPreference).HasDefaultValueSql("((0))");
+            entity.Property(e => e.RecapNotificationPreference).HasDefaultValueSql("((2))").HasSentinel(NotificationPreference.All);
             entity.Property(e => e.IsActive).HasDefaultValueSql("((1))").HasSentinel(true);
             entity.Property(e => e.IsAdmin).HasDefaultValueSql("((0))");
             entity.Property(e => e.IsGuest).HasDefaultValueSql("((1))").HasSentinel(true);
