@@ -64,7 +64,7 @@ public class CreateLobbyCommandHandler(IDbContext dbContext, IMapper mapper, IMe
 
         await dbContext.SaveChangesAsync(ct);
 
-        await mediator.Publish(new LobbyCreatedNotification(new(lobby)), ct);
+        await mediator.Publish(new LobbyCreatedNotification(new(lobby, hostMember)), ct);
         await mediator.Publish(new UserJoinedLobbyNotification(new(lobby, hostMember)), ct);
 
         foreach (var payload in botNotifications)

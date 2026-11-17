@@ -17,7 +17,22 @@
   'Tailgating',
   'Filling the water bottles',
   'Making a pump-up playlist',
-  'Hitting the showers'
+  'Hitting the showers',
+  'Taping sticks',
+  'Sharpening skates',
+  'Icing the beer',
+  'Flooding the rink',
+  'Warming up the goalie',
+  'Untangling the nets',
+  'Finding the remote',
+  'Checking the out-of-town scores',
+  'Arguing with the ref',
+  'Counting the empties',
+  'Restocking the cooler',
+  'Making line changes',
+  'Reading the room',
+  'Practicing the celly',
+  'Checking the tape'
 ]
 
 export default LoadingMessages
