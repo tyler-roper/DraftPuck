@@ -1,4 +1,5 @@
 ﻿using DraftPuck.Application.Common.Interfaces;
+using DraftPuck.Application.Features.Lobbies.Drinks;
 using DraftPuck.Domain.Auth;
 using DraftPuck.Domain.Titles;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -74,6 +75,7 @@ public partial class DraftPuckContext : DbContext, IDbContext
         {
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.Created).HasDefaultValueSql("(getutcdate())");
+            entity.Property(e => e.Message).HasMaxLength(DrinkMessages.MaxLength);
 
             entity.HasOne(d => d.LobbyMemberPick).WithMany(p => p.Drinks)
                 .HasForeignKey(d => d.LobbyMemberPickId)

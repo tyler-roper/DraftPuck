@@ -101,7 +101,8 @@ public class LobbiesController(IMediator mediator) : BaseController()
             Code = code,
             DrinkId = drinkId,
             RecipientLobbyMemberId = request.RecipientLobbyMemberId,
-            AssignerUserId = CurrentUserId
+            AssignerUserId = CurrentUserId,
+            Message = request.Message
         };
         var drinkDto = await mediator.Send(command);
         return Ok(drinkDto);

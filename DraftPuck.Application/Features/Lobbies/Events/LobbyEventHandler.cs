@@ -1,4 +1,5 @@
 ﻿using DraftPuck.Application.Features.Games;
+using DraftPuck.Application.Features.Lobbies.Drinks;
 
 namespace DraftPuck.Application.Features.Lobbies.Events;
 
@@ -92,10 +93,15 @@ public class LobbyEventHandler(IDbContext dbContext, LobbyEventWriter writer) :
 
     public Task Handle(DrinkAssignedNotification n, CancellationToken ct)
     {
+        // The usual line, plus the sender's message as a quote if they added one.
+        var text = LobbyEventTexts.GetText(LobbyEventType.DrinkAssigned);
+        if (n.Data.Drink.Message is { } message)
+            text += DrinkMessages.Quote(message);
+
         return NewLobbyEvent(n.Data.Lobby, LobbyEventType.DrinkAssigned, ct, lobbyMemberId: n.Data.Sender.Id,
             lobbyMember2Id: n.Data.Recipient.Id, gameId: n.Data.Drink.LobbyMemberPick.GameId,
             playerId: n.Data.Drink.LobbyMemberPick.PlayerId, teamId: n.Data.Drink.LobbyMemberPick.TeamId,
-            gameEventId: n.Data.Drink.EventId);
+            gameEventId: n.Data.Drink.EventId, text: text);
     }
 
     public Task Handle(DrinkInvalidatedNotification n, CancellationToken ct)

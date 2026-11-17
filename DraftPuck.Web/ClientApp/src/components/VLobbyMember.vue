@@ -9,6 +9,7 @@ import { getErrorMessage } from '@/helpers/requestHelpers'
 import BotPickStyle from '@/enums/botPickStyle'
 import LobbyService from '@/services/LobbyService'
 import { memberNameScale } from '@/helpers/memberNameHelpers'
+import VDrinkMessageModal from '@/components/VDrinkMessageModal.vue'
 import { useRouter } from 'vue-router'
 //#endregion
 
@@ -98,11 +99,22 @@ async function removeMember(member: LobbyMember) {
   }
 }
 
-async function giveDrink(recipient: LobbyMember) {
+const isMessageModalOpen = ref(false)
+const isGiving = ref(false)
+
+async function giveDrink(recipient: LobbyMember, message?: string) {
   const pendingDrinks = pendingDrinksForCurrentMember.value
-  if (pendingDrinks.length === 0) return
-  const drink = pendingDrinks[0]
-  await assignDrink(drink.id, recipient.id)
+  if (pendingDrinks.length === 0 || isGiving.value) return
+
+  isGiving.value = true
+  try {
+    await assignDrink(pendingDrinks[0].id, recipient.id, message)
+    isMessageModalOpen.value = false
+  } catch (error) {
+    toast.error(getErrorMessage(error, `Couldn't give ${recipient.name} a drink. Please try again.`))
+  } finally {
+    isGiving.value = false
+  }
 }
 
 async function leaveLobby() {
@@ -177,6 +189,9 @@ function viewProfile() {
           <li v-if="pendingDrinksForCurrentMember.length > 0 && !member.isBot">
             <a role="button" class="fw-bold dropdown-item text-blue" @click="giveDrink(member)"><span class="me-2">🍺</span>Give a drink!</a>
           </li>
+          <li v-if="pendingDrinksForCurrentMember.length > 0 && !member.isBot">
+            <a role="button" class="dropdown-item text-blue" @click="isMessageModalOpen = true"><span class="me-2">💬</span>Give a drink with a message…</a>
+          </li>
           <li v-if="!member.isBot && isLoggedIn">
             <a role="button" class="fw-bold dropdown-item" @click="viewProfile">View Profile</a>
           </li>
@@ -188,6 +203,12 @@ function viewProfile() {
         </template>
       </ul>
     </a>
+
+    <!-- Outside the card (and its dropdown), so it covers the page. -->
+    <Teleport to="body">
+      <VDrinkMessageModal v-if="isMessageModalOpen" :recipient-name="member.name" :is-giving="isGiving"
+        @give="(message) => giveDrink(member, message)" @close="isMessageModalOpen = false" />
+    </Teleport>
   </div>
 </template>
 
