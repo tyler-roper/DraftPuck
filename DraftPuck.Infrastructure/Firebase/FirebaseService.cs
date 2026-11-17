@@ -36,6 +36,9 @@ public class FirebaseService(
         return Send(tokens, data, ct);
     }
 
+    public Task<int> SendRecapNotification(string lobbyCode, string title, string message, IReadOnlyCollection<string> tokens, CancellationToken ct = default) =>
+        SendLobbyEventNotification(lobbyCode, title, message, tokens, new Dictionary<string, string> { { "link", _appConfig.GetAbsoluteUrl($"lobby/{lobbyCode}/review") } }, ct);
+
     public Task<int> SendLobbyEventNotification(string lobbyCode, string title, string message, IReadOnlyCollection<string> tokens, Dictionary<string, string>? data = null, CancellationToken ct = default)
     {
         var messageData = new Dictionary<string, string>

@@ -7,5 +7,7 @@ public class UpdateNotificationPreferencesRequestDto
     public NotificationPreference ChatNotificationPreference { get; set; }
     public NotificationPreference PickingStartedNotificationPreference { get; set; }
     public NotificationPreference AchievementAwardedNotificationPreference { get; set; }
+    /// <summary>Optional, so older clients that don't send it leave it on.</summary>
+    public NotificationPreference RecapNotificationPreference { get; set; } = NotificationPreference.All;
     public bool ApplyToActiveLobbies { get; set; }
 }

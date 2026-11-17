@@ -20,4 +20,5 @@ interface User {
   chatNotificationPreference: NotificationPreference
   pickingStartedNotificationPreference: NotificationPreference
   achievementAwardedNotificationPreference?: NotificationPreference
+  recapNotificationPreference?: NotificationPreference
 }

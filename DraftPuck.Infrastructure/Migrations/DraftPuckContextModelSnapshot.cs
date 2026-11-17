@@ -747,6 +747,11 @@ namespace DraftPuck.Infrastructure.Migrations
                         .HasColumnType("int")
                         .HasDefaultValueSql("((0))");
 
+                    b.Property<int>("RecapNotificationPreference")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValueSql("((2))");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
