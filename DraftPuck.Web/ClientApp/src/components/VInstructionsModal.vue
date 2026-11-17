@@ -1,99 +1,160 @@
 <script setup lang="ts">
+import VIcon from '@/components/VIcon.vue'
+
 defineProps<{
   joinCode?: string
 }>()
 
 const emit = defineEmits(['close'])
 const close = () => emit('close')
-const stopPropagation = (e: Event) => e.stopPropagation()
 </script>
 
 <template>
   <div class="modal-overlay" @click="close">
-    <div class="dp-modal" @click="stopPropagation">
-      <div class="modal-header">
+    <div class="dp-modal" @click.stop>
+      <div class="modal-header justify-content-between">
         <span class="d-block">How To Play</span>
         <a role="button" class="text-uppercase text-primary text-decoration-none" @click="close">Close</a>
       </div>
-      <div class="modal-body">
-        <ol class="ms-0 ps-3">
-          <li>
-            <strong class="text-uppercase">Invite Your Friends</strong>
-            <p class="mt-1 mb-0">
-              Have your friends join the lobby by entering your lobby code
-              <span v-if="joinCode"
-                >(<strong>{{ joinCode }}</strong
-                >)</span
-              >
-              at the home screen...
-            </p>
-            <p class="my-1 ms-2">
-              <strong class="text-uppercase">or</strong>
-            </p>
-            <p>
-              ...navigate to the
-              <strong><i class="fi fi-rr-users-alt"></i> Lobby</strong> view and click
-              <strong class="text-uppercase badge bg-primary text-stone-900">Invite</strong>.
-            </p>
+
+      <div class="modal-body dark">
+        <ol class="steps">
+          <li class="step">
+            <span class="step-number">1</span>
+            <div>
+              <span class="step-title"><VIcon icon="users-alt" prefix="sr" class="me-2" />Invite your friends</span>
+              <p>
+                Tap the lobby code at the top (<span class="chip amber">{{ joinCode ?? 'ABCD' }} <VIcon icon="share" prefix="sr" /></span>) to share an
+                invite link, or have friends enter the code on the home screen.
+              </p>
+            </div>
           </li>
 
-          <li class="pt-3">
-            <strong class="text-uppercase">Pick Your Players</strong>
-            <p class="mt-1">
-              Once picks become available for a game, click the
-              <strong>Rosters<i class="fi fi-rr-caret-right"></i></strong>
-              button to see a list of each team's players.
-            </p>
-            <p class="mt-1">
-              Available players will have a
-              <strong class="text-uppercase badge bg-primary text-stone-900">Pick</strong>
-              button beside their name, whereas players with a username have already been chosen.
-            </p>
-            <p class="mt-1">Choose carefully! Once you've made your choice, only the lobby creator can undo it for you.</p>
-            <p class="mt-1">
-              <strong>Playing with bots?</strong> Bots can make their picks as soon as rosters become available. The lobby creator can initiate the
-              bot picks by opening the <strong>ROSTERS</strong> and clicking
-              <strong class="text-uppercase badge bg-primary text-stone-900">Make Bot Picks</strong>.
-            </p>
+          <li class="step">
+            <span class="step-number">2</span>
+            <div>
+              <span class="step-title"><VIcon icon="hockey-sticks" prefix="sr" class="me-2" />Pick your players</span>
+              <p>
+                Picks open <strong>30 minutes before puck drop</strong>. Open a game's <span class="chip">Rosters</span> and tap
+                <span class="chip amber">Pick</span>. Each player can only be picked once per lobby, so first come, first served.
+              </p>
+              <p>Changed your mind? Remove your pick any time before puck drop. Bots pick for themselves once lineups are out.</p>
+            </div>
           </li>
 
-          <li class="pt-3">
-            <strong class="text-uppercase">Cross your fingers</strong>
-            <p class="mt-1">
-              If one of your players scores, you get to make someone drink! When this happens, you'll receive a notification letting you know you've
-              got a drink available. On mobile, a badge will also appear beside the
-              <strong class="text-uppercase badge bg-stone-900 text-stone-0">Lobby</strong>
-              button.
-            </p>
-            <p class="mt-1">
-              Once you've earned a drink, you can dish it out by going to the
-              <strong>Lobby</strong> view, clicking the desired recipient's name, and selecting <strong>"Give a drink!"</strong>.
-            </p>
-            <p class="mt-1">The recipient will receive a notification letting them know that you've sent a drink their way.</p>
-            <p class="mt-1">
-              Each player's number of drinks <i>pending</i>, drinks <i>given</i>, and drinks <i>taken</i>, are all listed next to their name in the
-              lobby view.
-            </p>
+          <li class="step">
+            <span class="step-number">3</span>
+            <div>
+              <span class="step-title"><VIcon icon="beer" prefix="sr" class="me-2" />Score, then pour</span>
+              <p>When one of your players scores, you earn a drink to hand out. You'll get a notification, and a badge on the Lobby tab.</p>
+              <p>
+                In the <span class="chip">Lobby</span> tab, tap someone's name and choose <strong>Give a drink!</strong>, or add a message with it.
+                They'll get the full-screen <strong>DRINK!</strong>
+              </p>
+            </div>
           </li>
 
-          <li class="pt-3">
-            <strong class="text-uppercase">Keep an eye on "the feed"</strong>
-            <p class="mt-1">
-              Last but certainly not least: <strong>🚨 The Feed</strong> will be your one-stop-shop for all lobby events, from penalties and goals, to
-              drinks given and drinks taken.
-            </p>
-            <p class="mt-1">
-              You can customize which events you want to see in your feed by clicking the
-              <strong><i class="fi fi-sr-settings"></i> Settings</strong> icon at the top. You can also see a history of all drinks assigned by
-              clicking the
-              <strong><i class="fi fi-sr-list"></i> Drink Timeline</strong>
-              button.
-            </p>
+          <li class="step">
+            <span class="step-number">4</span>
+            <div>
+              <span class="step-title"><VIcon icon="megaphone" prefix="sr" class="me-2" />Watch the feed</span>
+              <p>
+                Goals, penalties, drinks and callouts (who's on fire, who's ice cold, the rivalries) as they happen. Choose what shows with the
+                feed's settings, and see every drink handed out in its <span class="chip">Timeline</span>.
+              </p>
+            </div>
+          </li>
+
+          <li class="step">
+            <span class="step-number">5</span>
+            <div>
+              <span class="step-title"><VIcon icon="trophy" prefix="sr" class="me-2" />Crown the night</span>
+              <p>When the games are over, the post-game page hands out the awards. Share the recap with the group chat.</p>
+            </div>
           </li>
         </ol>
 
-        <button class="btn btn-primary fw-bold w-100 p-3 mt-4" @click="close">Close</button>
+        <button class="btn btn-primary fw-bold w-100 py-3 mt-2" @click="close">Let's go</button>
       </div>
     </div>
   </div>
 </template>
+
+<style scoped lang="scss">
+@import '@/assets/scss/custom-colors.scss';
+
+// Dark, like the rest of the app (the shared modal body is white).
+.modal-body.dark {
+  background: map-get($custom-colors, 'stone-850');
+  color: map-get($custom-colors, 'stone-300');
+}
+
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.step {
+  display: flex;
+  gap: 14px;
+  padding: 14px;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  background: map-get($custom-colors, 'stone-900');
+  border: 1px solid map-get($custom-colors, 'stone-700');
+}
+
+.step-number {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-weight: 800;
+  color: map-get($custom-colors, 'stone-900');
+  background: map-get($custom-colors, 'primary');
+}
+
+.step-title {
+  display: block;
+  margin: 3px 0 6px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: map-get($custom-colors, 'stone-0');
+}
+
+.step p {
+  margin: 0 0 6px;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.step p:last-child {
+  margin-bottom: 0;
+}
+
+.step strong {
+  color: map-get($custom-colors, 'stone-0');
+}
+
+// The app's buttons and labels, as they look on screen.
+.chip {
+  display: inline-block;
+  padding: 0 7px;
+  border-radius: 5px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: map-get($custom-colors, 'stone-0');
+  background: map-get($custom-colors, 'stone-700');
+}
+
+.chip.amber {
+  color: map-get($custom-colors, 'stone-900');
+  background: map-get($custom-colors, 'primary');
+}
+</style>
