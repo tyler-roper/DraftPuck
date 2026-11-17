@@ -31,6 +31,7 @@ import VLogo from '@/components/VLogo.vue'
 import VUser from '@/components/VUser.vue'
 import VEventBanner from '@/components/VEventBanner.vue'
 import VDrinkPour from '@/components/VDrinkPour.vue'
+import { messageForDrinkEvent } from '@/helpers/drinkMessageHelpers'
 
 type View = 'feed' | 'game' | 'lobby' | 'chat' | 'picks'
 // Remembered so the home page's join and create forms can prefill the code and name.
@@ -375,7 +376,7 @@ watch(
 
     <VEventBanner v-if="currentBanner" :key="currentBanner.id" :event="fillEventTemplate(currentBanner)" :duration-ms="BANNER_DURATION_MS" />
 
-    <VDrinkPour v-if="currentDrink" :key="currentDrink.id" :sender-name="senderName(currentDrink) ?? 'Someone'" :duration-ms="DRINK_ANIMATION_DURATION_MS" />
+    <VDrinkPour v-if="currentDrink" :key="currentDrink.id" :sender-name="senderName(currentDrink) ?? 'Someone'" :message="lobby ? messageForDrinkEvent(lobby, currentDrink) : undefined" :duration-ms="DRINK_ANIMATION_DURATION_MS" />
   </div>
 </template>
 

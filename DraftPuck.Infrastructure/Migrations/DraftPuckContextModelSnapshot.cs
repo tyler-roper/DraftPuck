@@ -211,6 +211,10 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.Property<Guid>("LobbyMemberPickId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Message")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
                     b.Property<Guid?>("RecipientLobbyMemberId")
                         .HasColumnType("uniqueidentifier");
 
@@ -255,7 +259,6 @@ namespace DraftPuck.Infrastructure.Migrations
                         .HasDefaultValueSql("((1))");
 
                     b.Property<bool>("IsBotAutoPickingEnabled")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValueSql("((0))");
 
@@ -306,7 +309,6 @@ namespace DraftPuck.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.Property<bool>("IsSent")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValueSql("((0))");
 
@@ -381,12 +383,10 @@ namespace DraftPuck.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.Property<bool>("IsBot")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValueSql("((0))");
 
                     b.Property<bool>("IsRemoved")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValueSql("((0))");
 
@@ -474,7 +474,6 @@ namespace DraftPuck.Infrastructure.Migrations
                         .HasDefaultValueSql("(newid())");
 
                     b.Property<bool>("IsDeleted")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValueSql("((0))");
 
@@ -624,7 +623,6 @@ namespace DraftPuck.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<bool>("IsEquipped")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValueSql("((0))");
 
@@ -686,7 +684,6 @@ namespace DraftPuck.Infrastructure.Migrations
                         .HasDefaultValueSql("(newid())");
 
                     b.Property<int>("AchievementAwardedNotificationPreference")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasDefaultValueSql("((0))");
 
@@ -695,7 +692,6 @@ namespace DraftPuck.Infrastructure.Migrations
                         .HasColumnType("nvarchar(1000)");
 
                     b.Property<int>("ChatNotificationPreference")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasDefaultValueSql("((0))");
 
@@ -712,12 +708,10 @@ namespace DraftPuck.Infrastructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<int>("DrinkAwardedNotificationPreference")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasDefaultValueSql("((0))");
 
                     b.Property<int>("DrinkReceivedNotificationPreference")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasDefaultValueSql("((0))");
 
@@ -731,12 +725,10 @@ namespace DraftPuck.Infrastructure.Migrations
                         .HasDefaultValueSql("((1))");
 
                     b.Property<bool>("IsAdmin")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValueSql("((0))");
 
                     b.Property<bool>("IsBot")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValueSql("((0))");
 
@@ -752,7 +744,6 @@ namespace DraftPuck.Infrastructure.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("PickingStartedNotificationPreference")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasDefaultValueSql("((0))");
 
@@ -777,7 +768,6 @@ namespace DraftPuck.Infrastructure.Migrations
                         .HasDefaultValueSql("(newid())");
 
                     b.Property<bool>("IsEquipped")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValueSql("((0))");
 

@@ -8,6 +8,7 @@ public class DrinkAssignedPushNotificationHandler(IPushNotificationService fireb
     public async Task Handle(DrinkAssignedNotification notification, CancellationToken ct)
     {
         var (lobby, sender, recipient) = (notification.Data.Lobby, notification.Data.Sender, notification.Data.Recipient);
+        var quote = notification.Data.Drink.Message is { } message ? $" “{message}”" : "";
 
         // Each member's settings for this lobby decide whether they hear about it.
         var members = lobby.LobbyMembers
@@ -24,7 +25,7 @@ public class DrinkAssignedPushNotificationHandler(IPushNotificationService fireb
         {
             var preference = members[user.Id].DrinkReceivedNotificationPreference;
             var isRecipient = user.Id == recipient.UserId;
-            var text = $"Drink assigned to {recipient.Name} by {sender.Name}";
+            var text = $"Drink assigned to {recipient.Name} by {sender.Name}{quote}";
 
             if (!isRecipient && preference == NotificationPreference.All)
             {
@@ -34,7 +35,7 @@ public class DrinkAssignedPushNotificationHandler(IPushNotificationService fireb
             else if (isRecipient && preference != NotificationPreference.None)
             {
                 var data = new Dictionary<string, string> { { "lobbyEventType", "DrinkAssigned" }, { "isRelevant", "true" } };
-                await firebaseService.SendLobbyEventNotification(lobby.JoinCode, "🍺 DRINK 🍺", $"{sender.Name} gave you a drink!", user.PushTokens(), data);
+                await firebaseService.SendLobbyEventNotification(lobby.JoinCode, "🍺 DRINK 🍺", $"{sender.Name} gave you a drink!{quote}", user.PushTokens(), data);
             }
         });
     }

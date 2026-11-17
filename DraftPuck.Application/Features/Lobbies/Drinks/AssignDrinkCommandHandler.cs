@@ -13,6 +13,9 @@ public class AssignDrinkCommandHandler(IDbContext dbContext, IMapper mapper, IMe
                     .ThenInclude(lmp => lmp.Drinks)
             .FirstOrDefaultAsync(l => l.JoinCode == request.Code, ct);
 
+        // Checked first: a message that's too long fails before anything else is looked up.
+        var message = DrinkMessages.Normalize(request.Message);
+
         if (lobby == null)
         {
             throw new NotFoundException("Lobby not found.");
@@ -37,6 +40,7 @@ public class AssignDrinkCommandHandler(IDbContext dbContext, IMapper mapper, IMe
 
         drink.Assigned = DateTime.UtcNow;
         drink.RecipientLobbyMemberId = recipient.Id;
+        drink.Message = message;
 
         await dbContext.SaveChangesAsync(ct);
 

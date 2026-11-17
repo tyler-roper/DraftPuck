@@ -119,9 +119,9 @@ export const useLobbyStore = defineStore('lobby', () => {
     )
   }
 
-  async function assignDrink(drinkId: string, recipientId: string) {
+  async function assignDrink(drinkId: string, recipientId: string, message?: string) {
     if (!lobby.value) return
-    const drink = await LobbyService.assignDrink(lobby.value.joinCode, drinkId, recipientId)
+    const drink = await LobbyService.assignDrink(lobby.value.joinCode, drinkId, recipientId, message)
     setDrinkRecipient(drink)
   }
 

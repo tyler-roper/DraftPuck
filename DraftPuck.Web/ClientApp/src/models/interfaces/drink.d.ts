@@ -5,4 +5,6 @@ interface Drink {
   eventId: number
   created: Date
   assigned: Date | null
+  /** What the giver said with it, if anything. */
+  message?: string | null
 }

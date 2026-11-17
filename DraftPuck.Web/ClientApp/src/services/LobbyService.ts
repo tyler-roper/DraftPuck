@@ -64,8 +64,8 @@ class LobbyService {
     return this._http.delete(`${code}/pick/${pickId}`)
   }
 
-  public async assignDrink(code: string, drinkId: string, recipientLobbyMemberId: string): Promise<Drink> {
-    return this._http.post(`${code}/drink/${drinkId}/assign`, { recipientLobbyMemberId })
+  public async assignDrink(code: string, drinkId: string, recipientLobbyMemberId: string, message?: string): Promise<Drink> {
+    return this._http.post(`${code}/drink/${drinkId}/assign`, { recipientLobbyMemberId, message })
   }
 
   public async changeName(code: string, newName: string): Promise<void> {
