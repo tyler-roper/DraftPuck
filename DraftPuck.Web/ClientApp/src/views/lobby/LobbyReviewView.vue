@@ -12,6 +12,7 @@ import { awardStyle, buildRecapCard } from '@/helpers/recapHelpers'
 import { useRecapShare } from '@/composables/useRecapShare'
 import { useToast } from '@/composables/useToast'
 import VIcon from '@/components/VIcon.vue'
+import VRecapStats from '@/components/VRecapStats.vue'
 import { memberNameScale } from '@/helpers/memberNameHelpers'
 
 interface LobbyMemberWithStats extends LobbyMember {
@@ -33,10 +34,15 @@ const joinCode = ref(route.params.joinCode as string)
 const members = ref<LobbyMemberWithStats[]>([])
 const awards = ref<LobbyAward[]>([])
 const isLoadingAwards = ref(true)
-// Awards first; with none to show, the standings are the only tab.
-const tab = ref<'awards' | 'standings'>('awards')
+const players = ref<RecapPlayer[]>([])
+type RecapTab = 'awards' | 'standings' | 'stats'
+// Awards first; a lobby with none skips that tab.
+const tab = ref<RecapTab>('awards')
 const hasAwards = computed(() => isLoadingAwards.value || awards.value.length > 0)
-const activeTab = computed(() => (hasAwards.value ? tab.value : 'standings'))
+const tabs = computed<RecapTab[]>(() => (hasAwards.value ? ['awards', 'standings', 'stats'] : ['standings', 'stats']))
+const activeTab = computed(() => (tabs.value.includes(tab.value) ? tab.value : 'standings'))
+/** The viewer's own member, so the stats open on their night. */
+const viewerMemberId = computed(() => lobby.value?.members.find((m) => !m.isBot && m.userId === currentUser.value?.id)?.id)
 const { isSharing, share } = useRecapShare()
 const toast = useToast()
 const userStore = useUserStore()
@@ -53,7 +59,10 @@ onMounted(async () => {
     isLoading.value = true
     // The awards are extra: the page shows without them if they fail.
     LobbyService.getRecap(joinCode.value)
-      .then((recap) => (awards.value = recap.awards))
+      .then((recap) => {
+        awards.value = recap.awards
+        players.value = recap.players ?? []
+      })
       .catch((ex) => console.error('Failed to load the recap:', ex))
       .finally(() => (isLoadingAwards.value = false))
     lobby.value = await LobbyService.getLobbyByCode(joinCode.value)
@@ -96,6 +105,17 @@ async function shareRecap() {
     console.error(ex)
     toast.error("Couldn't create the recap image.")
   }
+}
+
+/** The avatars beside an award's winner: theirs, and their rival's for a rivalry. */
+function awardMembers(award: LobbyAward) {
+  return [award.memberId, award.otherMemberId]
+    .map((id) => lobby.value?.members.find((m) => m.id === id))
+    .filter((m): m is LobbyMember => m !== undefined)
+    .map((m) => {
+      const hasPicture = !!m.avatarPath && !m.isGuest
+      return { id: m.id, style: hasPicture ? { backgroundImage: `url(${m.avatarPath})` } : {}, initial: hasPicture ? '' : m.name.charAt(0).toUpperCase() }
+    })
 }
 
 function startFadeIns() {
@@ -194,9 +214,8 @@ function ago(date: Date) {
           <VIcon icon="share" prefix="sr" class="me-2" />{{ isSharing ? 'Creating image…' : 'Share results' }}
         </button>
       </div>
-      <!-- Awards and standings are tabs; with no awards, the standings show on their own. -->
-      <div v-if="hasAwards" class="tabs mx-3 mt-3" role="tablist">
-        <button v-for="t in ['awards', 'standings'] as const" :key="t" type="button" role="tab" class="tab"
+      <div class="tabs mx-3 mt-3" role="tablist">
+        <button v-for="t in tabs" :key="t" type="button" role="tab" class="tab"
           :class="{ active: activeTab === t }" :aria-selected="activeTab === t" @click="tab = t">{{ t }}</button>
       </div>
       <div v-if="activeTab === 'awards'" class="px-3 pt-3">
@@ -204,15 +223,25 @@ function ago(date: Date) {
         <template v-if="isLoadingAwards">
           <div v-for="n in 3" :key="n" class="award award-placeholder mb-2" aria-hidden="true"></div>
         </template>
-        <div v-for="(award, index) in awards" :key="award.key" class="award award-in d-flex align-items-center mb-2 p-2"
-          :style="{ '--award-color': awardStyle(award.key).color, animationDelay: `${index * 80}ms` }">
-          <VIcon :icon="awardStyle(award.key).icon" prefix="sr" class="award-icon fs-3 mx-2" />
+        <!-- The top award keeps shining; each icon moves in its own way (see awardStyle). -->
+        <div v-for="(award, index) in awards" :key="award.key" class="award award-in d-flex align-items-center mb-2 py-2 pe-2 ps-3"
+          :class="{ top: index === 0 }"
+          :style="{ '--award-color': awardStyle(award.key).color, '--delay': `${index * 90}ms` }">
+          <VIcon :icon="awardStyle(award.key).icon" prefix="sr" class="award-icon fs-3 me-3" :class="`motion-${awardStyle(award.key).motion}`" />
           <div class="flex-grow-1">
             <span class="d-block fs-9 fw-bold text-uppercase ls-2 award-title">{{ award.title }}</span>
-            <span class="d-block fw-bold">{{ award.memberName }}</span>
+            <span class="winner fw-bold">
+              <span class="winner-avatars">
+                <span v-for="m in awardMembers(award)" :key="m.id" class="winner-avatar" :style="m.style">{{ m.initial }}</span>
+              </span>
+              {{ award.memberName }}
+            </span>
             <span class="d-block fs-7 text-stone-300">{{ award.detail }}</span>
           </div>
         </div>
+      </div>
+      <div v-if="activeTab === 'stats' && lobby" class="p-3">
+        <VRecapStats :lobby="lobby" :players="players" :initial-member-id="viewerMemberId" />
       </div>
       <div v-if="activeTab === 'standings'" class="p-3">
         <div class="d-flex member align-items-center w-100" v-for="(member, index) in members" :key="member.id"
@@ -377,11 +406,309 @@ function ago(date: Date) {
   }
 }
 
+// Each award in its colour: a gradient tint, a tinted border and a glowing icon.
 .award {
-  background: map-get($custom-colors, 'stone-850');
-  border: 1px solid map-get($custom-colors, 'stone-700');
-  border-left: 4px solid var(--award-color);
+  position: relative;
+  overflow: hidden;
   border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--award-color) 35%, map-get($custom-colors, 'stone-700'));
+  border-left: 4px solid var(--award-color);
+  background: linear-gradient(110deg, color-mix(in srgb, var(--award-color) 20%, map-get($custom-colors, 'stone-850')), map-get($custom-colors, 'stone-850') 70%);
+}
+
+.award-icon,
+.award-title {
+  color: var(--award-color);
+}
+
+.award-icon {
+  display: inline-block;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--award-color) 70%, transparent));
+}
+
+// The same height as an award card, with a slow shimmer.
+.award-placeholder {
+  height: 72px;
+  --award-color: #{map-get($custom-colors, 'stone-700')};
+  background: linear-gradient(90deg, map-get($custom-colors, 'stone-850') 25%, map-get($custom-colors, 'stone-800') 50%, map-get($custom-colors, 'stone-850') 75%);
+  background-size: 200% 100%;
+  animation: award-shimmer 1.4s ease-in-out infinite;
+}
+
+// Cards slide in one after another, each with a shine sweeping across.
+.award-in {
+  animation: award-in 0.4s ease-out both;
+  animation-delay: var(--delay);
+}
+
+.award-in::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.22) 50%, transparent 70%);
+  transform: translateX(-120%);
+  animation: award-shine 0.9s ease-out both;
+  animation-delay: calc(var(--delay) + 0.25s);
+}
+
+// The top award keeps shining, and glows.
+.award.top {
+  animation:
+    award-in 0.4s ease-out both,
+    award-glow 2.6s ease-in-out 0.6s infinite;
+}
+
+.award.top::after {
+  animation: award-shine-repeat 4s ease-in-out infinite;
+  animation-delay: calc(var(--delay) + 0.25s);
+}
+
+.motion-bob {
+  animation: icon-bob 2.2s ease-in-out infinite;
+}
+
+.motion-shiver {
+  animation: icon-shiver 0.35s linear infinite;
+}
+
+.motion-beat {
+  animation: icon-beat 1.1s ease-in-out infinite;
+}
+
+.motion-jab {
+  animation: icon-jab 1.6s ease-in-out infinite;
+}
+
+.motion-clash {
+  animation: icon-clash 1.4s ease-in-out infinite;
+}
+
+.motion-swing {
+  transform-origin: top center;
+  animation: icon-swing 2s ease-in-out infinite;
+}
+
+.motion-wobble {
+  animation: icon-wobble 1.8s ease-in-out infinite;
+}
+
+.motion-tick {
+  animation: icon-tick 1s steps(2) infinite;
+}
+
+.motion-twinkle {
+  animation: icon-twinkle 2.4s ease-in-out infinite;
+}
+
+.motion-bounce {
+  animation: icon-bounce 1.3s ease-in-out infinite;
+}
+
+@keyframes award-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes award-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes award-shine {
+  to {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes award-shine-repeat {
+  0% {
+    transform: translateX(-120%);
+  }
+  30%,
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes award-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 transparent;
+  }
+  50% {
+    box-shadow: 0 0 18px color-mix(in srgb, var(--award-color) 45%, transparent);
+  }
+}
+
+@keyframes icon-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes icon-shiver {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-1px) rotate(-4deg);
+  }
+  75% {
+    transform: translateX(1px) rotate(4deg);
+  }
+}
+
+@keyframes icon-beat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  15% {
+    transform: scale(1.18);
+  }
+  30% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.12);
+  }
+}
+
+@keyframes icon-jab {
+  0%,
+  60%,
+  100% {
+    transform: translateX(0);
+  }
+  70% {
+    transform: translateX(5px) scale(1.1);
+  }
+}
+
+@keyframes icon-clash {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  40% {
+    transform: rotate(-20deg);
+  }
+  55% {
+    transform: rotate(10deg) scale(1.1);
+  }
+}
+
+@keyframes icon-swing {
+  0%,
+  100% {
+    transform: rotate(-10deg);
+  }
+  50% {
+    transform: rotate(10deg);
+  }
+}
+
+@keyframes icon-wobble {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  25% {
+    transform: rotate(-10deg);
+  }
+  75% {
+    transform: rotate(10deg);
+  }
+}
+
+@keyframes icon-tick {
+  from {
+    transform: rotate(-6deg);
+  }
+  to {
+    transform: rotate(6deg);
+  }
+}
+
+@keyframes icon-twinkle {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.9);
+  }
+}
+
+@keyframes icon-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-4px);
+  }
+  50% {
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .award-placeholder,
+  .award-in,
+  .award-in::after,
+  .award.top,
+  .award-icon {
+    animation: none !important;
+  }
+}
+
+// The winner: a small avatar (two, overlapping, for a rivalry) beside the name.
+.winner {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.winner-avatars {
+  display: flex;
+  flex: none;
+}
+
+.winner-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  line-height: 1;
+  font-size: 10px;
+  font-weight: 800;
+  color: map-get($custom-colors, 'stone-900');
+  background: map-get($custom-colors, 'stone-300') center / cover no-repeat;
+  box-shadow: 0 0 0 2px map-get($custom-colors, 'stone-850');
+}
+
+.winner-avatar + .winner-avatar {
+  margin-left: -7px;
 }
 
 // Awards | Standings: a segmented control.
@@ -410,50 +737,5 @@ function ago(date: Date) {
 .tab.active {
   color: map-get($custom-colors, 'stone-900');
   background: map-get($custom-colors, 'primary');
-}
-
-.award-icon,
-.award-title {
-  color: var(--award-color);
-}
-
-// The same height as an award card, with a slow shimmer.
-.award-placeholder {
-  height: 72px;
-  --award-color: #{map-get($custom-colors, 'stone-700')};
-  background: linear-gradient(90deg, map-get($custom-colors, 'stone-850') 25%, map-get($custom-colors, 'stone-800') 50%, map-get($custom-colors, 'stone-850') 75%);
-  background-size: 200% 100%;
-  animation: award-shimmer 1.4s ease-in-out infinite;
-}
-
-.award-in {
-  animation: award-in 0.35s ease-out both;
-}
-
-@keyframes award-shimmer {
-  from {
-    background-position: 200% 0;
-  }
-  to {
-    background-position: -200% 0;
-  }
-}
-
-@keyframes award-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .award-placeholder,
-  .award-in {
-    animation: none;
-  }
 }
 </style>

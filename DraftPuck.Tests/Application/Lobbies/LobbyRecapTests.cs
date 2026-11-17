@@ -142,6 +142,70 @@ public class LobbyRecapTests(DatabaseFixture fixture)
     }
 
     [Fact]
+    public async Task TheRecapNamesEveryPickedPlayer()
+    {
+        var gameId = Seed.NewGameId();
+        var game = TestGames.Create(gameId, DateTime.UtcNow.AddHours(1));
+        var cache = new InMemoryGameCache();
+        await cache.AddGameAsync(game);
+        var home = game.PlayerSummaries.First(p => p.Id == TestGames.HomePlayer(0));
+        var away = game.PlayerSummaries.First(p => p.Id == TestGames.AwayPlayer(0));
+
+        string code;
+        await using (var db = fixture.CreateContext())
+        {
+            var seed = new Seed(db);
+            var (lobby, sam) = seed.Lobby([gameId]);
+            var alex = seed.Member(lobby);
+            seed.Pick(sam, gameId, TestGames.HomeTeamId, home.Id);
+            seed.Pick(alex, gameId, TestGames.AwayTeamId, away.Id);
+            await db.SaveChangesAsync();
+            code = lobby.JoinCode;
+        }
+
+        var players = (await RecapAsync(code, cache)).Players.OrderBy(p => p.Team).Select(p => (p.GameId, p.PlayerId, p.Name, p.Team));
+
+        Assert.Equal([(gameId, away.Id, $"{away.FirstName} {away.LastName}", "AWY"), (gameId, home.Id, $"{home.FirstName} {home.LastName}", "HOM")], players);
+    }
+
+    [Fact]
+    public async Task ARivalryNamesBothMembersAndOtherAwardsOnlyTheirWinner()
+    {
+        var gameId = Seed.NewGameId();
+        var cache = new InMemoryGameCache();
+        await cache.AddGameAsync(TestGames.Create(gameId, DateTime.UtcNow.AddHours(1)));
+
+        string code;
+        Guid samId, alexId;
+        await using (var db = fixture.CreateContext())
+        {
+            var seed = new Seed(db);
+            var (lobby, sam) = seed.Lobby([gameId]);
+            var alex = seed.Member(lobby);
+            (samId, alexId) = (sam.Id, alex.Id);
+            // Four drinks each way: a rivalry strong enough to always make the recap.
+            var samPick = seed.Pick(sam, gameId, TestGames.HomeTeamId, TestGames.HomePlayer(0));
+            var alexPick = seed.Pick(alex, gameId, TestGames.AwayTeamId, TestGames.AwayPlayer(0));
+            for (var i = 0; i < 4; i++)
+            {
+                var toAlex = Drink(samPick);
+                toAlex.RecipientLobbyMemberId = alex.Id;
+                var toSam = Drink(alexPick);
+                toSam.RecipientLobbyMemberId = sam.Id;
+                db.Drinks.AddRange(toAlex, toSam);
+            }
+            await db.SaveChangesAsync();
+            code = lobby.JoinCode;
+        }
+
+        var awards = (await RecapAsync(code, cache)).Awards;
+
+        var rivalry = Assert.Single(awards, a => a.Key == LobbyAwards.Rivalry);
+        Assert.Equal(new[] { samId, alexId }.Order(), new[] { rivalry.MemberId, rivalry.OtherMemberId!.Value }.Order());
+        Assert.All(awards.Where(a => a.Key != LobbyAwards.Rivalry), a => Assert.Null(a.OtherMemberId));
+    }
+
+    [Fact]
     public async Task AGameThatCannotBeLoadedStillGivesARecap()
     {
         var gameId = Seed.NewGameId();

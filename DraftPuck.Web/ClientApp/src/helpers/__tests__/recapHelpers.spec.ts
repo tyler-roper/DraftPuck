@@ -8,6 +8,7 @@ describe('awardStyle', () => {
     expect(awardStyle('best_pick').icon).toBe('trophy')
     expect(awardStyle('ice_cold').icon).toBe('snowflake')
     expect(awardStyle('something_new').icon).toBe('star')
+    expect([awardStyle('best_pick').motion, awardStyle('ice_cold').motion, awardStyle('something_new').motion]).toEqual(['bob', 'shiver', 'twinkle'])
   })
 })
 
