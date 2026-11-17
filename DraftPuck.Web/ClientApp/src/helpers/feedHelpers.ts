@@ -19,15 +19,10 @@ export function buildFeedItems(games: Game[], lobbyEvents: LobbyEvent[], lobbyCr
           (includePlaysBeforeLobby || play.dateTime >= lobbyCreated) &&
           !(play.type === PlayType.Goal && play.periodType === PeriodType.Shootout)
       )
-      .map((play) => FeedItem.fromPlay(game.id, { away: game.awayTeam, home: game.homeTeam }, play, game.playerSummaries))
+      .map((play) => FeedItem.fromPlay(game.id, { away: game.awayTeam, home: game.homeTeam }, play, game.playerSummaries, game.plays))
   )
 
-  const eventItems = lobbyEvents.map((lobbyEvent) =>
-    FeedItem.fromLobbyEvent(
-      lobbyEvent,
-      games.find((g) => g.id === lobbyEvent.gameId)
-    )
-  )
+  const eventItems = lobbyEvents.map((lobbyEvent) => FeedItem.fromLobbyEvent(lobbyEvent))
 
   return [...playItems, ...eventItems].sort((a, b) => compareAsc(a.time, b.time))
 }

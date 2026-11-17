@@ -189,8 +189,8 @@ function formatAsTime(date: Date | string) {
 </script>
 
 <template>
-  <div style="overflow-y: scroll" class="bg-stone-300 text-stone-800 d-flex flex-column">
-    <div class="bg-stone-150 py-1 px-3 ls-2 shadow d-flex align-items-center" style="z-index: 2; position: sticky; top: 0">
+  <div style="overflow-y: scroll; background: #13100e" class="text-stone-800 d-flex flex-column">
+    <div class="bg-stone-900 text-stone-0 py-1 px-3 ls-2 shadow d-flex align-items-center" style="z-index: 2; position: sticky; top: 0">
       <div class="fs-5 me-2">🚨</div>
       <div>
         <span class="d-block mb-n2">The</span>
@@ -368,7 +368,7 @@ function formatAsTime(date: Date | string) {
 
       <template v-if="currentView === 'feed'">
         <!-- Keyed by item, not index, so an item inserted mid-list doesn't shift every key after it. -->
-        <TransitionGroup name="feed-slide">
+        <TransitionGroup name="feed-slide" tag="div" class="feed-list">
           <VFeedItem
             v-for="item in filteredItems"
             :key="item.key"
@@ -399,6 +399,17 @@ function formatAsTime(date: Date | string) {
 
 .feed-slide-move {
   transition: transform 0.35s ease;
+}
+
+/* The items, newest at the top (the column is reversed), as cards on a dark background. */
+.feed-list {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px;
+  background: #13100e;
 }
 
 @media (prefers-reduced-motion: reduce) {

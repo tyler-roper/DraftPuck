@@ -1,103 +1,77 @@
 <script setup lang="ts">
-import FeedItemType from '@/enums/feedItemType'
-import LobbyEventType from '@/enums/lobbyEventType'
-import PlayType from '@/enums/playType'
-import type FeedItem from '@/models/feedItem'
-import { format, parseISO } from 'date-fns'
 import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
+import { format } from 'date-fns'
+import type FeedItem from '@/models/feedItem'
+import { useLobbyStore } from '@/stores/lobby'
+import { drinkAvatarMemberId, lobbyEventStyle } from '@/helpers/feedItemStyles'
+import { bannerStyle } from '@/helpers/calloutHelpers'
 import VIcon from '@/components/VIcon.vue'
-import { bannerStyle, isCallout } from '@/helpers/calloutHelpers'
 
-//props
 const props = defineProps<{
   item: FeedItem
 }>()
 
-//computed
-// Callouts stand out in the feed (drinks share their banner, but not this).
-const callout = computed(() =>
-  isLobbyEvent.value && isCallout(props.item.subType as LobbyEventType) ? bannerStyle(props.item.subType as LobbyEventType) : undefined
-)
+const { lobby } = storeToRefs(useLobbyStore())
 
-const itemStyle = computed(() => {
-  if (callout.value) return { '--callout-color': callout.value.color }
+const eventStyle = computed(() => (props.item.lobbyEvent ? lobbyEventStyle(props.item.lobbyEvent.lobbyEventType) : undefined))
+const callout = computed(() => (eventStyle.value?.tone === 'callout' ? bannerStyle(props.item.lobbyEvent!.lobbyEventType) : undefined))
 
-  // Only game goals: lobby event types share numbers with play types (UserRemoved is the same number as Goal).
-  if (isLobbyEvent.value || props.item.subType !== PlayType.Goal) return {}
-
-  return {
-    backgroundColor: `${props.item.teamColor} !important`,
-    color: 'white !important'
-  }
+/** The person a drink event shows: who earned the drink, or who's drinking it. */
+const avatarMember = computed(() => {
+  const event = props.item.lobbyEvent
+  const avatar = eventStyle.value?.avatar
+  if (!event || !avatar) return undefined
+  const memberId = drinkAvatarMemberId(event, avatar)
+  return lobby.value?.members.find((m) => m.id === memberId)
 })
 
-const itemClass = computed(() => {
-  if (callout.value) return `item-type-subtype-${props.item.subType} lobby-event callout-item`
-  return isLobbyEvent.value ? `item-type-subtype-${props.item.subType} lobby-event` : `item-type-${props.item.subType.toString().toLowerCase()}`
+/** A final's drinks: every drink the lobby's picks earned in that game. */
+const drinksThisGame = computed(() => {
+  if (props.item.layout !== 'final' || !lobby.value) return 0
+  return lobby.value.members
+    .flatMap((m) => m.picks)
+    .filter((p) => p.gameId === props.item.gameId && p.isActive)
+    .reduce((count, p) => count + p.drinks.length, 0)
 })
 
-const itemIcon = computed(() => {
-  if (!isLobbyEvent.value) {
-    return { prefix: '', icon: '' }
-  }
-  if (callout.value) return { prefix: 'sr', icon: callout.value.icon }
-
-  const icons: Record<number, { prefix: string; icon: string }> = {
-    [LobbyEventType.LobbyCreated]: { prefix: 'sr', icon: 'flag-checkered' },
-    [LobbyEventType.UserJoined]: { prefix: 'sr', icon: 'user-add' },
-    [LobbyEventType.UserRejoined]: { prefix: 'sr', icon: 'user-add' },
-    [LobbyEventType.NewPick]: { prefix: 'rr', icon: 'badge-check' },
-    [LobbyEventType.PickRemoved]: { prefix: 'sr', icon: 'undo' },
-    [LobbyEventType.PickScratched]: { prefix: 'sr', icon: 'user-slash' },
-    [LobbyEventType.BotPicksMade]: { prefix: 'sr', icon: 'user-robot' },
-    [LobbyEventType.DrinkAssigned]: { prefix: 'sr', icon: 'beer' },
-    [LobbyEventType.DrinkAwarded]: { prefix: 'rr', icon: 'beer' },
-    [LobbyEventType.GoalChanged]: { prefix: 'rr', icon: 'shuffle' },
-    [LobbyEventType.DrinkRevoked]: { prefix: 'rr', icon: 'comment-slash' },
-    [LobbyEventType.UserNameChanged]: { prefix: 'rr', icon: 'id-badge' },
-    [LobbyEventType.DrinkInvalidated]: { prefix: 'rr', icon: 'trash' },
-    [LobbyEventType.GoalRemoved]: { prefix: 'sr', icon: 'cross-circle' },
-    [LobbyEventType.UserRemoved]: { prefix: 'sr', icon: 'remove-user' },
-    [LobbyEventType.Broadcast]: { prefix: 'sr', icon: 'megaphone' },
-    [LobbyEventType.UserLeft]: { prefix: 'sr', icon: 'exit' },
-    [LobbyEventType.UserPromoted]: { prefix: 'sr', icon: 'crown' }
-  }
-
-  return icons[props.item.subType as number] ?? { prefix: '', icon: '' }
-})
-
-const isLobbyEvent = computed(() => props.item.type === FeedItemType.LobbyEvent)
-
-//hooks/methods
-function getLogo(img: string) {
-  return `/img/logos/${img}`
-}
-
-function formatAsTime(date: Date | string) {
-  date = typeof date === 'string' ? parseISO(date) : date
-  return format(date, 'p')
-}
+const title = computed(() => (callout.value ? `${callout.value.emoji} ${props.item.title}` : props.item.title))
+const time = computed(() => format(props.item.time, 'p'))
+const team = computed(() => props.item.teams[0])
+const itemStyle = computed(() => ({
+  '--team': team.value?.color ?? '#57534e',
+  ...(callout.value ? { '--tone': callout.value.color } : {})
+}))
 </script>
 
 <template>
-  <div class="d-flex align-items-center feed-item" :class="itemClass" :style="itemStyle">
-    <div class="image-container py-2 px-2">
-      <!-- Lobby events show their icon, except goal corrections, which show the team logo like goal items do. -->
-      <VIcon v-if="isLobbyEvent && !item.images.length" class="feed-item-icon" :prefix="itemIcon.prefix" :icon="itemIcon.icon" />
-      <div v-else class="logo-container">
-        <img v-for="(image, idx) in item.images" :key="idx" :src="getLogo(image)" />
-      </div>
+  <div class="feed-item" :class="[`layout-${item.layout}`, eventStyle && `tone-${eventStyle.tone}`]" :style="itemStyle">
+    <div class="side">
+      <img v-if="item.teams.length === 1" class="logo" :src="`/img/logos/${team.logo}`" :alt="team.abbreviation" />
+      <span v-else-if="item.teams.length === 2" class="pair">
+        <img v-for="t in item.teams" :key="t.abbreviation" :src="`/img/logos/${t.logo}`" :alt="t.abbreviation" />
+      </span>
+      <span v-else-if="eventStyle?.avatar" class="person" :class="eventStyle.avatar">
+        <span class="avatar" :style="avatarMember?.avatarPath && !avatarMember.isGuest ? { backgroundImage: `url(${avatarMember.avatarPath})` } : {}">{{
+          avatarMember?.avatarPath && !avatarMember.isGuest ? '' : (avatarMember?.name.charAt(0).toUpperCase() ?? '?')
+        }}</span>
+        <span class="badge-corner">{{ eventStyle.avatar === 'earner' ? '🚨' : '🍺' }}</span>
+      </span>
+      <span v-else-if="eventStyle" class="ico"><VIcon :icon="eventStyle.icon" prefix="sr" /></span>
     </div>
-    <div class="py-2 px-2 content-container flex-grow-1">
-      <div class="d-flex justify-content-between">
-        <span class="d-block fw-bold text-uppercase">{{ item.title }}</span>
-        <span class="d-block o-75">
-          <span>{{ item.subtext }}</span>
-          <span v-if="item.subtext" class="mx-2">|</span>
-          <span>{{ formatAsTime(item.time) }}</span>
-        </span>
+
+    <div class="main">
+      <div class="head">
+        <span class="title">{{ title }}</span>
+        <span class="time">{{ time }}</span>
       </div>
-      <div v-html="item.text"></div>
+      <!-- Event and play text is HTML built from escaped names (and the player badge). -->
+      <div class="text" v-html="item.text"></div>
+      <div v-if="item.detail || drinksThisGame" class="detail">
+        <span v-if="item.detail" v-html="item.detail"></span>
+        <span v-if="item.detail && drinksThisGame"> · </span>
+        <span v-if="drinksThisGame">🍺 {{ drinksThisGame }} {{ drinksThisGame === 1 ? 'drink' : 'drinks' }} this game</span>
+      </div>
     </div>
   </div>
 </template>
@@ -105,150 +79,242 @@ function formatAsTime(date: Date | string) {
 <style scoped lang="scss">
 @import '@/assets/scss/custom-colors.scss';
 
+// Every item: a 64px column on the left (team block, logos, icon or avatar), then the title line, the text and a detail.
 .feed-item {
-  background-color: map-get($custom-colors, 'stone-0');
-  min-height: 75px;
-}
-
-.feed-item:not(.feed-item.item-type-subtype-5) {
-  border-bottom: 1px solid rgba(map-get($custom-colors, 'stone-300'), 0.2);
-}
-
-.image-container {
-  box-sizing: content-box;
-  width: 65px;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  align-self: stretch;
-  flex-shrink: 0;
-}
-
-.logo-container {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.logo-container > img {
-  display: block;
-}
-
-.logo-container > img:only-child {
-  width: 70px;
-  margin: -15px 0;
-  height: auto;
-}
-
-.logo-container > img:not(:only-child) {
-  position: absolute;
-  width: 45px;
-  height: auto;
-  top: 50%;
-  left: 50%;
-  --offset: 10px;
-}
-
-.logo-container > img:not(:only-child):first-child {
-  transform: translate(calc(-50% + var(--offset)), calc(-50% + var(--offset)));
-}
-
-.logo-container > img:not(:only-child):last-child {
-  transform: translate(calc(-50% - var(--offset)), calc(-50% - var(--offset)));
-}
-
-.feed-item {
-  background-color: map-get($custom-colors, 'stone-100');
-}
-
-.content-container {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-self: stretch;
-  position: relative;
-  z-index: 1;
-}
-
-.feed-item.item-type-subtype-0,
-.feed-item.item-type-subtype-1,
-.feed-item.item-type-subtype-2,
-.feed-item.item-type-subtype-3,
-.feed-item.item-type-subtype-4,
-.feed-item.item-type-subtype-8,
-.feed-item.item-type-subtype-10,
-.feed-item.item-type-subtype-13 {
-  background-color: map-get($custom-colors, 'blue') !important;
-  color: white;
-}
-
-.feed-item.item-type-subtype-6,
-.feed-item.item-type-subtype-7,
-.feed-item.item-type-subtype-11,
-.feed-item.item-type-subtype-14,
-.feed-item.item-type-subtype-15 {
-  text-shadow: 0 0 5px black;
-  background-color: #ffb100;
-  color: white;
-}
-
-.feed-item.item-type-subtype-5 {
-  text-shadow: 0 0 5px black;
-  color: white;
-  background-size: 100% 400%;
-  background-image: linear-gradient(
-    to top,
-    map-get($custom-colors, 'amber-500') 0%,
-    map-get($custom-colors, 'amber-400') 25%,
-    map-get($custom-colors, 'amber-500') 50%,
-    map-get($custom-colors, 'amber-400') 75%,
-    map-get($custom-colors, 'amber-500') 100%
-  );
-  animation: gradient-shift 7s linear infinite;
-  position: relative;
+  min-height: 64px;
+  border-radius: 12px;
   overflow: hidden;
+  color: map-get($custom-colors, 'stone-200');
+  background: map-get($custom-colors, 'stone-850');
 }
 
-.feed-item.item-type-subtype-5::before {
-  content: '';
-  display: block;
+.side {
+  width: 64px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 12px 10px;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tone, map-get($custom-colors, 'stone-400'));
+}
+
+.time {
+  margin-left: auto;
+  font-size: 11px;
+  white-space: nowrap;
+  color: map-get($custom-colors, 'stone-400');
+}
+
+.text {
+  margin-top: 2px;
+  font-size: 14px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.text :deep(strong) {
+  color: white;
+}
+
+.detail {
+  margin-top: 3px;
+  font-size: 12px;
+  color: map-get($custom-colors, 'stone-400');
+}
+
+// Logos: a light outline keeps a logo visible on its own team's colour (Toronto's navy on navy).
+.logo {
+  width: 44px;
+  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.7)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
+}
+
+.pair {
+  position: relative;
+  width: 48px;
+  height: 48px;
+}
+
+.pair img {
   position: absolute;
-  top: 0;
+  width: 32px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+
+.pair img:first-child {
   left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url(/img/beer-bg.png);
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-position: center 15%;
-  opacity: 0.6;
-  z-index: 0;
+  top: 0;
 }
 
-@keyframes gradient-shift {
-  0% {
-    background-position: 0% 0%;
-  }
-
-  100% {
-    background-position: 0% 200%;
-  }
+.pair img:last-child {
+  right: 0;
+  bottom: 0;
 }
 
-.feed-item-icon {
-  font-size: 36px;
+// Goals: the loudest thing in the feed, a solid block of the team's colour fading across the card.
+.layout-goal .side {
+  background: var(--team);
 }
 
-// Callouts stand out: tinted in their colour, with a coloured icon and edge.
-.callout-item {
-  background: linear-gradient(90deg, color-mix(in srgb, var(--callout-color) 22%, transparent), transparent 80%) !important;
-  border-left: 3px solid var(--callout-color);
+.layout-goal {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--team) 30%, map-get($custom-colors, 'stone-850')), map-get($custom-colors, 'stone-850') 75%);
 }
 
-.callout-item .feed-item-icon {
-  color: var(--callout-color);
+.layout-goal .title {
+  color: white;
+}
+
+.layout-goal .text {
+  font-size: 15px;
+}
+
+// Penalties, challenges, periods and finals: quiet, on a neutral block.
+.layout-game .side,
+.layout-state .side,
+.layout-final .side {
+  background: map-get($custom-colors, 'stone-800');
+}
+
+.layout-game .logo {
+  width: 32px;
+}
+
+.layout-final .title {
+  color: map-get($custom-colors, 'primary');
+}
+
+.layout-final .text {
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1.15;
+  color: white;
+}
+
+.layout-final .text :deep(.loser) {
+  color: map-get($custom-colors, 'stone-500');
+}
+
+// Lobby events: a round icon in the event's colour.
+.tone-drink {
+  --tone: #{map-get($custom-colors, 'primary')};
+}
+
+.tone-pick {
+  --tone: #60a5fa;
+}
+
+.tone-social {
+  --tone: #{map-get($custom-colors, 'stone-400')};
+}
+
+.tone-correction {
+  --tone: #f87171;
+}
+
+.ico {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  color: var(--tone);
+  background: color-mix(in srgb, var(--tone) 18%, map-get($custom-colors, 'stone-900'));
+}
+
+// The icon font's glyphs sit low in their line box: make the glyph itself the box, so flex centres it.
+.ico :deep(i) {
+  display: block;
+  line-height: 1;
+  height: 1em;
+}
+
+.ico :deep(i::before) {
+  display: block;
+  line-height: 1;
+  transform: none;
+}
+
+// Drinks show a person: who earned it (gold ring, goal light) or who's drinking it (beer).
+.person {
+  position: relative;
+  width: 38px;
+  height: 38px;
+}
+
+.avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  line-height: 1;
+  font-weight: 800;
+  font-size: 15px;
+  color: map-get($custom-colors, 'stone-900');
+  background: map-get($custom-colors, 'stone-300') center / cover no-repeat;
+}
+
+.person.earner .avatar {
+  box-shadow:
+    0 0 0 2px map-get($custom-colors, 'primary'),
+    0 0 12px rgba(255, 177, 0, 0.45);
+}
+
+.badge-corner {
+  position: absolute;
+  right: -5px;
+  bottom: -4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  background: map-get($custom-colors, 'primary');
+  box-shadow: 0 0 0 2px map-get($custom-colors, 'stone-850');
+}
+
+.person.earner .badge-corner {
+  background: #dc2626;
+}
+
+.tone-drink.feed-item:has(.recipient) {
+  background: linear-gradient(90deg, color-mix(in srgb, map-get($custom-colors, 'primary') 14%, map-get($custom-colors, 'stone-850')), map-get($custom-colors, 'stone-850') 70%);
+}
+
+// A drink message (quoted by the server under the usual line): set apart in amber.
+.tone-drink .text :deep(.fst-italic) {
+  margin-top: 4px;
+  padding-left: 8px;
+  border-left: 2px solid map-get($custom-colors, 'primary');
+  color: #fde68a;
+  font-size: 13px;
+}
+
+// Callouts: the flare.
+.tone-callout {
+  border: 1px solid var(--tone);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--tone) 28%, transparent);
+  background: linear-gradient(110deg, color-mix(in srgb, var(--tone) 26%, map-get($custom-colors, 'stone-850')), map-get($custom-colors, 'stone-850') 70%);
 }
 </style>
