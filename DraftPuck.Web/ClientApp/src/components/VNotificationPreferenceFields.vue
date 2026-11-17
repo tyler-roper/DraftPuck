@@ -8,6 +8,8 @@ const props = defineProps<{
   keys: K[]
   modelValue: Record<K, NotificationPreference>
   idPrefix: string
+  /** Dark cards, for dark pages (Account Settings); light by default, for the white lobby modal. */
+  dark?: boolean
 }>()
 const emit = defineEmits<{ 'update:modelValue': [value: Record<K, NotificationPreference>] }>()
 
@@ -19,7 +21,7 @@ function select(key: NotificationKey, value: NotificationPreference) {
 </script>
 
 <template>
-  <div class="notification-form-container">
+  <div class="notification-form-container" :class="{ dark }">
     <div v-for="setting in settings" :key="setting.key" class="question">
       <span class="question-text">{{ setting.question }}</span>
       <template v-for="option in setting.options" :key="option.value">
@@ -98,5 +100,23 @@ function select(key: NotificationKey, value: NotificationPreference) {
 .notification-form-container input[type='radio']:checked + label::before {
   background: map-get($custom-colors, 'stone-0');
   border: 4px solid map-get($custom-colors, 'primary');
+}
+
+// Dark: cards like the rest of a dark page, with light text.
+.notification-form-container.dark {
+  color: map-get($custom-colors, 'stone-0');
+}
+
+.notification-form-container.dark .question {
+  background: map-get($custom-colors, 'stone-900');
+  border: 1px solid map-get($custom-colors, 'stone-700');
+}
+
+.notification-form-container.dark label {
+  background: map-get($custom-colors, 'stone-800');
+}
+
+.notification-form-container.dark label::before {
+  background-color: map-get($custom-colors, 'stone-600');
 }
 </style>

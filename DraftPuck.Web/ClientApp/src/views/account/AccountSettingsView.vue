@@ -172,6 +172,13 @@ const v$ = useVuelidate<UpdateUserRequest>(rules, form)
         <div class="hr"></div>
 
         <div class="profile-section">
+          <span class="title">Default Notifications</span>
+          <VDefaultNotificationSettings v-model:preferences="notificationDefaults" v-model:apply-to-active-lobbies="applyDefaultsToActiveLobbies" />
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="profile-section">
           <span class="title">Change Password</span>
           <label class="form-label" for="currentPassword">Current Password</label>
           <VInputWrapper>
@@ -221,11 +228,6 @@ const v$ = useVuelidate<UpdateUserRequest>(rules, form)
         </div>
       </form>
 
-      <div class="hr"></div>
-      <div class="profile-section">
-        <span class="title">Default Notifications</span>
-        <VDefaultNotificationSettings v-model:preferences="notificationDefaults" v-model:apply-to-active-lobbies="applyDefaultsToActiveLobbies" />
-      </div>
     </div>
   </HeaderLayout>
 </template>
