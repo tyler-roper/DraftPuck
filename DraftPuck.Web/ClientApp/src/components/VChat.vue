@@ -36,7 +36,6 @@ const error = ref<string>()
 const lastSentMessage = ref(new Date(-1))
 const isLockedToBottom = ref(true)
 const errorTimer = ref<number>()
-const isIos = /(iPad|iPhone|iPod)/.test(window.navigator.userAgent)
 // Mentions: who an "@..." being typed at the cursor could be for (other people in the lobby, not bots).
 const mention = ref<MentionQuery>()
 const mentionIndex = ref(0)
@@ -202,19 +201,6 @@ async function focus() {
   scrollToBottom()
 }
 
-function handleIphoneKeyboard() {
-  if (!isIos) return
-  setTimeout(() => {
-    document.body.style.paddingBottom = `${document.documentElement.clientHeight - window.visualViewport!.height}px`
-    document.body.scrollTop = document.documentElement.scrollTop = 0
-  }, 200)
-}
-
-async function focusOut() {
-  if (!isIos) return
-  setTimeout(() => (document.body.style.paddingBottom = '0px'), 200)
-}
-
 //watchers
 watch(
   () => props.messages,
@@ -228,14 +214,11 @@ defineExpose({ focus })
 </script>
 
 <template>
-  <div style="overflow-y: scroll" class="bg-stone-200 d-flex flex-column">
-    <div
-      class="bg-stone-150 py-2 px-3 ls-2 d-flex align-items-center"
-      style="z-index: 2; position: sticky; top: 0; border-bottom: 1px solid rgba(0, 0, 0, 0.1)"
-    >
+  <div style="overflow-y: scroll" class="chat d-flex flex-column">
+    <div class="chat-header py-2 px-3 ls-2 d-flex align-items-center" style="z-index: 2; position: sticky; top: 0">
       <div class="fs-6 me-2">💬</div>
       <div>
-        <div class="text-decoration-none text-stone-900 d-flex align-items-center">
+        <div class="text-decoration-none d-flex align-items-center">
           <span class="fw-bold fs-6 text-uppercase">Chat</span>
         </div>
       </div>
@@ -243,7 +226,7 @@ defineExpose({ focus })
     <div ref="messagesContainer" class="flex-grow-1 flex-shrink-1 overflow-auto">
       <div class="message" v-for="(message, idx) in messages" :key="idx" :class="{ 'is-current-member': isCurrentMember(message) }">
         <span class="text-nowrap">
-          <span class="text-stone-400 small">{{ formatAsTime(message.sent) }}</span>
+          <span class="time small">{{ formatAsTime(message.sent) }}</span>
           <span class="name fw-bold ms-2" v-if="!message.isSystem">{{ (message as MessageViewModel).lobbyMemberName }}:</span>
         </span>
         <span v-if="!message.isSystem" class="text-break ms-2" v-html="highlightMentions(message.message)"></span>
@@ -269,8 +252,7 @@ defineExpose({ focus })
         @keyup="(e) => ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key) && updateMention()"
         @keydown="onMentionKeydown"
         @keydown.enter="onEnterKeydown"
-        @focus="handleIphoneKeyboard"
-        @focusout="focusOut(); mention = undefined"
+        @focusout="mention = undefined"
       ></textarea>
       <div class="d-flex align-items-center justify-content-end">
         <span class="d-block text-danger me-2 fw-bold">{{ error }}</span>
@@ -283,37 +265,60 @@ defineExpose({ focus })
 <style scoped lang="scss">
 @import '@/assets/scss/custom-colors.scss';
 
+// Dark, like the feed: light text on the page's dark background.
+.chat {
+  background: #13100e;
+}
+
+.chat-header {
+  color: white;
+  background: map-get($custom-colors, 'stone-900');
+  border-bottom: 1px solid map-get($custom-colors, 'stone-800');
+}
+
 .message {
-  background: map-get($custom-colors, 'stone-0');
-  padding: 4px 10px;
-  color: map-get($custom-colors, 'stone-900');
-  padding-left: 5px;
-  border-left: 5px solid transparent;
+  padding: 5px 12px;
+  color: map-get($custom-colors, 'stone-200');
+  border-left: 3px solid transparent;
+}
+
+.message .time {
+  color: map-get($custom-colors, 'stone-500');
+}
+
+.message .name {
+  color: white;
 }
 
 .message.is-current-member .name {
-  color: map-get($custom-colors, 'blue');
+  color: #60a5fa;
 }
 
 .chat-form {
   padding: 10px;
-  background-color: map-get($custom-colors, 'stone-300');
+  background-color: map-get($custom-colors, 'stone-900');
+  border-top: 1px solid map-get($custom-colors, 'stone-800');
 }
 
 textarea {
   padding: 10px;
-  border: 1px solid map-get($custom-colors, 'stone-400');
+  border: 1px solid map-get($custom-colors, 'stone-700');
   border-radius: 8px;
   width: 100%;
   resize: none;
   overflow-y: hidden;
   height: 39px;
-  background-color: map-get($custom-colors, 'stone-0') !important;
-  color: map-get($custom-colors, 'stone-900') !important;
+  background-color: map-get($custom-colors, 'stone-850') !important;
+  color: white !important;
+}
+
+textarea::placeholder {
+  color: map-get($custom-colors, 'stone-500');
 }
 
 textarea:focus {
   border: 1px solid map-get($custom-colors, 'stone-500') !important;
+  outline: none;
 }
 
 a.lock-to-bottom {
@@ -329,9 +334,13 @@ a.lock-to-bottom {
 
 <style lang="scss">
 @import '@/assets/scss/custom-colors.scss';
+// You, mentioned: amber, like the rest of the app's highlights.
 span.mention {
   font-weight: bold;
-  color: #bd00ff;
+  color: #1c1917;
+  background: #ffb100;
+  padding: 0 4px;
+  border-radius: 4px;
 }
 
 </style>

@@ -1,5 +1,6 @@
 using DraftPuck.Application.Common.Exceptions;
 using DraftPuck.Application.Features.Lobbies;
+using DraftPuck.Application.Features.Lobbies.Events;
 using DraftPuck.Application.Features.Lobbies.Management;
 using DraftPuck.Application.Features.Lobbies.Members;
 using System.ComponentModel.DataAnnotations;
@@ -84,6 +85,26 @@ public class LobbyMembershipTests(DatabaseFixture fixture)
     }
 
     // --- Create ---
+
+    [Fact]
+    public async Task CreatingALobbyStartsItsFeedWithWhoCreatedIt()
+    {
+        var host = await UserAsync();
+        var lobby = await CreateAsync(host.Id, "Host");
+        var created = (LobbyCreatedNotification)_mediator.ReceivedCalls()
+            .Select(c => c.GetArguments()[0]).Single(a => a is LobbyCreatedNotification)!;
+
+        await using (var db = fixture.CreateContext())
+        {
+            await new LobbyEventHandler(db, new LobbyEventWriter(db, Substitute.For<IMediator>())).Handle(created, default);
+        }
+
+        await using var check = fixture.CreateContext();
+        var hostMember = (await MembersAsync(lobby.JoinCode)).Single(m => m.UserId == host.Id);
+        var feedEvent = await check.LobbyEvents.SingleAsync(e => e.LobbyId == lobby.Id && e.LobbyEventType == LobbyEventType.LobbyCreated);
+        Assert.Equal((hostMember.Id, "Lobby Created"), (feedEvent.LobbyMemberId!.Value, feedEvent.Title));
+        Assert.Contains("{{name}}", feedEvent.Text);
+    }
 
     [Fact]
     public async Task CreatingALobbyAddsTheHostAndBots()

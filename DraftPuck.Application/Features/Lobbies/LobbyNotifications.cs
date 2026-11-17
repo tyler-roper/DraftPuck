@@ -5,7 +5,7 @@ using MediatR;
 namespace DraftPuck.Application.Features.Lobbies;
 
 //Event Payloads
-public record LobbyCreatedEventPayload(LobbyEntity Lobby);
+public record LobbyCreatedEventPayload(LobbyEntity Lobby, LobbyMemberEntity Host);
 public record LobbyEventPayload(LobbyEntity Lobby);
 public record LobbyMemberEventPayload(LobbyEntity Lobby, LobbyMemberEntity Member);
 public record LobbyNameChangeEventPayload(LobbyEntity Lobby, LobbyMemberEntity Member, string OldName);

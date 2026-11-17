@@ -1,12 +1,39 @@
-// Size the app shell to the real viewport. Some browsers (notably iOS 26 home-screen apps) report the wrong
-// height at launch and only correct it after a resize, so re-measure on every event that can change it.
+// Size the app shell to the part of the screen you can see. Some browsers (notably iOS 26 home-screen apps) report the
+// wrong height at launch and only correct it after a resize, so re-measure on every event that can change it.
+//
+// With the on-screen keyboard open, the visible part (the visual viewport) ends at the keyboard: sizing the app to it
+// keeps the chat box just above the keyboard, with nothing else needed. (iOS Safari keeps window.innerHeight at the full
+// height while its keyboard is up; the app used to pad the page as well, which pushed everything under the keyboard.)
 (function () {
   var root = document.documentElement
-  function setAppHeight() { root.style.setProperty('--app-height', window.innerHeight + 'px') }
+  var vv = window.visualViewport
+  var settleTimers = []
+
+  function visibleHeight() {
+    // Scaled back up, so pinch-zooming in doesn't count as a smaller screen.
+    return vv ? Math.round(vv.height * vv.scale) : window.innerHeight
+  }
+
+  function setAppHeight() {
+    root.style.setProperty('--app-height', visibleHeight() + 'px')
+    // iOS scrolls the page to show a focused box; the app already fits above the keyboard, so put it back.
+    if (window.scrollY !== 0) window.scrollTo(0, 0)
+  }
+
+  // The keyboard animates in and out, and the events can fire mid-way: measure now, then again once it has settled.
+  function measureAndSettle() {
+    setAppHeight()
+    settleTimers.forEach(clearTimeout)
+    settleTimers = [150, 400, 800].map(function (ms) { return setTimeout(setAppHeight, ms) })
+  }
+
   setAppHeight()
-  ;['resize', 'orientationchange', 'pageshow', 'load'].forEach(function (e) { window.addEventListener(e, setAppHeight) })
-  document.addEventListener('visibilitychange', function () { if (!document.hidden) setAppHeight() })
-  if (window.visualViewport) window.visualViewport.addEventListener('resize', setAppHeight)
+  ;['resize', 'orientationchange', 'pageshow', 'load', 'focusout'].forEach(function (e) { window.addEventListener(e, measureAndSettle) })
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) measureAndSettle() })
+  if (vv) {
+    vv.addEventListener('resize', measureAndSettle)
+    vv.addEventListener('scroll', setAppHeight)
+  }
   setTimeout(setAppHeight, 300)
   setTimeout(setAppHeight, 1000)
 })()

@@ -186,10 +186,10 @@ public class LobbyCalloutTests(DatabaseFixture fixture)
 
         await GameUpdatedAsync(Game(lobby, period: 3, minutesLeft: 0, GameState.Final));
 
-        // Either wording: "went 0 for 2" or "2 picks in ..., not one goal".
+        // Any of the final-whistle wordings: each names the member and the game.
         var text = Assert.Single(await CalloutsAsync(lobby, LobbyEventType.IceCold)).Text;
         Assert.Contains("{{name}}", text);
-        Assert.True(text.Contains("0 for 2") || text.Contains("2 picks"), text);
+        Assert.Contains("AWY @ HOM", text);
     }
 
     [Fact]

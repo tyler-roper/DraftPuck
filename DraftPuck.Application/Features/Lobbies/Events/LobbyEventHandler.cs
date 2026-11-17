@@ -4,6 +4,7 @@ using DraftPuck.Application.Features.Lobbies.Drinks;
 namespace DraftPuck.Application.Features.Lobbies.Events;
 
 public class LobbyEventHandler(IDbContext dbContext, LobbyEventWriter writer) :
+    INotificationHandler<LobbyCreatedNotification>,
     INotificationHandler<UserJoinedLobbyNotification>,
     INotificationHandler<UserRejoinedLobbyNotification>,
     INotificationHandler<UserNameChangedNotification>,
@@ -21,6 +22,12 @@ public class LobbyEventHandler(IDbContext dbContext, LobbyEventWriter writer) :
     INotificationHandler<GoalChangedNotification>,
     INotificationHandler<GoalRemovedNotification>
 {
+    // The feed's first event: who started the lobby.
+    public Task Handle(LobbyCreatedNotification n, CancellationToken ct)
+    {
+        return NewLobbyEvent(n.Data.Lobby, LobbyEventType.LobbyCreated, ct, lobbyMemberId: n.Data.Host.Id);
+    }
+
     public Task Handle(UserJoinedLobbyNotification n, CancellationToken ct)
     {
         return NewLobbyEvent(n.Data.Lobby, LobbyEventType.UserJoined, ct, lobbyMemberId: n.Data.Member.Id);
@@ -40,22 +47,28 @@ public class LobbyEventHandler(IDbContext dbContext, LobbyEventWriter writer) :
     public Task Handle(UserRemovedNotification n, CancellationToken ct)
     {
         return NewLobbyEvent(n.Data.Lobby, LobbyEventType.UserRemoved, ct, lobbyMemberId: n.Data.Member.Id,
-            text: $"{Bold(n.Data.Member.Name)} was removed from the lobby.");
+            text: WithName(LobbyEventType.UserRemoved, n.Data.Member.Name));
     }
 
     public Task Handle(UserLeftNotification n, CancellationToken ct)
     {
         return NewLobbyEvent(n.Data.Lobby, LobbyEventType.UserLeft, ct, lobbyMemberId: n.Data.Member.Id,
-            text: $"{Bold(n.Data.Member.Name)} left the lobby.");
+            text: WithName(LobbyEventType.UserLeft, n.Data.Member.Name));
     }
 
     public Task Handle(UserPromotedNotification n, CancellationToken ct)
     {
         return NewLobbyEvent(n.Data.Lobby, LobbyEventType.UserPromoted, ct, lobbyMemberId: n.Data.Member.Id,
-            text: $"{Bold(n.Data.Member.Name)} was promoted to lobby admin.");
+            text: WithName(LobbyEventType.UserPromoted, n.Data.Member.Name));
     }
 
     private static string Bold(string name) => LobbyEventWriter.Bold(name);
+
+    /// <summary>
+    /// One of the event's texts with the member's name filled in here: a member who left or was removed isn't in the
+    /// lobby the client fills names from.
+    /// </summary>
+    private static string WithName(LobbyEventType type, string name) => LobbyEventTexts.GetText(type).Replace("{{name}}", Bold(name));
 
     public Task Handle(PickMadeNotification n, CancellationToken ct)
     {
