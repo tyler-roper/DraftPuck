@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildFeedItems } from '@/helpers/feedHelpers'
+import { buildFeedItems, chainKeys, goalDrinks, goalKeyFor } from '@/helpers/feedHelpers'
 import FeedItemType from '@/enums/feedItemType'
 import PlayType from '@/enums/playType'
 import PeriodType from '@/enums/periodType'
@@ -145,5 +145,42 @@ describe('buildFeedItems', () => {
 
     expect(items.map((i) => i.time)).toEqual([at(1), at(2), at(3), at(4)])
     expect(items.map((i) => i.type)).toEqual([FeedItemType.GameEvent, FeedItemType.LobbyEvent, FeedItemType.GameEvent, FeedItemType.LobbyEvent])
+  })
+})
+
+describe('links between a goal and its drinks', () => {
+  const goal = play(6, PlayType.Goal, at(10), { primaryTeamId: 1 })
+  const drinkEvent = (id: string, type: number, extra: Partial<LobbyEvent> = {}) => lobbyEvent(id, at(12), { lobbyEventType: type, gameId: 10, gameEventId: 6, ...extra })
+  // LobbyEventType: DrinkAwarded 4, DrinkAssigned 5, NewPick 3.
+  const items = buildFeedItems(
+    [game(10, [goal])],
+    [drinkEvent('awarded', 4), drinkEvent('assigned', 5), drinkEvent('other goal', 5, { gameEventId: 7 }), drinkEvent('a pick', 3)],
+    lobbyCreated,
+    false
+  )
+  const byId = (id: string) => items.find((i) => i.lobbyEvent?.id === id)!
+
+  it('finds the goal a drink event came from, and nothing for other events', () => {
+    expect(goalKeyFor(byId('awarded'))).toBe('play-10-6')
+    expect(goalKeyFor(byId('assigned'))).toBe('play-10-6')
+    expect(goalKeyFor(byId('a pick'))).toBeUndefined()
+    expect(goalKeyFor(items.find((i) => i.key === 'play-10-6')!)).toBeUndefined()
+  })
+
+  it("lights up a goal and only that goal's drink events", () => {
+    expect(chainKeys(items, 'play-10-6')).toEqual(['play-10-6', 'event-awarded', 'event-assigned'])
+  })
+
+  it("lists where a goal's drinks went, handed out or not", () => {
+    const drink = (eventId: number, to?: string) => ({ eventId, recipientLobbyMemberId: to })
+    const lobby = {
+      members: [
+        { id: 'tyler', name: 'tyler', picks: [{ gameId: 10, isActive: true, drinks: [drink(6, 'casey'), drink(9, 'casey')] }] },
+        { id: 'jordan', name: 'Jordan', picks: [{ gameId: 10, isActive: true, drinks: [drink(6)] }, { gameId: 10, isActive: false, drinks: [drink(6, 'tyler')] }] },
+        { id: 'casey', name: 'Casey', picks: [] }
+      ]
+    } as unknown as Lobby
+
+    expect(goalDrinks(lobby, 10, 6)).toEqual([{ earner: 'tyler', recipient: 'Casey' }, { earner: 'Jordan', recipient: undefined }])
   })
 })

@@ -10,6 +10,7 @@ import VFeedItem from '@/components/VFeedItem.vue'
 import PlayType from '@/enums/playType'
 import FeedItemType from '@/enums/feedItemType'
 import { useNewArrivals } from '@/composables/useNewArrivals'
+import { chainKeys, goalKeyFor } from '@/helpers/feedHelpers'
 
 //const
 type View = 'feed' | 'list' | 'settings'
@@ -74,6 +75,19 @@ const filteredItems = computed(() => {
     return shouldShow && !isDuplicate
   })
 })
+
+// Links between a goal and its drinks: each drink item points back to its goal (when it's in the feed), and following
+// a link scrolls to the goal and lights up the goal and its drinks for a moment.
+const goalsByKey = computed(() => new Map(filteredItems.value.filter((i) => i.layout === 'goal').map((i) => [i.key, i])))
+const highlightedKeys = ref(new Set<string>())
+let highlightTimer: number | undefined
+
+function followLink(goalKey: string) {
+  highlightedKeys.value = new Set(chainKeys(filteredItems.value, goalKey))
+  document.querySelector(`[data-feed-key="${goalKey}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  window.clearTimeout(highlightTimer)
+  highlightTimer = window.setTimeout(() => (highlightedKeys.value = new Set()), 2600)
+}
 
 // Only items that just arrived slide in; not the first render, a load, or items a filter brings back.
 const arrivals = useNewArrivals(() => filteredItems.value.map((item) => item.key))
@@ -373,7 +387,10 @@ function formatAsTime(date: Date | string) {
             v-for="item in filteredItems"
             :key="item.key"
             :item="item"
+            :linked-goal="goalsByKey.get(goalKeyFor(item) ?? '')"
+            :highlighted="highlightedKeys.has(item.key)"
             :class="{ 'is-new': arrivals.isNew(item.key) }"
+            @follow-link="followLink"
             :style="{ '--arrival': Math.max(arrivals.arrivalOrder(item.key), 0) }"
           />
         </TransitionGroup>
