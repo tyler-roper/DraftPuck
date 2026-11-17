@@ -34,6 +34,7 @@ interface FeedItemInit {
   detail?: string
   teams?: FeedTeam[]
   playId?: number
+  scorer?: string
   lobbyEvent?: LobbyEvent
 }
 
@@ -60,6 +61,8 @@ export default class FeedItem {
   teams: FeedTeam[]
   /** The play's id, for game events (a goal's drinks point back to it). */
   playId: number | undefined
+  /** A goal's scorer (last name), for links back to it ("McDavid's goal"). */
+  scorer: string | undefined
   /** The lobby event behind the item, for lobby events. */
   lobbyEvent: LobbyEvent | undefined
 
@@ -75,6 +78,7 @@ export default class FeedItem {
     this.detail = init.detail ?? ''
     this.teams = init.teams ?? []
     this.playId = init.playId
+    this.scorer = init.scorer
     this.lobbyEvent = init.lobbyEvent
   }
 
@@ -107,17 +111,18 @@ export default class FeedItem {
 
     switch (play.type) {
       case PlayType.Goal: {
-        const scorer = teamOf(play.primaryTeamId)
-        const isHome = scorer === home
+        const scoringTeam = teamOf(play.primaryTeamId)
+        const isHome = scoringTeam === home
         const [ours, theirs] = isHome ? [play.homeScore, play.awayScore] : [play.awayScore, play.homeScore]
         const name = playerName(play.primaryPlayerId)
         return new this({
           ...base,
           layout: 'goal',
-          title: `Goal · ${scorer.abbreviation} ${ours}–${theirs}`,
+          scorer: players.find((p) => p.id === play.primaryPlayerId)?.lastName,
+          title: `Goal · ${scoringTeam.abbreviation} ${ours}–${theirs}`,
           text: name ? this.getRandomGoalText(name, play) : 'Scorer not yet assigned…',
           detail: when,
-          teams: [scorer]
+          teams: [scoringTeam]
         })
       }
       case PlayType.Penalty: {

@@ -7,10 +7,16 @@ import { useLobbyStore } from '@/stores/lobby'
 import { drinkAvatarMemberId, lobbyEventStyle } from '@/helpers/feedItemStyles'
 import { bannerStyle } from '@/helpers/calloutHelpers'
 import VIcon from '@/components/VIcon.vue'
+import { goalDrinks } from '@/helpers/feedHelpers'
 
 const props = defineProps<{
   item: FeedItem
+  /** For a drink event: the goal it came from, if it's in the feed. */
+  linkedGoal?: FeedItem
+  /** Lit up after following a link: the goal and its drinks. */
+  highlighted?: boolean
 }>()
+const emit = defineEmits<{ followLink: [goalKey: string] }>()
 
 const { lobby } = storeToRefs(useLobbyStore())
 
@@ -35,6 +41,13 @@ const drinksThisGame = computed(() => {
     .reduce((count, p) => count + p.drinks.length, 0)
 })
 
+/** A goal's drinks: who earned each, and who it went to (filled in as they're handed out). */
+const trail = computed(() =>
+  props.item.layout === 'goal' && lobby.value && props.item.gameId != null && props.item.playId != null
+    ? goalDrinks(lobby.value, props.item.gameId, props.item.playId)
+    : []
+)
+
 const title = computed(() => (callout.value ? `${callout.value.emoji} ${props.item.title}` : props.item.title))
 const time = computed(() => format(props.item.time, 'p'))
 const team = computed(() => props.item.teams[0])
@@ -45,7 +58,7 @@ const itemStyle = computed(() => ({
 </script>
 
 <template>
-  <div class="feed-item" :class="[`layout-${item.layout}`, eventStyle && `tone-${eventStyle.tone}`]" :style="itemStyle">
+  <div class="feed-item" :class="[`layout-${item.layout}`, eventStyle && `tone-${eventStyle.tone}`, { highlighted }]" :style="itemStyle" :data-feed-key="item.key">
     <div class="side">
       <img v-if="item.teams.length === 1" class="logo" :src="`/img/logos/${team.logo}`" :alt="team.abbreviation" />
       <span v-else-if="item.teams.length === 2" class="pair">
@@ -72,6 +85,15 @@ const itemStyle = computed(() => ({
         <span v-if="item.detail && drinksThisGame"> · </span>
         <span v-if="drinksThisGame">🍺 {{ drinksThisGame }} {{ drinksThisGame === 1 ? 'drink' : 'drinks' }} this game</span>
       </div>
+      <div v-if="trail.length" class="trail">
+        <span v-for="(drink, i) in trail" :key="i" :class="drink.recipient ? 'done' : 'waiting'">
+          <template v-if="drink.recipient">🍺 {{ drink.earner }} earned a drink → handed to {{ drink.recipient }}</template>
+          <template v-else>🍺 {{ drink.earner }}'s drink · not handed out yet 👀</template>
+        </span>
+      </div>
+      <button v-if="linkedGoal" type="button" class="goal-link" @click="emit('followLink', linkedGoal.key)">
+        ↩ {{ linkedGoal.scorer ? `${linkedGoal.scorer}'s goal` : 'The goal' }} · {{ format(linkedGoal.time, 'p') }}
+      </button>
     </div>
   </div>
 </template>
@@ -309,6 +331,55 @@ const itemStyle = computed(() => ({
   border-left: 2px solid map-get($custom-colors, 'primary');
   color: #fde68a;
   font-size: 13px;
+}
+
+// A goal's trail: where its drinks went.
+.trail {
+  margin-top: 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.trail span {
+  width: fit-content;
+  max-width: 100%;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.trail .done {
+  color: #fde68a;
+}
+
+.trail .waiting {
+  color: map-get($custom-colors, 'stone-400');
+  font-style: italic;
+}
+
+// A drink's link back to its goal.
+.goal-link {
+  margin-top: 6px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: map-get($custom-colors, 'stone-200');
+  background: map-get($custom-colors, 'stone-800');
+  border: 1px solid map-get($custom-colors, 'stone-700');
+}
+
+// After following a link, the goal and its drinks light up together for a moment.
+.feed-item {
+  transition: box-shadow 0.3s ease;
+}
+
+.feed-item.highlighted {
+  outline: 2px solid map-get($custom-colors, 'primary');
+  outline-offset: 2px;
+  box-shadow: 0 0 18px rgba(255, 177, 0, 0.4);
 }
 
 // Callouts: the flare.
