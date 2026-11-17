@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import LobbyEventType from '@/enums/lobbyEventType'
 import FeedItem from '@/models/feedItem'
-import { useLobbyStore } from '@/stores/lobby'
-import { storeToRefs } from 'pinia'
 import { ref, computed } from 'vue'
 import VSwitch from '@/components/VSwitch.vue'
-import { parseISO, format } from 'date-fns'
 import VFeedItem from '@/components/VFeedItem.vue'
+import VDrinkTimeline from '@/components/VDrinkTimeline.vue'
 import PlayType from '@/enums/playType'
 import FeedItemType from '@/enums/feedItemType'
 import { useNewArrivals } from '@/composables/useNewArrivals'
@@ -26,8 +24,6 @@ const props = withDefaults(
 )
 
 //data
-const lobbyStore = useLobbyStore()
-const { lobby } = storeToRefs(lobbyStore)
 const currentView = ref<View>('feed')
 const filters = ref<{ [k: string]: boolean }>({
   showGoals: true,
@@ -98,14 +94,6 @@ function showAll() {
 // Only items that just arrived slide in; not the first render, a load, or items a filter brings back.
 const arrivals = useNewArrivals(() => filteredItems.value.map((item) => item.key))
 
-const assignedDrinks = computed(() =>
-  lobby
-    .value!.members.flatMap((m) => m.picks)
-    .flatMap((p) => p.drinks)
-    .filter((d) => d.recipientLobbyMemberId)
-    .sort((a, b) => Number(b.created) - Number(a.created))
-)
-
 const allGameEventsOn = computed(
   () =>
     filters.value.showGoals &&
@@ -137,15 +125,6 @@ function initializeFilters() {
 
 function saveFiltersToLocalStorage() {
   localStorage.setItem('feedFilters', JSON.stringify(filters.value))
-}
-
-function getNameByDrink(drink: Drink) {
-  const member = lobby.value!.members.find((m) => m.picks.some((p) => p.id === drink.lobbyMemberPickId))
-  return member?.name ?? ''
-}
-
-function getRecipientNameByDrink(drink: Drink) {
-  return lobby.value!.members.find((m) => m.id === drink.recipientLobbyMemberId)?.name
 }
 
 function setView(view: View) {
@@ -200,11 +179,6 @@ function hideAllLobbyEvents() {
     showDrinkAssigned: false
   }
   saveFiltersToLocalStorage()
-}
-
-function formatAsTime(date: Date | string) {
-  date = typeof date === 'string' ? parseISO(date) : date
-  return format(date, 'p')
 }
 </script>
 
@@ -363,28 +337,7 @@ function formatAsTime(date: Date | string) {
         </div>
       </div>
 
-      <template v-if="currentView === 'list'">
-        <div class="bg-stone-100">
-          <div class="fw-bold text-uppercase text-center border py-2 bg-stone-0" style="border-bottom: none !important">Drink Timeline</div>
-          <table class="w-100 border">
-            <tbody>
-              <tr v-for="drink in assignedDrinks" :key="drink.id" class="border">
-                <td class="p-2 text-stone-500" style="width: 80px">{{ formatAsTime(drink.assigned ?? new Date()) }}</td>
-                <td class="p-2 fw-bold text-right" style="width: 0">
-                  <span style="white-space: pre">{{ getNameByDrink(drink) }}</span>
-                </td>
-                <td class="p-2" style="width: 0">
-                  <div class="d-flex">
-                    <span class="fs-6 d-block">🍺</span>
-                    <i class="fi fi-sr-arrow-right fs-5 d-block mb-n2"></i>
-                  </div>
-                </td>
-                <td class="p-2 fw-bold">{{ getRecipientNameByDrink(drink) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </template>
+      <VDrinkTimeline v-if="currentView === 'list'" />
 
       <template v-if="currentView === 'feed'">
         <!-- Keyed by item, not index, so an item inserted mid-list doesn't shift every key after it. -->
