@@ -33,6 +33,10 @@ const joinCode = ref(route.params.joinCode as string)
 const members = ref<LobbyMemberWithStats[]>([])
 const awards = ref<LobbyAward[]>([])
 const isLoadingAwards = ref(true)
+// Awards first; with none to show, the standings are the only tab.
+const tab = ref<'awards' | 'standings'>('awards')
+const hasAwards = computed(() => isLoadingAwards.value || awards.value.length > 0)
+const activeTab = computed(() => (hasAwards.value ? tab.value : 'standings'))
 const { isSharing, share } = useRecapShare()
 const toast = useToast()
 const userStore = useUserStore()
@@ -185,8 +189,17 @@ function ago(date: Date) {
           </div>
         </div>
       </div>
-      <div v-if="isLoadingAwards || awards.length" class="px-3 pt-3">
-        <span class="d-block fs-7 fw-bold text-uppercase text-stone-400 ls-2 mb-2">Awards</span>
+      <div class="px-3 pt-3">
+        <button type="button" class="btn btn-primary fw-bold w-100 py-2" :disabled="isSharing || isLoadingAwards" @click="shareRecap">
+          <VIcon icon="share" prefix="sr" class="me-2" />{{ isSharing ? 'Creating image…' : 'Share results' }}
+        </button>
+      </div>
+      <!-- Awards and standings are tabs; with no awards, the standings show on their own. -->
+      <div v-if="hasAwards" class="tabs mx-3 mt-3" role="tablist">
+        <button v-for="t in ['awards', 'standings'] as const" :key="t" type="button" role="tab" class="tab"
+          :class="{ active: activeTab === t }" :aria-selected="activeTab === t" @click="tab = t">{{ t }}</button>
+      </div>
+      <div v-if="activeTab === 'awards'" class="px-3 pt-3">
         <!-- Placeholders hold the awards' place while they load, so the page doesn't jump when they arrive. -->
         <template v-if="isLoadingAwards">
           <div v-for="n in 3" :key="n" class="award award-placeholder mb-2" aria-hidden="true"></div>
@@ -201,13 +214,7 @@ function ago(date: Date) {
           </div>
         </div>
       </div>
-      <div class="px-3 pt-2">
-        <button type="button" class="btn btn-primary fw-bold w-100 py-2" :disabled="isSharing || isLoadingAwards" @click="shareRecap">
-          <VIcon icon="share" prefix="sr" class="me-2" />{{ isSharing ? 'Creating image…' : 'Share recap' }}
-        </button>
-      </div>
-      <div class="p-3">
-        <span class="d-block fs-7 fw-bold text-uppercase text-stone-400 ls-2 mb-2">Standings</span>
+      <div v-if="activeTab === 'standings'" class="p-3">
         <div class="d-flex member align-items-center w-100" v-for="(member, index) in members" :key="member.id"
           :class="member.class">
           <div class="pe-2 fs-3 fw-bold">{{ index + 1 }}</div>
@@ -372,8 +379,37 @@ function ago(date: Date) {
 
 .award {
   background: map-get($custom-colors, 'stone-850');
+  border: 1px solid map-get($custom-colors, 'stone-700');
   border-left: 4px solid var(--award-color);
   border-radius: 10px;
+}
+
+// Awards | Standings: a segmented control.
+.tabs {
+  display: flex;
+  padding: 4px;
+  gap: 4px;
+  border-radius: 10px;
+  background: map-get($custom-colors, 'stone-850');
+  border: 1px solid map-get($custom-colors, 'stone-700');
+}
+
+.tab {
+  flex: 1;
+  padding: 7px 0;
+  border: 0;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: map-get($custom-colors, 'stone-400');
+  background: transparent;
+}
+
+.tab.active {
+  color: map-get($custom-colors, 'stone-900');
+  background: map-get($custom-colors, 'primary');
 }
 
 .award-icon,
