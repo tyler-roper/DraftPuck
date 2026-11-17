@@ -16,8 +16,11 @@
 
   function setAppHeight() {
     root.style.setProperty('--app-height', visibleHeight() + 'px')
-    // iOS scrolls the page to show a focused box; the app already fits above the keyboard, so put it back.
-    if (window.scrollY !== 0) window.scrollTo(0, 0)
+    // With the keyboard up, iOS pans the visible area down inside the page instead of scrolling it, and window.scrollTo
+    // can't undo that. Move the app to where the visible area is, so it stays in view, rather than fighting the pan
+    // (which made the page jump, cut off the header and left a gap above the keyboard). pageTop is the visible area's
+    // place in the whole page, so this also holds if iOS scrolls the page as well as panning it.
+    root.style.setProperty('--app-top', (vv ? Math.max(0, Math.round(vv.pageTop)) : 0) + 'px')
   }
 
   // The keyboard animates in and out, and the events can fire mid-way: measure now, then again once it has settled.

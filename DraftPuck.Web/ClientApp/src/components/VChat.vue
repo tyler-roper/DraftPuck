@@ -3,7 +3,7 @@ import type MessageViewModel from '@/models/messageViewModel'
 import { addSeconds, format, parseISO } from 'date-fns'
 import { useLobbyStore } from '@/stores/lobby'
 import { storeToRefs } from 'pinia'
-import { ref, watch, nextTick, onMounted, computed } from 'vue'
+import { ref, watch, nextTick, onMounted, onBeforeUnmount, computed } from 'vue'
 import type SystemMessageViewModel from '@/models/systemMessageViewModel'
 import VMentionSuggest from '@/components/VMentionSuggest.vue'
 import { escapeHtml } from '@/helpers/htmlHelpers'
@@ -88,7 +88,16 @@ onMounted(async () => {
 
   if (!messagesContainer.value) return
   messagesContainer.value.addEventListener('scroll', onChatScroll)
+
+  // The list shrinks when the keyboard opens: keep the newest messages in view instead of the oldest.
+  resizeObserver = new ResizeObserver(() => {
+    if (isLockedToBottom.value) scrollToBottom()
+  })
+  resizeObserver.observe(messagesContainer.value)
 })
+
+let resizeObserver: ResizeObserver | undefined
+onBeforeUnmount(() => resizeObserver?.disconnect())
 
 function processCommand(message: string) {
   const messageParts = message.split('/')

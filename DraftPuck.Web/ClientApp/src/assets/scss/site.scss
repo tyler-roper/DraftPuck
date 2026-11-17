@@ -21,6 +21,13 @@ body {
   height: 100%;
 }
 
+// Follows the iOS keyboard pan (see public/app-height.js). `top` rather than a transform, so position: fixed children
+// (modals, toasts) keep working.
+#app {
+  position: relative;
+  top: var(--app-top, 0px);
+}
+
 table.score-table>tbody>tr>td,
 table.score-table>tbody>tr>th,
 table.score-table>thead>tr>td,
