@@ -1,16 +1,17 @@
 import { nextTick, onScopeDispose, ref } from 'vue'
 
 /**
- * Drinks given to you, shown one at a time, each for a few seconds. Drinks that arrive while one is showing wait their
- * turn. Between drinks nothing is shown for a tick, so the animation starts again rather than swapping in place.
+ * Lobby events shown one at a time, each for a few seconds: drinks given to you, and callouts. Events that arrive while
+ * one is showing wait their turn. Between events nothing is shown for a tick, so the animation starts again rather than
+ * swapping in place.
  */
-export function useDrinkQueue(durationMs = 5000) {
+export function useEventQueue(durationMs = 5000) {
   const current = ref<LobbyEvent>()
   const waiting: LobbyEvent[] = []
   let timer: number | undefined
 
-  function enqueue(drink: LobbyEvent) {
-    waiting.push(drink)
+  function enqueue(event: LobbyEvent) {
+    waiting.push(event)
     if (timer === undefined) showNext()
   }
 

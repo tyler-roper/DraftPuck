@@ -1,16 +1,17 @@
 import { useLobbyStore } from '@/stores/lobby'
 import LobbyEventType from '@/enums/lobbyEventType'
 import { parseAllDates } from '@/helpers/dateHelpers'
-
-export type LobbyEventTone = 'success' | 'info'
+import { isCallout } from '@/helpers/calloutHelpers'
 
 export interface LobbyEventReactions {
   /** Refetches the lobby, since most events mean it changed. */
   refreshLobby: () => Promise<void>
   /** Shows a drink someone gave you (the full-screen animation). */
   showDrinkForMe: (event: LobbyEvent) => void
+  /** Shows a banner over the lobby: callouts (someone on fire, a rivalry...) and drinks earned or handed to others. */
+  showBanner: (event: LobbyEvent) => void
   /** Shows the event as a toast. */
-  notify: (event: LobbyEvent, tone?: LobbyEventTone) => void
+  notify: (event: LobbyEvent) => void
   /** You were removed from the lobby, or left it (e.g. from another tab). */
   onRemovedFromLobby: (message: string) => void
   log?: (message: string, level: number) => void
@@ -39,13 +40,17 @@ export function useLobbyEvents(reactions: LobbyEventReactions) {
     parseAllDates(event)
     store.addLobbyEvent(event)
 
+    if (isCallout(event.lobbyEventType)) return reactions.showBanner(event)
+
     switch (event.lobbyEventType) {
+      // A drink for you gets the full-screen animation; everyone else sees it in a banner.
       case LobbyEventType.DrinkAssigned:
         if (event.lobbyMember2Id === me?.id) reactions.showDrinkForMe(event)
-        else reactions.notify(event)
+        else reactions.showBanner(event)
         break
       case LobbyEventType.DrinkAwarded:
-        reactions.notify(event, isAboutMe ? 'success' : 'info')
+        // A bot hands its drink out the moment it earns it, so its handout (just behind this) is the one to show.
+        if (!store.lobby.members.find((m) => m.id === event.lobbyMemberId)?.isBot) reactions.showBanner(event)
         break
       case LobbyEventType.UserJoined:
         reactions.notify(event)

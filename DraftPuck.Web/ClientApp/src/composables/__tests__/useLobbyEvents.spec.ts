@@ -14,7 +14,8 @@ function setup() {
     joinCode: 'ABCD',
     members: [
       { id: 'me', userId: 'u1', name: 'Mc David', picks: [], messages: [] },
-      { id: 'other', userId: 'u2', name: 'Alex', picks: [], messages: [] }
+      { id: 'other', userId: 'u2', name: 'Alex', picks: [], messages: [] },
+      { id: 'bot', userId: 'u3', name: 'Bot', isBot: true, picks: [], messages: [] }
     ]
   } as unknown as Lobby)
   return store
@@ -27,7 +28,17 @@ describe('useLobbyEvents', () => {
   let reactions: LobbyEventReactions
 
   beforeEach(() => {
-    reactions = { refreshLobby: vi.fn(async () => {}), showDrinkForMe: vi.fn(), notify: vi.fn(), onRemovedFromLobby: vi.fn() }
+    reactions = { refreshLobby: vi.fn(async () => {}), showDrinkForMe: vi.fn(), showBanner: vi.fn(), notify: vi.fn(), onRemovedFromLobby: vi.fn() }
+  })
+
+  it('announces callouts with a banner, not a toast, and adds them to the feed', async () => {
+    const store = setup()
+
+    await useLobbyEvents(reactions).onLobbyEvent(event(LobbyEventType.OnFire, { lobbyMemberId: 'other' }))
+
+    expect(reactions.showBanner).toHaveBeenCalledOnce()
+    expect(reactions.notify).not.toHaveBeenCalled()
+    expect(store.events).toHaveLength(1)
   })
 
   it('refreshes the lobby and adds the event to the feed, with its dates parsed', async () => {
@@ -61,7 +72,7 @@ describe('useLobbyEvents', () => {
     expect(reactions.refreshLobby).toHaveBeenCalledOnce()
   })
 
-  it('shows drinks given to you as the animation, and drinks between others as a toast', async () => {
+  it('shows drinks given to you as the full-screen animation, and drinks between others as a banner', async () => {
     setup()
     const { onLobbyEvent } = useLobbyEvents(reactions)
 
@@ -69,10 +80,22 @@ describe('useLobbyEvents', () => {
     await onLobbyEvent(event(LobbyEventType.DrinkAssigned, { lobbyMemberId: 'me', lobbyMember2Id: 'other' }))
 
     expect(reactions.showDrinkForMe).toHaveBeenCalledOnce()
-    expect(reactions.notify).toHaveBeenCalledOnce()
+    expect(reactions.showBanner).toHaveBeenCalledOnce()
+    expect(reactions.notify).not.toHaveBeenCalled()
   })
 
-  it('celebrates your own awarded drinks and just informs about others', async () => {
+  it("skips a bot's earned drink, which it hands out straight away (that handout is shown instead)", async () => {
+    setup()
+    const { onLobbyEvent } = useLobbyEvents(reactions)
+
+    await onLobbyEvent(event(LobbyEventType.DrinkAwarded, { lobbyMemberId: 'bot' }))
+    await onLobbyEvent(event(LobbyEventType.DrinkAssigned, { lobbyMemberId: 'bot', lobbyMember2Id: 'other' }))
+
+    expect(reactions.showBanner).toHaveBeenCalledOnce()
+    expect(vi.mocked(reactions.showBanner).mock.calls[0][0].lobbyEventType).toBe(LobbyEventType.DrinkAssigned)
+  })
+
+  it('shows every drink earned as a banner, and joins as a toast', async () => {
     setup()
     const { onLobbyEvent } = useLobbyEvents(reactions)
 
@@ -80,7 +103,8 @@ describe('useLobbyEvents', () => {
     await onLobbyEvent(event(LobbyEventType.DrinkAwarded, { lobbyMemberId: 'other' }))
     await onLobbyEvent(event(LobbyEventType.UserJoined, { lobbyMemberId: 'other' }))
 
-    expect(vi.mocked(reactions.notify).mock.calls.map(([, tone]) => tone)).toEqual(['success', 'info', undefined])
+    expect(reactions.showBanner).toHaveBeenCalledTimes(2)
+    expect(reactions.notify).toHaveBeenCalledOnce()
   })
 })
 

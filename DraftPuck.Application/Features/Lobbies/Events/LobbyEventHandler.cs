@@ -1,9 +1,8 @@
 ﻿using DraftPuck.Application.Features.Games;
-using System.Net;
 
 namespace DraftPuck.Application.Features.Lobbies.Events;
 
-public class LobbyEventHandler(IDbContext dbContext, IMediator mediator) :
+public class LobbyEventHandler(IDbContext dbContext, LobbyEventWriter writer) :
     INotificationHandler<UserJoinedLobbyNotification>,
     INotificationHandler<UserRejoinedLobbyNotification>,
     INotificationHandler<UserNameChangedNotification>,
@@ -55,8 +54,7 @@ public class LobbyEventHandler(IDbContext dbContext, IMediator mediator) :
             text: $"{Bold(n.Data.Member.Name)} was promoted to lobby admin.");
     }
 
-    // Event text is rendered as HTML by the client, so user-supplied names must be encoded.
-    private static string Bold(string name) => $"<strong>{WebUtility.HtmlEncode(name)}</strong>";
+    private static string Bold(string name) => LobbyEventWriter.Bold(name);
 
     public Task Handle(PickMadeNotification n, CancellationToken ct)
     {
@@ -134,27 +132,6 @@ public class LobbyEventHandler(IDbContext dbContext, IMediator mediator) :
     private Task<List<LobbyEntity>> LobbiesWithGameAsync(int gameId, CancellationToken ct)
         => dbContext.Lobbies.Where(l => l.GameIds.Contains(gameId)).ToListAsync(ct);
 
-    private async Task NewLobbyEvent(LobbyEntity lobby, LobbyEventType eventType, CancellationToken ct, Guid? lobbyMemberId = null, int? gameEventId = null, int? gameId = null, Guid? lobbyMember2Id = null, int? playerId = null, int? player2Id = null, int? teamId = null, string? title = null, string? text = null)
-    {
-        var lobbyEvent = new LobbyEventEntity
-        {
-            TimeUtc = DateTime.UtcNow,
-            Title = title ?? LobbyEventTexts.GetTitle(eventType),
-            Text = text ?? LobbyEventTexts.GetText(eventType),
-            GameEventId = gameEventId,
-            GameId = gameId,
-            LobbyId = lobby.Id,
-            LobbyEventType = eventType,
-            LobbyMemberId = lobbyMemberId,
-            LobbyMember2Id = lobbyMember2Id,
-            PlayerId = playerId,
-            Player2Id = player2Id,
-            TeamId = teamId
-        };
-
-        dbContext.LobbyEvents.Add(lobbyEvent);
-        await dbContext.SaveChangesAsync(ct);
-
-        await mediator.Publish(new LobbyEventCreatedNotification(lobbyEvent, lobby.JoinCode), ct);
-    }
+    private Task NewLobbyEvent(LobbyEntity lobby, LobbyEventType eventType, CancellationToken ct, Guid? lobbyMemberId = null, int? gameEventId = null, int? gameId = null, Guid? lobbyMember2Id = null, int? playerId = null, int? player2Id = null, int? teamId = null, string? title = null, string? text = null)
+        => writer.AddAsync(lobby.Id, lobby.JoinCode, eventType, ct, lobbyMemberId, gameEventId, gameId, lobbyMember2Id, playerId, player2Id, teamId, title, text);
 }
