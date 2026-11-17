@@ -5,9 +5,9 @@ import { useLobbyStore } from '@/stores/lobby'
 import { storeToRefs } from 'pinia'
 import { ref, watch, nextTick, onMounted, computed } from 'vue'
 import type SystemMessageViewModel from '@/models/systemMessageViewModel'
-import { SmartSuggest, type Trigger } from 'vue-smart-suggest'
+import VMentionSuggest from '@/components/VMentionSuggest.vue'
 import { escapeHtml } from '@/helpers/htmlHelpers'
-import { mentionRegExp } from '@/helpers/chatHelpers'
+import { applyMention, findMentionQuery, matchMentions, mentionRegExp, type MentionQuery } from '@/helpers/chatHelpers'
 
 //const
 const SECONDS_BETWEEN_MESSAGES = 3
@@ -37,11 +37,51 @@ const lastSentMessage = ref(new Date(-1))
 const isLockedToBottom = ref(true)
 const errorTimer = ref<number>()
 const isIos = /(iPad|iPhone|iPod)/.test(window.navigator.userAgent)
-const isSmartSuggestOpen = ref(false)
-const userMentionTrigger = computed<Trigger>(() => ({
-  char: '@',
-  items: lobby.value?.members.filter((lm) => lm.userId !== currentUserId.value && !lm.isBot).map(({ name }) => ({ value: `@${name}` })) ?? []
-}))
+// Mentions: who an "@..." being typed at the cursor could be for (other people in the lobby, not bots).
+const mention = ref<MentionQuery>()
+const mentionIndex = ref(0)
+const dismissedMentionAt = ref<number>()
+const mentionables = computed(() => lobby.value?.members.filter((lm) => lm.userId !== currentUserId.value && !lm.isBot && !lm.isRemoved) ?? [])
+const mentionMatches = computed(() => (mention.value ? matchMentions(mentionables.value, mention.value.query) : []))
+const isMentionOpen = computed(() => mentionMatches.value.length > 0 && mention.value?.start !== dismissedMentionAt.value)
+
+/** Re-reads the mention at the cursor (after typing, clicking or moving the cursor). */
+function updateMention() {
+  const input = messageInput.value
+  const found = input ? findMentionQuery(message.value, input.selectionStart ?? message.value.length) : undefined
+  if (found?.start !== mention.value?.start || found?.query !== mention.value?.query) mentionIndex.value = 0
+  if (found?.start !== dismissedMentionAt.value) dismissedMentionAt.value = undefined
+  mention.value = found
+}
+
+async function pickMention(member: LobbyMember) {
+  const input = messageInput.value
+  if (!mention.value || !input) return
+  const applied = applyMention(message.value, mention.value, input.selectionStart ?? message.value.length, member.name)
+  message.value = applied.text
+  mention.value = undefined
+  await nextTick()
+  input.focus()
+  input.setSelectionRange(applied.cursor, applied.cursor)
+  resizeMessageInput()
+}
+
+/** Arrow keys, Enter/Tab and Escape drive the suggestions while they're open. */
+function onMentionKeydown(e: KeyboardEvent) {
+  if (!isMentionOpen.value) return
+  const count = mentionMatches.value.length
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault()
+    mentionIndex.value = (mentionIndex.value + (e.key === 'ArrowDown' ? 1 : count - 1)) % count
+  } else if ((e.key === 'Enter' && !e.shiftKey) || e.key === 'Tab') {
+    e.preventDefault()
+    e.stopImmediatePropagation()
+    pickMention(mentionMatches.value[mentionIndex.value])
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    dismissedMentionAt.value = mention.value?.start
+  }
+}
 
 //hooks/methods
 onMounted(async () => {
@@ -79,7 +119,7 @@ async function resizeMessageInput() {
 }
 
 function onEnterKeydown(e: KeyboardEvent) {
-  if (isSmartSuggestOpen.value) return
+  if (isMentionOpen.value) return
   if (e.shiftKey) return
   sendMessage(e)
 }
@@ -214,18 +254,24 @@ defineExpose({ focus })
       <a role="button" v-if="!isLockedToBottom" class="d-block lock-to-bottom btn btn-stone-900" @click="scrollToBottom"
         >Back to bottom <i class="fi fi-rr-arrow-down"></i
       ></a>
-      <SmartSuggest :triggers="[userMentionTrigger]" @open="isSmartSuggestOpen = true" @close="isSmartSuggestOpen = false">
-        <textarea
-          v-model="message"
-          maxlength="500"
-          ref="messageInput"
-          placeholder="Send a message"
-          @input="resizeMessageInput"
-          @keydown.enter="onEnterKeydown"
-          @focus="handleIphoneKeyboard"
-          @focusout="focusOut"
-        ></textarea>
-      </SmartSuggest>
+      <VMentionSuggest v-if="isMentionOpen" :members="mentionMatches" :query="mention?.query ?? ''" :active-index="mentionIndex"
+        @pick="pickMention" @hover="(i) => (mentionIndex = i)" />
+      <textarea
+        v-model="message"
+        maxlength="500"
+        ref="messageInput"
+        placeholder="Send a message"
+        role="combobox"
+        aria-autocomplete="list"
+        :aria-expanded="isMentionOpen"
+        @input="resizeMessageInput(); updateMention()"
+        @click="updateMention"
+        @keyup="(e) => ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key) && updateMention()"
+        @keydown="onMentionKeydown"
+        @keydown.enter="onEnterKeydown"
+        @focus="handleIphoneKeyboard"
+        @focusout="focusOut(); mention = undefined"
+      ></textarea>
       <div class="d-flex align-items-center justify-content-end">
         <span class="d-block text-danger me-2 fw-bold">{{ error }}</span>
         <button class="d-block btn btn-primary fw-bold">Send</button>
@@ -288,28 +334,4 @@ span.mention {
   color: #bd00ff;
 }
 
-.smart-suggest-dropdown {
-  border-radius: 5px;
-  box-shadow: 0 0 5px 5px rgba(0, 0, 0, 0.2);
-  border: 1px solid map-get($custom-colors, 'stone-300');
-  height: 140px !important;
-  top: -140px !important;
-  background-color: map-get($custom-colors, 'stone-0');
-  overflow: auto;
-}
-
-.smart-suggest-item {
-  padding: 4px 8px;
-  font-weight: bold;
-  color: map-get($custom-colors, 'stone-900');
-}
-
-.smart-suggest-item:hover {
-  background-color: map-get($custom-colors, 'stone-200');
-  cursor: pointer;
-}
-
-.smart-suggest-item-active {
-  background-color: map-get($custom-colors, 'stone-200');
-}
 </style>
