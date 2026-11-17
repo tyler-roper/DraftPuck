@@ -42,23 +42,3 @@ function playerOf(games: Game[], pick: LobbyMemberPick) {
   if (!player || !team) return undefined
   return { lastName: player.lastName, abbreviation: team.abbreviation, color: TeamColorLookup[team.id] }
 }
-
-/** How many drinks each member has given and taken. */
-export interface DrinkTally {
-  member: LobbyMember
-  given: number
-  taken: number
-}
-
-/** Everyone who has given or taken a drink, the most-punished first (then the most generous, then by name). */
-export function drinkTallies(drinks: TimelineDrink[]): DrinkTally[] {
-  const tallies = new Map<string, DrinkTally>()
-  const tally = (member: LobbyMember) => tallies.get(member.id) ?? tallies.set(member.id, { member, given: 0, taken: 0 }).get(member.id)!
-
-  for (const drink of drinks) {
-    tally(drink.giver).given++
-    tally(drink.recipient).taken++
-  }
-
-  return [...tallies.values()].sort((a, b) => b.taken - a.taken || b.given - a.given || a.member.name.localeCompare(b.member.name))
-}

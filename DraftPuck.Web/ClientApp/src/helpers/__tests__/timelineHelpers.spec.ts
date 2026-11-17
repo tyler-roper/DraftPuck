@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { drinkTallies, drinkTimeline } from '@/helpers/timelineHelpers'
+import { drinkTimeline } from '@/helpers/timelineHelpers'
 
 const at = (minute: number) => new Date(Date.UTC(2026, 10, 16, 1, minute))
 const drink = (id: string, to: string | null, assignedMinute: number | null, message?: string) => ({
@@ -41,16 +41,5 @@ describe('drinkTimeline', () => {
     const first = timeline.find((d) => d.id === 'd1')!
     expect([first.giver.name, first.recipient.name, first.message]).toEqual(['tyler', 'Casey', 'Revenge.'])
     expect(first.player).toMatchObject({ lastName: 'McDavid', abbreviation: 'EDM' })
-  })
-})
-
-describe('drinkTallies', () => {
-  it('counts what each member gave and took, the most-punished first', () => {
-    const tallies = drinkTallies(drinkTimeline(lobby, games))
-
-    expect(tallies.map((t) => [t.member.name, t.given, t.taken])).toEqual([
-      ['Casey', 1, 2],
-      ['tyler', 2, 1]
-    ])
   })
 })
