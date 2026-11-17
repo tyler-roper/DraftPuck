@@ -8,4 +8,5 @@ public class DrinkDto
     public int EventId { get; set; }
     public DateTime Created { get; set; }
     public DateTime? Assigned { get; set; }
+    public string? Message { get; set; }
 }

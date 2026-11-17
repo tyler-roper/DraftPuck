@@ -14,6 +14,9 @@ public partial class DrinkEntity
 
     public DateTime? Assigned { get; set; }
 
+    /// <summary>What the member said when handing the drink out, if anything.</summary>
+    public string? Message { get; set; }
+
     public virtual LobbyMemberPickEntity LobbyMemberPick { get; set; } = null!;
 
     public virtual LobbyMemberEntity? RecipientLobbyMember { get; set; }

@@ -5,6 +5,8 @@ const props = withDefaults(
   defineProps<{
     /** Who gave you the drink. */
     senderName: string
+    /** What they said with it, if anything. */
+    message?: string
     /** The whole animation (pour, hold, drain), in ms. */
     durationMs?: number
   }>(),
@@ -47,6 +49,7 @@ onMounted(() => {
       <span class="d-block drink-word text-uppercase">Drink!</span>
       <span class="d-block courtesy text-uppercase">Courtesy of</span>
       <span class="d-block sender text-uppercase">{{ senderName }}</span>
+      <span v-if="message" class="d-block giver-message">“{{ message }}”</span>
     </div>
   </div>
 </template>
@@ -160,6 +163,16 @@ $drain-start: 84%;
   font-weight: 700;
   opacity: 0.85;
   letter-spacing: 0.15em;
+}
+
+.giver-message {
+  margin-top: 14px;
+  max-width: 90%;
+  font-size: clamp(18px, 5.5vw, 26px);
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .sender {

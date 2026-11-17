@@ -137,7 +137,7 @@ public class LobbyActivityTests(DatabaseFixture fixture)
         return drink.Id;
     }
 
-    private async Task AssignAsync(Setup s, Guid assignerUserId, Guid drinkId, Guid recipientMemberId)
+    private async Task AssignAsync(Setup s, Guid assignerUserId, Guid drinkId, Guid recipientMemberId, string? message = null)
     {
         await using var db = fixture.CreateContext();
         await new AssignDrinkCommandHandler(db, TestServices.Mapper(), _mediator).Handle(new AssignDrinkCommand
@@ -145,7 +145,8 @@ public class LobbyActivityTests(DatabaseFixture fixture)
             Code = s.Code,
             AssignerUserId = assignerUserId,
             DrinkId = drinkId,
-            RecipientLobbyMemberId = recipientMemberId
+            RecipientLobbyMemberId = recipientMemberId,
+            Message = message
         }, default);
     }
 
@@ -161,6 +162,32 @@ public class LobbyActivityTests(DatabaseFixture fixture)
         var drink = await check.Drinks.SingleAsync(d => d.Id == drinkId);
         Assert.Equal(s.Other.Id, drink.RecipientLobbyMemberId);
         Assert.NotNull(drink.Assigned);
+    }
+
+    [Fact]
+    public async Task ADrinkCanComeWithAMessage()
+    {
+        var s = await SetupAsync();
+        var drinkId = await AwardDrinkAsync(s.MemberPick);
+
+        await AssignAsync(s, s.Member.UserId, drinkId, s.Other.Id, "  That's for\n the Oilers goal.  ");
+
+        await using var check = fixture.CreateContext();
+        Assert.Equal("That's for the Oilers goal.", (await check.Drinks.SingleAsync(d => d.Id == drinkId)).Message);
+        await _mediator.Received().Publish(Arg.Is<DrinkAssignedNotification>(n => n.Data.Drink.Message == "That's for the Oilers goal."), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ATooLongMessageIsRefusedAndTheDrinkStaysUnassigned()
+    {
+        var s = await SetupAsync();
+        var drinkId = await AwardDrinkAsync(s.MemberPick);
+
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            AssignAsync(s, s.Member.UserId, drinkId, s.Other.Id, new string('x', DrinkMessages.MaxLength + 1)));
+
+        await using var check = fixture.CreateContext();
+        Assert.Null((await check.Drinks.SingleAsync(d => d.Id == drinkId)).RecipientLobbyMemberId);
     }
 
     [Fact]
