@@ -76,17 +76,23 @@ const filteredItems = computed(() => {
   })
 })
 
-// Links between a goal and its drinks: each drink item points back to its goal (when it's in the feed), and following
-// a link scrolls to the goal and lights up the goal and its drinks for a moment.
+// Links between a goal and its drinks: each drink item points back to its goal (when it's in the feed). Following a
+// link focuses the feed on that goal: everything else fades and collapses, so the goal and its drinks sit together,
+// until "Show all".
 const goalsByKey = computed(() => new Map(filteredItems.value.filter((i) => i.layout === 'goal').map((i) => [i.key, i])))
-const highlightedKeys = ref(new Set<string>())
-let highlightTimer: number | undefined
+const focus = ref<{ goalKey: string; keys: Set<string>; label: string }>()
+const feedRoot = ref<HTMLDivElement>()
 
 function followLink(goalKey: string) {
-  highlightedKeys.value = new Set(chainKeys(filteredItems.value, goalKey))
-  document.querySelector(`[data-feed-key="${goalKey}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  window.clearTimeout(highlightTimer)
-  highlightTimer = window.setTimeout(() => (highlightedKeys.value = new Set()), 2600)
+  if (focus.value?.goalKey === goalKey) return showAll()
+
+  const goal = goalsByKey.value.get(goalKey)
+  focus.value = { goalKey, keys: new Set(chainKeys(filteredItems.value, goalKey)), label: goal?.scorer ? `${goal.scorer}'s goal` : 'this goal' }
+  feedRoot.value?.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function showAll() {
+  focus.value = undefined
 }
 
 // Only items that just arrived slide in; not the first render, a load, or items a filter brings back.
@@ -203,7 +209,7 @@ function formatAsTime(date: Date | string) {
 </script>
 
 <template>
-  <div style="overflow-y: scroll; background: #13100e" class="text-stone-800 d-flex flex-column">
+  <div ref="feedRoot" style="overflow-y: scroll; background: #13100e" class="text-stone-800 d-flex flex-column">
     <div class="bg-stone-900 text-stone-0 py-1 px-3 ls-2 shadow d-flex align-items-center" style="z-index: 2; position: sticky; top: 0">
       <div class="fs-5 me-2">🚨</div>
       <div>
@@ -388,12 +394,16 @@ function formatAsTime(date: Date | string) {
             :key="item.key"
             :item="item"
             :linked-goal="goalsByKey.get(goalKeyFor(item) ?? '')"
-            :highlighted="highlightedKeys.has(item.key)"
-            :class="{ 'is-new': arrivals.isNew(item.key) }"
+            :class="{ 'is-new': arrivals.isNew(item.key), collapsed: focus && !focus.keys.has(item.key) }"
             @follow-link="followLink"
             :style="{ '--arrival': Math.max(arrivals.arrivalOrder(item.key), 0) }"
           />
         </TransitionGroup>
+        <!-- After the list in the markup: the container is a reversed column, so this shows above it. -->
+        <div v-if="focus" class="focus-bar">
+          <span>Showing <strong>{{ focus.label }}</strong> and its drinks</span>
+          <button type="button" @click="showAll">✕ Show all</button>
+        </div>
       </template>
     </div>
   </div>
@@ -424,9 +434,61 @@ function formatAsTime(date: Date | string) {
   display: flex;
   flex-direction: column-reverse;
   justify-content: flex-end;
-  gap: 8px;
-  padding: 10px;
+  padding: 6px 10px;
   background: #13100e;
+}
+
+/* Spacing as margins (not gap), so a collapsed item leaves no space behind. */
+.feed-list > * {
+  margin: 4px 0;
+  max-height: 600px;
+  transition:
+    opacity 0.3s ease,
+    max-height 0.35s ease,
+    margin 0.35s ease,
+    min-height 0.35s ease;
+}
+
+/* Focused on a goal: everything else fades and collapses, so the goal and its drinks sit together. */
+.feed-list > .collapsed {
+  opacity: 0;
+  max-height: 0;
+  min-height: 0;
+  margin: 0;
+  border-width: 0;
+  pointer-events: none;
+}
+
+.focus-bar {
+  position: sticky;
+  top: 52px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 8px 10px 0;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  color: #fde68a;
+  background: #2b2623;
+  border: 1px solid #ffb100;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+}
+
+.focus-bar strong {
+  color: #fff;
+}
+
+.focus-bar button {
+  border: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #1c1917;
+  background: #ffb100;
 }
 
 @media (prefers-reduced-motion: reduce) {
