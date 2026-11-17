@@ -3,7 +3,6 @@ import { buildFeedItems } from '@/helpers/feedHelpers'
 import FeedItemType from '@/enums/feedItemType'
 import PlayType from '@/enums/playType'
 import PeriodType from '@/enums/periodType'
-import LobbyEventType from '@/enums/lobbyEventType'
 
 const lobbyCreated = new Date('2026-11-13T23:00:00Z')
 const at = (minute: number) => new Date(Date.UTC(2026, 10, 13, 23, minute))
@@ -86,18 +85,48 @@ describe('buildFeedItems', () => {
     expect(items.map((i) => i.key)).toEqual(['play-10-1', 'play-20-1', 'event-e1'])
   })
 
-  // Like the game's own goal items: the logo of the team whose goal it was (the new scorer's, for a changed goal).
-  it("shows the team's logo on goal corrections, and no logo on other lobby events", () => {
-    const events = [
-      lobbyEvent('removed', at(1), { lobbyEventType: LobbyEventType.GoalRemoved, gameId: 10, teamId: 2 }),
-      lobbyEvent('changed', at(2), { lobbyEventType: LobbyEventType.GoalChanged, gameId: 10, teamId: 1 }),
-      lobbyEvent('joined', at(3), { lobbyEventType: LobbyEventType.UserJoined, gameId: 10, teamId: 1 }),
-      lobbyEvent('unknown game', at(4), { lobbyEventType: LobbyEventType.GoalRemoved, gameId: 99, teamId: 1 })
+  it('lays out each kind of item: goals loudest, penalties quietly, periods and finals with both teams, lobby events apart', () => {
+    const plays = [
+      play(1, PlayType.Goal, at(1), { primaryTeamId: 2, homeScore: 0, awayScore: 1 }),
+      play(2, PlayType.Penalty, at(2), { primaryTeamId: 1 }),
+      play(3, PlayType.PeriodEnd, at(3)),
+      play(4, PlayType.GameEnd, at(4))
     ]
 
-    const items = buildFeedItems([game(10, [])], events, lobbyCreated, false)
+    const items = buildFeedItems([game(10, plays)], [lobbyEvent('e1', at(5))], lobbyCreated, false)
 
-    expect(items.map((i) => i.images)).toEqual([['CGY.png'], ['EDM.png'], [], []])
+    expect(items.map((i) => i.layout)).toEqual(['goal', 'game', 'state', 'final', 'lobby'])
+    expect(items[0].teams.map((t) => t.abbreviation)).toEqual(['CGY'])
+    expect(items[2].teams.map((t) => t.abbreviation)).toEqual(['CGY', 'EDM'])
+    expect(items[4].lobbyEvent?.id).toBe('e1')
+  })
+
+  it('titles a goal with the scoring team and its score first, and gives a period its score', () => {
+    const players = [{ id: 97, teamId: 1, firstName: 'Connor', lastName: 'McDavid' }] as PlayerSummary[]
+    const edmGoal = play(1, PlayType.Goal, at(1), { primaryTeamId: 1, primaryPlayerId: 97, homeScore: 2, awayScore: 1, period: 3, timeInPeriod: '12:41' })
+    const cgyGoal = play(2, PlayType.Goal, at(2), { primaryTeamId: 2, homeScore: 2, awayScore: 2 })
+    const periodEnd = play(3, PlayType.PeriodEnd, at(3), { period: 2, homeScore: 1, awayScore: 0 })
+
+    const [edm, cgy, period] = buildFeedItems([{ ...game(10, [edmGoal, cgyGoal, periodEnd]), playerSummaries: players }], [], lobbyCreated, false)
+
+    expect(edm.title).toBe('Goal · EDM 2–1')
+    expect(edm.text).toContain('<strong>Connor McDavid</strong>')
+    expect(edm.detail).toBe('3rd 12:41')
+    expect(cgy.title).toBe('Goal · CGY 2–2')
+    expect(cgy.text).toBe('Scorer not yet assigned…')
+    expect([period.title, period.text]).toEqual(['End of 2nd', '<strong>CGY 0–1 EDM</strong>'])
+  })
+
+  it("names a final's winner first, and anyone who scored more than once", () => {
+    const players = [{ id: 97, teamId: 1, lastName: 'McDavid' }, { id: 29, teamId: 1, lastName: 'Draisaitl' }] as PlayerSummary[]
+    const goal = (id: number, scorer: number) => play(id, PlayType.Goal, at(id), { primaryTeamId: 1, primaryPlayerId: scorer })
+    const finished = { ...game(10, [goal(1, 97), goal(2, 29), goal(3, 97), play(4, PlayType.GameEnd, at(4))]), playerSummaries: players }
+    finished.homeTeam.score = 3
+
+    const final = buildFeedItems([finished], [], lobbyCreated, false).at(-1)!
+
+    expect(final.text).toBe('EDM 3 <span class="loser">– 0 CGY</span>')
+    expect(final.detail).toBe('McDavid 2G')
   })
 
   it('leaves out shootout goals', () => {
