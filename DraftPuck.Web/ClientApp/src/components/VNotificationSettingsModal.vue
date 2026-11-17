@@ -91,7 +91,7 @@ async function enableAndSave() {
         <span class="d-block">Notification Settings</span>
         <a v-if="!isSaving" role="button" class="text-uppercase text-primary text-decoration-none" @click="close">Close</a>
       </div>
-      <div class="modal-body">
+      <div class="modal-body dark">
         <div v-if="!isNotificationSupported" class="fs-6 fw-bold text-center">
           <div>To enable push notifications on an iOS device, add this page to your home screen.</div>
           <div class="mt-2 p-3 bg-stone-900 rounded">
@@ -110,7 +110,7 @@ async function enableAndSave() {
               <router-link :to="{ name: 'Settings' }" @click="emit('close')">default settings</router-link>.
             </template>
           </p>
-          <VNotificationPreferenceFields v-model="preferences" :keys="lobbyNotificationKeys" id-prefix="lobby" />
+          <VNotificationPreferenceFields v-model="preferences" :keys="lobbyNotificationKeys" id-prefix="lobby" dark />
         </div>
         <template v-if="isNotificationSupported">
           <VButton v-if="isNotificationsEnabled" class="btn btn-primary fw-bold w-100 p-3 mt-4" @click="save" :is-loading="isSaving || isLoading"
@@ -125,3 +125,13 @@ async function enableAndSave() {
     </div>
   </div>
 </template>
+
+<style scoped lang="scss">
+@import '@/assets/scss/custom-colors.scss';
+
+// Dark, like the rest of the lobby (the shared modal body is white).
+.modal-body.dark {
+  color: map-get($custom-colors, 'stone-0');
+  background: map-get($custom-colors, 'stone-850');
+}
+</style>

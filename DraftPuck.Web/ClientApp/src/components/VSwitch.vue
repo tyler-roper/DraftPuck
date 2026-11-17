@@ -28,6 +28,8 @@ const value = computed({
 
 <style scoped>
 .form-check-input:not(:checked) {
-  background-color: white;
+  background-color: #44403c;
+  border-color: #57534e;
+  --bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23a8a29e'/%3e%3c/svg%3e");
 }
 </style>
