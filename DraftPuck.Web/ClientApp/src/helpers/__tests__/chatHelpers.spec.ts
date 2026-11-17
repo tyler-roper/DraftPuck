@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { mentionRegExp, mentionsMember } from '@/helpers/chatHelpers'
+import { applyMention, findMentionQuery, matchMentions, mentionMatchIndex, mentionRegExp, mentionsMember } from '@/helpers/chatHelpers'
 import { runChatCommand, type ChatCommandContext } from '@/helpers/chatCommands'
 
 describe('mentionsMember', () => {
@@ -70,5 +70,56 @@ describe('runChatCommand', () => {
     const ctx = context()
     expect(runChatCommand('nope', [], ctx)).toBe(false)
     expect(ctx.output).toEqual([])
+  })
+})
+
+describe('findMentionQuery', () => {
+  it('finds the @ being typed at the cursor, spaces and all', () => {
+    expect(findMentionQuery('hey @mc', 7)).toEqual({ start: 4, query: 'mc' })
+    expect(findMentionQuery('@Mc Da', 6)).toEqual({ start: 0, query: 'Mc Da' })
+    expect(findMentionQuery('hey @', 5)).toEqual({ start: 4, query: '' })
+  })
+
+  it('ignores an @ inside a word, after a line break, or followed by a space', () => {
+    expect(findMentionQuery('me@mail', 7)).toBeUndefined()
+    expect(findMentionQuery('@sam\nhi', 7)).toBeUndefined()
+    expect(findMentionQuery('@ hi', 4)).toBeUndefined()
+    expect(findMentionQuery('no mention', 10)).toBeUndefined()
+  })
+
+  it('only looks before the cursor', () => {
+    expect(findMentionQuery('@sam later', 2)).toEqual({ start: 0, query: 's' })
+  })
+})
+
+describe('matchMentions', () => {
+  const members = ['Mc David', 'Sam', 'Davey Jones', 'Alex Sampson'].map((name) => ({ name }))
+  const names = (query: string) => matchMentions(members, query).map((m) => m.name)
+
+  it('puts names starting with the query first, then names with a word starting with it', () => {
+    expect(names('da')).toEqual(['Davey Jones', 'Mc David'])
+    expect(names('sam')).toEqual(['Sam', 'Alex Sampson'])
+  })
+
+  it('matches case-insensitively, across spaces, and lists everyone for a bare @', () => {
+    expect(names('MC D')).toEqual(['Mc David'])
+    expect(names('')).toEqual(['Alex Sampson', 'Davey Jones', 'Mc David', 'Sam'])
+    expect(names('zz')).toEqual([])
+  })
+
+  it('knows where the match is, for highlighting', () => {
+    expect(mentionMatchIndex('Mc David', 'dav')).toBe(3)
+    expect(mentionMatchIndex('Mc David', 'mc')).toBe(0)
+    expect(mentionMatchIndex('Mc David', 'avid')).toBe(-1)
+  })
+})
+
+describe('applyMention', () => {
+  it('replaces what was typed with the full name and a space, and moves the cursor after it', () => {
+    expect(applyMention('hey @mc', { start: 4, query: 'mc' }, 7, 'Mc David')).toEqual({ text: 'hey @Mc David ', cursor: 14 })
+  })
+
+  it('keeps the rest of the message, without doubling a space', () => {
+    expect(applyMention('@sa you there', { start: 0, query: 'sa' }, 3, 'Sam')).toEqual({ text: '@Sam you there', cursor: 5 })
   })
 })
