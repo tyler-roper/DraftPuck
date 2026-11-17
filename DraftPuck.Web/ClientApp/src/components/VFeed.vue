@@ -394,7 +394,6 @@ function formatAsTime(date: Date | string) {
             :key="item.key"
             :item="item"
             :linked-goal="goalsByKey.get(goalKeyFor(item) ?? '')"
-            :highlighted="focus?.keys.has(item.key)"
             :class="{ 'is-new': arrivals.isNew(item.key), collapsed: focus && !focus.keys.has(item.key) }"
             @follow-link="followLink"
             :style="{ '--arrival': Math.max(arrivals.arrivalOrder(item.key), 0) }"

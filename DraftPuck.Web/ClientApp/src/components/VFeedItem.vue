@@ -13,8 +13,6 @@ const props = defineProps<{
   item: FeedItem
   /** For a drink event: the goal it came from, if it's in the feed. */
   linkedGoal?: FeedItem
-  /** Lit up after following a link: the goal and its drinks. */
-  highlighted?: boolean
 }>()
 const emit = defineEmits<{ followLink: [goalKey: string] }>()
 
@@ -58,7 +56,7 @@ const itemStyle = computed(() => ({
 </script>
 
 <template>
-  <div class="feed-item" :class="[`layout-${item.layout}`, eventStyle && `tone-${eventStyle.tone}`, { highlighted }]" :style="itemStyle" :data-feed-key="item.key">
+  <div class="feed-item" :class="[`layout-${item.layout}`, eventStyle && `tone-${eventStyle.tone}`]" :style="itemStyle" :data-feed-key="item.key">
     <div class="side">
       <img v-if="item.teams.length === 1" class="logo" :src="`/img/logos/${team.logo}`" :alt="team.abbreviation" />
       <span v-else-if="item.teams.length === 2" class="pair">
@@ -369,17 +367,6 @@ const itemStyle = computed(() => ({
   color: map-get($custom-colors, 'stone-200');
   background: map-get($custom-colors, 'stone-800');
   border: 1px solid map-get($custom-colors, 'stone-700');
-}
-
-// After following a link, the goal and its drinks light up together for a moment.
-.feed-item {
-  transition: box-shadow 0.3s ease;
-}
-
-.feed-item.highlighted {
-  outline: 2px solid map-get($custom-colors, 'primary');
-  outline-offset: 2px;
-  box-shadow: 0 0 18px rgba(255, 177, 0, 0.4);
 }
 
 // Callouts: the flare.
