@@ -6,6 +6,7 @@ import type FeedItem from '@/models/feedItem'
 import { format, parseISO } from 'date-fns'
 import { computed } from 'vue'
 import VIcon from '@/components/VIcon.vue'
+import { bannerStyle, isCallout } from '@/helpers/calloutHelpers'
 
 //props
 const props = defineProps<{
@@ -13,7 +14,14 @@ const props = defineProps<{
 }>()
 
 //computed
+// Callouts stand out in the feed (drinks share their banner, but not this).
+const callout = computed(() =>
+  isLobbyEvent.value && isCallout(props.item.subType as LobbyEventType) ? bannerStyle(props.item.subType as LobbyEventType) : undefined
+)
+
 const itemStyle = computed(() => {
+  if (callout.value) return { '--callout-color': callout.value.color }
+
   // Only game goals: lobby event types share numbers with play types (UserRemoved is the same number as Goal).
   if (isLobbyEvent.value || props.item.subType !== PlayType.Goal) return {}
 
@@ -24,6 +32,7 @@ const itemStyle = computed(() => {
 })
 
 const itemClass = computed(() => {
+  if (callout.value) return `item-type-subtype-${props.item.subType} lobby-event callout-item`
   return isLobbyEvent.value ? `item-type-subtype-${props.item.subType} lobby-event` : `item-type-${props.item.subType.toString().toLowerCase()}`
 })
 
@@ -31,6 +40,7 @@ const itemIcon = computed(() => {
   if (!isLobbyEvent.value) {
     return { prefix: '', icon: '' }
   }
+  if (callout.value) return { prefix: 'sr', icon: callout.value.icon }
 
   const icons: Record<number, { prefix: string; icon: string }> = {
     [LobbyEventType.UserJoined]: { prefix: 'sr', icon: 'user-add' },
@@ -229,5 +239,15 @@ function formatAsTime(date: Date | string) {
 
 .feed-item-icon {
   font-size: 36px;
+}
+
+// Callouts stand out: tinted in their colour, with a coloured icon and edge.
+.callout-item {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--callout-color) 22%, transparent), transparent 80%) !important;
+  border-left: 3px solid var(--callout-color);
+}
+
+.callout-item .feed-item-icon {
+  color: var(--callout-color);
 }
 </style>

@@ -2,6 +2,7 @@
 using DraftPuck.Application.Features.Achievements;
 using DraftPuck.Application.Features.Achievements.Rules;
 using DraftPuck.Application.Features.Games;
+using DraftPuck.Application.Features.Lobbies.Events;
 using DraftPuck.Application.Features.Users;
 using DraftPuck.Domain.System;
 using Microsoft.Extensions.Configuration;
@@ -17,6 +18,7 @@ public static class ApplicationServiceCollectionExtensions
             .AddAchievementRules()
             .AddScoped<AchievementAwardService>()
             .AddScoped<GameRosterSync>()
+            .AddScoped<LobbyEventWriter>()
             .AddMediatR(cfg =>
             {
                 // The Lucky Penny bundle key, shared with AutoMapper.

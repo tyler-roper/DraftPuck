@@ -8,6 +8,7 @@ import { useToast } from '@/composables/useToast'
 import { getErrorMessage } from '@/helpers/requestHelpers'
 import BotPickStyle from '@/enums/botPickStyle'
 import LobbyService from '@/services/LobbyService'
+import { memberNameScale } from '@/helpers/memberNameHelpers'
 import { useRouter } from 'vue-router'
 //#endregion
 
@@ -135,9 +136,11 @@ function viewProfile() {
         <i v-if="!member.avatarPath || member.isGuest" class="fi me-2 d-block" :class="iconClass"></i>
       </div>
 
-      <div class="d-block">
-        <span class="name d-block fw-bold text-start" :class="{ 'is-logged-in': isLoggedIn }">{{ member.name }}</span>
-        <span class="title d-inline-block text-stone-500 mt-n1 fs-7" :class="{ 'is-logged-in': isLoggedIn }">{{ memberTitle }}</span>
+      <div class="d-block name-block">
+        <span class="name fw-bold text-start" :class="{ 'is-logged-in': isLoggedIn }" :style="{ '--name-scale': memberNameScale(member.name) }">{{
+          member.name
+        }}</span>
+        <span class="title d-inline-block text-stone-500 fs-7" :class="{ 'is-logged-in': isLoggedIn }">{{ memberTitle }}</span>
       </div>
 
       <span class="d-flex ms-auto align-items-center" style="cursor: default">
@@ -205,6 +208,8 @@ function viewProfile() {
 }
 
 .member-link .icon {
+  // A fixed circle: a long name shrinks beside it, never the avatar.
+  flex: none;
   display: flex;
   width: 50px;
   height: 50px;
@@ -242,8 +247,21 @@ function viewProfile() {
   background-color: map-get($custom-colors, 'stone-100');
 }
 
+.name-block {
+  // Lets a long name shrink beside the stats rather than push them off the card.
+  min-width: 0;
+}
+
+// Long names shrink (memberNameScale), wrap to two tight lines, and end with "…" beyond that. No fixed height, so
+// the title always sits below the name.
 .name {
-  height: 18px;
+  font-size: calc(16px * var(--name-scale, 1));
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .name.is-logged-in {
@@ -251,7 +269,7 @@ function viewProfile() {
     0 0 5px black,
     0 1px black;
   color: map-get($custom-colors, 'stone-0');
-  font-size: 18px !important;
+  font-size: calc(18px * var(--name-scale, 1)) !important;
 }
 
 .title.is-logged-in {
