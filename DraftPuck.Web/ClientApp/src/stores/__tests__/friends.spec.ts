@@ -63,6 +63,19 @@ describe('friends store', () => {
     expect(store.pending).toBe(1)
   })
 
+  it('drops the invite to a lobby the user is now in, whatever the case of the code', async () => {
+    vi.mocked(FriendService.getFriends).mockResolvedValue(list({ incoming: [friend('a')], invites: [invite('ABCD'), invite('EFGH')] }))
+    const store = useFriendsStore()
+    await store.load()
+
+    store.forgetInvite('abcd')
+    store.forgetInvite('ZZZZ')
+
+    expect(store.list?.invites.map((i) => i.joinCode)).toEqual(['EFGH'])
+    expect(store.pending).toBe(2)
+    expect(FriendService.dismissLobbyInvite).not.toHaveBeenCalled()
+  })
+
   it('forgets everything on reset (sign-out)', async () => {
     vi.mocked(FriendService.getFriends).mockResolvedValue(list({ incoming: [friend('a')] }))
     const store = useFriendsStore()

@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia'
 import { useRouter, useRoute } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 import { useLobbyStore } from '@/stores/lobby'
+import { useFriendsStore } from '@/stores/friends'
 import { useGamesStore } from '@/stores/games'
 import { useUserStore } from '@/stores/user'
 import { useSystemStore } from '@/stores/system'
@@ -46,6 +47,7 @@ const router = useRouter()
 const toast = useToast()
 const userStore = useUserStore()
 const store = useLobbyStore()
+const friendsStore = useFriendsStore()
 const gamesStore = useGamesStore()
 const { isLoggedIn, currentUser } = storeToRefs(userStore)
 const { lobby, currentMember, events, chatMessages } = storeToRefs(store)
@@ -158,6 +160,8 @@ async function onJoined() {
 async function enterLobby() {
   if (!currentMember.value) return router.push({ name: 'Home' })
   localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ joinCode, name: currentMember.value.name }))
+  // Being in the lobby answers any invite to it, however they joined.
+  friendsStore.forgetInvite(joinCode)
   await connection.start()
 }
 
