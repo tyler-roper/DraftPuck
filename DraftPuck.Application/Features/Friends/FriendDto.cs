@@ -23,6 +23,11 @@ public class FriendsDto
     public List<FriendDto> Outgoing { get; set; } = [];
     /// <summary>Invites to lobbies that are still on, that this user hasn't joined or dismissed. Newest first.</summary>
     public List<LobbyInviteDto> Invites { get; set; } = [];
+    /// <summary>
+    /// Players with an account this user has been in a lobby with, who aren't friends yet and haven't been asked either
+    /// way. Most recently played with first, at most <see cref="GetFriendsQueryHandler.MaxSuggestions"/>.
+    /// </summary>
+    public List<FriendDto> Suggestions { get; set; } = [];
 }
 
 /// <summary>An invite to a lobby, as the person invited sees it.</summary>

@@ -116,7 +116,7 @@ const stateText = { invited: 'Invited', member: 'In lobby' }
                 :checked="state !== 'available' || selected.includes(friend.id)"
                 @change="toggle(friend.id)"
               />
-              <VUser display="avatar" :user="friend as unknown as User" :avatar-size-in-px="36" />
+              <VUser display="avatar" :user="friend" :avatar-size-in-px="36" />
               <span class="flex-grow-1 text-truncate fw-bold">{{ friend.nickname }}</span>
               <span v-if="state !== 'available'" class="fs-8 text-uppercase text-stone-400">{{ stateText[state] }}</span>
             </label>

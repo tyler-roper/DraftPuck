@@ -23,8 +23,9 @@ class UserService {
     return this._http.get('', id)
   }
 
-  public async getUserByName(name: string): Promise<User> {
-    return this._http.get(`?name=${name}`)
+  /** A player's public profile (no email or settings). */
+  public async getUserByName(name: string): Promise<UserProfile> {
+    return this._http.get(`?name=${encodeURIComponent(name)}`)
   }
 
   public async updateUser(id: string, request: UpdateUserRequest): Promise<User> {

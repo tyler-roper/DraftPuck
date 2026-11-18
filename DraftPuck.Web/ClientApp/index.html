@@ -28,6 +28,13 @@
   <link rel="icon" href="/favicon.ico">
 
   <link rel="manifest" href="/manifest.json">
+  <!-- iPhone home screen: iOS ignores the manifest's icons (it drew a "D" on a yellow tile). No
+       apple-mobile-web-app-status-bar-style on purpose: the default is the one that avoids iOS 27's top-edge blur of
+       installed web apps (black-translucent triggers it), and the setting is frozen when the app is added. -->
+
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-title" content="DRAFTPUCK">
+  <meta name="theme-color" content="#1c1917">
 </head>
 
 <body>

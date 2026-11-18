@@ -9,7 +9,7 @@ namespace DraftPuck.Web.Features.Users;
 public class UsersController(IMediator mediator) : BaseController()
 {
     [HttpGet]
-    public async Task<ActionResult<UserDto>> GetUserByName([FromQuery] string name)
+    public async Task<ActionResult<UserProfileDto>> GetUserByName([FromQuery] string name)
     {
         if (string.IsNullOrEmpty(name))
             return BadRequest("User name is required for lookup.");
@@ -22,7 +22,7 @@ public class UsersController(IMediator mediator) : BaseController()
     [HttpGet("{id}")]
     public async Task<IActionResult> GetUserById(Guid id)
     {
-        var query = new GetUserByIdQuery { Id = id };
+        var query = new GetUserByIdQuery { Id = id, RequesterId = CurrentUserId };
         var userDto = await mediator.Send(query);
         return Ok(userDto);
     }

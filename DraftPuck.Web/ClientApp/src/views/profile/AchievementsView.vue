@@ -20,7 +20,7 @@ const { currentUser, isLoggedIn } = storeToRefs(userStore)
 const isLoadingUser = ref(false)
 const isLoadingAchievements = ref(false)
 const allAchievements = ref<Array<Achievement>>([])
-const user = ref<User>()
+const user = ref<UserProfile>()
 const achievementList = computed<Array<UserAchievement>>(() => {
   return allAchievements.value
     .map((a) => ({
