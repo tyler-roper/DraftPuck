@@ -17,6 +17,8 @@ flow, the domain rules, and where new code goes. Known issues and planned work a
   `dotnet-ef` comes from the repo's tool manifest (`dotnet-tools.json`, pinned to the EF Core version): run
   `dotnet tool restore` once. Don't install it globally.
 - The client needs Node 22.22+ (or 24.15+).
+- See a change in the real app: the `run-draftpuck` skill (`.claude/skills/run-draftpuck/`) runs an isolated copy built
+  from the working tree at http://localhost:17100, seeds friends and lobbies, and screenshots pages in headless Chrome.
 
 ## Workflow
 

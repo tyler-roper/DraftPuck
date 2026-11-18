@@ -13,5 +13,6 @@ public class UpdateNotificationPreferencesCommand : IRequest<UserDto>
     public NotificationPreference PickingStartedNotificationPreference { get; set; }
     public NotificationPreference AchievementAwardedNotificationPreference { get; set; }
     public NotificationPreference RecapNotificationPreference { get; set; }
+    public NotificationPreference FriendNotificationPreference { get; set; }
     public bool ApplyToActiveLobbies { get; set; }
 }

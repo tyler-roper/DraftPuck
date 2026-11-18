@@ -14,7 +14,8 @@ public class UpdateNotificationPreferencesCommandHandler(IDbContext dbContext, I
             request.ChatNotificationPreference,
             request.PickingStartedNotificationPreference,
             request.AchievementAwardedNotificationPreference,
-            request.RecapNotificationPreference);
+            request.RecapNotificationPreference,
+            request.FriendNotificationPreference);
 
         var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == request.UserId && !u.IsBot, ct)
             ?? throw new NotFoundException("User not found.");
@@ -25,6 +26,7 @@ public class UpdateNotificationPreferencesCommandHandler(IDbContext dbContext, I
         user.PickingStartedNotificationPreference = request.PickingStartedNotificationPreference;
         user.AchievementAwardedNotificationPreference = request.AchievementAwardedNotificationPreference;
         user.RecapNotificationPreference = request.RecapNotificationPreference;
+        user.FriendNotificationPreference = request.FriendNotificationPreference;
 
         if (request.ApplyToActiveLobbies)
         {

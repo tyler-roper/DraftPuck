@@ -13,9 +13,10 @@ describe('notificationSettings', () => {
     expect(notificationSettings.map((s) => s.key)).toEqual(allNotificationKeys)
   })
 
-  it('keeps achievements and the recap out of the per-lobby settings', () => {
+  it('keeps achievements, the recap and friends out of the per-lobby settings', () => {
     expect(lobbyNotificationKeys).not.toContain('achievementAwardedNotificationPreference')
     expect(lobbyNotificationKeys).not.toContain('recapNotificationPreference')
+    expect(lobbyNotificationKeys).not.toContain('friendNotificationPreference')
     expect(lobbyNotificationKeys).toHaveLength(4)
   })
 

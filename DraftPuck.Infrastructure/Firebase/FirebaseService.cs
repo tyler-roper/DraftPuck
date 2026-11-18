@@ -20,6 +20,22 @@ public class FirebaseService(
     {
         public static readonly string LOBBY_EVENT = "LobbyEvent";
         public static readonly string ACHIEVEMENT = "Achievement";
+        public static readonly string FRIEND = "Friend";
+    }
+
+    public Task<int> SendFriendNotification(string title, string message, string path, IReadOnlyCollection<string> tokens, CancellationToken ct = default)
+    {
+        var data = new Dictionary<string, string>
+        {
+            { "type", PushNotificationTypes.FRIEND },
+            { "title", title },
+            { "body", message },
+            { "icon", _appConfig.GetAbsoluteUrl("img/icons/icon-192.png") },
+            { "badge", _appConfig.GetAbsoluteUrl("img/icons/badge.png") },
+            { "link", _appConfig.GetAbsoluteUrl(path) }
+        };
+
+        return Send(tokens, data, ct);
     }
 
     public Task<int> SendAchievementNotification(IReadOnlyCollection<string> tokens, AchievementEntity achievement, CancellationToken ct)

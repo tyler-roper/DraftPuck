@@ -5,6 +5,8 @@ import { computed, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 import VIcon from '@/components/VIcon.vue'
+import { useFriendsStore } from '@/stores/friends'
+import { badgeText } from '@/helpers/friendHelpers'
 
 const props = withDefaults(
   defineProps<{
@@ -30,6 +32,8 @@ interface UserLink {
   class?: string
   iconPrefix?: string
   icon?: string
+  // A count to show beside the link (e.g. pending friend requests), if any.
+  badge?: string
 }
 
 //data
@@ -37,6 +41,7 @@ const userStore = useUserStore()
 const router = useRouter()
 const route = useRoute()
 const toast = useToast()
+const { pending: pendingFriendItems } = storeToRefs(useFriendsStore())
 const { currentUser } = storeToRefs(userStore)
 const user = computed(() => props.user ?? currentUser.value)
 const bannerPath = computed(() => (user.value?.banner?.imagePath ? `url(${user.value.banner.imagePath})` : ''))
@@ -44,6 +49,8 @@ const avatarPath = computed(() => (user.value?.avatarPath ? `url(${user.value.av
 const isLoggingOut = ref(false)
 const isSelf = computed(() => currentUser.value && user.value?.id === currentUser.value?.id)
 const isClickable = computed(() => props.showMenuOnClick === true && isSelf.value === true)
+// On your own menu button: friend requests and lobby invites waiting on you.
+const menuBadge = computed(() => (isClickable.value && currentUser.value?.isGuest === false ? badgeText(pendingFriendItems.value) : ''))
 const loginPath = computed(() => (route.params.joinCode ? `/login?lobby=${route.params.joinCode}` : '/login'))
 const joinPath = computed(() => (route.params.joinCode ? `/join?lobby=${route.params.joinCode}` : '/join'))
 const fontSize = computed(() => {
@@ -60,6 +67,7 @@ const fontSize = computed(() => {
 const loggedInUserLinks = computed<Array<UserLink>>(() => ([
   { path: `/u/${user.value?.nickname}`, text: 'Profile', iconPrefix: 'sr', icon: 'user-pen' },
   { path: '/account/lobbies', text: 'My Lobbies', iconPrefix: 'sr', icon: 'users-alt' },
+  { path: '/account/friends', text: 'Friends & Invites', iconPrefix: 'sr', icon: 'user-add', badge: badgeText(pendingFriendItems.value) },
   { action: logout, text: 'Logout', class: 'text-primary', iconPrefix: 'sr', icon: 'exit' }
 ]))
 
@@ -112,7 +120,7 @@ async function userLinkClickHandler(userLink: UserLink) {
   <div class="dropdown" :class="props.class">
     <button
       v-if="display === 'banner'"
-      class="btn rounded-0 banner d-flex p-2 fs-6 text-stone-900 align-items-center w-100"
+      class="btn rounded-0 banner d-flex p-2 fs-6 text-stone-900 align-items-center w-100 position-relative"
       :style="{ 'background-image': bannerPath }"
       :class="{ 'pointer-events-none': !isClickable }"
       id="dropdownMenuButton"
@@ -129,6 +137,8 @@ async function userLinkClickHandler(userLink: UserLink) {
         <span class="d-block text-start fw-bold text-stone-0 fs-5 nickname">{{ user?.nickname }}</span>
         <span class="d-inline-block text-start text-stone-200 title text-uppercase fw-bold">{{ user?.title.text }}</span>
       </div>
+      <!-- Outside the avatar, which clips its contents to a circle. -->
+      <span v-if="menuBadge" class="count-badge on-banner" :aria-label="`${menuBadge} waiting`">{{ menuBadge }}</span>
     </button>
 
     <button
@@ -153,10 +163,12 @@ async function userLinkClickHandler(userLink: UserLink) {
         role="button"
         @click="userLinkClickHandler(userLink)"
       >
-        <VIcon v-if="userLink.icon" class="me-2" :prefix="userLink.iconPrefix ?? 'rr'" :icon="userLink.icon" />{{ userLink.text }}</a
+        <VIcon v-if="userLink.icon" class="me-2" :prefix="userLink.iconPrefix ?? 'rr'" :icon="userLink.icon" />{{ userLink.text
+        }}<span v-if="userLink.badge" class="count-badge inline ms-2">{{ userLink.badge }}</span></a
       >
     </div>
 
+    <span v-if="menuBadge && display === 'avatar'" class="count-badge on-avatar" :aria-label="`${menuBadge} waiting`">{{ menuBadge }}</span>
     <router-link v-if="showEditAvatar && isSelf" class="edit-badge" :to="{ name: 'Avatar' }" replace>
       <VIcon icon="pencil" prefix="sr" class="text-stone-0 fs-6" />
     </router-link>
@@ -285,6 +297,48 @@ async function userLinkClickHandler(userLink: UserLink) {
 
 .dropdown-item:hover {
   background-color: map-get($custom-colors, 'stone-800');
+}
+
+.count-badge {
+  position: absolute;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background-color: map-get($custom-colors, 'primary');
+  color: map-get($custom-colors, 'stone-900');
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 20px;
+  text-align: center;
+  box-shadow: 0 0 0 2px map-get($custom-colors, 'stone-900');
+  // Taps go to the menu button underneath.
+  pointer-events: none;
+}
+
+// Over the top-right of the banner's avatar (8px padding + 50px avatar).
+.count-badge.on-banner {
+  top: 2px;
+  left: 44px;
+}
+
+// Over the top-right of a small avatar button.
+.count-badge.on-avatar {
+  top: -6px;
+  // Not much further right: in the lobby header this avatar sits at the screen's edge.
+  right: -5px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  font-size: 10px;
+  line-height: 16px;
+}
+
+// Beside a menu link.
+.count-badge.inline {
+  position: static;
+  display: inline-block;
+  box-shadow: none;
 }
 
 .edit-badge {
