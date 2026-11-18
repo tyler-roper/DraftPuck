@@ -43,7 +43,8 @@ public static class LobbyQueryExtensions
             PicksPerTeam = l.PicksPerTeam,
             IsBotAutoPickingEnabled = l.IsBotAutoPickingEnabled,
             GameCount = l.GameIds.Count,
-            MemberCount = l.LobbyMembers.Count,
+            // Members removed from the lobby aren't in it any more.
+            MemberCount = l.LobbyMembers.Count(lm => !lm.IsRemoved),
             BotCount = l.LobbyMembers.Where(lm => lm.IsBot).Count(),
             GuestCount = l.LobbyMembers.Where(lm => !lm.IsBot && lm.User.IsGuest).Count(),
             DrinksGiven = l.LobbyMembers

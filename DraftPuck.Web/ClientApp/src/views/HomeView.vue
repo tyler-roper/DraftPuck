@@ -8,6 +8,7 @@ import { ref } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
 import VUser from '@/components/VUser.vue'
+import VRejoin from '@/components/VRejoin.vue'
 
 //#region data
 const userStore = useUserStore()
@@ -59,6 +60,7 @@ const view = ref<View>('join')
         {{ `© ${new Date().getFullYear()} DraftPuck — Tyler Roper` }}
       </div>
     </div>
+    <VRejoin />
   </SplashLayout>
 </template>
 

@@ -18,6 +18,11 @@ class LobbyService {
     return this._http.post('', request)
   }
 
+  /** The current user's live lobbies (tonight's), newest first. */
+  public async getActiveLobbies(): Promise<Array<LobbySummary>> {
+    return this._http.get('?active=true')
+  }
+
   public async getLobbies(): Promise<Array<LobbySummary>> {
     return this._http.get('')
   }
