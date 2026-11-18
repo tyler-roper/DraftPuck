@@ -71,6 +71,7 @@ public class UsersController(IMediator mediator) : BaseController()
             PickingStartedNotificationPreference = request.PickingStartedNotificationPreference,
             AchievementAwardedNotificationPreference = request.AchievementAwardedNotificationPreference,
             RecapNotificationPreference = request.RecapNotificationPreference,
+            FriendNotificationPreference = request.FriendNotificationPreference,
             ApplyToActiveLobbies = request.ApplyToActiveLobbies
         });
         return Ok(user);

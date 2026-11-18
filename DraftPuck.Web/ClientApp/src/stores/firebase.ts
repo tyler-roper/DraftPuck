@@ -9,6 +9,7 @@ import { escapeHtml } from '@/helpers/htmlHelpers'
 import { getForegroundToast, isRunningAsInstalledApp } from '@/helpers/pushHelpers'
 import UserService from '@/services/UserService'
 import router from '@/router'
+import { useFriendsStore } from '@/stores/friends'
 
 export const useFirebaseStore = defineStore('firebase', () => {
   const isInitialized = ref(false)
@@ -54,6 +55,9 @@ export const useFirebaseStore = defineStore('firebase', () => {
           userStore.refreshUser()
           return
         }
+
+        // Friend requests and lobby invites change what's waiting on the user (the badge).
+        if (type === 'Friend') useFriendsStore().load().catch(() => {})
 
         // Foreground pushes skip the service worker, so show other notifications (picks ready, drinks, chat) in-app.
         const notification = getForegroundToast(payload.data, router.currentRoute.value.path)

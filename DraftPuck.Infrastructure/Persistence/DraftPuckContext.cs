@@ -1,6 +1,7 @@
 ﻿using DraftPuck.Application.Common.Interfaces;
 using DraftPuck.Application.Features.Lobbies.Drinks;
 using DraftPuck.Domain.Auth;
+using DraftPuck.Domain.Friends;
 using DraftPuck.Domain.Titles;
 using Microsoft.EntityFrameworkCore.Metadata;
 
@@ -23,6 +24,8 @@ public partial class DraftPuckContext : DbContext, IDbContext
     public DbSet<DrinkEntity> Drinks { get; set; }
     public DbSet<ErrorLogEntity> ErrorLogs { get; set; }
     public DbSet<EventLogoEntity> EventLogos { get; set; }
+    public DbSet<FriendshipEntity> Friendships { get; set; }
+    public DbSet<LobbyInviteEntity> LobbyInvites { get; set; }
     public DbSet<LobbyEntity> Lobbies { get; set; }
     public DbSet<LobbyEventEntity> LobbyEvents { get; set; }
     public DbSet<LobbyMemberEntity> LobbyMembers { get; set; }
@@ -266,6 +269,45 @@ public partial class DraftPuckContext : DbContext, IDbContext
                 .HasDatabaseName("IX_UserRefreshTokens_UserId");
         });
 
+        modelBuilder.Entity<FriendshipEntity>(entity =>
+        {
+            entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
+            entity.Property(e => e.Created).HasDefaultValueSql("(getutcdate())");
+            entity.Ignore(e => e.IsAccepted);
+
+            // One row per pair: the handlers also check the reverse direction before adding one.
+            entity.HasIndex(e => new { e.RequesterId, e.AddresseeId }).IsUnique();
+            entity.HasIndex(e => e.AddresseeId);
+
+            // SQL Server allows only one cascade path to Users from here.
+            entity.HasOne(e => e.Requester).WithMany()
+                .HasForeignKey(e => e.RequesterId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Addressee).WithMany()
+                .HasForeignKey(e => e.AddresseeId)
+                .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<LobbyInviteEntity>(entity =>
+        {
+            entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
+            entity.Property(e => e.Created).HasDefaultValueSql("(getutcdate())");
+
+            // One invite per person per lobby, however many members invite them.
+            entity.HasIndex(e => new { e.LobbyId, e.RecipientId }).IsUnique();
+            entity.HasIndex(e => e.RecipientId);
+
+            entity.HasOne(e => e.Lobby).WithMany()
+                .HasForeignKey(e => e.LobbyId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Sender).WithMany()
+                .HasForeignKey(e => e.SenderId)
+                .OnDelete(DeleteBehavior.NoAction);
+            entity.HasOne(e => e.Recipient).WithMany()
+                .HasForeignKey(e => e.RecipientId)
+                .OnDelete(DeleteBehavior.NoAction);
+        });
+
         modelBuilder.Entity<UserDeviceEntity>(entity =>
         {
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
@@ -316,6 +358,7 @@ public partial class DraftPuckContext : DbContext, IDbContext
             entity.Property(e => e.PickingStartedNotificationPreference).HasDefaultValueSql("((0))");
             entity.Property(e => e.AchievementAwardedNotificationPreference).HasDefaultValueSql("((0))");
             entity.Property(e => e.RecapNotificationPreference).HasDefaultValueSql("((2))").HasSentinel(NotificationPreference.All);
+            entity.Property(e => e.FriendNotificationPreference).HasDefaultValueSql("((2))").HasSentinel(NotificationPreference.All);
             entity.Property(e => e.IsActive).HasDefaultValueSql("((1))").HasSentinel(true);
             entity.Property(e => e.IsAdmin).HasDefaultValueSql("((0))");
             entity.Property(e => e.IsGuest).HasDefaultValueSql("((1))").HasSentinel(true);

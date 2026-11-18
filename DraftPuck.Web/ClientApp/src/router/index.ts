@@ -113,6 +113,12 @@ const router = createRouter({
           meta: { requiresLogin }
         },
         {
+          path: 'friends',
+          name: 'Friends',
+          component: () => import('@/views/account/FriendsView.vue'),
+          meta: { requiresLogin }
+        },
+        {
           path: 'settings',
           name: 'Settings',
           component: () => import('@/views/account/AccountSettingsView.vue'),

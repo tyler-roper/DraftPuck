@@ -7,6 +7,10 @@ import { storeToRefs } from 'pinia'
 import VUser from '@/components/VUser.vue'
 import VIcon from '@/components/VIcon.vue'
 import AchievementService from '@/services/AchievementService'
+import { useFriendsStore } from '@/stores/friends'
+import { friendStatusOf } from '@/helpers/friendHelpers'
+import { useToast } from '@/composables/useToast'
+import { getErrorMessage } from '@/helpers/requestHelpers'
 
 const props = defineProps<{
   username?: string | null
@@ -31,6 +35,13 @@ const achievementCompletionPercentage = computed(() => {
 //#region computed
 const isLoading = computed(() => isLoadingUser.value || isLoadingAchievements.value)
 const isSelf = computed(() => isLoggedIn.value && currentUser.value?.nickname === props.username)
+const friendsStore = useFriendsStore()
+const { list: friendsList } = storeToRefs(friendsStore)
+const toast = useToast()
+const isSavingFriend = ref(false)
+// Signed-in players can befriend other players with an account (not guests or bots).
+const canBefriend = computed(() => isLoggedIn.value && !isSelf.value && !!profileUser.value && !profileUser.value.isGuest && !profileUser.value.isBot)
+const friendStatus = computed(() => (profileUser.value ? friendStatusOf(friendsList.value, profileUser.value.id) : 'none'))
 //#endregion
 
 //#region hooks
@@ -69,6 +80,20 @@ const onBreadcrumbClick = useBackNavigation(() => '/')
 
 async function logout() {
   await userStore.logout()
+}
+
+async function addFriend() {
+  if (!profileUser.value) return
+  const wasReceived = friendStatus.value === 'requestReceived'
+  isSavingFriend.value = true
+  try {
+    await friendsStore.add(profileUser.value.id)
+    toast.success(wasReceived ? `You and ${profileUser.value.nickname} are now friends!` : 'Friend request sent!', { timeout: 2000 })
+  } catch (ex) {
+    toast.error(getErrorMessage(ex, "Couldn't send the friend request."))
+  } finally {
+    isSavingFriend.value = false
+  }
 }
 //#endregion
 
@@ -117,6 +142,17 @@ watch(
         </div>
         <div class="text-center fs-1 fw-bold mt-2">{{ profileUser.nickname }}</div>
         <div class="text-center fs-7 text-stone-300 mt-n1 text-uppercase">{{ profileUser.title.text }}</div>
+        <div v-if="canBefriend" class="text-center mt-3">
+          <router-link v-if="friendStatus === 'friends'" :to="{ name: 'Friends' }" class="btn btn-stone-900 text-stone-0 fw-bold px-4">
+            <VIcon prefix="sr" icon="user-check" class="me-2" />Friends
+          </router-link>
+          <button v-else-if="friendStatus === 'requestSent'" class="btn btn-stone-900 text-stone-300 fw-bold px-4" disabled>
+            <VIcon prefix="sr" icon="time-past" class="me-2" />Request Sent
+          </button>
+          <button v-else class="btn btn-primary fw-bold px-4" :disabled="isSavingFriend" @click="addFriend">
+            <VIcon prefix="sr" icon="user-add" class="me-2" />{{ friendStatus === 'requestReceived' ? 'Accept Friend Request' : 'Add Friend' }}
+          </button>
+        </div>
       </div>
 
       <div class="px-4">
@@ -171,6 +207,11 @@ watch(
               <router-link class="profile-option" :to="{ name: 'Lobbies' }">
                 <VIcon class="icon" prefix="rr" icon="hockey-puck" />
                 <span>Your Lobbies</span>
+                <VIcon class="caret" prefix="rr" icon="angle-right" />
+              </router-link>
+              <router-link class="profile-option" :to="{ name: 'Friends' }">
+                <VIcon class="icon" prefix="rr" icon="user-add" />
+                <span>Friends &amp; Invites</span>
                 <VIcon class="caret" prefix="rr" icon="angle-right" />
               </router-link>
               <router-link class="profile-option" :to="{ name: 'Discord' }">

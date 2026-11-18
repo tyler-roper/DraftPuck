@@ -89,6 +89,12 @@ refetches everything (`resync`). Games carry an `UpdatedUtc` stamp so an older c
   | Time-only correction, renumbered play | Nothing |
 
   A revoke is "drink invalidated" if the drink was already given to someone, otherwise "drink revoked".
+- **Friends** are mutual and need an account (guests and bots can't have any). Adding someone who already asked you
+  accepts their request; removing, declining and cancelling are the same call and tell nobody. A lobby member invites
+  friends from the lobby's Share window (`SendLobbyInvitesCommand`); an invite waits in the friend's *Friends &
+  Invites* page until they join, dismiss it, or the lobby ends. Nobody hears about a lobby they weren't invited to.
+  Requests and invites push under the user's Friends setting, and the avatar menu badges what's waiting
+  (`stores/friends.ts`, kept current by `useFriendsSync`).
 - **Push notifications** go to every device a user has (`UserDevices`: one Firebase token each, with a readable
   description). The app registers its device on start, sign-in and sign-out, and forgets it before signing out.
   `IPushNotificationService` takes all of a user's tokens and removes devices Firebase says are gone. What a user hears
