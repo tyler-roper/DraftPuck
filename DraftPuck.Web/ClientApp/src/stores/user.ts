@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { defineStore } from 'pinia'
 import UserService from '@/services/UserService'
 import AuthService from '@/services/AuthService'
@@ -8,6 +8,7 @@ import TokenService from '@/services/TokenService'
 import { useFirebaseStore } from '@/stores/firebase'
 import { restoreSession } from '@/helpers/sessionHelpers'
 import { useToast } from '@/composables/useToast'
+import { rememberProfile, rememberedProfile } from '@/helpers/rememberedProfile'
 
 export const useUserStore = defineStore('user', () => {
   //#region state
@@ -15,10 +16,18 @@ export const useUserStore = defineStore('user', () => {
   const isReady = ref(false)
   const banners = ref<Array<Banner>>([])
   const titles = ref<Array<Title>>([])
+  // Last visit's profile, shown until the session is restored; kept in step with whoever is signed in.
+  const rememberedUser = ref(rememberedProfile())
+  watch(currentUser, (user) => {
+    rememberProfile(user)
+    rememberedUser.value = rememberedProfile()
+  })
   //#endregion
 
   //#region getters
   const isLoggedIn = computed(() => isReady.value === true && currentUser.value && currentUser.value.isGuest === false)
+  /** Signed in, or, until the session is restored, signed in last visit: for layout, so pages don't change shape. */
+  const seemsLoggedIn = computed(() => isLoggedIn.value || (!isReady.value && !!rememberedUser.value))
   const isAdmin = computed(() => isReady.value === true && currentUser.value?.isAdmin === true)
   //#endregion
 
@@ -116,6 +125,8 @@ export const useUserStore = defineStore('user', () => {
   //#endregion
 
   return {
+    rememberedUser,
+    seemsLoggedIn,
     banners,
     titles,
     currentUser,

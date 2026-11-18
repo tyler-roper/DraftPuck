@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, toRef } from 'vue'
+import { useLobbyFormNickname } from '@/composables/useLobbyFormNickname'
 import useVuelidate from '@vuelidate/core'
 import { required, requiredIf, maxLength, minLength, alpha } from '@vuelidate/validators'
 import VInputWrapper from '@/components/VInputWrapper.vue'
@@ -22,8 +23,8 @@ const hasFixedCode = computed(() => !!props.code)
 
 //#region data
 const userStore = useUserStore()
-const { isLoggedIn, currentUser } = storeToRefs(userStore)
-const isNotLoggedIn = computed(() => !isLoggedIn.value)
+const { seemsLoggedIn, currentUser } = storeToRefs(userStore)
+const isNotLoggedIn = computed(() => !seemsLoggedIn.value)
 const isJoiningLobby = ref(false)
 const toast = useToast()
 const router = useRouter()
@@ -46,11 +47,16 @@ const rules = computed(() => ({
 }))
 
 const v$ = useVuelidate<JoinLobbyViewModel>(rules, form)
+const { whenSignedIn } = useLobbyFormNickname(toRef(form.value, 'nickname'))
 //#endregion
 
 //#region methods
 async function joinLobby(e: Event) {
   e.preventDefault()
+
+  isJoiningLobby.value = true
+  await whenSignedIn()
+  isJoiningLobby.value = false
 
   v$.value.$validate()
   if (v$.value.$error) return
@@ -92,7 +98,6 @@ onMounted(() => {
   const latestLobbyRaw = localStorage.getItem('latestLobby')
   const latestLobby: { joinCode: string; name: string } | undefined = latestLobbyRaw ? JSON.parse(latestLobbyRaw) : undefined
   form.value.code = props.code ?? latestLobby?.joinCode ?? ''
-  form.value.nickname = isLoggedIn.value ? userStore.currentUser!.nickname! : (userStore.currentUser?.nickname ?? latestLobby?.name ?? '')
 })
 //#endregion
 
@@ -102,7 +107,7 @@ onMounted(() => {
 <template>
   <form @submit="joinLobby">
     <div class="row gx-3">
-      <div v-if="!hasFixedCode" :class="isLoggedIn ? 'col-12' : 'col-4'">
+      <div v-if="!hasFixedCode" :class="seemsLoggedIn ? 'col-12' : 'col-4'">
         <label class="form-label" for="lobbyCode">Code</label>
         <VInputWrapper icon="key" prefix="sr">
           <input
@@ -117,7 +122,7 @@ onMounted(() => {
           />
         </VInputWrapper>
       </div>
-      <div v-if="!isLoggedIn" :class="hasFixedCode ? 'col-12' : 'col-8'">
+      <div v-if="!seemsLoggedIn" :class="hasFixedCode ? 'col-12' : 'col-8'">
         <label class="form-label" for="nickname">Nickname</label>
         <VInputWrapper icon="user" prefix="sr">
           <input

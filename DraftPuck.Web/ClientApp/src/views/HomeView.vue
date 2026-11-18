@@ -11,7 +11,7 @@ import VUser from '@/components/VUser.vue'
 
 //#region data
 const userStore = useUserStore()
-const { isLoggedIn } = storeToRefs(userStore)
+const { isLoggedIn, isReady, rememberedUser, seemsLoggedIn } = storeToRefs(userStore)
 
 type View = 'join' | 'create' | 'x'
 const views = ref<Array<{ value: View; label: string }>>([
@@ -28,10 +28,13 @@ const view = ref<View>('join')
       <div class="form-container p-3">
         <VBigSwitch class="mt-n5" :options="views" v-model="view" />
         <VUser v-if="isLoggedIn" :show-menu-on-click="true" class="my-3 rounded-md" />
+        <!-- While the session is restored, last visit's profile, so a signed-in player isn't shown as a guest first. -->
+        <VUser v-else-if="!isReady && rememberedUser" :user="rememberedUser as User" class="my-3 rounded-md" />
         <VJoinLobbyForm v-if="view === 'join'" class="mt-3" />
         <VCreateLobbyForm v-if="view === 'create'" class="mt-3" />
       </div>
-      <div v-if="!isLoggedIn" class="text-center mt-3">
+      <!-- Held back (keeping its space) until we know who's here, so it doesn't flash for someone who's signed in. -->
+      <div v-if="!seemsLoggedIn" class="text-center mt-3" :class="{ invisible: !isReady }">
         <router-link :to="{ name: 'Login' }" class="fw-bold">Log in</router-link>
         <span class="d-inline-block mx-2">or</span>
         <router-link :to="{ name: 'Join' }" class="fw-bold">join now for free</router-link>
