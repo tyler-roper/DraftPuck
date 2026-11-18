@@ -44,8 +44,18 @@ export const useFriendsStore = defineStore('friends', () => {
 
   async function dismissInvite(joinCode: string) {
     await FriendService.dismissLobbyInvite(joinCode)
-    if (list.value) list.value = { ...list.value, invites: list.value.invites.filter((i) => i.joinCode !== joinCode) }
+    forgetInvite(joinCode)
   }
 
-  return { list, pending, load, reset, add, remove, dismissInvite }
+  /**
+   * The user is in this lobby now (however they joined), so its invite is answered. The server already leaves it out
+   * of the next load; this drops it from the badge and the list straight away.
+   */
+  function forgetInvite(joinCode: string) {
+    const code = joinCode.toUpperCase()
+    if (list.value?.invites.some((i) => i.joinCode.toUpperCase() === code))
+      list.value = { ...list.value, invites: list.value.invites.filter((i) => i.joinCode.toUpperCase() !== code) }
+  }
+
+  return { list, pending, load, reset, add, remove, dismissInvite, forgetInvite }
 })
