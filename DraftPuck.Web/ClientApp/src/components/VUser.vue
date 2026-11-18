@@ -325,7 +325,8 @@ async function userLinkClickHandler(userLink: UserLink) {
 // Over the top-right of a small avatar button.
 .count-badge.on-avatar {
   top: -6px;
-  right: -10px;
+  // Not much further right: in the lobby header this avatar sits at the screen's edge.
+  right: -5px;
   min-width: 16px;
   height: 16px;
   padding: 0 4px;

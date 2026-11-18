@@ -368,7 +368,7 @@ function selectGame(game?: Game) {
             <div class="mt-5">
               <span class="fs-5 text-primary d-block fw-bold">Need a reminder?</span>
               <span class="fs-6 text-stone-300 d-block px-5"
-                >Click the <i class="fs-4 d-inline-block text-stone-0 fi fi-rr-settings mx-1" style="position: relative; top: 5px"></i> at the top of
+                >Click the <i class="fs-4 d-inline-block text-stone-0 fi fi-rr-bell mx-1" style="position: relative; top: 5px"></i> at the top of
                 the page to change notification settings.</span
               >
             </div>
