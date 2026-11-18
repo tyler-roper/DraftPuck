@@ -22,4 +22,6 @@ interface FriendsList {
   incoming: Friend[]
   outgoing: Friend[]
   invites: LobbyInvite[]
+  /** Players with an account you've been in a lobby with who aren't friends yet and haven't been asked; most recent first. */
+  suggestions: Friend[]
 }

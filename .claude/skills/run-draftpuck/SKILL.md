@@ -14,7 +14,7 @@ Run from the repo root in Git Bash. Docker Desktop must be running; Node 22.22+ 
 
 ```bash
 bash .claude/skills/run-draftpuck/run.sh up      # build images from the working tree, start; ~5 min first time, ~1 min after
-bash .claude/skills/run-draftpuck/run.sh seed    # sign up 3 players (unique names each run), friends, lobbies, an invite
+bash .claude/skills/run-draftpuck/run.sh seed    # sign up 4 players (unique names each run), friends, lobbies, an invite
 bash .claude/skills/run-draftpuck/run.sh shot <email> <out-dir> "/" "/|#dropdownMenuButton" "/account/friends"
 bash .claude/skills/run-draftpuck/run.sh logs    # Web + Worker logs
 bash .claude/skills/run-draftpuck/run.sh down    # remove everything it started
@@ -22,7 +22,8 @@ bash .claude/skills/run-draftpuck/run.sh down    # remove everything it started
 
 - **`up` again after every code change**: the app runs from images, not from source (no hot reload). The Web image
   builds the client too (with type-check), so a client type error fails the build.
-- **`seed`** prints the logins (password `draftpuck-run-1`). Sam has a friend (Alex), a pending request (Jo), an
+- **`seed`** prints the logins (password `draftpuck-run-1`). Sam has a friend (Alex), a pending request (Jo), someone
+  they've played with but not friended (Max, in Sam's lobby), an
   invite to Alex's lobby, and a lobby of their own. Lobbies need tonight's NHL games, which the Worker loads from the
   real NHL API when it starts; on a day without games `seed` says so and skips the lobbies.
 - **`shot`** signs in through the login page as that player and saves `01.png`, `02.png`, ... in `<out-dir>`

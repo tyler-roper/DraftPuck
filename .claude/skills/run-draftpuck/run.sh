@@ -109,12 +109,13 @@ signup() {
 }
 
 seed() {
-  local suffix sam alex jo sam_id sam_t alex_id alex_t jo_id jo_t
+  local suffix sam alex jo max sam_id sam_t alex_id alex_t jo_id jo_t max_id max_t
   suffix=$(date +%H%M%S)
-  sam="Sam$suffix"; alex="Alex$suffix"; jo="Jo$suffix"
+  sam="Sam$suffix"; alex="Alex$suffix"; jo="Jo$suffix"; max="Max$suffix"
   read -r sam_id sam_t <<<"$(signup "$sam")"
   read -r alex_id alex_t <<<"$(signup "$alex")"
   read -r jo_id jo_t <<<"$(signup "$jo")"
+  read -r max_id max_t <<<"$(signup "$max")"
   # Sam and Alex are friends; Jo has asked Sam (so Sam has a request waiting).
   api POST "friends/$alex_id" "$sam_t" >/dev/null
   api POST "friends/$sam_id" "$alex_t" >/dev/null
@@ -133,6 +134,8 @@ seed() {
     lobby() { api POST lobbies "$1" "{\"name\":\"$2\",\"picksPerTeam\":1,\"isBotAutoPickingEnabled\":true,\"bots\":[],\"gameIds\":$games}" | json .joinCode; }
     sam_code=$(lobby "$sam_t" "$sam")
     alex_code=$(lobby "$alex_t" "$alex")
+    # Max plays in Sam's lobby without being friends, so Sam sees them under People You've Played With.
+    api POST "lobbies/$sam_code/join" "$max_t" "{\"name\":\"$max\"}" >/dev/null
     # Alex invites Sam, so Sam has an invite (and a request) waiting.
     api POST "friends/invites/$alex_code" "$alex_t" "{\"friendIds\":[\"$sam_id\"]}" >/dev/null
   fi
@@ -142,6 +145,7 @@ Seeded (password for all: $PASSWORD):
   $sam@draftpuck.test   friends with $alex; a request from $jo and an invite to lobby ${alex_code:-none} waiting; hosts lobby ${sam_code:-none}
   $alex@draftpuck.test  friends with $sam; hosts lobby ${alex_code:-none}
   $jo@draftpuck.test    asked $sam to be friends
+  $max@draftpuck.test   in $sam's lobby, not friends (a suggestion for $sam)
 EOF
 }
 

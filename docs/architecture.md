@@ -93,6 +93,9 @@ refetches everything (`resync`). Games carry an `UpdatedUtc` stamp so an older c
   accepts their request; removing, declining and cancelling are the same call and tell nobody. A lobby member invites
   friends from the lobby's Share window (`SendLobbyInvitesCommand`); an invite waits in the friend's *Friends &
   Invites* page until they join, dismiss it, or the lobby ends. Nobody hears about a lobby they weren't invited to.
+  Players find each other through *People you've played with* (accounts from shared lobbies) and friend links (a
+  profile URL, `/u/<nickname>`). Profiles by nickname are public (`UserProfileDto`); a full account (`UserDto`, with
+  email and settings) is only ever returned to its owner.
   Requests and invites push under the user's Friends setting, and the avatar menu badges what's waiting
   (`stores/friends.ts`, kept current by `useFriendsSync`).
 - **Push notifications** go to every device a user has (`UserDevices`: one Firebase token each, with a readable

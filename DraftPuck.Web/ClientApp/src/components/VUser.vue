@@ -8,9 +8,12 @@ import VIcon from '@/components/VIcon.vue'
 import { useFriendsStore } from '@/stores/friends'
 import { badgeText } from '@/helpers/friendHelpers'
 
+// Anyone shown as a player card: the signed-in user, a profile, a friend.
+type PlayerCard = Pick<User, 'id' | 'nickname' | 'avatarPath'> & { banner?: Banner; title?: Title }
+
 const props = withDefaults(
   defineProps<{
-    user?: User
+    user?: PlayerCard
     showMenuOnClick?: boolean
     display?: 'banner' | 'avatar'
     class?: string
@@ -135,7 +138,7 @@ async function userLinkClickHandler(userLink: UserLink) {
 
       <div class="d-block text-start">
         <span class="d-block text-start fw-bold text-stone-0 fs-5 nickname">{{ user?.nickname }}</span>
-        <span class="d-inline-block text-start text-stone-200 title text-uppercase fw-bold">{{ user?.title.text }}</span>
+        <span class="d-inline-block text-start text-stone-200 title text-uppercase fw-bold">{{ user?.title?.text }}</span>
       </div>
       <!-- Outside the avatar, which clips its contents to a circle. -->
       <span v-if="menuBadge" class="count-badge on-banner" :aria-label="`${menuBadge} waiting`">{{ menuBadge }}</span>
