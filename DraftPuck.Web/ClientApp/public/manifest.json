@@ -8,7 +8,7 @@
     "short_name": "DRAFTPUCK",
     "orientation": "portrait",
     "background_color": "#ffb100",
-    "theme_color": "#ffb100",
+    "theme_color": "#1c1917",
     "icons": [
         {
             "src": "img/icons/icon-192.png",

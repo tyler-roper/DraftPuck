@@ -28,6 +28,12 @@
   <link rel="icon" href="/favicon.ico">
 
   <link rel="manifest" href="/manifest.json">
+  <!-- iPhone home screen: iOS ignores the manifest's icons (it drew a "D" on a yellow tile), and tints the status bar
+       with the theme colour (the manifest's yellow showed as a blur over the dark header). -->
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-title" content="DRAFTPUCK">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="theme-color" content="#1c1917">
 </head>
 
 <body>
