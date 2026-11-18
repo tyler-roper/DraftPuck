@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, toRef } from 'vue'
+import { useLobbyFormNickname } from '@/composables/useLobbyFormNickname'
 import useVuelidate from '@vuelidate/core'
 import { helpers, required, requiredIf, maxLength, minLength, maxValue, minValue, integer } from '@vuelidate/validators'
 import VInputWrapper from '@/components/VInputWrapper.vue'
@@ -25,8 +26,8 @@ import { useGameSummariesStore } from '@/stores/gameSummaries'
 const maxBotCount = 5
 const userStore = useUserStore()
 const gameSummariesStore = useGameSummariesStore()
-const { isLoggedIn } = storeToRefs(userStore)
-const isNotLoggedIn = computed(() => !isLoggedIn.value)
+const { seemsLoggedIn } = storeToRefs(userStore)
+const isNotLoggedIn = computed(() => !seemsLoggedIn.value)
 const isCreatingLobby = ref(false)
 const { gameSummaries } = storeToRefs(gameSummariesStore)
 const isPlayAllGames = ref(true)
@@ -74,19 +75,11 @@ const rules = computed(() => ({
 }))
 
 const v$ = useVuelidate<CreateLobbyViewModel>(rules, form)
+const { whenSignedIn } = useLobbyFormNickname(toRef(form.value, 'nickname'))
 //#endregion
 
 //#region hooks
 onMounted(async () => {
-  if (isLoggedIn.value) {
-    form.value.nickname = userStore.currentUser!.nickname!
-  } else {
-    const latestLobbyRaw = localStorage.getItem('latestLobby')
-    const latestLobby: { joinCode: string; name: string } | undefined = latestLobbyRaw ? JSON.parse(latestLobbyRaw) : undefined
-
-    form.value.nickname = userStore.currentUser?.nickname ?? latestLobby?.name ?? ''
-  }
-
   await gameSummariesStore.loadGameSummaries()
   form.value.gameIds = gameSummariesStore.gameSummaries.map((s) => s.id)
 })
@@ -95,6 +88,10 @@ onMounted(async () => {
 //#region methods
 async function createLobby(e: Event) {
   e.preventDefault()
+
+  isCreatingLobby.value = true
+  await whenSignedIn()
+  isCreatingLobby.value = false
 
   v$.value.$validate()
   if (v$.value.$error) return
@@ -170,7 +167,7 @@ function removeBot(bot: Bot) {
 
 <template>
   <form v-if="gameSummaries.length" @submit="createLobby">
-    <div class="row mb-3" v-if="!isLoggedIn">
+    <div class="row mb-3" v-if="!seemsLoggedIn">
       <div class="col-12">
         <div class="d-flex justify-content-between">
           <label class="d-block form-label" for="nickname">Nickname</label>
