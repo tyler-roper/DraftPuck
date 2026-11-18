@@ -66,11 +66,14 @@ const profile = (friend: Friend) => router.push(`/u/${encodeURIComponent(friend.
         <div v-for="invite in list.invites" :key="invite.joinCode" class="row-card is-highlighted">
           <VUser display="avatar" :user="invite.sender as unknown as User" :avatar-size-in-px="40" />
           <div class="flex-grow-1 min-w-0">
-            <div class="fw-bold text-truncate">{{ invite.sender.nickname }} invited you</div>
-            <div class="fs-7 text-stone-400">Lobby {{ invite.joinCode }} · {{ inviteSummary(invite) }}</div>
+            <div class="fw-bold text-truncate">{{ invite.sender.nickname }}</div>
+            <div class="fs-7 text-stone-300 text-truncate">invited you to lobby {{ invite.joinCode }}</div>
+            <div class="fs-7 text-stone-400 text-truncate">{{ inviteSummary(invite) }}</div>
           </div>
           <button class="btn btn-sm btn-primary fw-bold" :disabled="busy === invite.joinCode" @click="join(invite)">Join</button>
-          <button class="btn btn-sm btn-link text-stone-400" :disabled="busy === invite.joinCode" @click="dismiss(invite)">Dismiss</button>
+          <button class="btn btn-sm btn-link text-stone-400 px-1" :disabled="busy === invite.joinCode" title="Dismiss" aria-label="Dismiss invite" @click="dismiss(invite)">
+            <VIcon prefix="sr" icon="cross-small" class="fs-4" />
+          </button>
         </div>
       </section>
 
