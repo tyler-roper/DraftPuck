@@ -8,6 +8,9 @@ html,
 body {
   padding: 0;
   margin: 0;
+  // The app is a screen-sized shell whose panels scroll; the page itself mustn't bounce or scroll (on iOS that dragged
+  // the whole app, header and tabs included, around the screen).
+  overscroll-behavior: none;
 }
 
 html {
