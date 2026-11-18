@@ -47,3 +47,13 @@ export function inviteSummary(invite: Pick<LobbyInvite, 'gameCount' | 'memberCou
   const players = invite.memberCount === 1 ? '1 player' : `${invite.memberCount} players`
   return `${games} · ${players}`
 }
+
+/** The link to a player's profile, where others can add them as a friend. */
+export function friendLink(origin: string, nickname: string): string {
+  return `${origin.replace(/\/+$/, '')}/u/${encodeURIComponent(nickname)}`
+}
+
+/** What sharing your friend link sends. */
+export function friendLinkMessage(origin: string, nickname: string): string {
+  return `Add me as a friend on DRAFTPUCK so we can invite each other to lobbies!\n\n${friendLink(origin, nickname)}`
+}

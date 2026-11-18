@@ -171,6 +171,46 @@ public class FriendsTests(DatabaseFixture fixture)
     }
 
     [Fact]
+    public async Task PeopleYouHavePlayedWithAreSuggested()
+    {
+        var me = await AccountAsync();
+        var older = await AccountAsync();
+        var recent = await AccountAsync();
+        var friend = await AccountAsync();
+        var asked = await AccountAsync();
+        var stranger = await AccountAsync();
+        UserEntity guest;
+        await using (var db = fixture.CreateContext())
+        {
+            guest = new Seed(db).User();
+            await db.SaveChangesAsync();
+        }
+        await AddAsync(me, friend.Id);
+        await AddAsync(friend, me.Id);
+        await AddAsync(asked, me.Id);
+
+        var lastWeek = await LobbyAsync(me, isActive: false);
+        var tonight = await LobbyAsync(recent);
+        await using (var db = fixture.CreateContext())
+        {
+            (await db.Lobbies.SingleAsync(l => l.Id == lastWeek.Id)).Created = DateTime.UtcNow.AddDays(-7);
+            (await db.Lobbies.SingleAsync(l => l.Id == tonight.Id)).Created = DateTime.UtcNow;
+            new Seed(db).Bot(lastWeek);
+            await db.SaveChangesAsync();
+        }
+        foreach (var player in new[] { older, friend, asked, guest })
+            await JoinAsync(lastWeek, player);
+        await JoinAsync(tonight, me);
+        await LobbyAsync(stranger);
+
+        // Most recently played with first; no friends, people with a request either way, guests, bots or strangers.
+        Assert.Equal([recent.Id, older.Id], (await FriendsOfAsync(me)).Suggestions.Select(f => f.Id));
+
+        // Guests get no suggestions: they can't add anyone.
+        Assert.Empty((await FriendsOfAsync(guest)).Suggestions);
+    }
+
+    [Fact]
     public async Task TheFriendsSettingIsOnUntilTurnedOff()
     {
         var user = await AccountAsync();

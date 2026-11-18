@@ -32,6 +32,24 @@ public class UserMappingProfile : Profile
                 opt => opt.MapFrom(src => src.UserAchievements)
             );
 
+        CreateMap<UserEntity, UserProfileDto>()
+            .ForMember(
+                dest => dest.Banner,
+                opt => opt.MapFrom(src => src.UserBanners.Any()
+                    ? src.UserBanners.Single(ub => ub.IsEquipped).Banner
+                    : null)
+            )
+            .ForMember(
+                dest => dest.Title,
+                opt => opt.MapFrom(src => src.UserTitles.Any()
+                    ? src.UserTitles.Single(ub => ub.IsEquipped).Title
+                    : null)
+            )
+            .ForMember(
+                dest => dest.Achievements,
+                opt => opt.MapFrom(src => src.UserAchievements)
+            );
+
         CreateMap<UserAchievementEntity, UserAchievementDto>()
             .ForMember(
                 dest => dest.UniqueIdentifier,

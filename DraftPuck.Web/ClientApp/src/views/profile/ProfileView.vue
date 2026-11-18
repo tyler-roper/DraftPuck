@@ -4,6 +4,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useUserStore } from '@/stores/user'
 import userService from '@/services/UserService'
 import { storeToRefs } from 'pinia'
+import { useRoute } from 'vue-router'
 import VUser from '@/components/VUser.vue'
 import VIcon from '@/components/VIcon.vue'
 import AchievementService from '@/services/AchievementService'
@@ -18,12 +19,13 @@ const props = defineProps<{
 
 //#region data
 const userStore = useUserStore()
-const { currentUser, isLoggedIn } = storeToRefs(userStore)
-const profileUser = ref<User>()
+const { currentUser, isLoggedIn, isReady } = storeToRefs(userStore)
+const route = useRoute()
+const profileUser = ref<UserProfile>()
 const isLoadingUser = ref(false)
 const isLoadingAchievements = ref(false)
 const notFound = ref(false)
-const bannerPath = computed(() => `url(${profileUser.value?.banner.imagePath})`)
+const bannerPath = computed(() => `url(${profileUser.value?.banner?.imagePath})`)
 const allAchievements = ref<Array<Achievement>>([])
 const achievementCompletionPercentage = computed(() => {
   if ((profileUser.value?.achievements?.length ?? 0) === 0) return 0
@@ -141,7 +143,7 @@ watch(
           <VUser display="avatar" :user="profileUser" :show-menu-on-click="false" :avatar-size-in-px="130" :show-edit-avatar="isSelf" />
         </div>
         <div class="text-center fs-1 fw-bold mt-2">{{ profileUser.nickname }}</div>
-        <div class="text-center fs-7 text-stone-300 mt-n1 text-uppercase">{{ profileUser.title.text }}</div>
+        <div class="text-center fs-7 text-stone-300 mt-n1 text-uppercase">{{ profileUser.title?.text }}</div>
         <div v-if="canBefriend" class="text-center mt-3">
           <router-link v-if="friendStatus === 'friends'" :to="{ name: 'Friends' }" class="btn btn-stone-900 text-stone-0 fw-bold px-4">
             <VIcon prefix="sr" icon="user-check" class="me-2" />Friends
@@ -152,6 +154,13 @@ watch(
           <button v-else class="btn btn-primary fw-bold px-4" :disabled="isSavingFriend" @click="addFriend">
             <VIcon prefix="sr" icon="user-add" class="me-2" />{{ friendStatus === 'requestReceived' ? 'Accept Friend Request' : 'Add Friend' }}
           </button>
+        </div>
+        <!-- Someone who opened a friend link without an account: sign in (or up) and come back here to add them. -->
+        <div v-else-if="isReady && !isLoggedIn && !profileUser.isGuest && !profileUser.isBot" class="text-center mt-3 text-stone-300">
+          <router-link :to="{ name: 'Login', query: { redirect: route.fullPath } }" class="fw-bold">Log in</router-link>
+          or
+          <router-link :to="{ name: 'Join', query: { redirect: route.fullPath } }" class="fw-bold">sign up</router-link>
+          to add {{ profileUser.nickname }} as a friend.
         </div>
       </div>
 

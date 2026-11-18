@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { badgeText, friendStatusOf, inviteOptions, inviteSummary, pendingCount } from '@/helpers/friendHelpers'
+import { badgeText, friendLink, friendLinkMessage, friendStatusOf, inviteOptions, inviteSummary, pendingCount } from '@/helpers/friendHelpers'
 
 const friend = (id: string, nickname = id): Friend => ({ id, nickname })
 const invite = (joinCode: string): LobbyInvite => ({ joinCode, sender: friend('host'), gameCount: 2, memberCount: 3, created: new Date() })
-const list = (overrides: Partial<FriendsList> = {}): FriendsList => ({ friends: [], incoming: [], outgoing: [], invites: [], ...overrides })
+const list = (overrides: Partial<FriendsList> = {}): FriendsList => ({ friends: [], incoming: [], outgoing: [], invites: [], suggestions: [], ...overrides })
 
 describe('friendStatusOf', () => {
   const friends = list({ friends: [friend('a')], incoming: [friend('b')], outgoing: [friend('c')] })
@@ -50,5 +50,16 @@ describe('inviteSummary', () => {
   it('describes the lobby in a few words', () => {
     expect(inviteSummary({ gameCount: 1, memberCount: 1 })).toBe('1 game · 1 player')
     expect(inviteSummary({ gameCount: 4, memberCount: 3 })).toBe('4 games · 3 players')
+  })
+})
+
+describe('friendLink', () => {
+  it("links to the player's profile, escaping the nickname", () => {
+    expect(friendLink('https://draftpuck.com/', 'Sam')).toBe('https://draftpuck.com/u/Sam')
+    expect(friendLink('https://draftpuck.com', 'Big Sam #9')).toBe('https://draftpuck.com/u/Big%20Sam%20%239')
+  })
+
+  it('wraps the link in a message to send', () => {
+    expect(friendLinkMessage('https://draftpuck.com', 'Sam')).toContain('https://draftpuck.com/u/Sam')
   })
 })

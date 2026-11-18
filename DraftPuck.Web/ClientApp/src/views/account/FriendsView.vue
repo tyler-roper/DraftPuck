@@ -8,11 +8,13 @@ import VUser from '@/components/VUser.vue'
 import { useFriendsStore } from '@/stores/friends'
 import { useToast } from '@/composables/useToast'
 import { getErrorMessage } from '@/helpers/requestHelpers'
-import { inviteSummary } from '@/helpers/friendHelpers'
+import { friendLinkMessage, inviteSummary } from '@/helpers/friendHelpers'
+import { useUserStore } from '@/stores/user'
 
-/** Lobby invites, friend requests, and friends. */
+/** Lobby invites, friend requests, friends, and finding more: your friend link and people you've played with. */
 const friendsStore = useFriendsStore()
 const { list } = storeToRefs(friendsStore)
+const { currentUser } = storeToRefs(useUserStore())
 const router = useRouter()
 const toast = useToast()
 const isLoading = ref(!list.value)
@@ -50,6 +52,27 @@ function unfriend(friend: Friend) {
   run(friend.id, () => friendsStore.remove(friend.id), "Couldn't remove them.")
 }
 
+const addSuggested = (friend: Friend) => run(friend.id, () => friendsStore.add(friend.id), "Couldn't send the request.", `Friend request sent to ${friend.nickname}!`)
+
+/** Shares a link to the user's profile, where others can add them; the share sheet on phones, else the clipboard. */
+async function shareFriendLink() {
+  const nickname = currentUser.value?.nickname
+  if (!nickname) return
+  const text = friendLinkMessage(window.location.origin, nickname)
+  try {
+    if (navigator.share) {
+      await navigator.share({ text })
+      return
+    }
+    await navigator.clipboard.writeText(text)
+    toast.success('Copied your friend link!', { timeout: 2000 })
+  } catch (ex) {
+    // Closing the share sheet isn't a failure.
+    if (ex instanceof DOMException && ex.name === 'AbortError') return
+    toast.error('Cannot copy')
+  }
+}
+
 const dismiss = (invite: LobbyInvite) => run(invite.joinCode, () => friendsStore.dismissInvite(invite.joinCode), "Couldn't dismiss the invite.")
 const join = (invite: LobbyInvite) => router.push({ name: 'Lobby', params: { joinCode: invite.joinCode } })
 const profile = (friend: Friend) => router.push(`/u/${encodeURIComponent(friend.nickname)}`)
@@ -61,10 +84,15 @@ const profile = (friend: Friend) => router.push(`/u/${encodeURIComponent(friend.
       <div v-for="n in 6" :key="n" class="placeholder placeholder-wave w-100 rounded-md mb-2" style="height: 56px; opacity: 0.2"></div>
     </div>
     <div v-else-if="list" class="p-3">
+      <button class="btn btn-stone-900 text-stone-0 fw-bold w-100 p-3 mb-4 d-flex align-items-center justify-content-center" @click="shareFriendLink">
+        <VIcon prefix="sr" icon="share" class="me-2" />
+        <span>Share My Friend Link</span>
+      </button>
+
       <section v-if="list.invites.length" class="mb-4">
         <h2 class="section-title">Lobby Invites</h2>
         <div v-for="invite in list.invites" :key="invite.joinCode" class="row-card is-highlighted">
-          <VUser display="avatar" :user="invite.sender as unknown as User" :avatar-size-in-px="40" />
+          <VUser display="avatar" :user="invite.sender" :avatar-size-in-px="40" />
           <div class="flex-grow-1 min-w-0">
             <div class="fw-bold text-truncate">{{ invite.sender.nickname }}</div>
             <div class="fs-7 text-stone-300 text-truncate">invited you to lobby {{ invite.joinCode }}</div>
@@ -80,7 +108,7 @@ const profile = (friend: Friend) => router.push(`/u/${encodeURIComponent(friend.
       <section v-if="list.incoming.length" class="mb-4">
         <h2 class="section-title">Friend Requests</h2>
         <div v-for="friend in list.incoming" :key="friend.id" class="row-card is-highlighted">
-          <a role="button" @click="profile(friend)"><VUser display="avatar" :user="friend as unknown as User" :avatar-size-in-px="40" /></a>
+          <a role="button" @click="profile(friend)"><VUser display="avatar" :user="friend" :avatar-size-in-px="40" /></a>
           <a role="button" class="flex-grow-1 min-w-0 fw-bold text-truncate text-stone-0 text-decoration-none" @click="profile(friend)">{{ friend.nickname }}</a>
           <button class="btn btn-sm btn-primary fw-bold" :disabled="busy === friend.id" @click="accept(friend)">Accept</button>
           <button class="btn btn-sm btn-link text-stone-400" :disabled="busy === friend.id" @click="decline(friend)">Decline</button>
@@ -90,11 +118,11 @@ const profile = (friend: Friend) => router.push(`/u/${encodeURIComponent(friend.
       <section class="mb-4">
         <h2 class="section-title">Friends</h2>
         <p v-if="!list.friends.length" class="text-stone-400 fs-7">
-          No friends yet. Open someone's profile (in a lobby, tap them and choose View Profile) and press Add Friend. Once
-          they accept, you can invite them from a lobby's share button.
+          No friends yet. Add people you've played with below, or share your friend link. Once they accept, you can invite
+          them from a lobby's share button.
         </p>
         <div v-for="friend in list.friends" :key="friend.id" class="row-card">
-          <a role="button" @click="profile(friend)"><VUser display="avatar" :user="friend as unknown as User" :avatar-size-in-px="40" /></a>
+          <a role="button" @click="profile(friend)"><VUser display="avatar" :user="friend" :avatar-size-in-px="40" /></a>
           <a role="button" class="flex-grow-1 min-w-0 fw-bold text-truncate text-stone-0 text-decoration-none" @click="profile(friend)">{{ friend.nickname }}</a>
           <button class="btn btn-sm btn-link text-stone-400" :disabled="busy === friend.id" title="Remove friend" @click="unfriend(friend)">
             <VIcon prefix="sr" icon="user-minus" />
@@ -102,12 +130,23 @@ const profile = (friend: Friend) => router.push(`/u/${encodeURIComponent(friend.
         </div>
       </section>
 
-      <section v-if="list.outgoing.length">
+      <section v-if="list.outgoing.length" class="mb-4">
         <h2 class="section-title">Sent Requests</h2>
         <div v-for="friend in list.outgoing" :key="friend.id" class="row-card is-muted">
-          <a role="button" @click="profile(friend)"><VUser display="avatar" :user="friend as unknown as User" :avatar-size-in-px="40" /></a>
+          <a role="button" @click="profile(friend)"><VUser display="avatar" :user="friend" :avatar-size-in-px="40" /></a>
           <a role="button" class="flex-grow-1 min-w-0 fw-bold text-truncate text-stone-0 text-decoration-none" @click="profile(friend)">{{ friend.nickname }}</a>
           <button class="btn btn-sm btn-link text-stone-400" :disabled="busy === friend.id" @click="cancel(friend)">Cancel</button>
+        </div>
+      </section>
+
+      <section v-if="list.suggestions.length">
+        <h2 class="section-title">People You've Played With</h2>
+        <div v-for="friend in list.suggestions" :key="friend.id" class="row-card">
+          <a role="button" @click="profile(friend)"><VUser display="avatar" :user="friend" :avatar-size-in-px="40" /></a>
+          <a role="button" class="flex-grow-1 min-w-0 fw-bold text-truncate text-stone-0 text-decoration-none" @click="profile(friend)">{{ friend.nickname }}</a>
+          <button class="btn btn-sm btn-primary fw-bold" :disabled="busy === friend.id" @click="addSuggested(friend)">
+            <VIcon prefix="sr" icon="user-add" class="me-1" />Add
+          </button>
         </div>
       </section>
     </div>

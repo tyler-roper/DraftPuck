@@ -37,7 +37,7 @@ describe('useFriendsSync', () => {
   beforeEach(() => {
     pinia = createPinia()
     setActivePinia(pinia)
-    vi.mocked(FriendService.getFriends).mockReset().mockResolvedValue({ friends: [], incoming: [{ id: 'a', nickname: 'A' }], outgoing: [], invites: [] })
+    vi.mocked(FriendService.getFriends).mockReset().mockResolvedValue({ friends: [], incoming: [{ id: 'a', nickname: 'A' }], outgoing: [], invites: [], suggestions: [] })
   })
 
   it('loads when someone signs in, and not for guests', async () => {
