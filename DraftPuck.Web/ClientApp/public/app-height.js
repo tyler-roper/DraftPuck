@@ -14,13 +14,35 @@
     return vv ? Math.round(vv.height * vv.scale) : window.innerHeight
   }
 
+  // The on-screen keyboard is only up while something you type into has focus.
+  function isTyping() {
+    var el = document.activeElement
+    if (!el) return false
+    if (el.isContentEditable) return true
+    var tag = el.tagName
+    if (tag === 'TEXTAREA' || tag === 'SELECT') return true
+    if (tag !== 'INPUT') return false
+    var type = (el.getAttribute('type') || 'text').toLowerCase()
+    return ['button', 'checkbox', 'color', 'file', 'hidden', 'image', 'radio', 'range', 'reset', 'submit'].indexOf(type) === -1
+  }
+
+  // Where the app should sit in the page. With the keyboard up, iOS pans the visible area down inside the page instead
+  // of scrolling it, and window.scrollTo can't undo that: the app moves to where the visible area is, so it stays in view
+  // (pageTop is the visible area's place in the whole page, which also holds if iOS scrolls the page as well as panning).
+  //
+  // Only then. Otherwise the app stays at the top: following an ordinary scroll or bounce of the page made the page
+  // taller by as much as it moved, so it could scroll on forever, and the app slid off the screen on the way back.
+  function appTop() {
+    return vv && isTyping() ? Math.max(0, Math.round(vv.pageTop)) : 0
+  }
+
   function setAppHeight() {
+    var top = appTop()
     root.style.setProperty('--app-height', visibleHeight() + 'px')
-    // With the keyboard up, iOS pans the visible area down inside the page instead of scrolling it, and window.scrollTo
-    // can't undo that. Move the app to where the visible area is, so it stays in view, rather than fighting the pan
-    // (which made the page jump, cut off the header and left a gap above the keyboard). pageTop is the visible area's
-    // place in the whole page, so this also holds if iOS scrolls the page as well as panning it.
-    root.style.setProperty('--app-top', (vv ? Math.max(0, Math.round(vv.pageTop)) : 0) + 'px')
+    root.style.setProperty('--app-top', top + 'px')
+    // Undo any scroll of the page itself once the keyboard is gone: the app is the size of the screen, and only the
+    // panels inside it scroll.
+    if (top === 0 && (window.scrollY || window.pageYOffset)) window.scrollTo(0, 0)
   }
 
   // The keyboard animates in and out, and the events can fire mid-way: measure now, then again once it has settled.
