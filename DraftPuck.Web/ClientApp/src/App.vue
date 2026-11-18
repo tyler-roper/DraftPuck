@@ -8,6 +8,7 @@ import { useSystemStore } from '@/stores/system'
 import { useFirebaseStore } from '@/stores/firebase'
 import { useGameSummariesStore } from './stores/gameSummaries'
 import VToaster from '@/components/VToaster.vue'
+import { useFriendsSync } from '@/composables/useFriendsSync'
 
 const systemStore = useSystemStore()
 const { loadGameSummaries: initializeGameSummaries } = useGameSummariesStore()
@@ -15,6 +16,7 @@ const { appIsTestMode, currentSystemTime } = storeToRefs(systemStore)
 const { initAppSettings, updateSystemTime } = systemStore
 const { initialize: initializeUser } = useUserStore()
 const { initialize: initializeFirebase } = useFirebaseStore()
+useFriendsSync()
 
 onMounted(async () => {
   initializeUser().then(initializeFirebase)

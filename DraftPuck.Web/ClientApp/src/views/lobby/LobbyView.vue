@@ -26,6 +26,7 @@ import VFeed from '@/components/VFeed.vue'
 import VPicks from '@/components/VPicks.vue'
 import VChat from '@/components/VChat.vue'
 import VNotificationSettingsModal from '@/components/VNotificationSettingsModal.vue'
+import VShareLobbyModal from '@/components/VShareLobbyModal.vue'
 import VJoinLobbyForm from '@/components/VJoinLobbyForm.vue'
 import VLogo from '@/components/VLogo.vue'
 import VUser from '@/components/VUser.vue'
@@ -64,6 +65,7 @@ const currentView = ref<View>('picks')
 const selectedGame = ref<Game>()
 const isInstructionsVisible = ref(false)
 const isNotificationSettingsVisible = ref(false)
+const isShareVisible = ref(false)
 const vChat = ref<InstanceType<typeof VChat> | null>(null)
 const shouldAnimateFeed = ref(false)
 const isInitialLoad = ref(true)
@@ -223,16 +225,6 @@ async function selectGame(game: Game | undefined) {
   if (selectedGame.value?.id !== game?.id) selectedGame.value = game
 }
 
-async function copyInvite() {
-  try {
-    const code = lobby.value?.joinCode ?? joinCode
-    await navigator.clipboard.writeText(`Join my DRAFTPUCK lobby! Code: ${code}\n\nhttps://draftpuck.com/lobby/${code}`)
-    toast.success('Copied invite to clipboard!', { timeout: 2000 })
-  } catch {
-    toast.error('Cannot copy')
-  }
-}
-
 // New feed items briefly animate the feed, except while it first fills up.
 watch(
   () => feedItems.value.length,
@@ -254,13 +246,19 @@ watch(
     <template v-if="!isInvalidLobby">
       <VInstructionsModal v-if="isInstructionsVisible" :join-code="lobby?.joinCode" @close="isInstructionsVisible = false" />
       <VNotificationSettingsModal v-if="isNotificationSettingsVisible" :join-code="joinCode" @close="isNotificationSettingsVisible = false" />
+      <VShareLobbyModal
+        v-if="isShareVisible"
+        :join-code="lobby?.joinCode ?? joinCode"
+        :member-user-ids="lobby?.members.map((m) => m.userId) ?? []"
+        @close="isShareVisible = false"
+      />
       <div class="bg-stone-900 px-sm-4 px-2 py-2 shadow position-relative d-flex align-items-center justify-content-between" style="z-index: 10">
         <router-link :to="{ name: 'Home' }" class="banner-logo text-stone-0 text-decoration-none" style="cursor: pointer">
           <VLogo />
         </router-link>
 
         <a
-          @click="copyInvite"
+          @click="isShareVisible = true"
           role="button"
           class="d-block ms-auto bg-primary text-stone-900 px-2 rounded text-decoration-none fs-7 ms-1 d-flex align-items-center"
           v-if="lobby?.joinCode !== undefined"

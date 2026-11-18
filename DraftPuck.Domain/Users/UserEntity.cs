@@ -22,6 +22,8 @@ public partial class UserEntity
     public NotificationPreference AchievementAwardedNotificationPreference { get; set; } = NotificationPreference.None;
     /// <summary>The push the day after a lobby, when its recap is ready. On by default: it only reaches devices with push allowed.</summary>
     public NotificationPreference RecapNotificationPreference { get; set; } = NotificationPreference.All;
+    /// <summary>Friend requests, and friends inviting you to their lobbies. On by default: only friends you accepted can invite you.</summary>
+    public NotificationPreference FriendNotificationPreference { get; set; } = NotificationPreference.All;
     [JsonIgnore]
     public string? PasswordHash { get; set; }
     public string? DiscordUserId { get; set; }

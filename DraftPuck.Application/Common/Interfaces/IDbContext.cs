@@ -1,4 +1,5 @@
 ﻿using DraftPuck.Domain.Auth;
+using DraftPuck.Domain.Friends;
 using DraftPuck.Domain.Titles;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 
@@ -12,6 +13,8 @@ namespace DraftPuck.Application.Common.Interfaces
         DbSet<DrinkEntity> Drinks { get; }
         DbSet<ErrorLogEntity> ErrorLogs { get; }
         DbSet<EventLogoEntity> EventLogos { get; }
+        DbSet<FriendshipEntity> Friendships { get; }
+        DbSet<LobbyInviteEntity> LobbyInvites { get; }
         DbSet<LobbyEntity> Lobbies { get; }
         DbSet<LobbyEventEntity> LobbyEvents { get; }
         DbSet<LobbyMemberEntity> LobbyMembers { get; }

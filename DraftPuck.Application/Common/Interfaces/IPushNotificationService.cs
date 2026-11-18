@@ -12,4 +12,6 @@ public interface IPushNotificationService
     /// <summary>The day-after push for a lobby; tapping it opens the lobby's post-game page.</summary>
     Task<int> SendRecapNotification(string lobbyCode, string title, string message, IReadOnlyCollection<string> tokens, CancellationToken ct = default);
     Task<int> SendLobbyEventNotification(string lobbyCode, string title, string message, IReadOnlyCollection<string> tokens, Dictionary<string, string>? data = null, CancellationToken ct = default);
+    /// <summary>A push about friends; tapping it opens <paramref name="path"/> (relative to the site).</summary>
+    Task<int> SendFriendNotification(string title, string message, string path, IReadOnlyCollection<string> tokens, CancellationToken ct = default);
 }

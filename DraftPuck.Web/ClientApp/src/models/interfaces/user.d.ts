@@ -21,4 +21,5 @@ interface User {
   pickingStartedNotificationPreference: NotificationPreference
   achievementAwardedNotificationPreference?: NotificationPreference
   recapNotificationPreference?: NotificationPreference
+  friendNotificationPreference?: NotificationPreference
 }
