@@ -274,7 +274,7 @@ watch(
           role="button"
           @click="isNotificationSettingsVisible = true"
         >
-          <i class="fi fi-rr-settings d-block fs-3" style="line-height: 20px"></i>
+          <i class="fi fi-rr-bell d-block fs-3" style="line-height: 20px"></i>
           <span class="d-none d-sm-block text-uppercase ms-2" style="margin-top: -2px">Notifications</span>
         </a>
 
