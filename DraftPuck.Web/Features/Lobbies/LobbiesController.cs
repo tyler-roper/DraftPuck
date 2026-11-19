@@ -31,10 +31,11 @@ public class LobbiesController(IMediator mediator) : BaseController()
         return Created($"/api/lobbies/{lobbyDto.Id}", lobbyDto);
     }
 
+    /// <summary>The caller's lobbies, newest first; with ?active=true only the live ones.</summary>
     [HttpGet]
-    public async Task<IActionResult> GetLobbiesForCurrentUser()
+    public async Task<IActionResult> GetLobbiesForCurrentUser([FromQuery] bool active = false)
     {
-        var query = new GetLobbiesByUserQuery() { UserId = CurrentUserId };
+        var query = new GetLobbiesByUserQuery() { UserId = CurrentUserId, ActiveOnly = active };
         var lobbyDtos = await mediator.Send(query);
         return Ok(lobbyDtos);
     }
