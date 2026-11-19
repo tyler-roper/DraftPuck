@@ -1,9 +1,13 @@
-/** "Host: You · 5 players · 3 games": a live lobby, at a glance, for the rejoin button. */
-export function rejoinDetails(lobby: Pick<LobbySummary, 'createdBy' | 'createdByName' | 'memberCount' | 'gameCount'>, userId: string | undefined): string {
-  const host = lobby.createdBy === userId ? 'You' : lobby.createdByName
-  const players = lobby.memberCount === 1 ? '1 player' : `${lobby.memberCount} players`
-  const games = lobby.gameCount === 1 ? '1 game' : `${lobby.gameCount} games`
-  return `Host: ${host} · ${players} · ${games}`
+/** A live lobby at a glance, for the rejoin button: who hosts it ("you" for your own) and how big it is. */
+export function rejoinDetails(
+  lobby: Pick<LobbySummary, 'createdBy' | 'createdByName' | 'memberCount' | 'gameCount'>,
+  userId: string | undefined
+): { host: string; players: string; games: string } {
+  return {
+    host: lobby.createdBy === userId ? 'you' : lobby.createdByName,
+    players: lobby.memberCount === 1 ? '1 player' : `${lobby.memberCount} players`,
+    games: lobby.gameCount === 1 ? '1 game' : `${lobby.gameCount} games`
+  }
 }
 
 /**

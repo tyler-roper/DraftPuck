@@ -16,6 +16,7 @@ const { lobbies, isVisible, dismiss } = useRejoin()
 const router = useRouter()
 const isChoosing = ref(false)
 
+const details = (lobby: LobbySummary) => rejoinDetails(lobby, currentUser.value?.id)
 const open = (lobby: LobbySummary) => router.push({ name: 'Lobby', params: { joinCode: lobby.joinCode } })
 
 function rejoin() {
@@ -31,15 +32,19 @@ function rejoin() {
         <VIcon prefix="sr" icon="hockey-puck" class="fs-4 me-3" />
         <span class="d-block text-start min-w-0 flex-grow-1">
           <template v-if="lobbies.length === 1">
-            <span class="d-block fw-bold text-uppercase">Rejoin {{ lobbies[0]!.joinCode }}</span>
-            <span class="d-block fs-7 text-truncate">{{ rejoinDetails(lobbies[0]!, currentUser?.id) }}</span>
+            <span class="d-block title"
+              >Rejoin lobby: <span class="code-text">{{ lobbies[0]!.joinCode }}</span></span
+            >
+            <span class="d-block fs-7 text-truncate"
+              >Hosted by <strong>{{ details(lobbies[0]!).host }}</strong></span
+            >
           </template>
           <template v-else>
-            <span class="d-block fw-bold text-uppercase">Rejoin a lobby</span>
+            <span class="d-block title">Rejoin a lobby</span>
             <span class="d-block fs-7">{{ lobbies.length }} live lobbies</span>
           </template>
         </span>
-        <VIcon prefix="sr" icon="angle-right" class="fs-5" />
+        <VIcon prefix="sr" icon="angle-right" class="fs-5 ms-2" />
       </button>
       <button class="dismiss" title="Dismiss" aria-label="Dismiss" @click="dismiss">
         <VIcon prefix="sr" icon="cross-small" class="fs-4" />
@@ -56,7 +61,12 @@ function rejoin() {
       <div class="modal-body dark">
         <button v-for="lobby in lobbies" :key="lobby.joinCode" class="lobby-option" @click="open(lobby)">
           <span class="code">{{ lobby.joinCode }}</span>
-          <span class="flex-grow-1 min-w-0 text-start fs-7 text-stone-300 text-truncate">{{ rejoinDetails(lobby, currentUser?.id) }}</span>
+          <span class="flex-grow-1 min-w-0 text-start fs-7">
+            <span class="d-block text-truncate"
+              >Hosted by <strong class="text-stone-0">{{ details(lobby).host }}</strong></span
+            >
+            <span class="d-block text-truncate text-stone-400">{{ details(lobby).players }}<span class="dot">·</span>{{ details(lobby).games }}</span>
+          </span>
           <VIcon prefix="sr" icon="angle-right" class="text-stone-400" />
         </button>
       </div>
@@ -125,10 +135,30 @@ function rejoin() {
   margin-bottom: 0;
 }
 
+.title {
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+/* A join code reads as a code, not a word: spaced capitals. */
+.code-text {
+  letter-spacing: 2px;
+}
+
+/* In the list, a dark chip. */
 .lobby-option .code {
+  padding: 4px 8px 4px 11px;
+  border-radius: 6px;
+  font-size: 0.9375rem;
   font-weight: bold;
   letter-spacing: 3px;
+  background-color: map-get($custom-colors, 'stone-1000');
   color: map-get($custom-colors, 'primary');
+}
+
+.dot {
+  margin: 0 6px;
+  opacity: 0.5;
 }
 
 .min-w-0 {
