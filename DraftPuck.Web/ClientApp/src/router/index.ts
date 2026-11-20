@@ -178,6 +178,11 @@ const router = createRouter({
           path: 'lobbies',
           name: 'AdminLobbies',
           component: () => import('@/views/admin/LobbiesView.vue')
+        },
+        {
+          path: 'event-logos',
+          name: 'AdminEventLogos',
+          component: () => import('@/views/admin/EventLogosView.vue')
         }
       ]
     }
