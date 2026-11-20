@@ -7,9 +7,6 @@ namespace DraftPuck.Infrastructure.SignalR;
 
 public class LobbyClientEventService(IHubContext<LobbyHub> hubContext) : IClientEventService
 {
-    public async Task SendGlobalLobbyEvent(LobbyEventDto lobbyEvent, CancellationToken ct)
-        => await hubContext.Clients.All.SendAsync("LobbyEvent", lobbyEvent, ct);
-
     public async Task SendLobbyEvent(string joinCode, LobbyEventDto lobbyEvent, CancellationToken ct)
         => await hubContext.Clients.Group(joinCode).SendAsync("LobbyEvent", lobbyEvent, ct);
 
@@ -19,6 +16,7 @@ public class LobbyClientEventService(IHubContext<LobbyHub> hubContext) : IClient
     public async Task SendLobbyStateChangedNotification(string joinCode, CancellationToken ct)
         => await hubContext.Clients.Group(joinCode).SendAsync("LobbyStateChanged", ct);
 
-    public async Task SendGameUpdated(GameDto game, CancellationToken ct)
-        => await hubContext.Clients.All.SendAsync("GameUpdated", game, ct);
+    // A new message name: pages still running code from before it would merge partial games into whole ones.
+    public async Task SendGameChanges(GameChangesDto changes, CancellationToken ct)
+        => await hubContext.Clients.All.SendAsync("GameChanged", changes, ct);
 }

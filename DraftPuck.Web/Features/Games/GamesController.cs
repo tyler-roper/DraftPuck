@@ -6,7 +6,7 @@ namespace DraftPuck.Web.Features.Games;
 [AllowAnonymous]
 public class GamesController(IMediator mediator) : BaseController()
 {
-    // Lobby pages fetch every game on (re)connect; after that each game is pushed over SignalR ("GameUpdated").
+    // Lobby pages fetch every game on (re)connect; after that each poll's changes are pushed over SignalR ("GameChanged").
     [HttpGet]
     public async Task<ActionResult<List<GameDto>>> GetAllGames()
     {
@@ -14,6 +14,11 @@ public class GamesController(IMediator mediator) : BaseController()
         var games = await mediator.Send(query);
         return Ok(games);
     }
+
+    // A page that missed a push fetches just that game.
+    [HttpGet("{gameId:int}")]
+    public async Task<ActionResult<GameDto>> GetGame(int gameId)
+        => Ok(await mediator.Send(new GetGameQuery(gameId)));
 
     [HttpGet("summaries")]
     public async Task<ActionResult<List<GameSummaryDto>>> GetAllGameSummaries()

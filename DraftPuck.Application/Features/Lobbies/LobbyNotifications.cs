@@ -39,7 +39,6 @@ public record PickScratchedNotification(LobbyPickEventPayload Data) : INotificat
 public record DrinkAssignedNotification(LobbyDrinkEventPayload Data) : INotification;
 public record MessageSentNotification(LobbyMessageEventPayload Data) : INotification;
 public record LobbyEventCreatedNotification(LobbyEventEntity Event, string JoinCode) : INotification;
-public record GlobalEventCreatedNotification(LobbyEventEntity Event) : INotification;
 public record DrinkInvalidatedNotification(DrinkInvalidatedPayload Data) : INotification;
 public record DrinkRemovedNotification(DrinkRemovedPayload Data) : INotification;
 public record DrinkAwardedNotification(DrinkAwardedPayload Data) : INotification;
