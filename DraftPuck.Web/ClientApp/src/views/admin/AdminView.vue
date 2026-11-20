@@ -30,6 +30,11 @@ const { gitSha, appIsTestMode, currentSystemTime } = storeToRefs(systemStore)
             <span>Lobbies</span>
             <VIcon class="caret" prefix="rr" icon="angle-right" />
           </router-link>
+          <router-link class="profile-option" :to="{ name: 'AdminEventLogos' }">
+            <VIcon class="icon" prefix="rr" icon="calendar-star" />
+            <span>Event Logos</span>
+            <VIcon class="caret" prefix="rr" icon="angle-right" />
+          </router-link>
         </div>
       </div>
       <div class="hr my-3"></div>
