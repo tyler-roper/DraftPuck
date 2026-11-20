@@ -182,6 +182,26 @@ public class ProcessGameCommandHandlerTests
     }
 
     [Fact]
+    public async Task ARosterRefetchedThisPollIsPushed()
+    {
+        // Roster sync writes the new roster into the cached copy too, so the push must compare against a copy taken
+        // before it, or a call-up would never reach clients.
+        var (cached, updated) = LiveGame(Seed.NewGameId());
+        cached.UpdatedUtc = DateTime.UtcNow.AddSeconds(-10);
+        var callUp = new PlayerSummaryDto { Id = TestGames.HomePlayer(50), TeamId = TestGames.HomeTeamId, FirstName = "Call", LastName = "Up" };
+        updated.PlayerSummaries.Add(callUp);
+        _nhlClient.GetPlayerAsync(Arg.Any<int>()).Returns(c => new PlayerDto { Id = c.Arg<int>(), FirstName = "Player", LastName = "", Position = "C", Headshot = "" });
+
+        await PollAsync(cached, updated);
+
+        var pushed = Assert.Single(Published<GameUpdatedNotification>());
+        var changes = GameChangesDto.Between(pushed.LastSent, pushed.Game);
+        Assert.Equal(cached.UpdatedUtc, changes.BaseUpdatedUtc);
+        Assert.Contains(callUp.Id, changes.HomeTeam.Roster!.Select(p => p.Id));
+        Assert.Null(changes.AwayTeam.Roster);
+    }
+
+    [Fact]
     public async Task GameIsPushedBeforeItsGoalEvents()
     {
         // Clients build the feed's goal item from the game's plays, so the play should arrive before the drink events.

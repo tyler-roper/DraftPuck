@@ -153,13 +153,13 @@ public class GoalCorrectionPipelineTests(DatabaseFixture fixture)
     [Fact]
     public async Task FailedPushToClientsDoesNotStopTheGoalBeingAwarded()
     {
-        _clientEvents.SendGameUpdated(Arg.Any<GameDto>(), Arg.Any<CancellationToken>())
+        _clientEvents.SendGameChanges(Arg.Any<GameChangesDto>(), Arg.Any<CancellationToken>())
             .Returns<Task>(_ => throw new InvalidOperationException("backplane down"));
 
         await JohnScoresAsync();
 
         Assert.Single(await DrinksAsync(_johnPickId));
-        await _clientEvents.Received().SendGameUpdated(Arg.Is<GameDto>(g => g.Id == _gameId), Arg.Any<CancellationToken>());
+        await _clientEvents.Received().SendGameChanges(Arg.Is<GameChangesDto>(g => g.Id == _gameId), Arg.Any<CancellationToken>());
     }
 
     [Fact]

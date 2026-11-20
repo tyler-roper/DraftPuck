@@ -93,7 +93,7 @@ const { onLobbyEvent } = useLobbyEvents({
 // Lobby events, chat messages and game scores are pushed; resync fills in anything missed while not listening.
 const connection = useLobbyConnection({
   joinCode,
-  handlers: { LobbyEvent: onLobbyEvent, Message: onMessage, LobbyStateChanged: getLobby, GameUpdated: onGameUpdated },
+  handlers: { LobbyEvent: onLobbyEvent, Message: onMessage, LobbyStateChanged: getLobby, GameChanged: onGameChanged },
   resync,
   log: sendDebugMessage
 })
@@ -176,9 +176,9 @@ async function resync() {
   if (lobby.value) await getLobbyEvents(lobby.value.id)
 }
 
-function onGameUpdated(game: Game) {
-  parseAllDates(game)
-  gamesStore.applyUpdate(game)
+function onGameChanged(changes: GameChanges) {
+  parseAllDates(changes)
+  gamesStore.applyChanges(changes).catch(reportError)
 }
 
 function reportError(error: unknown) {
