@@ -102,6 +102,29 @@ public class ApiTests(ApiFactory factory)
         Assert.Equal(HttpStatusCode.OK, (await factory.Client(ApiFactory.JwtFor(admin)).GetAsync("/api/admin/users")).StatusCode);
     }
 
+    [Fact]
+    public async Task AdminsAddListAndRemoveEventLogos()
+    {
+        var (_, _, guest) = await NewGuestAsync();
+        UserEntity admin;
+        await using (var db = factory.CreateDbContext())
+            admin = await SeedAccounts.AccountAsync(db, isAdmin: true);
+        var client = factory.Client(ApiFactory.JwtFor(admin));
+        var starts = new DateTime(2300, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var logo = new { name = "Winter Classic", startsUtc = starts, endsUtc = starts.AddDays(2), logoUrl = "/img/logo-wc.png", wideLogoUrl = "/img/logo-wide-wc.png" };
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await guest.PostAsJsonAsync("/api/admin/event-logos", logo)).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/api/admin/event-logos", logo with { logoUrl = "logo.png" })).StatusCode);
+
+        var created = await client.PostAsJsonAsync("/api/admin/event-logos", logo);
+        Assert.Equal(HttpStatusCode.OK, created.StatusCode);
+        var id = (await created.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+        Assert.Contains(id.ToString(), await client.GetStringAsync("/api/admin/event-logos"));
+
+        Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"/api/admin/event-logos/{id}")).StatusCode);
+        Assert.DoesNotContain(id.ToString(), await client.GetStringAsync("/api/admin/event-logos"));
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData("wrong-key")]
