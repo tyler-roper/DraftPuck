@@ -5,9 +5,20 @@ namespace DraftPuck.DiscordBot.Services;
 
 public class DiscordEventHandler(IInternalApiClient apiClient, ILogger<DiscordEventHandler> logger)
 {
+    /// <summary>
+    /// Verifies a member as they join, so they don't have to run /verify. Joiners without a DraftPuck account are
+    /// ignored by the web app. If it can't be reached, the member can still /verify later.
+    /// </summary>
     public async Task OnUserJoinedAsync(SocketGuildUser user, CancellationToken ct)
     {
-        await apiClient.SendDiscordServerJoinedNotification(user.Id.ToString(), ct);
+        try
+        {
+            await apiClient.SendDiscordServerJoinedNotification(user.Id.ToString(), ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Verifying Discord user {DiscordUserId} on joining failed; they can run /verify.", user.Id);
+        }
     }
 
     public async Task HandleSlashCommandAsync(SocketSlashCommand command)
