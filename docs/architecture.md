@@ -40,7 +40,7 @@ Notifications are published in-process, in order, and run synchronously. A handl
      ("scratched", with a push to the pick's owner);
    - works out what happened to each goal (`GoalMatcher`): matched by content first (scorer, period, clock within 3s)
      because the NHL renumbers plays, then by play ID;
-   - saves the game and pushes it to every client (`GameUpdated`);
+   - saves the game and pushes what changed since the last poll to every client (`GameChanged`, `GameChangesDto`);
    - publishes goal notifications, which award, revoke or re-key drinks (see *Goal corrections* below);
    - sends pregame alerts and bot picks, and queues the next poll (`GameProcessingHelpers.GetPollDelay`: 10s while
      live, 1 min near puck drop, 10 min before that).
@@ -63,7 +63,13 @@ same hub via the Redis backplane, so either process can push. Messages:
 | `LobbyEvent` | the lobby | refetch the lobby, add to the feed, maybe toast (`useLobbyEvents`) |
 | `Message` | the lobby | add to chat, count unread (`useLobbyChat`) |
 | `LobbyStateChanged` | the lobby | refetch the lobby |
-| `GameUpdated` | everyone | update that game in place (`stores/games.ts`) |
+| `GameChanged` | everyone | apply the changes to that game in place (`stores/games.ts`) |
+
+Every lobby page shows every game of the day, so every client gets every game's changes. A live game is ~50 KB, mostly
+plays, and is polled every 10 seconds, so a push carries only what changed: the clock, score and other small fields,
+the plays that are new or changed (with every play's ID, in order), and rosters or lineups only when they changed.
+Changes apply only to the copy they were made from (`BaseUpdatedUtc`); a page holding any other copy (it missed a push)
+fetches that game (`GET api/games/{id}`) instead.
 
 On the client, `useLobbyConnection` owns the connection: retries, auto-reconnect, rejoining the group, and pausing
 while the tab is hidden. After every (re)connect, and every 5 minutes as a safety net for lost pushes, the page

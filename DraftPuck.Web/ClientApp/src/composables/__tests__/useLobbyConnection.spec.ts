@@ -24,9 +24,15 @@ interface FakeConnection {
 
 vi.mock('@microsoft/signalr', () => {
   class HubConnectionBuilder {
-    withUrl() { return this }
-    configureLogging() { return this }
-    withAutomaticReconnect() { return this }
+    withUrl() {
+      return this
+    }
+    configureLogging() {
+      return this
+    }
+    withAutomaticReconnect() {
+      return this
+    }
     build(): FakeConnection {
       const connection: FakeConnection = {
         state: HubConnectionState.Disconnected,
@@ -38,12 +44,18 @@ vi.mock('@microsoft/signalr', () => {
           }
           connection.state = HubConnectionState.Connected
         }),
-        stop: vi.fn(async () => { connection.state = HubConnectionState.Disconnected }),
+        stop: vi.fn(async () => {
+          connection.state = HubConnectionState.Disconnected
+        }),
         invoke: vi.fn(async () => {}),
         handlers: {},
-        on(event, handler) { connection.handlers[event] = handler },
+        on(event, handler) {
+          connection.handlers[event] = handler
+        },
         onreconnecting() {},
-        onreconnected(cb) { connection.reconnected = cb }
+        onreconnected(cb) {
+          connection.reconnected = cb
+        }
       }
       connections.push(connection)
       return connection
@@ -68,13 +80,11 @@ const flush = () => vi.advanceTimersByTimeAsync(0)
 describe('useLobbyConnection', () => {
   let scope: ReturnType<typeof effectScope>
   let resync: ReturnType<typeof vi.fn>
-  let onGameUpdated: ReturnType<typeof vi.fn>
+  let onGameChanged: ReturnType<typeof vi.fn>
 
   function create() {
     scope = effectScope()
-    return scope.run(() =>
-      useLobbyConnection({ joinCode: 'ABCD', handlers: { GameUpdated: onGameUpdated }, resync })
-    )!
+    return scope.run(() => useLobbyConnection({ joinCode: 'ABCD', handlers: { GameChanged: onGameChanged }, resync }))!
   }
 
   beforeEach(() => {
@@ -85,7 +95,7 @@ describe('useLobbyConnection', () => {
     network.startGate = null
     hidden = false
     resync = vi.fn(async () => {})
-    onGameUpdated = vi.fn()
+    onGameChanged = vi.fn()
   })
 
   afterEach(() => {
@@ -106,9 +116,9 @@ describe('useLobbyConnection', () => {
   it('passes hub events to the handlers', async () => {
     await create().start()
 
-    connections[0].handlers.GameUpdated({ id: 1 })
+    connections[0].handlers.GameChanged({ id: 1 })
 
-    expect(onGameUpdated).toHaveBeenCalledWith({ id: 1 })
+    expect(onGameChanged).toHaveBeenCalledWith({ id: 1 })
   })
 
   it('still loads data when the first attempt fails, then keeps retrying with backoff', async () => {

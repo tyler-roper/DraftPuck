@@ -1,5 +1,6 @@
 ﻿using DraftPuck.Application.Features.Lobbies;
 using DraftPuck.Application.Features.Lobbies.Picks;
+using System.Text.Json;
 using Microsoft.Extensions.Options;
 
 namespace DraftPuck.Application.Features.Games;
@@ -83,6 +84,9 @@ public class ProcessGameCommandHandler(
 
         // Null on the first poll, or when the cached copy was lost mid-game.
         var previous = await gameCache.GetGameByIdAsync(request.GameId);
+        // What clients were last sent, kept as it was (roster sync updates previous's rosters in place), so the push can
+        // carry only what changed.
+        var lastSent = previous == null ? null : JsonSerializer.Deserialize<GameDto>(JsonSerializer.Serialize(previous));
 
         // On the initial schedule load, skip fetching every player so the queue isn't blocked until each game is cached.
         await rosterSync.SyncAsync(previous ?? game, game, fetchChangedRosters: !request.IsInitialPopulation, ct);
@@ -99,7 +103,7 @@ public class ProcessGameCommandHandler(
         game.UpdatedUtc = DateTime.UtcNow;
         await gameCache.UpdateGameAsync(game);
         // Before the goal changes, so clients have the goal play by the time its drink events arrive.
-        await mediator.Publish(new GameUpdatedNotification(game), ct);
+        await mediator.Publish(new GameUpdatedNotification(game, lastSent), ct);
         await PublishGoalChangesAsync(game.Id, goalChanges, ct);
 
         if (game.GameState == GameState.Final && previous?.GameState != GameState.Final)

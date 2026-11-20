@@ -4,7 +4,6 @@ namespace DraftPuck.Application.Features.Lobbies.Events;
 
 public class LobbyEventCreatedHandler(IClientEventService clientEventService, IMapper mapper) :
     INotificationHandler<LobbyEventCreatedNotification>,
-    INotificationHandler<GlobalEventCreatedNotification>,
     INotificationHandler<MessageSentNotification>,
     INotificationHandler<LobbyStateChangedNotification>
 {
@@ -12,12 +11,6 @@ public class LobbyEventCreatedHandler(IClientEventService clientEventService, IM
     {
         var lobbyEventDto = mapper.Map<LobbyEventDto>(notification.Event);
         await clientEventService.SendLobbyEvent(notification.JoinCode, lobbyEventDto, ct);
-    }
-
-    public async Task Handle(GlobalEventCreatedNotification notification, CancellationToken ct)
-    {
-        var lobbyEventDto = mapper.Map<LobbyEventDto>(notification.Event);
-        await clientEventService.SendGlobalLobbyEvent(lobbyEventDto, ct);
     }
 
     public async Task Handle(MessageSentNotification notification, CancellationToken ct)

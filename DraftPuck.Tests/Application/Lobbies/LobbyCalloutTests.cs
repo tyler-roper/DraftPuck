@@ -54,7 +54,7 @@ public class LobbyCalloutTests(DatabaseFixture fixture)
     private async Task GameUpdatedAsync(GameDto game)
     {
         await using var db = fixture.CreateContext();
-        await Handler(db).Handle(new GameUpdatedNotification(game), default);
+        await Handler(db).Handle(new GameUpdatedNotification(game, LastSent: null), default);
     }
 
     private LobbyCalloutHandler Handler(DraftPuckContext db) =>
