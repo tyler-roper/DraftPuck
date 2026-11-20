@@ -35,11 +35,12 @@ public static class DiscordBotServiceCollectionExtensions
             .ValidateOnStart();
 
         return services
-            // Slash commands only need Guilds. UserJoined events also need GuildMembers, a privileged intent that has to
-            // be enabled for the bot in the Discord developer portal before it's requested here.
+            // Guilds for slash commands; GuildMembers for UserJoined, which verifies members as they join. GuildMembers
+            // is privileged: it's enabled for the bot in the Discord developer portal, and the bot can't connect if it's
+            // requested without being enabled there.
             .AddSingleton(sp => new DiscordSocketClient(new DiscordSocketConfig()
             {
-                GatewayIntents = Discord.GatewayIntents.Guilds
+                GatewayIntents = Discord.GatewayIntents.Guilds | Discord.GatewayIntents.GuildMembers
             }))
             .AddSingleton<DiscordEventHandler>()
             .AddHostedService<DiscordBotWorker>();
