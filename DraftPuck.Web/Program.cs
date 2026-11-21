@@ -9,6 +9,7 @@ using DraftPuck.Web.Filters;
 using DraftPuck.Web.Health;
 using DraftPuck.Web.Hosting;
 using DraftPuck.Web.Mvc.App;
+using DraftPuck.Web.OpenApi;
 using DraftPuck.Web.RateLimiting;
 using DraftPuck.Web.Security;
 using DraftPuck.Web.Telemetry;
@@ -35,7 +36,7 @@ builder.Services
     .Configure<SystemOptions>(options => builder.Configuration.Bind(SystemOptions.SectionName, options))
     .AddHttpContextAccessor()
     .AddInfrastructure(builder.Configuration)
-    .AddOpenApi()
+    .AddOpenApi(options => options.AddDocumentTransformer<BearerSecurityTransformer>().AddOperationTransformer<BearerSecurityTransformer>())
     .AddApplication(builder.Configuration)
     .ConfigureAuth(builder.Configuration, builder.Environment)
     .AddTelemetry(builder.Configuration)
