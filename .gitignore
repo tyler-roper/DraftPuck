@@ -412,6 +412,8 @@ FodyWeavers.xsd
 /redis/
 DraftPuck.Web/ClientApp/public/env-sw.js
 DraftPuck.Web/ClientApp/public/env.js
-# Local Claude Code settings stay private; project skills are shared.
+# Local Claude Code settings and instructions stay private; project skills and shared settings are checked in.
 /.claude/*
 !/.claude/skills/
+!/.claude/settings.json
+/CLAUDE.local.md
