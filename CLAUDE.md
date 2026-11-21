@@ -29,7 +29,8 @@ flow, the domain rules, and where new code goes. Known issues and planned work a
   (`--merge`), which matches the repo's history.
 - `main` deploys (`.github/workflows/autodeploytrigger.yml`). The maintainer deploys by merging a `develop` → `main`
   PR; don't push to `main` or open PRs against it.
-- Never bypass branch protection (`gh pr merge --admin`, force pushes) unless the user explicitly asks.
+- Never bypass branch protection (`gh pr merge --admin`, force pushes to `develop` or `main`). PRs merge only through
+  review and passing checks.
 
 ## Conventions
 
