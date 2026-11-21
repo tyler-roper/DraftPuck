@@ -23,6 +23,23 @@ public class OpenApiTests(ApiFactory factory)
         Assert.Contains("swagger-ui", await client.GetStringAsync("/swagger/index.html"));
     }
 
+    [Fact]
+    public async Task TheDocumentDescribesBearerAuthOnTheEndpointsThatNeedIt()
+    {
+        using var development = factory.WithWebHostBuilder(b => b.UseEnvironment("Development"));
+        var document = JsonDocument.Parse(await development.CreateClient(Options).GetStringAsync("/openapi/v1.json")).RootElement;
+
+        var scheme = document.GetProperty("components").GetProperty("securitySchemes").GetProperty("Bearer");
+        Assert.Equal("http", scheme.GetProperty("type").GetString());
+        Assert.Equal("bearer", scheme.GetProperty("scheme").GetString());
+
+        var paths = document.GetProperty("paths");
+        bool NeedsToken(string path, string method) => paths.GetProperty(path).GetProperty(method).TryGetProperty("security", out _);
+        Assert.True(NeedsToken("/api/admin/event-logos", "get"));
+        Assert.False(NeedsToken("/api/Games/{gameId}", "get")); // [AllowAnonymous] controller
+        Assert.False(NeedsToken("/api/Users", "post"));         // [AllowAnonymous] action: creates a guest
+    }
+
     [Theory]
     [InlineData("/openapi/v1.json")]
     [InlineData("/swagger/index.html")]
