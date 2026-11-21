@@ -22,9 +22,11 @@ bash .claude/skills/run-draftpuck/run.sh down    # remove everything it started
 
 - **`up` again after every code change**: the app runs from images, not from source (no hot reload). The Web image
   builds the client too (with type-check), so a client type error fails the build.
-- **`seed`** prints the logins (password `draftpuck-run-1`). Sam has a friend (Alex), a pending request (Jo), someone
-  they've played with but not friended (Max, in Sam's lobby), an
-  invite to Alex's lobby, and a lobby of their own. Lobbies need tonight's NHL games, which the Worker loads from the
+- **`seed`** prints the logins (password `draftpuck-run-1`). Sam is an admin (use them for `/admin/...` pages) and has
+  a friend (Alex), a pending request (Jo), someone they've played with but not friended (Max, in Sam's lobby), an
+  invite to Alex's lobby, and a lobby of their own. Data an admin page lists (event logos, etc.) isn't seeded: add it
+  through the page or the admin API, or insert it with `docker exec draftpuck-run-sql /opt/mssql-tools18/bin/sqlcmd
+  -C -I -S localhost -U sa -P DraftPuck-Run-1 -d DraftPuck -Q "..."` (`-I` is required for writes to some tables). Lobbies need tonight's NHL games, which the Worker loads from the
   real NHL API when it starts; on a day without games `seed` says so and skips the lobbies.
 - **`shot`** signs in through the login page as that player and saves `01.png`, `02.png`, ... in `<out-dir>`
   (400×860 phone viewport). A step is a path, optionally `|` and a Playwright selector to click first:

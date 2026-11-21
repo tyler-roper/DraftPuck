@@ -7,7 +7,8 @@ Thank you for your interest in contributing!
 - **develop** → integration branch (PR target)
 - **feature/*** → contributor feature branches
 
-All pull requests must target **develop**.
+All pull requests must target **develop**. Pushing to `main` deploys to production; the maintainer does that by
+merging `develop` into `main`.
 
 Looking for something to work on? The [open issues](https://github.com/tyler-roper/DraftPuck/issues) are the backlog:
 bugs, planned features and housekeeping.

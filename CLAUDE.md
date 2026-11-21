@@ -27,7 +27,10 @@ flow, the domain rules, and where new code goes. Known issues and planned work a
 - One PR per coherent change into `develop`; end the description with the Claude Code attribution line.
 - Run both suites and wait for CI (`gh pr checks <n> --watch`). Merge only when the user asks; use a merge commit
   (`--merge`), which matches the repo's history.
-- `main` deploys (`.github/workflows/autodeploytrigger.yml`); don't push to it.
+- `main` deploys (`.github/workflows/autodeploytrigger.yml`). The maintainer deploys by merging a `develop` → `main`
+  PR; don't push to `main` or open PRs against it.
+- Never bypass branch protection (`gh pr merge --admin`, force pushes to `develop` or `main`). PRs merge only through
+  review and passing checks.
 
 ## Conventions
 
@@ -42,4 +45,7 @@ flow, the domain rules, and where new code goes. Known issues and planned work a
 - Refactor to the design you'd choose from scratch, not to a slightly better version of the current pattern. Look at
   the architecture around a file before reworking the file.
 - The server is the authority: validate every input in handlers, whatever the client checks.
+- Keep security proportionate: it's a casual game holding no personal info. Do the basics that make a feature correct
+  (e.g. a random, hashed, expiring, single-use reset token) and raise real holes (account takeover, missing auth), but
+  don't add enterprise hardening like email verification or account-enumeration defenses.
 - Don't use in-memory caches for shared state; the app can scale out. Redis or the database is the source of truth.
