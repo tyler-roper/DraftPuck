@@ -120,6 +120,10 @@ seed() {
   api POST "friends/$alex_id" "$sam_t" >/dev/null
   api POST "friends/$sam_id" "$alex_t" >/dev/null
   api POST "friends/$sam_id" "$jo_t" >/dev/null
+  # Sam is an admin too, for the admin pages. There's no API to grant it, so set it in the database. -I turns on
+  # QUOTED_IDENTIFIER, which the Users table's filtered indexes need for an UPDATE.
+  docker exec draftpuck-run-sql /opt/mssql-tools18/bin/sqlcmd -C -I -b -S localhost -U sa -P "$SQL_PASSWORD" -d DraftPuck \
+    -Q "UPDATE Users SET IsAdmin = 1 WHERE Id = '$sam_id'" >/dev/null
 
   # Lobbies need tonight's games, which the Worker loads from the NHL a few seconds after it starts.
   local games="" sam_code alex_code
@@ -142,7 +146,7 @@ seed() {
 
   cat <<EOF
 Seeded (password for all: $PASSWORD):
-  $sam@draftpuck.test   friends with $alex; a request from $jo and an invite to lobby ${alex_code:-none} waiting; hosts lobby ${sam_code:-none}
+  $sam@draftpuck.test   admin; friends with $alex; a request from $jo and an invite to lobby ${alex_code:-none} waiting; hosts lobby ${sam_code:-none}
   $alex@draftpuck.test  friends with $sam; hosts lobby ${alex_code:-none}
   $jo@draftpuck.test    asked $sam to be friends
   $max@draftpuck.test   in $sam's lobby, not friends (a suggestion for $sam)
