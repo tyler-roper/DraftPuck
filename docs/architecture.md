@@ -95,6 +95,12 @@ refetches everything (`resync`). Games carry an `UpdatedUtc` stamp so an older c
   | Time-only correction, renumbered play | Nothing |
 
   A revoke is "drink invalidated" if the drink was already given to someone, otherwise "drink revoked".
+  Every row is a separate event a participant needs, so a scorer change producing three lobby events is correct.
+- **Rosters are sorted by season goals**, most first (`GameRosterSync`; `GoalCorrectionPipelineTests` asserts it).
+  Code that indexes `team.Roster` by position, such as the bot pick fallbacks in `BotPicksReadyNotificationHandler`,
+  relies on that order.
+- **Banners without an achievement** (`AchievementId` null) are defaults everyone can choose at sign-up. Never attach
+  one to an achievement; a new achievement needs new banner art (or ships with a title only).
 - **Friends** are mutual and need an account (guests and bots can't have any). Adding someone who already asked you
   accepts their request; removing, declining and cancelling are the same call and tell nobody. A lobby member invites
   friends from the lobby's Share window (`SendLobbyInvitesCommand`); an invite waits in the friend's *Friends &
