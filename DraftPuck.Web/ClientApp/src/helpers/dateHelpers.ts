@@ -1,4 +1,4 @@
-import { formatDuration, intervalToDuration, parseISO } from 'date-fns'
+import { differenceInCalendarDays, formatDuration, intervalToDuration, parseISO } from 'date-fns'
 
 const isoDateFormat = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d*)?(?:[-+]\d{2}:?\d{2}|Z)?$/
 
@@ -31,4 +31,18 @@ export function parseAllDates(body: unknown): void {
     if (isIsoDateString(value)) record[key] = parseISO(value.endsWith('Z') ? value : value + 'Z')
     else if (typeof value === 'object') parseAllDates(value)
   }
+}
+
+/**
+ * How long ago a day was, by calendar day: "Today" (or the label given, like "Tonight"), "Yesterday", then "3d ago",
+ * "2w ago", "5mo ago" and "1y ago". Months are "mo", so they aren't read as minutes.
+ */
+export function timeAgo(date: Date, now: Date = new Date(), today = 'Today'): string {
+  const days = differenceInCalendarDays(now, date)
+  if (days <= 0) return today
+  if (days === 1) return 'Yesterday'
+  if (days < 7) return `${days}d ago`
+  if (days < 30) return `${Math.floor(days / 7)}w ago`
+  if (days < 365) return `${Math.min(11, Math.floor(days / 30))}mo ago`
+  return `${Math.floor(days / 365)}y ago`
 }

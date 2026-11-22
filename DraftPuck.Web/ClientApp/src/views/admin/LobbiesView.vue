@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import { timeAgo } from '@/helpers/dateHelpers'
 import { ref, reactive, onMounted } from 'vue'
 import HeaderLayout from '@/views/layouts/HeaderLayout.vue'
 import VIcon from '@/components/VIcon.vue'
 import AdminLobbyService from '@/services/admin/AdminLobbyService'
 import VInputWrapper from '@/components/VInputWrapper.vue'
-import { isYesterday, differenceInDays, compareAsc } from 'date-fns'
+import { compareAsc } from 'date-fns'
 
 //#region data
 const lobbySummaries = ref<LobbySummary[]>([])
@@ -13,17 +14,6 @@ const filters = reactive<GetAllLobbiesRequest>({
   dateFrom: undefined
 })
 
-function ago(date: Date) {
-  const now = new Date()
-
-  if (isYesterday(date)) return 'Yesterday'
-
-  const diffInDays = differenceInDays(now, date)
-  if (diffInDays < 7) return `${diffInDays}d ago`
-  if (diffInDays < 30) return `${Math.floor(diffInDays / 7)}w ago`
-  if (diffInDays < 365) return `${Math.floor(diffInDays / 30)}m ago`
-  return `${Math.floor(diffInDays / 365)}y ago`
-}
 //#endregion
 
 //#region methods
@@ -74,7 +64,7 @@ onMounted(async () => {
                 <span>
                   <router-link :to="`/lobby/${lobby.joinCode}`" class="d-block text-uppercase fw-bold ls-6">{{
                     lobby.joinCode }}</router-link>
-                  <span class="d-block">{{ lobby.isActive ? 'Live' : ago(lobby.created) }}</span>
+                  <span class="d-block">{{ lobby.isActive ? 'Live' : timeAgo(lobby.created, new Date(), 'Tonight') }}</span>
                 </span>
               </td>
               <td class="text-center">
