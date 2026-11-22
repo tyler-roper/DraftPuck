@@ -82,11 +82,21 @@ public class GoalCorrectionPipelineTests(DatabaseFixture fixture)
         return services.BuildServiceProvider();
     }
 
-    /// <summary>A fresh copy of the live game as the NHL API would return it, with the given plays.</summary>
+    /// <summary>A fresh copy of the live game as the NHL API would return it, with the given plays and the score they make.</summary>
     private GameDto Game(params PlayDto[] plays)
     {
         var game = TestGames.Create(_gameId, _start, GameState.Live);
         game.Plays = [.. plays];
+        game.HomeTeam.Score = plays.Count(p => p.Type == PlayType.Goal && p.PrimaryTeamId == TestGames.HomeTeamId);
+        game.AwayTeam.Score = plays.Count(p => p.Type == PlayType.Goal && p.PrimaryTeamId == TestGames.AwayTeamId);
+        return game;
+    }
+
+    /// <summary>The game as the NHL sends it when its play-by-play has lost John's goal but the score still counts it.</summary>
+    private GameDto GameWithJohnsGoalDroppedFromTheFeed()
+    {
+        var game = Game();
+        game.HomeTeam.Score = 1;
         return game;
     }
 
@@ -279,6 +289,96 @@ public class GoalCorrectionPipelineTests(DatabaseFixture fixture)
         var invalidated = Assert.Single(await EventsAsync(LobbyEventType.DrinkInvalidated));
         Assert.Equal(_bystander, invalidated.LobbyMember2Id);
         Assert.Single(await EventsAsync(LobbyEventType.GoalRemoved));
+    }
+
+    // The NHL's play-by-play sometimes drops a goal, or its scorer, for a poll or two while the score still counts it
+    // (PHI @ MTL, 2026-11-21). The goal stands: nothing is called back, and nobody hears about it.
+    [Fact]
+    public async Task GoalDroppedFromTheFeedWhileTheScoreCountsItIsNotCalledBack()
+    {
+        await JohnScoresAsync();
+        await AssignJohnsDrinkToBystanderAsync();
+        var drink = Assert.Single(await DrinksAsync(_johnPickId));
+
+        await PollAsync(GameWithJohnsGoalDroppedFromTheFeed());
+        await PollAsync(GameWithJohnsGoalDroppedFromTheFeed());
+        Assert.Contains((await _cache.GetGameByIdAsync(_gameId))!.Plays, p => p.Id == PlayId); // still shown
+        await PollAsync(Game(GoalBy(John)));
+
+        var after = Assert.Single(await DrinksAsync(_johnPickId));
+        Assert.Equal((drink.Id, (DateTime?)null), (after.Id, after.Invalidated));
+        Assert.Empty(await EventsAsync(LobbyEventType.GoalRemoved));
+        Assert.Empty(await EventsAsync(LobbyEventType.DrinkInvalidated));
+        Assert.Single(await EventsAsync(LobbyEventType.DrinkAwarded));
+    }
+
+    [Fact]
+    public async Task GoalWhoseScorerBrieflyGoesMissingIsNotCalledBack()
+    {
+        await JohnScoresAsync();
+        var noScorer = GoalBy(John);
+        noScorer.PrimaryPlayerId = null;
+
+        await PollAsync(Game(noScorer));
+        await PollAsync(Game(GoalBy(John)));
+
+        Assert.Single(await DrinksAsync(_johnPickId));
+        Assert.Empty(await EventsAsync(LobbyEventType.GoalRemoved));
+        Assert.Empty(await EventsAsync(LobbyEventType.DrinkRevoked));
+        Assert.Single(await EventsAsync(LobbyEventType.DrinkAwarded));
+    }
+
+    [Fact]
+    public async Task GoalDroppedFromTheFeedIsCalledBackOnceTheScoreDrops()
+    {
+        await JohnScoresAsync();
+        await PollAsync(GameWithJohnsGoalDroppedFromTheFeed());
+
+        await PollAsync(Game());
+
+        Assert.Empty(await DrinksAsync(_johnPickId));
+        Assert.Single(await EventsAsync(LobbyEventType.GoalRemoved));
+    }
+
+    // A goal really called back (the score dropped) that the NHL later reinstates is a goal again.
+    [Fact]
+    public async Task ReinstatedGoalAwardsAgainAfterItsAssignedDrinkWasInvalidated()
+    {
+        await JohnScoresAsync();
+        await AssignJohnsDrinkToBystanderAsync();
+        await PollAsync(Game());
+
+        await PollAsync(Game(GoalBy(John)));
+
+        var drinks = await DrinksAsync(_johnPickId);
+        Assert.Single(drinks, d => d.Invalidated != null && d.RecipientLobbyMemberId == _bystander);
+        Assert.Single(drinks, d => d.Invalidated == null && d.RecipientLobbyMemberId == null);
+        Assert.Equal(2, (await EventsAsync(LobbyEventType.DrinkAwarded)).Count);
+    }
+
+    [Fact]
+    public async Task ReinstatedGoalAwardsAgainAfterItsDrinkWasRevoked()
+    {
+        await JohnScoresAsync();
+        await PollAsync(Game());
+
+        await PollAsync(Game(GoalBy(John)));
+
+        Assert.Single(await DrinksAsync(_johnPickId));
+    }
+
+    [Fact]
+    public async Task CallingBackAGoalAgainDoesNotInvalidateItsOldDrinkTwice()
+    {
+        await JohnScoresAsync();
+        await AssignJohnsDrinkToBystanderAsync();
+        await PollAsync(Game());
+        await PollAsync(Game(GoalBy(John)));
+
+        await PollAsync(Game());
+
+        Assert.Single(await EventsAsync(LobbyEventType.DrinkInvalidated)); // the first drink, once
+        Assert.Single(await EventsAsync(LobbyEventType.DrinkRevoked));     // the reinstated drink, still unassigned
     }
 
     [Fact]

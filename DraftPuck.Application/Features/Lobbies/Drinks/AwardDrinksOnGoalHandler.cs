@@ -20,7 +20,8 @@ public class AwardDrinksOnGoalHandler(IDbContext dbContext, IMediator mediator, 
                 && p.GameId == data.GameId
                 && p.PlayerId == data.Scorer.Id
                 && p.Created <= goalHappenedUtc
-                && !p.Drinks.Any(d => d.EventId == data.Play.Id))
+                // A drink invalidated when the goal was called back doesn't count: the goal returned, so it awards again.
+                && !p.Drinks.Any(d => d.EventId == data.Play.Id && d.Invalidated == null))
             .ToListAsync(ct);
 
         if (picksToReward.Count == 0)
