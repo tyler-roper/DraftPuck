@@ -76,3 +76,14 @@ export function buildRecapCard(
 export function recapFileName(joinCode: string) {
   return `draftpuck-${joinCode.toLowerCase()}-recap.png`
 }
+
+/** A member's round avatar on the post-game page: their picture, or (guests and anyone without one) their initial. */
+export function memberAvatar(member: Pick<LobbyMember, 'name' | 'avatarPath' | 'isGuest'>): { style: Record<string, string>; initial: string } {
+  const hasPicture = !!member.avatarPath && !member.isGuest
+  return { style: hasPicture ? { backgroundImage: `url(${member.avatarPath})` } : {}, initial: hasPicture ? '' : member.name.charAt(0).toUpperCase() }
+}
+
+/** "1 drink", "2 drinks": the word for a count. */
+export function drinksWord(count: number) {
+  return count === 1 ? 'drink' : 'drinks'
+}

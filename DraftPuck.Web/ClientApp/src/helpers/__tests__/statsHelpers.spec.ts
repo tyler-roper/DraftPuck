@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { memberNight, nightChart } from '@/helpers/statsHelpers'
+import { memberNight, nightChart, stretchLabel } from '@/helpers/statsHelpers'
 
 const at = (minute: number, second = 0) => new Date(2026, 10, 16, 21, minute, second)
 const drink = (to: string | null, earned: number, handedOut: number | null, earnedSecond = 0, handedSecond = 0) => ({
@@ -68,5 +68,14 @@ describe('nightChart', () => {
 
   it('is empty when nobody drank', () => {
     expect(nightChart({ members: [] } as unknown as Lobby, players, 'tyler')).toEqual([])
+  })
+})
+
+describe('stretchLabel', () => {
+  it("is the stretch's start and end times", () => {
+    const start = new Date(2026, 10, 22, 21, 10)
+    const end = new Date(2026, 10, 22, 21, 20)
+
+    expect(stretchLabel({ start, end })).toBe('9:10–9:20')
   })
 })
