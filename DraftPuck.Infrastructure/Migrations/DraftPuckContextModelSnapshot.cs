@@ -272,6 +272,9 @@ namespace DraftPuck.Infrastructure.Migrations
                     b.Property<int>("EventId")
                         .HasColumnType("int");
 
+                    b.Property<DateTime?>("Invalidated")
+                        .HasColumnType("datetime2");
+
                     b.Property<Guid>("LobbyMemberPickId")
                         .HasColumnType("uniqueidentifier");
 

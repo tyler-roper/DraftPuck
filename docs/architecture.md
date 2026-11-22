@@ -93,8 +93,11 @@ refetches everything (`resync`). Games carry an `UpdatedUtc` stamp so an older c
   | Scorer changed | "Goal changed"; old scorer's drinks revoked; new scorer's pickers awarded |
   | Goal called back | "Goal removed"; the scorer's drinks revoked |
   | Time-only correction, renumbered play | Nothing |
+  | Goal (or its scorer) missing from the feed while the score still counts it | Nothing: the goal is kept until the score drops (`GoalFeedGaps`) |
+  | Called-back goal reinstated | Drink awarded again |
 
-  A revoke is "drink invalidated" if the drink was already given to someone, otherwise "drink revoked".
+  A revoke is "drink invalidated" if the drink was already given to someone (it's kept, marked `Invalidated`, and no
+  longer counts as the pick's drink for that goal), otherwise "drink revoked" (deleted).
   Every row is a separate event a participant needs, so a scorer change producing three lobby events is correct.
 - **Rosters are sorted by season goals**, most first (`GameRosterSync`; `GoalCorrectionPipelineTests` asserts it).
   Code that indexes `team.Roster` by position, such as the bot pick fallbacks in `BotPicksReadyNotificationHandler`,

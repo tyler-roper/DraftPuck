@@ -9,6 +9,7 @@ using DraftPuck.Web.Filters;
 using DraftPuck.Web.Health;
 using DraftPuck.Web.Hosting;
 using DraftPuck.Web.Mvc.App;
+using DraftPuck.Web.OpenApi;
 using DraftPuck.Web.RateLimiting;
 using DraftPuck.Web.Security;
 using DraftPuck.Web.Telemetry;
@@ -35,7 +36,7 @@ builder.Services
     .Configure<SystemOptions>(options => builder.Configuration.Bind(SystemOptions.SectionName, options))
     .AddHttpContextAccessor()
     .AddInfrastructure(builder.Configuration)
-    .AddEndpointsApiExplorer()
+    .AddOpenApi(options => options.AddDocumentTransformer<BearerSecurityTransformer>().AddOperationTransformer<BearerSecurityTransformer>())
     .AddApplication(builder.Configuration)
     .ConfigureAuth(builder.Configuration, builder.Environment)
     .AddTelemetry(builder.Configuration)
@@ -67,6 +68,11 @@ if (!app.Environment.IsDevelopment())
 app.UseCanonicalHost();
 app.UseSecurityHeaders(app.Environment);
 app.UseStaticFiles();
+
+// In development, browse the API at /swagger. Before routing, so the Vite proxy below doesn't take its pages.
+if (app.Environment.IsDevelopment())
+    app.UseSwaggerUI(options => options.SwaggerEndpoint("/openapi/v1.json", "DraftPuck API"));
+
 app.UseRouting();
 
 // In development, requests no endpoint handles (Vite's modules and assets) go to the Vite dev server.
@@ -83,6 +89,9 @@ app.UseWebSockets();
 app.MapHub<LobbyHub>("/hub");
 app.MapControllers();
 app.MapDraftPuckHealthChecks();
+// The API's OpenAPI document (/openapi/v1.json), for the Swagger UI. Development only.
+if (app.Environment.IsDevelopment())
+    app.MapOpenApi();
 // Client routes (any path that isn't a file) get the Vue app. Unknown /api paths don't: AppController.Api 404s them.
 app.MapFallbackToController(nameof(AppController.Index), "App");
 
