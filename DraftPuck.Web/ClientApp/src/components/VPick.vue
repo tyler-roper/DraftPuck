@@ -1,12 +1,11 @@
 <script setup lang="ts">
 //#region imports
-import { format } from 'date-fns'
 import { computed } from 'vue'
 import { canPickPlayer, findPick, isGameInLobby } from '@/helpers/pickRules'
 import TeamColors from '@/models/teamColorLookup'
-import { getOrdinal } from '@/helpers/gameHelpers'
+import { formatGameClock } from '@/helpers/gameHelpers'
+import { teamLogoUrl } from '@/helpers/teamLogos'
 import GameState from '@/enums/gameState'
-import PeriodType from '@/enums/periodType'
 import PlayType from '@/enums/playType'
 import { useLobbyStore } from '@/stores/lobby'
 import { storeToRefs } from 'pinia'
@@ -72,7 +71,7 @@ const pickedByMember = computed(() => findPick(lobby.value!, game.value.id, play
 const isPlayerPicked = computed(() => pickedByMember.value !== undefined)
 const isPlayerPickedByCurrentMember = computed(() => pickedByMember.value?.id === currentMember.value.id)
 const isPlayerPickedBySomeoneElse = computed(() => isPlayerPicked.value && !isPlayerPickedByCurrentMember.value)
-const teamLogo = computed(() => `/img/logos/${playerTeam.value.abbreviation}.png`)
+const teamLogo = computed(() => teamLogoUrl(playerTeam.value))
 const goalString = computed(() => {
   const goalCount = game.value.plays.reduce((count, play) => {
     if (play.type === PlayType.Goal && play.primaryPlayerId === player.value.id) count += 1
@@ -81,25 +80,7 @@ const goalString = computed(() => {
   return `${goalCount} ${goalCount === 1 ? 'Goal' : 'Goals'}`
 })
 
-const gameTime = computed(() => {
-  let time = format(game.value.dateTime, 'p')
-
-  if (game.value.gameState === GameState.Upcoming) return time
-
-  const ordinal = getOrdinal(game.value.period, game.value.periodType)
-
-  if (game.value.gameState === GameState.Live) {
-    if (game.value.periodType === PeriodType.Shootout) time = 'SO'
-    else {
-      time = `${game.value.timeRemainingInPeriod} - ${ordinal}`
-    }
-  } else if (game.value.gameState === GameState.Final) {
-    time = 'Final'
-    if (game.value.period > 3) time += ` (${ordinal})`
-  }
-
-  return time
-})
+const gameTime = computed(() => formatGameClock(game.value))
 //#endregion
 
 //#region emitters

@@ -8,10 +8,8 @@ import VButton from '@/components/VButton.vue'
 import VIcon from '@/components/VIcon.vue'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
-import GameState from '@/enums/gameState'
-import { format } from 'date-fns'
-import { getOrdinal } from '@/helpers/gameHelpers'
-import PeriodType from '@/enums/periodType'
+import { formatGameClock } from '@/helpers/gameHelpers'
+import { teamLogoUrl } from '@/helpers/teamLogos'
 import BotPickStyle from '@/enums/botPickStyle'
 import BotNames from '@/models/botNames'
 import '@/extensions/arrayExtensions'
@@ -109,23 +107,6 @@ async function createLobby(e: Event) {
   } catch {
     toast.error('Something went wrong.')
     isCreatingLobby.value = false
-  }
-}
-
-function getLogo(team: Team) {
-  return `/img/logos/${team.abbreviation}.png`
-}
-
-function getTimeString(game: GameSummary) {
-  const time = format(game.dateTime, 'p')
-
-  if (game.gameState === GameState.Upcoming) return time
-
-  const ordinal = getOrdinal(game.period, game.periodType)
-  if (game.gameState === GameState.Live) {
-    return game.periodType === PeriodType.Shootout ? 'SO' : `${game.timeRemainingInPeriod} - ${ordinal}`
-  } else {
-    return game.period > 3 ? `Final (${ordinal})` : 'Final'
   }
 }
 
@@ -236,12 +217,12 @@ function removeBot(bot: Bot) {
                     </div>
                   </VInputWrapper>
                 </td>
-                <td><img style="width: 25px" :src="getLogo(game.awayTeam)" /></td>
+                <td><img style="width: 25px" :src="teamLogoUrl(game.awayTeam)" /></td>
                 <td class="text-end">{{ game.awayTeam.abbreviation }}</td>
                 <td class="px-1 text-center">@</td>
                 <td class="text-start">{{ game.homeTeam.abbreviation }}</td>
-                <td class="text-end"><img style="width: 25px" :src="getLogo(game.homeTeam)" /></td>
-                <td class="text-end">{{ getTimeString(game) }}</td>
+                <td class="text-end"><img style="width: 25px" :src="teamLogoUrl(game.homeTeam)" /></td>
+                <td class="text-end">{{ formatGameClock(game) }}</td>
               </tr>
             </table>
           </div>
