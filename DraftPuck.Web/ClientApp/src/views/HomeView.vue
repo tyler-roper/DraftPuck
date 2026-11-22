@@ -9,6 +9,7 @@ import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
 import VUser from '@/components/VUser.vue'
 import VRejoin from '@/components/VRejoin.vue'
+import VAnnouncement from '@/components/VAnnouncement.vue'
 
 //#region data
 const userStore = useUserStore()
@@ -34,6 +35,7 @@ const view = ref<View>('join')
         <VJoinLobbyForm v-if="view === 'join'" class="mt-3" />
         <VCreateLobbyForm v-if="view === 'create'" class="mt-3" />
       </div>
+      <VAnnouncement class="mt-3" />
       <!-- Held back (keeping its space) until we know who's here, so it doesn't flash for someone who's signed in. -->
       <div v-if="!seemsLoggedIn" class="text-center mt-3" :class="{ invisible: !isReady }">
         <router-link :to="{ name: 'Login' }" class="fw-bold">Log in</router-link>
