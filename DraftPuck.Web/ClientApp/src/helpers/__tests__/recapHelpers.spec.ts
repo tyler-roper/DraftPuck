@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { awardStyle, buildRecapCard, MAX_CARD_STANDINGS, recapFileName } from '@/helpers/recapHelpers'
+import { awardStyle, buildRecapCard, drinksWord, MAX_CARD_STANDINGS, memberAvatar, recapFileName } from '@/helpers/recapHelpers'
 
 const award = (key: string, memberName = 'Sam'): LobbyAward => ({ key, title: key, memberId: 'id', memberName, detail: 'did a thing' })
 
@@ -43,5 +43,22 @@ describe('buildRecapCard', () => {
 describe('recapFileName', () => {
   it('names the image after the lobby', () => {
     expect(recapFileName('ABCD')).toBe('draftpuck-abcd-recap.png')
+  })
+})
+
+describe('memberAvatar', () => {
+  it("shows an account's picture", () => {
+    expect(memberAvatar({ name: 'sam', avatarPath: '/a.png', isGuest: false })).toEqual({ style: { backgroundImage: 'url(/a.png)' }, initial: '' })
+  })
+
+  it('shows the initial for guests and anyone without a picture', () => {
+    expect(memberAvatar({ name: 'sam', avatarPath: '/a.png', isGuest: true })).toEqual({ style: {}, initial: 'S' })
+    expect(memberAvatar({ name: 'jo', avatarPath: undefined, isGuest: false } as unknown as LobbyMember)).toEqual({ style: {}, initial: 'J' })
+  })
+})
+
+describe('drinksWord', () => {
+  it('is singular for one', () => {
+    expect([0, 1, 2].map(drinksWord)).toEqual(['drinks', 'drink', 'drinks'])
   })
 })

@@ -1,3 +1,5 @@
+import { format } from 'date-fns'
+
 /** A drink handed out: who earned it (the giver), who took it, the pick that earned it, and when. */
 interface GivenDrink {
   giver: LobbyMember
@@ -123,4 +125,9 @@ export function nightChart(lobby: Lobby, players: RecapPlayer[], memberId: strin
     if (d.giver.id === memberId || d.recipient.id === memberId) bar.involving++
   }
   return bars
+}
+
+/** A chart bar's stretch of the night, "9:10–9:20". */
+export function stretchLabel(bar: Pick<ChartBar, 'start' | 'end'>): string {
+  return `${format(bar.start, 'h:mm')}–${format(bar.end, 'h:mm')}`
 }

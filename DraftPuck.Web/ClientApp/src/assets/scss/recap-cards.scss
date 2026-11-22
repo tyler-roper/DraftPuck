@@ -1,0 +1,27 @@
+// The post-game page's cards (Stats tab), shared by the components that draw them. Import inside a scoped style.
+@import '@/assets/scss/custom-colors.scss';
+
+$recap-amber: map-get($custom-colors, 'primary');
+$recap-red: #ff5c6c;
+
+.card {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid map-get($custom-colors, 'stone-700');
+  background: linear-gradient(160deg, map-get($custom-colors, 'stone-800'), map-get($custom-colors, 'stone-850') 60%);
+}
+
+.card-title {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: map-get($custom-colors, 'stone-400');
+}
+
+.empty {
+  margin: 0;
+  color: map-get($custom-colors, 'stone-400');
+  font-size: 14px;
+}
