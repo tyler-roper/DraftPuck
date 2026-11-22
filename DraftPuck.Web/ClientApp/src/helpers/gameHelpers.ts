@@ -1,3 +1,4 @@
+import { format } from 'date-fns'
 import PeriodType from '@/enums/periodType'
 import GameState from '@/enums/gameState'
 
@@ -11,6 +12,19 @@ export function getOrdinal(periodNumber: number, periodType: PeriodType) {
   } else if (periodType === PeriodType.Shootout) {
     return 'SO'
   }
+}
+
+/**
+ * A game's clock as scoreboards show it: the start time until it starts, then the time left and period ("12:34 - 2nd",
+ * or "SO" in a shootout), then "Final", naming the period when it went past regulation ("Final (OT)").
+ */
+export function formatGameClock(game: Pick<GameSummary, 'dateTime' | 'gameState' | 'period' | 'periodType' | 'timeRemainingInPeriod'>): string {
+  if (game.gameState === GameState.Upcoming) return format(game.dateTime, 'p')
+
+  const ordinal = getOrdinal(game.period, game.periodType)
+  if (game.gameState === GameState.Live) return game.periodType === PeriodType.Shootout ? 'SO' : `${game.timeRemainingInPeriod} - ${ordinal}`
+
+  return game.period > 3 ? `Final (${ordinal})` : 'Final'
 }
 
 /**

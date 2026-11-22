@@ -8,9 +8,9 @@ import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
 import { useToast } from '@/composables/useToast'
 import TeamColors from '@/models/teamColorLookup'
-import { getOrdinal } from '@/helpers/gameHelpers'
+import { formatGameClock, getOrdinal } from '@/helpers/gameHelpers'
+import { lightTeamLogoUrl, teamLogoUrl } from '@/helpers/teamLogos'
 import GameState from '@/enums/gameState'
-import PeriodType from '@/enums/periodType'
 import PlayType from '@/enums/playType'
 import TeamSituation from '@/enums/teamSituation'
 import { useSystemStore } from '@/stores/system'
@@ -61,25 +61,7 @@ const currentUserCanPick = computed(
 )
 const pickTimeFormatted = computed(() => format(game.value.pickingOpensUtc, 'p'))
 
-const time = computed(() => {
-  let time = format(game.value.dateTime, 'p')
-
-  if (!isStarted.value) return time
-
-  const ordinal = getOrdinal(game.value.period, game.value.periodType)
-
-  if (isInProgress.value) {
-    if (game.value.periodType === PeriodType.Shootout) time = 'SO'
-    else {
-      time = `${game.value.timeRemainingInPeriod} - ${ordinal}`
-    }
-  } else if (isOver.value) {
-    time = 'Final'
-    if (game.value.period > 3) time += ` (${ordinal})`
-  }
-
-  return time
-})
+const time = computed(() => formatGameClock(game.value))
 
 const strengthString = computed(() => {
   const homeStrength = game.value.homeTeam.strength
@@ -119,15 +101,6 @@ function getGameTimeClasses(): { [key: string]: boolean } {
     'is-live': isInProgress.value,
     'is-critical': isExtraTime.value || (isThirdPeriod.value && isCloseGame.value && isLateInPeriod.value)
   }
-}
-
-function getLogo(team: GameTeam) {
-  return `/img/logos/${team.abbreviation}.png`
-}
-
-function getLightLogo(team: GameTeam) {
-  if (team.abbreviation !== 'TBL') return getLogo(team)
-  return `/img/logos/${team.abbreviation}_LIGHT.png`
 }
 
 function isHome(team: GameTeam) {
@@ -250,7 +223,7 @@ function getFriendlyPosition(position: string) {
           >
             <div class="d-flex align-items-center">
               <img
-                :src="teamWon(team) ? getLightLogo(team) : getLogo(team)"
+                :src="teamWon(team) ? lightTeamLogoUrl(team) : teamLogoUrl(team)"
                 style="width: 50px; height: 50px"
                 class="d-block"
                 :style="{ filter: !isStarted || (isOver && isTeamLosing(team)) ? 'grayscale(1)' : '' }"
@@ -326,7 +299,7 @@ function getFriendlyPosition(position: string) {
               <div class="row inset-shadow">
                 <div v-for="team in Object.values(teams)" :key="team.id" class="roster-split col-lg-6 col-12">
                   <div class="px-3 py-2 fw-bold text-stone-0 d-flex align-items-center" :style="{ 'background-color': TeamColors[team.id] }">
-                    <img class="d-block" :src="getLightLogo(team)" style="width: 40px; height: 40px" />
+                    <img class="d-block" :src="lightTeamLogoUrl(team)" style="width: 40px; height: 40px" />
                     <div class="ms-3">
                       <span class="d-block text-uppercase">{{ team.name }}</span>
                       <span class="d-block font-weight-normal mt-n1">Season Stats</span>

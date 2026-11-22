@@ -6,6 +6,7 @@ import { computed, ref, watch } from 'vue'
 import VPick from '@/components/VPick.vue'
 import { differenceInMilliseconds } from 'date-fns'
 import { formatCountdown } from '@/helpers/dateHelpers'
+import { lightTeamLogoUrl } from '@/helpers/teamLogos'
 import GamePickableStatus from '@/enums/gamePickableStatus'
 import { canRemovePick, findPick, getPickableStatus, hasPicksLeftInGame, picksRemaining } from '@/helpers/pickRules'
 import { getErrorMessage } from '@/helpers/requestHelpers'
@@ -234,14 +235,6 @@ function getPicksRemainingByMemberAndTeam(member: LobbyMember, team: GameTeam) {
   return picksRemaining(lobby.value!, member, selectedGame.value!.id, team.id, selectedPlayers.value.length)
 }
 
-function getLogo(team: GameTeam) {
-  return `/img/logos/${team.abbreviation}.png`
-}
-
-function getLightLogo(team: GameTeam) {
-  if (team.abbreviation !== 'TBL') return getLogo(team)
-  return `/img/logos/${team.abbreviation}_LIGHT.png`
-}
 //#endregion
 
 //#region watchers
@@ -402,7 +395,7 @@ function selectGame(game?: Game) {
           :class="{ 'o-75': selectedTeam?.id !== selectedGame.awayTeam.id, 'bg-stone-700': selectedTeam?.id === selectedGame.awayTeam.id }"
         >
           <div>
-            <img style="height: 25px" :src="getLightLogo(selectedGame.awayTeam)" class="d-block" />
+            <img style="height: 25px" :src="lightTeamLogoUrl(selectedGame.awayTeam)" class="d-block" />
           </div>
           <div class="text-uppercase fs-6">
             <div v-if="selectedGame.awayTeam.location.length > 1" class="fs-7 text-stone-300">{{ selectedGame.awayTeam.location }}</div>
@@ -421,7 +414,7 @@ function selectGame(game?: Game) {
             <div class="fw-bold" :class="{ 'mt-n2': selectedGame.homeTeam.location.length > 1 }">{{ selectedGame.homeTeam.name }}</div>
           </div>
           <div>
-            <img style="height: 25px" :src="getLightLogo(selectedGame.homeTeam)" class="d-block" />
+            <img style="height: 25px" :src="lightTeamLogoUrl(selectedGame.homeTeam)" class="d-block" />
           </div>
         </div>
       </div>
@@ -492,7 +485,7 @@ function selectGame(game?: Game) {
           >
             <div class="fs-4">Picks Remaining:</div>
             <div class="py-2 ms-2 fs-1 fw-bold d-flex align-items-center">
-              <img style="width: 33px; height: 37px" :src="getLightLogo(selectedTeam!)" />
+              <img style="width: 33px; height: 37px" :src="lightTeamLogoUrl(selectedTeam!)" />
               <div>{{ picksRemaining }}</div>
             </div>
           </div>
