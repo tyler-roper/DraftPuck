@@ -8,12 +8,7 @@ import { useToast } from '@/composables/useToast'
 import { useFirebaseStore } from '@/stores/firebase'
 import LobbyService from '@/services/LobbyService'
 import { getErrorMessage } from '@/helpers/requestHelpers'
-import {
-  hasPreferenceChanges,
-  lobbyNotificationKeys,
-  pickPreferences,
-  type LobbyNotificationPreferences
-} from '@/helpers/notificationSettings'
+import { hasPreferenceChanges, lobbyNotificationKeys, pickPreferences, type LobbyNotificationPreferences } from '@/helpers/notificationSettings'
 
 /** This lobby's notification settings. They start as the user's defaults (set in Account Settings) when they join. */
 const props = defineProps<{ joinCode: string }>()

@@ -57,7 +57,10 @@ export const useFirebaseStore = defineStore('firebase', () => {
         }
 
         // Friend requests and lobby invites change what's waiting on the user (the badge).
-        if (type === 'Friend') useFriendsStore().load().catch(() => {})
+        if (type === 'Friend')
+          useFriendsStore()
+            .load()
+            .catch(() => {})
 
         // Foreground pushes skip the service worker, so show other notifications (picks ready, drinks, chat) in-app.
         const notification = getForegroundToast(payload.data, router.currentRoute.value.path)

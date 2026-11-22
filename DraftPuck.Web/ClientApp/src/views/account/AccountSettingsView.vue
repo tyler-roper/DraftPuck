@@ -117,13 +117,7 @@ const v$ = useVuelidate<UpdateUserRequest>(rules, form)
 </script>
 
 <template>
-  <HeaderLayout
-    title="Account Settings"
-    @save="triggerFormSubmission"
-    @discard="discard"
-    :is-dirty="isDirty"
-    :is-saving="isUpdatingAccount"
-  >
+  <HeaderLayout title="Account Settings" @save="triggerFormSubmission" @discard="discard" :is-dirty="isDirty" :is-saving="isUpdatingAccount">
     <div class="p-3">
       <form @submit="updateAccount" ref="formElement">
         <div class="profile-section mt-0">
@@ -227,7 +221,6 @@ const v$ = useVuelidate<UpdateUserRequest>(rules, form)
           <span class="d-block">Make it strong! Or don't. We'll never know.</span>
         </div>
       </form>
-
     </div>
   </HeaderLayout>
 </template>

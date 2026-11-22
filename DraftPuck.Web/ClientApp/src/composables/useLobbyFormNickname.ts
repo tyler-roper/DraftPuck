@@ -24,11 +24,7 @@ export function useLobbyFormNickname(nickname: Ref<string>) {
   }
 
   function fill() {
-    const value = isLoggedIn.value
-      ? currentUser.value!.nickname!
-      : seemsLoggedIn.value
-        ? rememberedUser.value!.nickname!
-        : guestNickname()
+    const value = isLoggedIn.value ? currentUser.value!.nickname! : seemsLoggedIn.value ? rememberedUser.value!.nickname! : guestNickname()
     // Only replace what this filled in (or nothing): never what a guest typed.
     if (nickname.value && nickname.value !== filled) return
     nickname.value = filled = value

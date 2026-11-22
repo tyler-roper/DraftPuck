@@ -63,9 +63,11 @@ const itemStyle = computed(() => ({
         <img v-for="t in item.teams" :key="t.abbreviation" :src="`/img/logos/${t.logo}`" :alt="t.abbreviation" />
       </span>
       <span v-else-if="eventStyle?.avatar" class="person" :class="eventStyle.avatar">
-        <span class="avatar" :style="avatarMember?.avatarPath && !avatarMember.isGuest ? { backgroundImage: `url(${avatarMember.avatarPath})` } : {}">{{
-          avatarMember?.avatarPath && !avatarMember.isGuest ? '' : (avatarMember?.name.charAt(0).toUpperCase() ?? '?')
-        }}</span>
+        <span
+          class="avatar"
+          :style="avatarMember?.avatarPath && !avatarMember.isGuest ? { backgroundImage: `url(${avatarMember.avatarPath})` } : {}"
+          >{{ avatarMember?.avatarPath && !avatarMember.isGuest ? '' : (avatarMember?.name.charAt(0).toUpperCase() ?? '?') }}</span
+        >
         <span class="badge-corner">{{ eventStyle.avatar === 'earner' ? '🚨' : '🍺' }}</span>
       </span>
       <span v-else-if="eventStyle" class="ico"><VIcon :icon="eventStyle.icon" prefix="sr" /></span>
@@ -195,7 +197,11 @@ const itemStyle = computed(() => ({
 }
 
 .layout-goal {
-  background: linear-gradient(90deg, color-mix(in srgb, var(--team) 30%, map-get($custom-colors, 'stone-850')), map-get($custom-colors, 'stone-850') 75%);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--team) 30%, map-get($custom-colors, 'stone-850')),
+    map-get($custom-colors, 'stone-850') 75%
+  );
 }
 
 .layout-goal .title {
@@ -319,7 +325,11 @@ const itemStyle = computed(() => ({
 }
 
 .tone-drink.feed-item:has(.recipient) {
-  background: linear-gradient(90deg, color-mix(in srgb, map-get($custom-colors, 'primary') 14%, map-get($custom-colors, 'stone-850')), map-get($custom-colors, 'stone-850') 70%);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, map-get($custom-colors, 'primary') 14%, map-get($custom-colors, 'stone-850')),
+    map-get($custom-colors, 'stone-850') 70%
+  );
 }
 
 // A drink message (quoted by the server under the usual line): set apart in amber.
@@ -373,6 +383,10 @@ const itemStyle = computed(() => ({
 .tone-callout {
   border: 1px solid var(--tone);
   box-shadow: 0 0 18px color-mix(in srgb, var(--tone) 28%, transparent);
-  background: linear-gradient(110deg, color-mix(in srgb, var(--tone) 26%, map-get($custom-colors, 'stone-850')), map-get($custom-colors, 'stone-850') 70%);
+  background: linear-gradient(
+    110deg,
+    color-mix(in srgb, var(--tone) 26%, map-get($custom-colors, 'stone-850')),
+    map-get($custom-colors, 'stone-850') 70%
+  );
 }
 </style>

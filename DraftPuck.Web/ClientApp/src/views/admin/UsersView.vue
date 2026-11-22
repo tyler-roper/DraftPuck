@@ -61,7 +61,7 @@ function getBadges(user: User) {
         <div class="me-2">
           <label class="d-block form-label">Guests</label>
           <VInputWrapper>
-            <select class="dark" v-model="filters.includeGuests" id="ddlIncludeGuests" style="width: 75px;">
+            <select class="dark" v-model="filters.includeGuests" id="ddlIncludeGuests" style="width: 75px">
               <option :value="false">No</option>
               <option :value="true">Yes</option>
             </select>
@@ -70,13 +70,13 @@ function getBadges(user: User) {
         <div class="me-2">
           <label class="d-block form-label">Inactive</label>
           <VInputWrapper>
-            <select class="dark" v-model="filters.activeOnly" id="ddlIncludeInactive" style="width: 75px;">
+            <select class="dark" v-model="filters.activeOnly" id="ddlIncludeInactive" style="width: 75px">
               <option :value="true">No</option>
               <option :value="false">Yes</option>
             </select>
           </VInputWrapper>
         </div>
-        <div style="align-self:last baseline">
+        <div style="align-self: last baseline">
           <button @click="getUsers" class="btn btn-primary">
             <VIcon icon="filter" prefix="sr" />
           </button>
@@ -102,15 +102,13 @@ function getBadges(user: User) {
                     </router-link>
                   </div>
                   <div class="ms-3">
-                    <router-link :to="{ path: `/u/${user.nickname}` }" class="text-white d-block fw-bold">{{
-                      user.nickname }}</router-link>
+                    <router-link :to="{ path: `/u/${user.nickname}` }" class="text-white d-block fw-bold">{{ user.nickname }}</router-link>
                   </div>
                 </div>
               </td>
               <td>
                 <div class="badge-container">
-                  <span v-for="(badge, idx) in getBadges(user)" :key="idx" class="status-badge"
-                    :class="`status-${badge}`">
+                  <span v-for="(badge, idx) in getBadges(user)" :key="idx" class="status-badge" :class="`status-${badge}`">
                     <span class="d-block">{{ badge }}</span>
                   </span>
                 </div>

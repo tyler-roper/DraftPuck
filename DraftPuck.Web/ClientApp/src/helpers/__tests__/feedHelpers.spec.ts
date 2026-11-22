@@ -103,7 +103,14 @@ describe('buildFeedItems', () => {
 
   it('titles a goal with the scoring team and its score first, and gives a period its score', () => {
     const players = [{ id: 97, teamId: 1, firstName: 'Connor', lastName: 'McDavid' }] as PlayerSummary[]
-    const edmGoal = play(1, PlayType.Goal, at(1), { primaryTeamId: 1, primaryPlayerId: 97, homeScore: 2, awayScore: 1, period: 3, timeInPeriod: '12:41' })
+    const edmGoal = play(1, PlayType.Goal, at(1), {
+      primaryTeamId: 1,
+      primaryPlayerId: 97,
+      homeScore: 2,
+      awayScore: 1,
+      period: 3,
+      timeInPeriod: '12:41'
+    })
     const cgyGoal = play(2, PlayType.Goal, at(2), { primaryTeamId: 2, homeScore: 2, awayScore: 2 })
     const periodEnd = play(3, PlayType.PeriodEnd, at(3), { period: 2, homeScore: 1, awayScore: 0 })
 
@@ -118,7 +125,10 @@ describe('buildFeedItems', () => {
   })
 
   it("names a final's winner first, and anyone who scored more than once", () => {
-    const players = [{ id: 97, teamId: 1, lastName: 'McDavid' }, { id: 29, teamId: 1, lastName: 'Draisaitl' }] as PlayerSummary[]
+    const players = [
+      { id: 97, teamId: 1, lastName: 'McDavid' },
+      { id: 29, teamId: 1, lastName: 'Draisaitl' }
+    ] as PlayerSummary[]
     const goal = (id: number, scorer: number) => play(id, PlayType.Goal, at(id), { primaryTeamId: 1, primaryPlayerId: scorer })
     const finished = { ...game(10, [goal(1, 97), goal(2, 29), goal(3, 97), play(4, PlayType.GameEnd, at(4))]), playerSummaries: players }
     finished.homeTeam.score = 3
@@ -150,7 +160,8 @@ describe('buildFeedItems', () => {
 
 describe('links between a goal and its drinks', () => {
   const goal = play(6, PlayType.Goal, at(10), { primaryTeamId: 1 })
-  const drinkEvent = (id: string, type: number, extra: Partial<LobbyEvent> = {}) => lobbyEvent(id, at(12), { lobbyEventType: type, gameId: 10, gameEventId: 6, ...extra })
+  const drinkEvent = (id: string, type: number, extra: Partial<LobbyEvent> = {}) =>
+    lobbyEvent(id, at(12), { lobbyEventType: type, gameId: 10, gameEventId: 6, ...extra })
   // LobbyEventType: DrinkAwarded 4, DrinkAssigned 5, NewPick 3.
   const items = buildFeedItems(
     [game(10, [goal])],
@@ -176,11 +187,21 @@ describe('links between a goal and its drinks', () => {
     const lobby = {
       members: [
         { id: 'tyler', name: 'tyler', picks: [{ gameId: 10, isActive: true, drinks: [drink(6, 'casey'), drink(9, 'casey')] }] },
-        { id: 'jordan', name: 'Jordan', picks: [{ gameId: 10, isActive: true, drinks: [drink(6)] }, { gameId: 10, isActive: false, drinks: [drink(6, 'tyler')] }] },
+        {
+          id: 'jordan',
+          name: 'Jordan',
+          picks: [
+            { gameId: 10, isActive: true, drinks: [drink(6)] },
+            { gameId: 10, isActive: false, drinks: [drink(6, 'tyler')] }
+          ]
+        },
         { id: 'casey', name: 'Casey', picks: [] }
       ]
     } as unknown as Lobby
 
-    expect(goalDrinks(lobby, 10, 6)).toEqual([{ earner: 'tyler', recipient: 'Casey' }, { earner: 'Jordan', recipient: undefined }])
+    expect(goalDrinks(lobby, 10, 6)).toEqual([
+      { earner: 'tyler', recipient: 'Casey' },
+      { earner: 'Jordan', recipient: undefined }
+    ])
   })
 })

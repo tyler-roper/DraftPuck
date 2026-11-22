@@ -24,8 +24,8 @@ const close = () => emit('close')
             <div>
               <span class="step-title"><VIcon icon="users-alt" prefix="sr" class="me-2" />Invite your friends</span>
               <p>
-                Tap the lobby code at the top (<span class="chip amber">{{ joinCode ?? 'ABCD' }} <VIcon icon="share" prefix="sr" /></span>) to share an
-                invite link, or have friends enter the code on the home screen.
+                Tap the lobby code at the top (<span class="chip amber">{{ joinCode ?? 'ABCD' }} <VIcon icon="share" prefix="sr" /></span>) to share
+                an invite link, or have friends enter the code on the home screen.
               </p>
             </div>
           </li>
@@ -59,8 +59,8 @@ const close = () => emit('close')
             <div>
               <span class="step-title"><VIcon icon="megaphone" prefix="sr" class="me-2" />Watch the feed</span>
               <p>
-                Goals, penalties, drinks and callouts (who's on fire, who's ice cold, the rivalries) as they happen. Choose what shows with the
-                feed's settings, and see every drink handed out in its <span class="chip">Timeline</span>.
+                Goals, penalties, drinks and callouts (who's on fire, who's ice cold, the rivalries) as they happen. Choose what shows with the feed's
+                settings, and see every drink handed out in its <span class="chip">Timeline</span>.
               </p>
             </div>
           </li>

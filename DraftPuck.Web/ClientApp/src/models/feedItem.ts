@@ -41,7 +41,11 @@ interface FeedItemInit {
 /** Tampa Bay's logo is dark on dark, so the feed uses its light version. */
 const logoFor = (abbreviation: string) => (abbreviation.toLowerCase() === 'tbl' ? `${abbreviation}_LIGHT.png` : `${abbreviation}.png`)
 
-const feedTeam = (team: GameTeam): FeedTeam => ({ abbreviation: team.abbreviation, logo: logoFor(team.abbreviation), color: TeamColorLookup[team.id] })
+const feedTeam = (team: GameTeam): FeedTeam => ({
+  abbreviation: team.abbreviation,
+  logo: logoFor(team.abbreviation),
+  color: TeamColorLookup[team.id]
+})
 
 export default class FeedItem {
   /** Identifies the play or lobby event across refetches, so lists can tell new items from existing ones. */
@@ -132,7 +136,10 @@ export default class FeedItem {
           ...base,
           layout: 'game',
           title: `Penalty · ${team.abbreviation}`,
-          text: name && play.penalty ? `<strong>${escapeHtml(name)}</strong> · ${escapeHtml(this.camelCaseToTitleCase(play.penalty))}` : 'Waiting for details…',
+          text:
+            name && play.penalty
+              ? `<strong>${escapeHtml(name)}</strong> · ${escapeHtml(this.camelCaseToTitleCase(play.penalty))}`
+              : 'Waiting for details…',
           detail: when,
           teams: [team]
         })
@@ -187,7 +194,8 @@ export default class FeedItem {
   private static standoutScorers(plays: Play[], players: PlayerSummary[]) {
     const goals = new Map<number, number>()
     for (const play of plays)
-      if (play.type === PlayType.Goal && play.primaryPlayerId != null && play.periodType !== PeriodType.Shootout) goals.set(play.primaryPlayerId, (goals.get(play.primaryPlayerId) ?? 0) + 1)
+      if (play.type === PlayType.Goal && play.primaryPlayerId != null && play.periodType !== PeriodType.Shootout)
+        goals.set(play.primaryPlayerId, (goals.get(play.primaryPlayerId) ?? 0) + 1)
 
     return [...goals.entries()]
       .filter(([, count]) => count > 1)

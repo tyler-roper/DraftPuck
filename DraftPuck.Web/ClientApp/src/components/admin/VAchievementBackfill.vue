@@ -57,8 +57,8 @@ onUnmounted(stopPolling)
 <template>
   <div>
     <p class="text-stone-400 mb-3">
-      Awards achievements players earned before their rules existed or were fixed. Safe to run again: nobody gets an
-      achievement twice, and nobody is notified.
+      Awards achievements players earned before their rules existed or were fixed. Safe to run again: nobody gets an achievement twice, and nobody is
+      notified.
     </p>
     <div v-if="run" class="mb-3">
       <div class="d-flex justify-content-between fs-7 text-stone-400 mb-1">
@@ -66,12 +66,20 @@ onUnmounted(stopPolling)
         <span>{{ backfillProgress(run) }}%</span>
       </div>
       <div class="progress mb-2" style="height: 6px">
-        <div class="progress-bar" :class="run.isComplete ? 'bg-success' : 'bg-primary progress-bar-striped progress-bar-animated'"
-          :style="{ width: `${backfillProgress(run)}%` }"></div>
+        <div
+          class="progress-bar"
+          :class="run.isComplete ? 'bg-success' : 'bg-primary progress-bar-striped progress-bar-animated'"
+          :style="{ width: `${backfillProgress(run)}%` }"
+        ></div>
       </div>
       <span class="d-block fw-bold">{{ describeBackfill(run) }}</span>
     </div>
-    <VButton class="btn btn-primary fw-bold w-100" :is-loading="isStarting || isRunning"
-      :loading-text="isRunning ? 'Backfill running…' : 'Starting...'" @click="start">Backfill achievements</VButton>
+    <VButton
+      class="btn btn-primary fw-bold w-100"
+      :is-loading="isStarting || isRunning"
+      :loading-text="isRunning ? 'Backfill running…' : 'Starting...'"
+      @click="start"
+      >Backfill achievements</VButton
+    >
   </div>
 </template>

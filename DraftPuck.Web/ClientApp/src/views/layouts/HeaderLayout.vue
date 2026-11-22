@@ -49,10 +49,16 @@ const onBreadcrumbClick = useBackNavigation(() =>
     <div class="bg-stone-900">
       <slot name="footer"></slot>
       <div v-if="showSave" class="d-flex p-3 justify-content-between align-items-center overflow-hidden">
-        <a v-if="isDirty" @click="emit('discard')" role="btn" class="text-stone-400 fs-7 me-4 ls-2"><span>Discard
-            Changes</span></a>
-        <VButton @click="emit('save')" class="btn btn-primary px-5 ms-auto" :disabled="!isDirty || isSaving"
-          :is-loading="isSaving" :show-text="true" loading-text="Saving...">Save Changes</VButton>
+        <a v-if="isDirty" @click="emit('discard')" role="btn" class="text-stone-400 fs-7 me-4 ls-2"><span>Discard Changes</span></a>
+        <VButton
+          @click="emit('save')"
+          class="btn btn-primary px-5 ms-auto"
+          :disabled="!isDirty || isSaving"
+          :is-loading="isSaving"
+          :show-text="true"
+          loading-text="Saving..."
+          >Save Changes</VButton
+        >
       </div>
     </div>
   </div>

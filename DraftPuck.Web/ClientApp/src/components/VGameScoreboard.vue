@@ -192,7 +192,6 @@ function isPlayerPicked(playerId: number) {
   return !!getPickerName(playerId)
 }
 
-
 function isCurrentUserPick(player: Player) {
   return !!currentUser.value?.picks.some((p) => p.gameId === game.value.id && p.playerId === player.id)
 }

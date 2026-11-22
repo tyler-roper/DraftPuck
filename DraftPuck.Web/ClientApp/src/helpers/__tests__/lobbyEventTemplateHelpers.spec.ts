@@ -33,20 +33,16 @@ describe('parseLobbyEventText', () => {
   })
 
   it('escapes member names, since the text is rendered with v-html', () => {
-    const result = parseLobbyEventText(
-      event('{{name}} joined'),
-      lobby({ id: 'm1', name: '<img src=x onerror=alert(1)>' }),
-      games
-    )
+    const result = parseLobbyEventText(event('{{name}} joined'), lobby({ id: 'm1', name: '<img src=x onerror=alert(1)>' }), games)
 
     expect(result.text).not.toContain('<img')
     expect(result.text).toContain('&lt;img src=x onerror=alert(1)&gt;')
   })
 
-  it("shows names containing replacement patterns like $& literally", () => {
+  it('shows names containing replacement patterns like $& literally', () => {
     const result = parseLobbyEventText(event('{{name}} joined'), lobby({ id: 'm1', name: "Ca$h $& $'" }), games)
 
-    expect(result.text).toBe("<strong>Ca$h $&amp; $&#039;</strong> joined")
+    expect(result.text).toBe('<strong>Ca$h $&amp; $&#039;</strong> joined')
   })
 
   it('names players who have left the lineup', () => {

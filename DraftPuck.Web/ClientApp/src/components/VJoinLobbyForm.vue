@@ -64,9 +64,9 @@ async function joinLobby(e: Event) {
   try {
     isJoiningLobby.value = true
     const lobby = await LobbyService.getLobbyByCode(form.value.code)
-    
+
     if (!lobby.isActive) {
-      router.push({ name: 'LobbyReview', params: { joinCode: lobby.joinCode }})
+      router.push({ name: 'LobbyReview', params: { joinCode: lobby.joinCode } })
       return
     }
 

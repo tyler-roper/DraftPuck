@@ -43,7 +43,8 @@ async function run(key: string, action: () => Promise<unknown>, failure: string,
   }
 }
 
-const accept = (friend: Friend) => run(friend.id, () => friendsStore.add(friend.id), "Couldn't accept the request.", `You and ${friend.nickname} are now friends!`)
+const accept = (friend: Friend) =>
+  run(friend.id, () => friendsStore.add(friend.id), "Couldn't accept the request.", `You and ${friend.nickname} are now friends!`)
 const decline = (friend: Friend) => run(friend.id, () => friendsStore.remove(friend.id), "Couldn't decline the request.")
 const cancel = (friend: Friend) => run(friend.id, () => friendsStore.remove(friend.id), "Couldn't cancel the request.")
 
@@ -52,7 +53,8 @@ function unfriend(friend: Friend) {
   run(friend.id, () => friendsStore.remove(friend.id), "Couldn't remove them.")
 }
 
-const addSuggested = (friend: Friend) => run(friend.id, () => friendsStore.add(friend.id), "Couldn't send the request.", `Friend request sent to ${friend.nickname}!`)
+const addSuggested = (friend: Friend) =>
+  run(friend.id, () => friendsStore.add(friend.id), "Couldn't send the request.", `Friend request sent to ${friend.nickname}!`)
 
 /** Shares a link to the user's profile, where others can add them; the share sheet on phones, else the clipboard. */
 async function shareFriendLink() {
@@ -99,7 +101,13 @@ const profile = (friend: Friend) => router.push(`/u/${encodeURIComponent(friend.
             <div class="fs-7 text-stone-400 text-truncate">{{ inviteSummary(invite) }}</div>
           </div>
           <button class="btn btn-sm btn-primary fw-bold" :disabled="busy === invite.joinCode" @click="join(invite)">Join</button>
-          <button class="btn btn-sm btn-link text-stone-400 px-1" :disabled="busy === invite.joinCode" title="Dismiss" aria-label="Dismiss invite" @click="dismiss(invite)">
+          <button
+            class="btn btn-sm btn-link text-stone-400 px-1"
+            :disabled="busy === invite.joinCode"
+            title="Dismiss"
+            aria-label="Dismiss invite"
+            @click="dismiss(invite)"
+          >
             <VIcon prefix="sr" icon="cross-small" class="fs-4" />
           </button>
         </div>
@@ -109,7 +117,9 @@ const profile = (friend: Friend) => router.push(`/u/${encodeURIComponent(friend.
         <h2 class="section-title">Friend Requests</h2>
         <div v-for="friend in list.incoming" :key="friend.id" class="row-card is-highlighted">
           <a role="button" @click="profile(friend)"><VUser display="avatar" :user="friend" :avatar-size-in-px="40" /></a>
-          <a role="button" class="flex-grow-1 min-w-0 fw-bold text-truncate text-stone-0 text-decoration-none" @click="profile(friend)">{{ friend.nickname }}</a>
+          <a role="button" class="flex-grow-1 min-w-0 fw-bold text-truncate text-stone-0 text-decoration-none" @click="profile(friend)">{{
+            friend.nickname
+          }}</a>
           <button class="btn btn-sm btn-primary fw-bold" :disabled="busy === friend.id" @click="accept(friend)">Accept</button>
           <button class="btn btn-sm btn-link text-stone-400" :disabled="busy === friend.id" @click="decline(friend)">Decline</button>
         </div>
@@ -118,12 +128,14 @@ const profile = (friend: Friend) => router.push(`/u/${encodeURIComponent(friend.
       <section class="mb-4">
         <h2 class="section-title">Friends</h2>
         <p v-if="!list.friends.length" class="text-stone-400 fs-7">
-          No friends yet. Add people you've played with below, or share your friend link. Once they accept, you can invite
-          them from a lobby's share button.
+          No friends yet. Add people you've played with below, or share your friend link. Once they accept, you can invite them from a lobby's share
+          button.
         </p>
         <div v-for="friend in list.friends" :key="friend.id" class="row-card">
           <a role="button" @click="profile(friend)"><VUser display="avatar" :user="friend" :avatar-size-in-px="40" /></a>
-          <a role="button" class="flex-grow-1 min-w-0 fw-bold text-truncate text-stone-0 text-decoration-none" @click="profile(friend)">{{ friend.nickname }}</a>
+          <a role="button" class="flex-grow-1 min-w-0 fw-bold text-truncate text-stone-0 text-decoration-none" @click="profile(friend)">{{
+            friend.nickname
+          }}</a>
           <button class="btn btn-sm btn-link text-stone-400" :disabled="busy === friend.id" title="Remove friend" @click="unfriend(friend)">
             <VIcon prefix="sr" icon="user-minus" />
           </button>
@@ -134,7 +146,9 @@ const profile = (friend: Friend) => router.push(`/u/${encodeURIComponent(friend.
         <h2 class="section-title">Sent Requests</h2>
         <div v-for="friend in list.outgoing" :key="friend.id" class="row-card is-muted">
           <a role="button" @click="profile(friend)"><VUser display="avatar" :user="friend" :avatar-size-in-px="40" /></a>
-          <a role="button" class="flex-grow-1 min-w-0 fw-bold text-truncate text-stone-0 text-decoration-none" @click="profile(friend)">{{ friend.nickname }}</a>
+          <a role="button" class="flex-grow-1 min-w-0 fw-bold text-truncate text-stone-0 text-decoration-none" @click="profile(friend)">{{
+            friend.nickname
+          }}</a>
           <button class="btn btn-sm btn-link text-stone-400" :disabled="busy === friend.id" @click="cancel(friend)">Cancel</button>
         </div>
       </section>
@@ -143,7 +157,9 @@ const profile = (friend: Friend) => router.push(`/u/${encodeURIComponent(friend.
         <h2 class="section-title">People You've Played With</h2>
         <div v-for="friend in list.suggestions" :key="friend.id" class="row-card">
           <a role="button" @click="profile(friend)"><VUser display="avatar" :user="friend" :avatar-size-in-px="40" /></a>
-          <a role="button" class="flex-grow-1 min-w-0 fw-bold text-truncate text-stone-0 text-decoration-none" @click="profile(friend)">{{ friend.nickname }}</a>
+          <a role="button" class="flex-grow-1 min-w-0 fw-bold text-truncate text-stone-0 text-decoration-none" @click="profile(friend)">{{
+            friend.nickname
+          }}</a>
           <button class="btn btn-sm btn-primary fw-bold" :disabled="busy === friend.id" @click="addSuggested(friend)">
             <VIcon prefix="sr" icon="user-add" class="me-1" />Add
           </button>

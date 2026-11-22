@@ -33,15 +33,31 @@ onMounted(() => {
 
 <template>
   <!-- Covers the whole app and swallows taps until it drains away. -->
-  <div class="drink-pour" role="alert" aria-live="assertive" :style="{ '--pour-duration': `${props.durationMs}ms` }"
-    @click.stop.prevent @touchstart.stop.prevent>
+  <div
+    class="drink-pour"
+    role="alert"
+    aria-live="assertive"
+    :style="{ '--pour-duration': `${props.durationMs}ms` }"
+    @click.stop.prevent
+    @touchstart.stop.prevent
+  >
     <div class="stream"></div>
 
     <div class="beer">
       <div class="foam"></div>
       <div class="liquid">
-        <span v-for="(b, i) in bubbles" :key="i" class="bubble"
-          :style="{ left: `${b.left}%`, width: `${b.size}px`, height: `${b.size}px`, animationDelay: `${b.delay}s`, animationDuration: `${b.duration}s` }"></span>
+        <span
+          v-for="(b, i) in bubbles"
+          :key="i"
+          class="bubble"
+          :style="{
+            left: `${b.left}%`,
+            width: `${b.size}px`,
+            height: `${b.size}px`,
+            animationDelay: `${b.delay}s`,
+            animationDuration: `${b.duration}s`
+          }"
+        ></span>
       </div>
     </div>
 
@@ -100,7 +116,9 @@ $drain-start: 84%;
   overflow: hidden;
   // A photo of lager (Monaz Hastam, Unsplash; cropped below the surface and warmed to gold), sized to cover the
   // screen and anchored at the bottom: it stays still as the beer rises, and its densest bubbles end up at the top.
-  background: url(/img/beer-pour.jpg) center bottom / max(100vw, 148vh) auto no-repeat, #f2b000;
+  background:
+    url(/img/beer-pour.jpg) center bottom / max(100vw, 148vh) auto no-repeat,
+    #f2b000;
 }
 
 // The head: a wavy line of foam that sloshes from side to side.
@@ -111,7 +129,8 @@ $drain-start: 84%;
   width: 200%;
   height: 46px;
   top: -30px;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 40' preserveAspectRatio='none'%3E%3Cpath d='M0 14 Q25 2 50 14 T100 14 T150 14 T200 14 V40 H0Z' fill='%23fffaf0'/%3E%3C/svg%3E") 0 0 / 50% 100% repeat-x;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 40' preserveAspectRatio='none'%3E%3Cpath d='M0 14 Q25 2 50 14 T100 14 T150 14 T200 14 V40 H0Z' fill='%23fffaf0'/%3E%3C/svg%3E")
+    0 0 / 50% 100% repeat-x;
   filter: drop-shadow(0 4px 3px rgba(150, 90, 0, 0.35));
   animation: slosh 1.2s ease-in-out infinite alternate;
 }
@@ -146,7 +165,9 @@ $drain-start: 84%;
   align-items: center;
   justify-content: center;
   color: white;
-  text-shadow: 0 4px 0 rgba(120, 60, 0, 0.6), 0 0 30px rgba(0, 0, 0, 0.35);
+  text-shadow:
+    0 4px 0 rgba(120, 60, 0, 0.6),
+    0 0 30px rgba(0, 0, 0, 0.35);
   animation: message var(--pour-duration) ease-out both;
 }
 

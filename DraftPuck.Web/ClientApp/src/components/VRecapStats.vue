@@ -44,8 +44,16 @@ function avatar(member: LobbyMember) {
   <div class="stats">
     <!-- Whose night: tap anyone. -->
     <div class="people" role="tablist" aria-label="Whose night">
-      <button v-for="m in people" :key="m.id" type="button" role="tab" class="person" :class="{ active: m.id === selectedId }"
-        :aria-selected="m.id === selectedId" @click="selectedId = m.id">
+      <button
+        v-for="m in people"
+        :key="m.id"
+        type="button"
+        role="tab"
+        class="person"
+        :class="{ active: m.id === selectedId }"
+        :aria-selected="m.id === selectedId"
+        @click="selectedId = m.id"
+      >
         <span class="avatar" :style="avatar(m).style">{{ avatar(m).initial }}</span>
         <span class="person-name">{{ m.name }}</span>
       </button>
@@ -56,8 +64,13 @@ function avatar(member: LobbyMember) {
         <h3 class="card-title">{{ selected.name }}'s picks</h3>
         <p v-if="!night.picks.length" class="empty">No picks.</p>
         <div v-for="pick in top(night.picks, 'picks')" :key="pick.name" class="stat-row" :class="{ quiet: !pick.drinks }">
-          <span class="row-label"><b>{{ pick.name }}</b><small>{{ pick.team }}</small></span>
-          <span class="count"><b>{{ pick.drinks }}</b> {{ drinks(pick.drinks) }}</span>
+          <span class="row-label"
+            ><b>{{ pick.name }}</b
+            ><small>{{ pick.team }}</small></span
+          >
+          <span class="count"
+            ><b>{{ pick.drinks }}</b> {{ drinks(pick.drinks) }}</span
+          >
         </div>
         <button v-if="night.picks.length > TOP" type="button" class="more" @click="toggle('picks')">
           {{ expanded.has('picks') ? 'View less' : `View more (${night.picks.length - TOP})` }}
@@ -68,8 +81,13 @@ function avatar(member: LobbyMember) {
         <h3 class="card-title">{{ selected.name }} gave drinks to</h3>
         <p v-if="!night.gaveTo.length" class="empty">Nobody. Merciful.</p>
         <div v-for="c in top(night.gaveTo, 'gave')" :key="c.member.id" class="stat-row">
-          <span class="row-label"><span class="avatar sm" :style="avatar(c.member).style">{{ avatar(c.member).initial }}</span><b>{{ c.member.name }}</b></span>
-          <span class="count"><b>{{ c.count }}</b> {{ drinks(c.count) }}</span>
+          <span class="row-label"
+            ><span class="avatar sm" :style="avatar(c.member).style">{{ avatar(c.member).initial }}</span
+            ><b>{{ c.member.name }}</b></span
+          >
+          <span class="count"
+            ><b>{{ c.count }}</b> {{ drinks(c.count) }}</span
+          >
         </div>
         <button v-if="night.gaveTo.length > TOP" type="button" class="more" @click="toggle('gave')">
           {{ expanded.has('gave') ? 'View less' : `View more (${night.gaveTo.length - TOP})` }}
@@ -78,8 +96,13 @@ function avatar(member: LobbyMember) {
         <h3 class="card-title mt-3">{{ selected.name }} received drinks from</h3>
         <p v-if="!night.gotFrom.length" class="empty">Nobody. Untouchable.</p>
         <div v-for="c in top(night.gotFrom, 'got')" :key="c.member.id" class="stat-row">
-          <span class="row-label"><span class="avatar sm" :style="avatar(c.member).style">{{ avatar(c.member).initial }}</span><b>{{ c.member.name }}</b></span>
-          <span class="count taken"><b>{{ c.count }}</b> {{ drinks(c.count) }}</span>
+          <span class="row-label"
+            ><span class="avatar sm" :style="avatar(c.member).style">{{ avatar(c.member).initial }}</span
+            ><b>{{ c.member.name }}</b></span
+          >
+          <span class="count taken"
+            ><b>{{ c.count }}</b> {{ drinks(c.count) }}</span
+          >
         </div>
         <button v-if="night.gotFrom.length > TOP" type="button" class="more" @click="toggle('got')">
           {{ expanded.has('got') ? 'View less' : `View more (${night.gotFrom.length - TOP})` }}
@@ -102,8 +125,16 @@ function avatar(member: LobbyMember) {
         </div>
         <div class="chart" role="list">
           <span class="gridline"></span>
-          <button v-for="(bar, i) in bars" :key="Number(bar.start)" type="button" role="listitem" class="column" :class="{ tapped: i === shownIndex }"
-            :aria-label="`${span(bar)}: ${bar.total} ${drinks(bar.total)}, ${bar.involving} involving ${selected?.name}`" @click="tappedIndex = i">
+          <button
+            v-for="(bar, i) in bars"
+            :key="Number(bar.start)"
+            type="button"
+            role="listitem"
+            class="column"
+            :class="{ tapped: i === shownIndex }"
+            :aria-label="`${span(bar)}: ${bar.total} ${drinks(bar.total)}, ${bar.involving} involving ${selected?.name}`"
+            @click="tappedIndex = i"
+          >
             <span class="stack" :style="{ height: pct(bar.total) }">
               <span v-if="bar.total - bar.involving" class="seg rest" :style="{ flexGrow: bar.total - bar.involving }"></span>
               <span v-if="bar.involving" class="seg mine" :style="{ flexGrow: bar.involving }"></span>
@@ -118,9 +149,16 @@ function avatar(member: LobbyMember) {
 
       <!-- The stretch shown: who gave whom a drink, and for which player. -->
       <div v-if="shown" class="stretch">
-        <div class="stretch-head"><b>{{ span(shown) }}</b><span>{{ shown.total }} {{ drinks(shown.total) }}</span></div>
+        <div class="stretch-head">
+          <b>{{ span(shown) }}</b><span>{{ shown.total }} {{ drinks(shown.total) }}</span>
+        </div>
         <p v-if="!shown.drinks.length" class="empty">A quiet ten minutes.</p>
-        <div v-for="(d, i) in top(shown.drinks, `stretch-${shownIndex}`)" :key="i" class="stretch-drink" :class="{ mine: d.giver.id === selectedId || d.recipient.id === selectedId }">
+        <div
+          v-for="(d, i) in top(shown.drinks, `stretch-${shownIndex}`)"
+          :key="i"
+          class="stretch-drink"
+          :class="{ mine: d.giver.id === selectedId || d.recipient.id === selectedId }"
+        >
           <span class="who">
             <b>{{ d.giver.name }}</b>
             <span class="arrow">→</span>
@@ -128,9 +166,9 @@ function avatar(member: LobbyMember) {
           </span>
           <small v-if="d.player">{{ d.player }}</small>
         </div>
-          <button v-if="shown.drinks.length > TOP" type="button" class="more" @click="toggle(`stretch-${shownIndex}`)">
-            {{ expanded.has(`stretch-${shownIndex}`) ? 'View less' : `View more (${shown.drinks.length - TOP})` }}
-          </button>
+        <button v-if="shown.drinks.length > TOP" type="button" class="more" @click="toggle(`stretch-${shownIndex}`)">
+          {{ expanded.has(`stretch-${shownIndex}`) ? 'View less' : `View more (${shown.drinks.length - TOP})` }}
+        </button>
       </div>
     </section>
   </div>
@@ -176,7 +214,9 @@ $red: #ff5c6c;
     width: 44px;
     height: 44px;
     font-size: 17px;
-    transition: box-shadow 0.2s, transform 0.2s;
+    transition:
+      box-shadow 0.2s,
+      transform 0.2s;
   }
 
   &.active {
@@ -184,7 +224,10 @@ $red: #ff5c6c;
     color: white;
 
     .avatar {
-      box-shadow: 0 0 0 2px map-get($custom-colors, 'stone-900'), 0 0 0 4px $amber, 0 0 14px rgba($amber, 0.5);
+      box-shadow:
+        0 0 0 2px map-get($custom-colors, 'stone-900'),
+        0 0 0 4px $amber,
+        0 0 14px rgba($amber, 0.5);
       transform: scale(1.06);
     }
   }
