@@ -1,14 +1,13 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch, onMounted } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter, useRoute } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 import { useLobbyStore } from '@/stores/lobby'
-import { useFriendsStore } from '@/stores/friends'
 import { useGamesStore } from '@/stores/games'
-import { useUserStore } from '@/stores/user'
 import { useSystemStore } from '@/stores/system'
 import { useLobbyConnection } from '@/composables/useLobbyConnection'
+import { useLobbyEntry } from '@/composables/useLobbyEntry'
 import { useLobbyEvents } from '@/composables/useLobbyEvents'
 import { useLobbyChat } from '@/composables/useLobbyChat'
 import { useEventQueue } from '@/composables/useEventQueue'
@@ -17,27 +16,23 @@ import { parseLobbyEventText } from '@/helpers/lobbyEventTemplateHelpers'
 import { buildFeedItems } from '@/helpers/feedHelpers'
 import { sortGamesForLobby } from '@/helpers/gameHelpers'
 import { runChatCommand } from '@/helpers/chatCommands'
-import LobbyService from '@/services/LobbyService'
+import { messageForDrinkEvent } from '@/helpers/drinkMessageHelpers'
 import LoadingMessages from '@/models/loadingMessages'
 import VInstructionsModal from '@/components/VInstructionsModal.vue'
+import VNotificationSettingsModal from '@/components/VNotificationSettingsModal.vue'
+import VShareLobbyModal from '@/components/VShareLobbyModal.vue'
+import VLobbyHeader from '@/components/VLobbyHeader.vue'
+import VLobbyGuestJoin from '@/components/VLobbyGuestJoin.vue'
+import VLobbyBottomNav, { type LobbyView } from '@/components/VLobbyBottomNav.vue'
 import VGameScoreboards from '@/components/VGameScoreboards.vue'
 import VLobbyOverview from '@/components/VLobbyOverview.vue'
 import VScoresRibbon from '@/components/VScoresRibbon.vue'
 import VFeed from '@/components/VFeed.vue'
 import VPicks from '@/components/VPicks.vue'
 import VChat from '@/components/VChat.vue'
-import VNotificationSettingsModal from '@/components/VNotificationSettingsModal.vue'
-import VShareLobbyModal from '@/components/VShareLobbyModal.vue'
-import VJoinLobbyForm from '@/components/VJoinLobbyForm.vue'
-import VLogo from '@/components/VLogo.vue'
-import VUser from '@/components/VUser.vue'
 import VEventBanner from '@/components/VEventBanner.vue'
 import VDrinkPour from '@/components/VDrinkPour.vue'
-import { messageForDrinkEvent } from '@/helpers/drinkMessageHelpers'
 
-type View = 'feed' | 'game' | 'lobby' | 'chat' | 'picks'
-// Remembered so the home page's join and create forms can prefill the code and name.
-const LOCAL_STORAGE_KEY = 'latestLobby'
 const DRINK_ANIMATION_DURATION_MS = 5000
 const BANNER_DURATION_MS = 4500
 
@@ -45,11 +40,8 @@ const BANNER_DURATION_MS = 4500
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
-const userStore = useUserStore()
 const store = useLobbyStore()
-const friendsStore = useFriendsStore()
 const gamesStore = useGamesStore()
-const { isLoggedIn, currentUser } = storeToRefs(userStore)
 const { lobby, currentMember, events, chatMessages } = storeToRefs(store)
 const { appIsTestMode } = storeToRefs(useSystemStore())
 const { games } = storeToRefs(gamesStore)
@@ -58,16 +50,11 @@ const { getLobbyEvents, sendDebugMessage, sendSystemMessage, setDebugging } = st
 
 //#region page state
 const joinCode = route.params.joinCode as string
-const isLoading = ref(true)
-const isInvalidLobby = ref(false)
-// A guest opened the lobby's link without being a member: ask for their name here, then join.
-const isAskingForName = ref(false)
 const loadingMessage = LoadingMessages.random()
-const currentView = ref<View>('picks')
+// Which panel shows on a phone; on wider screens they all show.
+const currentView = ref<LobbyView>('picks')
 const selectedGame = ref<Game>()
-const isInstructionsVisible = ref(false)
-const isNotificationSettingsVisible = ref(false)
-const isShareVisible = ref(false)
+const openModal = ref<'instructions' | 'notifications' | 'share'>()
 const vChat = ref<InstanceType<typeof VChat> | null>(null)
 const shouldAnimateFeed = ref(false)
 const isInitialLoad = ref(true)
@@ -97,71 +84,13 @@ const connection = useLobbyConnection({
   resync,
   log: sendDebugMessage
 })
-//#endregion
 
-//#region computed
-const templatedEvents = computed(() => events.value.map(fillEventTemplate))
-const feedItems = computed(() => (lobby.value ? buildFeedItems(games.value, templatedEvents.value, lobby.value.created, appIsTestMode.value) : []))
-const sortedGames = computed(() => sortGamesForLobby(games.value, lobby.value?.gameIds ?? []))
-const pendingDrinkCount = computed(() => currentMember.value?.picks.flatMap((p) => p.drinks.filter((d) => !d.recipientLobbyMemberId)).length ?? 0)
-const isLobbyView = computed(() => currentView.value === 'lobby')
-const isFeedView = computed(() => currentView.value === 'feed')
-const isPicksView = computed(() => currentView.value === 'picks')
-const isGameView = computed(() => currentView.value === 'game')
-const isChatView = computed(() => currentView.value === 'chat')
-const isLobbyReady = computed(() => !isLoading.value && !isAskingForName.value)
-//#endregion
-
-//#region loading and joining
-onMounted(async () => {
-  try {
-    await userStore.initialize()
-    await getLobby()
-
-    if (!lobby.value) return (isInvalidLobby.value = true)
-    if (!lobby.value.isActive) {
-      isInvalidLobby.value = true
-      router.replace({ name: 'LobbyReview', params: { joinCode } })
-      return
-    }
-
-    if (!currentMember.value) {
-      // Logged-in users join under their nickname; guests choose a name first (the join form calls onJoined).
-      if (!isLoggedIn.value) return (isAskingForName.value = true)
-      await LobbyService.joinLobbyByCode(joinCode, currentUser.value!.nickname!)
-      await getLobby()
-    }
-
-    await enterLobby()
-  } catch (e) {
-    reportError(e)
-    isInvalidLobby.value = true
-  } finally {
-    isLoading.value = false
-  }
+const { isLoading, isInvalidLobby, isAskingForName, isReady, onJoined } = useLobbyEntry({
+  joinCode,
+  refreshLobby: getLobby,
+  connect: connection.start,
+  reportError
 })
-
-async function onJoined() {
-  isAskingForName.value = false
-  isLoading.value = true
-  try {
-    await getLobby()
-    await enterLobby()
-  } catch (e) {
-    reportError(e)
-    isInvalidLobby.value = true
-  } finally {
-    isLoading.value = false
-  }
-}
-
-async function enterLobby() {
-  if (!currentMember.value) return router.push({ name: 'Home' })
-  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ joinCode, name: currentMember.value.name }))
-  // Being in the lobby answers any invite to it, however they joined.
-  friendsStore.forgetInvite(joinCode)
-  await connection.start()
-}
 
 async function getLobby() {
   await store.getLobby(joinCode)
@@ -183,6 +112,13 @@ function reportError(error: unknown) {
   console.error(error)
   sendDebugMessage(String(error), 3)
 }
+//#endregion
+
+//#region computed
+const templatedEvents = computed(() => events.value.map(fillEventTemplate))
+const feedItems = computed(() => (lobby.value ? buildFeedItems(games.value, templatedEvents.value, lobby.value.created, appIsTestMode.value) : []))
+const sortedGames = computed(() => sortGamesForLobby(games.value, lobby.value?.gameIds ?? []))
+const pendingDrinkCount = computed(() => currentMember.value?.picks.flatMap((p) => p.drinks.filter((d) => !d.recipientLobbyMemberId)).length ?? 0)
 //#endregion
 
 //#region lobby events and chat
@@ -207,22 +143,20 @@ function handleCommand(command: string, ...args: string[]) {
     describeConnection: connection.describe
   })
 }
+//#endregion
 
-async function openChat() {
-  currentView.value = 'chat'
+//#region page UI
+async function setView(view: LobbyView) {
+  currentView.value = view
+  if (view !== 'chat') return
+
   markRead()
   await nextTick()
   vChat.value?.focus()
 }
-//#endregion
-
-//#region page UI
-function setView(view: View) {
-  currentView.value = view
-}
 
 async function selectGame(game: Game | undefined) {
-  if (!isPicksView.value) setView('picks')
+  if (currentView.value !== 'picks') setView('picks')
   await nextTick()
   if (selectedGame.value?.id !== game?.id) selectedGame.value = game
 }
@@ -245,80 +179,53 @@ watch(
 
 <template>
   <div class="d-flex overflow-hidden flex-column" style="height: 100%">
-    <template v-if="!isInvalidLobby">
-      <VInstructionsModal v-if="isInstructionsVisible" :join-code="lobby?.joinCode" @close="isInstructionsVisible = false" />
-      <VNotificationSettingsModal v-if="isNotificationSettingsVisible" :join-code="joinCode" @close="isNotificationSettingsVisible = false" />
+    <div v-if="isInvalidLobby" style="width: 100%; height: 100%" class="d-flex align-items-center">
+      <span class="text-center d-block mx-auto mt-3 fs-2 text-uppercase fw-bold">Sorry, this lobby is invalid.</span>
+    </div>
+
+    <template v-else>
+      <VInstructionsModal v-if="openModal === 'instructions'" :join-code="lobby?.joinCode" @close="openModal = undefined" />
+      <VNotificationSettingsModal v-if="openModal === 'notifications'" :join-code="joinCode" @close="openModal = undefined" />
       <VShareLobbyModal
-        v-if="isShareVisible"
+        v-if="openModal === 'share'"
         :join-code="lobby?.joinCode ?? joinCode"
         :member-user-ids="lobby?.members.map((m) => m.userId) ?? []"
-        @close="isShareVisible = false"
+        @close="openModal = undefined"
       />
-      <div class="bg-stone-900 px-sm-4 px-2 py-2 shadow position-relative d-flex align-items-center justify-content-between" style="z-index: 10">
-        <router-link :to="{ name: 'Home' }" class="banner-logo text-stone-0 text-decoration-none" style="cursor: pointer">
-          <VLogo />
-        </router-link>
-
-        <a
-          @click="isShareVisible = true"
-          role="button"
-          class="d-block ms-auto bg-primary text-stone-900 px-2 rounded text-decoration-none fs-7 ms-1 d-flex align-items-center"
-          v-if="lobby?.joinCode !== undefined"
-        >
-          <span class="fs-5 me-1 fw-bold" style="letter-spacing: 3px">{{ lobby?.joinCode }}</span>
-          <i class="fi fi-sr-share d-block mb-n1 d-block"></i>
-        </a>
-
-        <a
-          class="d-flex ms-auto me-sm-5 me-3 pt-1 text-white fw-bold text-decoration-none align-items-center"
-          role="button"
-          @click="isNotificationSettingsVisible = true"
-        >
-          <i class="fi fi-rr-bell d-block fs-3" style="line-height: 20px"></i>
-          <span class="d-none d-sm-block text-uppercase ms-2" style="margin-top: -2px">Notifications</span>
-        </a>
-
-        <a class="d-flex pt-1 text-stone-0 fw-bold text-decoration-none align-items-center" role="button" @click="isInstructionsVisible = true">
-          <i class="fi fi-rr-question-square d-block fs-3" style="line-height: 20px"></i>
-          <span class="d-none d-sm-block text-uppercase ms-2" style="margin-top: -2px">How To Play</span>
-        </a>
-
-        <VUser class="ms-3" display="avatar" :avatar-size-in-px="30" :show-menu-on-click="true" />
-      </div>
+      <VLobbyHeader
+        :join-code="lobby?.joinCode"
+        @share="openModal = 'share'"
+        @notifications="openModal = 'notifications'"
+        @instructions="openModal = 'instructions'"
+      />
 
       <div class="d-flex flex-grow-1 overflow-hidden bg-stone-800">
-        <div v-if="isAskingForName" class="d-flex align-items-center justify-content-center w-100 p-3">
-          <div class="bg-stone-900 rounded shadow p-4" style="width: 100%; max-width: 420px">
-            <h2 class="fs-4 fw-bold text-uppercase mb-1">Join lobby {{ lobby?.joinCode ?? joinCode }}</h2>
-            <p class="text-stone-400 mb-3">Choose a name to join as a guest.</p>
-            <VJoinLobbyForm :code="lobby?.joinCode ?? joinCode" @joined="onJoined" />
-          </div>
-        </div>
+        <VLobbyGuestJoin v-if="isAskingForName" :join-code="lobby?.joinCode ?? joinCode" @joined="onJoined" />
 
-        <template v-if="isLobbyReady">
-          <VGameScoreboards class="full-scoreboard flex-grow-1" :class="{ 'hide-mobile': !isGameView }" :games="sortedGames" style="overflow: auto" />
+        <template v-if="isReady">
+          <VGameScoreboards
+            class="full-scoreboard flex-grow-1"
+            :class="{ 'hide-mobile': currentView !== 'game' }"
+            :games="sortedGames"
+            style="overflow: auto"
+          />
 
-          <div
-            class="feed flex-shrink-0 d-flex flex-column"
-            :class="{ 'hide-mobile': !isFeedView && !isLobbyView && !isChatView && !isPicksView }"
-            style="width: 400px"
-          >
+          <div class="feed flex-shrink-0 d-flex flex-column" :class="{ 'hide-mobile': currentView === 'game' }" style="width: 400px">
             <VScoresRibbon class="d-sm-none" :games="sortedGames" :selected-game="selectedGame" @on-score-clicked="selectGame" />
-            <VLobbyOverview ref="overview" class="lobby-overview v-lobby-overview flex-grow-1" :class="{ 'hide-mobile': !isLobbyView }" />
-            <VFeed class="flex-grow-1 v-feed" :items="feedItems" :class="{ 'hide-mobile': !isFeedView, animate: shouldAnimateFeed }" />
+            <VLobbyOverview class="lobby-overview v-lobby-overview flex-grow-1" :class="{ 'hide-mobile': currentView !== 'lobby' }" />
+            <VFeed class="flex-grow-1 v-feed" :items="feedItems" :class="{ 'hide-mobile': currentView !== 'feed', animate: shouldAnimateFeed }" />
             <VPicks
-              ref="vPicks"
               @select-game="selectGame"
               class="flex-grow-1 v-picks d-sm-none"
               :selected-game="selectedGame"
               :games="sortedGames"
-              :class="{ 'hide-mobile': !isPicksView }"
+              :class="{ 'hide-mobile': currentView !== 'picks' }"
             />
             <VChat
               ref="vChat"
               :messages="chatMessages"
               class="flex-grow-1 v-chat"
-              :class="{ 'hide-mobile': !isChatView }"
+              :class="{ 'hide-mobile': currentView !== 'chat' }"
               @command="handleCommand"
             ></VChat>
           </div>
@@ -334,44 +241,14 @@ watch(
         </div>
       </div>
 
-      <div class="bottom-nav d-flex d-sm-none bg-stone-900 shadow fw-bold" v-if="isLobbyReady">
-        <a role="button" class="text-center p-2 text-white" :class="{ active: isLobbyView }" @click="setView('lobby')">
-          <i v-if="pendingDrinkCount <= 0" class="fi fi-rr-users-alt"></i>
-          <span v-if="pendingDrinkCount > 0" class="drink-badge">🚨 {{ pendingDrinkCount }}</span>
-          <br />
-          <span>LOBBY</span>
-        </a>
-        <a role="button" class="text-center p-2 text-white" :class="{ active: isFeedView }" @click="setView('feed')">
-          <i class="fi fi-rr-list"></i><br />
-          <span>FEED</span>
-        </a>
-        <a role="button" class="text-center p-2 text-white" :class="{ active: isPicksView }" @click="setView('picks')">
-          <i class="fi fi-rs-hockey-mask"></i><br />
-          <span>PICKS</span>
-        </a>
-        <a role="button" class="text-center p-2 text-white d-none" :class="{ active: isGameView }" @click="setView('game')">
-          <i class="fi fi-rr-hockey-puck"></i><br />
-          <span>SCORES</span>
-        </a>
-        <a role="button" class="text-center p-2 text-white" :class="{ active: isChatView }" @click="openChat">
-          <i v-if="unreadCount <= 0" class="fi fi-rr-comment-alt"></i>
-          <span v-if="unreadCount > 0" class="drink-badge" :class="{ 'bg-primary': unreadMentionCount > 0 }">
-            <span v-if="unreadMentionCount > 0">📢</span>
-            <span v-if="unreadMentionCount <= 0">💬</span>
-            <span>{{ unreadCount }}</span>
-          </span>
-          <br />
-          <span>CHAT</span>
-        </a>
-      </div>
-    </template>
-
-    <template v-if="isInvalidLobby">
-      <div style="width: 100%; height: 100%" class="d-flex align-items-center">
-        <div class="mx-auto d-flex flex-column align-items-center">
-          <span class="text-center d-block mx-auto mt-3 fs-2 text-uppercase fw-bold">Sorry, this lobby is invalid.</span>
-        </div>
-      </div>
+      <VLobbyBottomNav
+        v-if="isReady"
+        :view="currentView"
+        :pending-drink-count="pendingDrinkCount"
+        :unread-count="unreadCount"
+        :unread-mention-count="unreadMentionCount"
+        @select="setView"
+      />
     </template>
 
     <VEventBanner v-if="currentBanner" :key="currentBanner.id" :event="fillEventTemplate(currentBanner)" :duration-ms="BANNER_DURATION_MS" />
@@ -385,43 +262,3 @@ watch(
     />
   </div>
 </template>
-
-<style scoped lang="scss">
-@import '@/assets/scss/custom-colors.scss';
-
-.bottom-nav {
-  border: 2px solid map-get($custom-colors, 'stone-900');
-  box-shadow: 0 0 10px black;
-  position: relative;
-  z-index: 10;
-}
-
-.bottom-nav > a {
-  display: block;
-  width: calc(100% / 3);
-  text-decoration: none !important;
-  position: relative;
-}
-
-.bottom-nav > a:not(.active):hover {
-  background-color: map-get($custom-colors, 'stone-800') !important;
-}
-
-.bottom-nav > a.active {
-  background-color: map-get($custom-colors, 'stone-300') !important;
-  color: map-get($custom-colors, 'stone-900') !important;
-}
-
-.bottom-nav > a:not(:first-child) {
-  border-left: 1px solid map-get($custom-colors, 'stone-800');
-}
-
-.drink-badge {
-  display: inline-block;
-  background-color: map-get($custom-colors, 'stone-0');
-  color: map-get($custom-colors, 'stone-900');
-  padding-left: 7px;
-  padding-right: 9px;
-  border-radius: 20px;
-}
-</style>
