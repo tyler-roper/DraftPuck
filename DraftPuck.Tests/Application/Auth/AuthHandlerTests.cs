@@ -173,7 +173,8 @@ public class AuthHandlerTests(DatabaseFixture fixture)
         var refreshed = await RefreshAsync(login.RefreshToken, login.AntiCsrfToken.ToString());
 
         Assert.NotEqual(login.RefreshToken, refreshed.RefreshToken);
-        await Assert.ThrowsAsync<UnauthorizedException>(() => RefreshAsync(login.RefreshToken, login.AntiCsrfToken.ToString()));
+        // The old token no longer starts a session of its own: straight after, it only gets the one it was replaced by.
+        Assert.Equal(refreshed.RefreshToken, (await RefreshAsync(login.RefreshToken, login.AntiCsrfToken.ToString())).RefreshToken);
     }
 
     [Theory]
@@ -224,9 +225,65 @@ public class AuthHandlerTests(DatabaseFixture fixture)
         var session = await LoginAsync(account.Email!, SeedAccounts.Password);
 
         var first = await RefreshAsync(session.RefreshToken, session.AntiCsrfToken.ToString());
-        await Assert.ThrowsAsync<UnauthorizedException>(() => RefreshAsync(session.RefreshToken, session.AntiCsrfToken.ToString()));
+        var second = await RefreshAsync(session.RefreshToken, session.AntiCsrfToken.ToString());
 
+        Assert.Equal(first.RefreshToken, second.RefreshToken);
+        Assert.Equal(first.AntiCsrfToken, second.AntiCsrfToken);
         Assert.NotNull(await RefreshAsync(first.RefreshToken, first.AntiCsrfToken.ToString()));
+    }
+
+    [Fact]
+    public async Task ARetryAfterAnAnswerThatNeverArrivedKeepsTheSession()
+    {
+        // The app reloaded mid-refresh: the server replaced the token, but the answer with the new one never reached the
+        // phone. Its retry with the old token used to be refused, and the app signed the user out.
+        var account = await AccountAsync();
+        var session = await LoginAsync(account.Email!, SeedAccounts.Password);
+        var lost = await RefreshAsync(session.RefreshToken, session.AntiCsrfToken.ToString());
+
+        var retry = await RefreshAsync(session.RefreshToken, session.AntiCsrfToken.ToString());
+
+        Assert.Equal(lost.RefreshToken, retry.RefreshToken);
+        Assert.False(string.IsNullOrEmpty(retry.JwtToken));
+        Assert.Equal(account.Id, retry.User.Id);
+        Assert.NotNull(await RefreshAsync(retry.RefreshToken, retry.AntiCsrfToken.ToString()));
+    }
+
+    [Fact]
+    public async Task ARetryGetsTheNewestSessionWhenItWasReplacedAgain()
+    {
+        var account = await AccountAsync();
+        var session = await LoginAsync(account.Email!, SeedAccounts.Password);
+        var first = await RefreshAsync(session.RefreshToken, session.AntiCsrfToken.ToString());
+        var second = await RefreshAsync(first.RefreshToken, first.AntiCsrfToken.ToString());
+
+        var retry = await RefreshAsync(session.RefreshToken, session.AntiCsrfToken.ToString());
+
+        Assert.Equal(second.RefreshToken, retry.RefreshToken);
+    }
+
+    [Fact]
+    public async Task ARetryDoesNotRestoreASessionThatHasEnded()
+    {
+        var account = await AccountAsync();
+        var session = await LoginAsync(account.Email!, SeedAccounts.Password);
+        var next = await RefreshAsync(session.RefreshToken, session.AntiCsrfToken.ToString());
+        await using (var db = fixture.CreateContext())
+        {
+            await new LogoutCommandHandler(db).Handle(new LogoutCommand { UserId = account.Id, RefreshToken = next.RefreshToken, IpAddress = Ip }, default);
+        }
+
+        await Assert.ThrowsAsync<UnauthorizedException>(() => RefreshAsync(session.RefreshToken, session.AntiCsrfToken.ToString()));
+    }
+
+    [Fact]
+    public async Task ARetryStillNeedsTheOldTokensCsrfToken()
+    {
+        var account = await AccountAsync();
+        var session = await LoginAsync(account.Email!, SeedAccounts.Password);
+        var next = await RefreshAsync(session.RefreshToken, session.AntiCsrfToken.ToString());
+
+        await Assert.ThrowsAsync<UnauthorizedException>(() => RefreshAsync(session.RefreshToken, next.AntiCsrfToken.ToString()));
     }
 
     [Fact]
