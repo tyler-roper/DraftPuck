@@ -8,7 +8,8 @@ import LobbyService from '@/services/LobbyService'
 vi.mock('@/services/LobbyService', () => ({ default: { getActiveLobbies: vi.fn() } }))
 
 let pinia: Pinia
-const lobby = (joinCode: string, isActive = true) => ({ joinCode, isActive, createdBy: 'me', createdByName: 'Me', memberCount: 2, gameCount: 1 }) as LobbySummary
+const lobby = (joinCode: string, isActive = true) =>
+  ({ joinCode, isActive, createdBy: 'me', createdByName: 'Me', memberCount: 2, gameCount: 1 }) as LobbySummary
 
 function mount() {
   let api!: ReturnType<typeof useRejoin>
@@ -40,7 +41,9 @@ describe('useRejoin', () => {
     sessionStorage.clear()
     pinia = createPinia()
     setActivePinia(pinia)
-    vi.mocked(LobbyService.getActiveLobbies).mockReset().mockResolvedValue([lobby('ABCD'), lobby('OLD1', false)])
+    vi.mocked(LobbyService.getActiveLobbies)
+      .mockReset()
+      .mockResolvedValue([lobby('ABCD'), lobby('OLD1', false)])
   })
 
   it('waits for the session, then offers the live lobbies (guests too)', async () => {

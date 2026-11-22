@@ -41,8 +41,7 @@ export function mentionMatchIndex(name: string, query: string): number {
   const lowerQuery = query.toLowerCase()
   if (lowerName.startsWith(lowerQuery)) return 0
 
-  for (let i = 1; i < name.length; i++)
-    if (/\s/.test(name[i - 1]) && lowerName.startsWith(lowerQuery, i)) return i
+  for (let i = 1; i < name.length; i++) if (/\s/.test(name[i - 1]) && lowerName.startsWith(lowerQuery, i)) return i
   return -1
 }
 

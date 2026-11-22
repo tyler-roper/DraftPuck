@@ -126,6 +126,11 @@ async function resizeMessageInput() {
   messageInput.value.style.height = messageInput.value?.scrollHeight + 'px'
 }
 
+function onMessageInput() {
+  resizeMessageInput()
+  updateMention()
+}
+
 function onEnterKeydown(e: KeyboardEvent) {
   if (isMentionOpen.value) return
   if (e.shiftKey) return
@@ -246,8 +251,14 @@ defineExpose({ focus })
       <a role="button" v-if="!isLockedToBottom" class="d-block lock-to-bottom btn btn-stone-900" @click="scrollToBottom"
         >Back to bottom <i class="fi fi-rr-arrow-down"></i
       ></a>
-      <VMentionSuggest v-if="isMentionOpen" :members="mentionMatches" :query="mention?.query ?? ''" :active-index="mentionIndex"
-        @pick="pickMention" @hover="(i) => (mentionIndex = i)" />
+      <VMentionSuggest
+        v-if="isMentionOpen"
+        :members="mentionMatches"
+        :query="mention?.query ?? ''"
+        :active-index="mentionIndex"
+        @pick="pickMention"
+        @hover="(i) => (mentionIndex = i)"
+      />
       <textarea
         v-model="message"
         maxlength="500"
@@ -256,7 +267,7 @@ defineExpose({ focus })
         role="combobox"
         aria-autocomplete="list"
         :aria-expanded="isMentionOpen"
-        @input="resizeMessageInput(); updateMention()"
+        @input="onMessageInput"
         @click="updateMention"
         @keyup="(e) => ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key) && updateMention()"
         @keydown="onMentionKeydown"
@@ -351,5 +362,4 @@ span.mention {
   padding: 0 4px;
   border-radius: 4px;
 }
-
 </style>

@@ -3,7 +3,14 @@ import { badgeText, friendLink, friendLinkMessage, friendStatusOf, inviteOptions
 
 const friend = (id: string, nickname = id): Friend => ({ id, nickname })
 const invite = (joinCode: string): LobbyInvite => ({ joinCode, sender: friend('host'), gameCount: 2, memberCount: 3, created: new Date() })
-const list = (overrides: Partial<FriendsList> = {}): FriendsList => ({ friends: [], incoming: [], outgoing: [], invites: [], suggestions: [], ...overrides })
+const list = (overrides: Partial<FriendsList> = {}): FriendsList => ({
+  friends: [],
+  incoming: [],
+  outgoing: [],
+  invites: [],
+  suggestions: [],
+  ...overrides
+})
 
 describe('friendStatusOf', () => {
   const friends = list({ friends: [friend('a')], incoming: [friend('b')], outgoing: [friend('c')] })

@@ -16,8 +16,8 @@ const messaging = firebase.messaging()
 
 // Messages are data-only, so the SDK never auto-displays them; this is the only place a notification is shown.
 // The SDK awaits this handler inside the push event, so returning the promise keeps the event alive until it's shown.
-messaging.onBackgroundMessage(function(payload) {
-  const data = payload.data ?? {};
+messaging.onBackgroundMessage(function (payload) {
+  const data = payload.data ?? {}
 
   return self.registration.showNotification(data.title || 'DraftPuck', {
     body: data.body,
@@ -25,14 +25,14 @@ messaging.onBackgroundMessage(function(payload) {
     badge: data.badge || '/img/icons/badge.png',
     vibrate: [200, 100, 200],
     data
-  });
-});
+  })
+})
 
-self.addEventListener('notificationclick', function(event) {
-  event.notification.close();
+self.addEventListener('notificationclick', function (event) {
+  event.notification.close()
 
-  const link = event.notification.data?.link;
+  const link = event.notification.data?.link
   if (link) {
-    event.waitUntil(clients.openWindow(link));
+    event.waitUntil(clients.openWindow(link))
   }
-});
+})

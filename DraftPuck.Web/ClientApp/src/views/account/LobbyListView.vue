@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { timeAgo } from '@/helpers/dateHelpers'
 import { onMounted, ref } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
-import { compareAsc, differenceInDays, isYesterday } from 'date-fns'
+import { compareAsc } from 'date-fns'
 import VIcon from '@/components/VIcon.vue'
 import LobbyService from '@/services/LobbyService'
 import { useToast } from '@/composables/useToast'
@@ -17,17 +18,6 @@ const isLoading = ref(true)
 //#endregion
 
 //#region methods
-function ago(date: Date) {
-  const now = new Date()
-
-  if (isYesterday(date)) return 'Yesterday'
-
-  const diffInDays = differenceInDays(now, date)
-  if (diffInDays < 7) return `${diffInDays}d ago`
-  if (diffInDays < 30) return `${Math.floor(diffInDays / 7)}w ago`
-  if (diffInDays < 365) return `${Math.floor(diffInDays / 30)}m ago`
-  return `${Math.floor(diffInDays / 365)}y ago`
-}
 
 async function leave(lobby: LobbySummary) {
   const isConfirmed = confirm('Leaving this lobby will forfeit all of your picks. Are you sure?')
@@ -74,12 +64,16 @@ onMounted(async () => {
     <div v-else class="p-2">
       <div class="lobby-summary" :class="{ 'is-live-lobby': lobby.isActive }" v-for="lobby in lobbySummaries" :key="lobby.id">
         <span class="text-uppercase fw-bold ls-6">
-          <router-link :to="lobby.isActive ? `/lobby/${lobby.joinCode}` : `/lobby/${lobby.joinCode}/review`" class="d-flex align-items-center" :class="{'text-primary': lobby.isActive, 'text-stone-300': !lobby.isActive }">
+          <router-link
+            :to="lobby.isActive ? `/lobby/${lobby.joinCode}` : `/lobby/${lobby.joinCode}/review`"
+            class="d-flex align-items-center"
+            :class="{ 'text-primary': lobby.isActive, 'text-stone-300': !lobby.isActive }"
+          >
             <VIcon icon="link-alt" class="d-block me-1 fs-8" />
             <span class="d-block">{{ lobby.joinCode }}</span>
           </router-link>
         </span>
-        <span :class="{ 'fw-bold ls-3': lobby.isActive }">{{ lobby.isActive ? 'LIVE' : ago(lobby.created) }}</span>
+        <span :class="{ 'fw-bold ls-3': lobby.isActive }">{{ lobby.isActive ? 'LIVE' : timeAgo(lobby.created, new Date(), 'Tonight') }}</span>
         <span><VIcon prefix="sr" icon="hockey-puck" class="me-1 text-stone-500" /> {{ lobby.gameCount }}</span>
         <span><VIcon prefix="sr" icon="users-alt" class="me-1 text-stone-500" /> {{ lobby.memberCount }}</span>
         <span>🍻 {{ lobby.drinksGiven }}</span>

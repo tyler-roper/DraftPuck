@@ -297,9 +297,7 @@ function removeBot(bot: Bot) {
       </div>
     </div>
   </form>
-  <div v-else class="text-center fs-5 fw-bold text-stone-300">
-    No games tonight,<br>check back tomorrow!
-  </div>
+  <div v-else class="text-center fs-5 fw-bold text-stone-300">No games tonight,<br />check back tomorrow!</div>
 </template>
 
 <style scoped lang="scss">

@@ -12,9 +12,7 @@ const image = (file: string) => new URL(`../assets/whats-new/${file}`, import.me
 export const whatsNew: WhatsNewSection[] = [
   {
     title: 'Friends',
-    images: [
-      { src: image('friends.webp'), alt: 'The Friends page: requests, friends and people you have played with' }
-    ],
+    images: [{ src: image('friends.webp'), alt: 'The Friends page: requests, friends and people you have played with' }],
     icon: 'users-alt',
     items: [
       { lead: 'Friend requests:', text: "add people and accept their requests. If you both ask each other, you're friends straight away." },
@@ -72,7 +70,7 @@ export const whatsNew: WhatsNewSection[] = [
     items: [
       {
         lead: '20+ new achievements,',
-        text: 'each with its own banner: Buzzer Beater, Sudden Death and Empty Netter for your player\'s big moments; Goose Egg and Designated Driver for a quiet night; Bottomless Cup for the opposite; Chirp Machine for the chat regulars; and Playoff Beard.'
+        text: "each with its own banner: Buzzer Beater, Sudden Death and Empty Netter for your player's big moments; Goose Egg and Designated Driver for a quiet night; Bottomless Cup for the opposite; Chirp Machine for the chat regulars; and Playoff Beard."
       },
       {
         lead: "Fixed achievements that weren't awarded when they should have been.",
@@ -121,7 +119,10 @@ export const whatsNew: WhatsNewSection[] = [
         lead: 'Scores and goals are pushed to you the moment we see them,',
         text: "instead of your device checking every few seconds. Each update only carries what changed, so it's much lighter on your data."
       },
-      { lead: 'Goal corrections are more dependable:', text: "scorer changes, called-back goals and glitches in the NHL's feed are now handled reliably." },
+      {
+        lead: 'Goal corrections are more dependable:',
+        text: "scorer changes, called-back goals and glitches in the NHL's feed are now handled reliably."
+      },
       { lead: 'Play times are more accurate,', text: "even for plays that happened while a game briefly wasn't being tracked." },
       { lead: 'Games that stop updating restart themselves', text: 'within a minute or two.' },
       { lead: 'Tabs you have open keep working after we ship an update.' }

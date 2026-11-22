@@ -50,7 +50,14 @@ const { lobby, currentUserId } = storeToRefs(store)
 
 //#region computed
 const isPlayerPickableByCurrentMember = computed(() =>
-  canPickPlayer(lobby.value!, currentMember.value, game.value, { id: player.value.id, teamId: playerTeam.value.id }, currentSystemTime.value, props.selectedPlayerCount)
+  canPickPlayer(
+    lobby.value!,
+    currentMember.value,
+    game.value,
+    { id: player.value.id, teamId: playerTeam.value.id },
+    currentSystemTime.value,
+    props.selectedPlayerCount
+  )
 )
 
 const playerTeam = computed(() => (game.value.homeTeam.roster.some((p) => p.id === player.value.id) ? game.value.homeTeam : game.value.awayTeam))

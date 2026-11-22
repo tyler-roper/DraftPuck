@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import { timeAgo } from '@/helpers/dateHelpers'
 import { ref, reactive, onMounted } from 'vue'
 import HeaderLayout from '@/views/layouts/HeaderLayout.vue'
 import VIcon from '@/components/VIcon.vue'
 import AdminLobbyService from '@/services/admin/AdminLobbyService'
 import VInputWrapper from '@/components/VInputWrapper.vue'
-import { isYesterday, differenceInDays, compareAsc } from 'date-fns'
+import { compareAsc } from 'date-fns'
 
 //#region data
 const lobbySummaries = ref<LobbySummary[]>([])
@@ -13,17 +14,6 @@ const filters = reactive<GetAllLobbiesRequest>({
   dateFrom: undefined
 })
 
-function ago(date: Date) {
-  const now = new Date()
-
-  if (isYesterday(date)) return 'Yesterday'
-
-  const diffInDays = differenceInDays(now, date)
-  if (diffInDays < 7) return `${diffInDays}d ago`
-  if (diffInDays < 30) return `${Math.floor(diffInDays / 7)}w ago`
-  if (diffInDays < 365) return `${Math.floor(diffInDays / 30)}m ago`
-  return `${Math.floor(diffInDays / 365)}y ago`
-}
 //#endregion
 
 //#region methods
@@ -56,7 +46,7 @@ onMounted(async () => {
             <input id="dateFrom" type="date" v-model="filters.dateFrom" class="form-control dark" />
           </VInputWrapper>
         </div>
-        <div style="align-self:last baseline">
+        <div style="align-self: last baseline">
           <button @click="getLobbySummaries" class="btn btn-primary">
             <VIcon icon="filter" prefix="sr" />
           </button>
@@ -68,13 +58,12 @@ onMounted(async () => {
           <tbody>
             <tr v-for="(lobby, idx) in lobbySummaries" :key="lobby.id">
               <td class="pe-3 text-stone-500">
-                {{ idx+1  }}
+                {{ idx + 1 }}
               </td>
               <td>
                 <span>
-                  <router-link :to="`/lobby/${lobby.joinCode}`" class="d-block text-uppercase fw-bold ls-6">{{
-                    lobby.joinCode }}</router-link>
-                  <span class="d-block">{{ lobby.isActive ? 'Live' : ago(lobby.created) }}</span>
+                  <router-link :to="`/lobby/${lobby.joinCode}`" class="d-block text-uppercase fw-bold ls-6">{{ lobby.joinCode }}</router-link>
+                  <span class="d-block">{{ lobby.isActive ? 'Live' : timeAgo(lobby.created, new Date(), 'Tonight') }}</span>
                 </span>
               </td>
               <td class="text-center">
@@ -84,24 +73,15 @@ onMounted(async () => {
                 </div>
                 <div class="d-flex mx-n2 justify-content-center">
                   <div v-if="lobby.memberCount - lobby.botCount - lobby.guestCount" class="mx-2">
-                    <VIcon prefix="sr" icon="user-check" class="me-1 text-stone-500" />{{
-                      lobby.memberCount - lobby.botCount - lobby.guestCount }}
+                    <VIcon prefix="sr" icon="user-check" class="me-1 text-stone-500" />{{ lobby.memberCount - lobby.botCount - lobby.guestCount }}
                   </div>
-                  <div v-if="lobby.guestCount" class="mx-2">
-                    <VIcon prefix="rr" icon="user" class="me-1 text-stone-500" />{{ lobby.guestCount }}
-                  </div>
-                  <div v-if="lobby.botCount" class="mx-2">
-                    <VIcon prefix="sr" icon="robot" class="me-1 text-stone-500" />{{ lobby.botCount }}
-                  </div>
+                  <div v-if="lobby.guestCount" class="mx-2"><VIcon prefix="rr" icon="user" class="me-1 text-stone-500" />{{ lobby.guestCount }}</div>
+                  <div v-if="lobby.botCount" class="mx-2"><VIcon prefix="sr" icon="robot" class="me-1 text-stone-500" />{{ lobby.botCount }}</div>
                 </div>
               </td>
               <td class="text-end">
-                <span class="d-block">
-                  <VIcon prefix="sr" icon="hockey-puck" class="me-1 text-stone-500" /> {{ lobby.gameCount }} Games
-                </span>
-                <span class="d-block">
-                  <VIcon prefix="sr" icon="beer" class="me-1 text-stone-500" /> {{ lobby.drinksGiven }} Drinks
-                </span>
+                <span class="d-block"> <VIcon prefix="sr" icon="hockey-puck" class="me-1 text-stone-500" /> {{ lobby.gameCount }} Games </span>
+                <span class="d-block"> <VIcon prefix="sr" icon="beer" class="me-1 text-stone-500" /> {{ lobby.drinksGiven }} Drinks </span>
               </td>
             </tr>
           </tbody>

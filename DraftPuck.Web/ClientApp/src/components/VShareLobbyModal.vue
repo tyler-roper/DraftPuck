@@ -121,7 +121,12 @@ const stateText = { invited: 'Invited', member: 'In lobby' }
               <span v-if="state !== 'available'" class="fs-8 text-uppercase text-stone-400">{{ stateText[state] }}</span>
             </label>
           </div>
-          <VButton class="btn btn-primary fw-bold w-100 p-3 mt-3 text-uppercase" :is-loading="isSending" :disabled="!selected.length" @click="sendInvites">
+          <VButton
+            class="btn btn-primary fw-bold w-100 p-3 mt-3 text-uppercase"
+            :is-loading="isSending"
+            :disabled="!selected.length"
+            @click="sendInvites"
+          >
             Send Invite{{ selected.length > 1 ? `s (${selected.length})` : '' }}
           </VButton>
         </template>

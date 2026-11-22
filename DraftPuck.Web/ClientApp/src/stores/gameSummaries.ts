@@ -15,9 +15,7 @@ export const useGameSummariesStore = defineStore('gameSummaries', () => {
     isLoadingSummaries.value = true
     try {
       const summaries = await GameService.getAllGameSummaries()
-      gameSummaries.value = summaries
-        .filter((g) => g.gameState !== GameState.Final)
-        .sort((a, b) => compareAsc(a.dateTime, b.dateTime))
+      gameSummaries.value = summaries.filter((g) => g.gameState !== GameState.Final).sort((a, b) => compareAsc(a.dateTime, b.dateTime))
       hasLoadedSummaries.value = true
     } finally {
       isLoadingSummaries.value = false

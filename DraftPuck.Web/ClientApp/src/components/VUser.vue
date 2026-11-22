@@ -67,23 +67,23 @@ const fontSize = computed(() => {
   return `${size * ratio}px`
 })
 
-const loggedInUserLinks = computed<Array<UserLink>>(() => ([
+const loggedInUserLinks = computed<Array<UserLink>>(() => [
   { path: `/u/${user.value?.nickname}`, text: 'Profile', iconPrefix: 'sr', icon: 'user-pen' },
   { path: '/account/lobbies', text: 'My Lobbies', iconPrefix: 'sr', icon: 'users-alt' },
   { path: '/account/friends', text: 'Friends & Invites', iconPrefix: 'sr', icon: 'user-add', badge: badgeText(pendingFriendItems.value) },
   { action: logout, text: 'Logout', class: 'text-primary', iconPrefix: 'sr', icon: 'exit' }
-]))
+])
 
-const adminUserLinks = computed<Array<UserLink>>(() => ([
-  ...loggedInUserLinks.value.filter(l => l.text !== 'Logout'),
+const adminUserLinks = computed<Array<UserLink>>(() => [
+  ...loggedInUserLinks.value.filter((l) => l.text !== 'Logout'),
   { path: '/admin', text: 'Admin', iconPrefix: 'sr', icon: 'admin' },
   { action: logout, text: 'Logout', class: 'text-primary', iconPrefix: 'sr', icon: 'exit' }
-]))
+])
 
-const guestUserLinks = computed<Array<UserLink>>(() => ([
+const guestUserLinks = computed<Array<UserLink>>(() => [
   { path: loginPath.value, text: 'Log In', iconPrefix: 'sr', icon: 'sign-in-alt' },
   { path: joinPath.value, text: 'Sign Up', iconPrefix: 'sr', icon: 'hockey-puck', class: 'text-primary' }
-]))
+])
 
 const userLinks = computed(() => {
   if (isSelf.value !== true) return []

@@ -30,15 +30,30 @@ function give() {
       </div>
       <form class="modal-body dark" @submit.prevent="give">
         <label for="drink-message" class="form-label fw-bold fs-7 text-uppercase text-stone-400">Add a message (optional)</label>
-        <input id="drink-message" ref="input" v-model="message" class="form-control" type="text" autocomplete="off"
-          :maxlength="DRINK_MESSAGE_MAX_LENGTH" placeholder="That's for the Oilers goal." enterkeyhint="send" />
+        <input
+          id="drink-message"
+          ref="input"
+          v-model="message"
+          class="form-control"
+          type="text"
+          autocomplete="off"
+          :maxlength="DRINK_MESSAGE_MAX_LENGTH"
+          placeholder="That's for the Oilers goal."
+          enterkeyhint="send"
+        />
         <div class="d-flex justify-content-end fs-8 text-stone-400 mt-1">
           <span :class="{ 'text-danger': remaining <= 10 }">{{ remaining }}</span>
         </div>
 
         <div class="d-flex flex-wrap gap-2 mt-2">
-          <button v-for="suggestion in DRINK_MESSAGE_SUGGESTIONS" :key="suggestion" type="button" class="chip"
-            :class="{ chosen: message === suggestion }" @click="message = suggestion">
+          <button
+            v-for="suggestion in DRINK_MESSAGE_SUGGESTIONS"
+            :key="suggestion"
+            type="button"
+            class="chip"
+            :class="{ chosen: message === suggestion }"
+            @click="message = suggestion"
+          >
             {{ suggestion }}
           </button>
         </div>

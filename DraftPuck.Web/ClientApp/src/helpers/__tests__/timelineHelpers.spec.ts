@@ -12,7 +12,19 @@ const drink = (id: string, to: string | null, assignedMinute: number | null, mes
 
 const lobby = {
   members: [
-    { id: 'tyler', name: 'tyler', picks: [{ gameId: 1, playerId: 97, teamId: 22, isActive: true, drinks: [drink('d1', 'casey', 5, 'Revenge.'), drink('d2', 'casey', 9), drink('d3', null, null)] }] },
+    {
+      id: 'tyler',
+      name: 'tyler',
+      picks: [
+        {
+          gameId: 1,
+          playerId: 97,
+          teamId: 22,
+          isActive: true,
+          drinks: [drink('d1', 'casey', 5, 'Revenge.'), drink('d2', 'casey', 9), drink('d3', null, null)]
+        }
+      ]
+    },
     { id: 'casey', name: 'Casey', picks: [{ gameId: 1, playerId: 91, teamId: 20, isActive: true, drinks: [drink('d4', 'tyler', 7)] }] },
     { id: 'jordan', name: 'Jordan', picks: [{ gameId: 1, playerId: 29, teamId: 22, isActive: false, drinks: [drink('d5', 'tyler', 8)] }] }
   ]

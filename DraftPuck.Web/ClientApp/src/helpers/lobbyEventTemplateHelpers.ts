@@ -49,7 +49,8 @@ export function parseLobbyEventText(lobbyEvent: LobbyEvent, lobby: Lobby, games:
       const playerLastName = findPlayer(game, lobbyEvent.playerId)?.lastName ?? '(Player)'
       return eventText.replace(
         token,
-        () => `<span class='d-inline-block ps-3 ms-1 badge text-uppercase text-shadow' style='align-self: center; background-color: ${teamColor} !important;'>${img} ${escapeHtml(playerLastName)}</span>`
+        () =>
+          `<span class='d-inline-block ps-3 ms-1 badge text-uppercase text-shadow' style='align-self: center; background-color: ${teamColor} !important;'>${img} ${escapeHtml(playerLastName)}</span>`
       )
     })
   ]

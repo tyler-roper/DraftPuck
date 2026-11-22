@@ -21,19 +21,24 @@ const drops = rainDrops()
 <template>
   <!-- The event's emoji rains down the screen behind the banner. Decorative, so hidden from screen readers. -->
   <div class="callout-rain" aria-hidden="true">
-    <span v-for="(drop, i) in drops" :key="i" class="drop" :style="{
-      left: `${drop.left}%`,
-      fontSize: `${drop.size}px`,
-      animationDelay: `${drop.delayMs}ms`,
-      animationDuration: `${drop.durationMs}ms`,
-      '--drift': `${drop.drift}px`,
-      '--spin': `${drop.spin}deg`
-    }">{{ style.emoji }}</span>
+    <span
+      v-for="(drop, i) in drops"
+      :key="i"
+      class="drop"
+      :style="{
+        left: `${drop.left}%`,
+        fontSize: `${drop.size}px`,
+        animationDelay: `${drop.delayMs}ms`,
+        animationDuration: `${drop.durationMs}ms`,
+        '--drift': `${drop.drift}px`,
+        '--spin': `${drop.spin}deg`
+      }"
+      >{{ style.emoji }}</span
+    >
   </div>
 
   <!-- The event's text has been filled in from the lobby (names are HTML-escaped). -->
-  <div class="callout" role="status" aria-live="polite"
-    :style="{ '--callout-color': style.color, '--callout-duration': `${durationMs}ms` }">
+  <div class="callout" role="status" aria-live="polite" :style="{ '--callout-color': style.color, '--callout-duration': `${durationMs}ms` }">
     <div class="callout-icon" :class="`motion-${style.motion}`">
       <VIcon :icon="style.icon" prefix="sr" />
     </div>
@@ -61,8 +66,14 @@ const drops = rainDrops()
   color: white;
   border-radius: 16px;
   border: 2px solid var(--callout-color);
-  background: linear-gradient(135deg, color-mix(in srgb, var(--callout-color) 35%, map-get($custom-colors, 'stone-900')), map-get($custom-colors, 'stone-900') 70%);
-  box-shadow: 0 0 28px color-mix(in srgb, var(--callout-color) 55%, transparent), 0 10px 30px black;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--callout-color) 35%, map-get($custom-colors, 'stone-900')),
+    map-get($custom-colors, 'stone-900') 70%
+  );
+  box-shadow:
+    0 0 28px color-mix(in srgb, var(--callout-color) 55%, transparent),
+    0 10px 30px black;
   animation: callout-in-out var(--callout-duration) ease-in-out both;
 }
 

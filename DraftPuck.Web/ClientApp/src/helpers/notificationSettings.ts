@@ -2,17 +2,11 @@ import NotificationPreference from '@/enums/notificationPreference'
 
 /** The settings that can differ per lobby. */
 export type LobbyNotificationKey =
-  | 'drinkAwardedNotificationPreference'
-  | 'drinkReceivedNotificationPreference'
-  | 'chatNotificationPreference'
-  | 'pickingStartedNotificationPreference'
+  'drinkAwardedNotificationPreference' | 'drinkReceivedNotificationPreference' | 'chatNotificationPreference' | 'pickingStartedNotificationPreference'
 
 /** Every setting a user has defaults for: the lobby ones, plus achievements, the recap and friends (which aren't tied to a lobby). */
 export type NotificationKey =
-  | LobbyNotificationKey
-  | 'achievementAwardedNotificationPreference'
-  | 'recapNotificationPreference'
-  | 'friendNotificationPreference'
+  LobbyNotificationKey | 'achievementAwardedNotificationPreference' | 'recapNotificationPreference' | 'friendNotificationPreference'
 
 export type LobbyNotificationPreferences = Record<LobbyNotificationKey, NotificationPreference>
 export type NotificationPreferences = Record<NotificationKey, NotificationPreference>
@@ -55,7 +49,7 @@ export const notificationSettings: NotificationSetting[] = [
   },
   {
     key: 'recapNotificationPreference',
-    question: "📊 The day after a lobby, when its recap is ready...",
+    question: '📊 The day after a lobby, when its recap is ready...',
     options: [off, always]
   },
   {
@@ -80,7 +74,10 @@ export const allNotificationKeys: NotificationKey[] = [
 ]
 
 /** Just the given settings, copied out of something that has them (a user, or a lobby's settings). */
-export function pickPreferences<K extends NotificationKey>(source: Partial<Record<K, NotificationPreference>>, keys: K[]): Record<K, NotificationPreference> {
+export function pickPreferences<K extends NotificationKey>(
+  source: Partial<Record<K, NotificationPreference>>,
+  keys: K[]
+): Record<K, NotificationPreference> {
   return Object.fromEntries(keys.map((key) => [key, source[key] ?? NotificationPreference.None])) as Record<K, NotificationPreference>
 }
 

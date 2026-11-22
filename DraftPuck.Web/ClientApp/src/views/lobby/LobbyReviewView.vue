@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { timeAgo } from '@/helpers/dateHelpers'
 import BotPickStyle from '@/enums/botPickStyle'
 import LobbyService from '@/services/LobbyService'
 import { useUserStore } from '@/stores/user'
@@ -7,7 +8,6 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import HeaderLayout from '@/views/layouts/HeaderLayout.vue'
 import CountUp from 'vue-countup-v3'
-import { differenceInDays, isYesterday } from 'date-fns'
 import { awardStyle, buildRecapCard } from '@/helpers/recapHelpers'
 import { useRecapShare } from '@/composables/useRecapShare'
 import { useToast } from '@/composables/useToast'
@@ -48,9 +48,16 @@ const toast = useToast()
 const userStore = useUserStore()
 const { currentUser } = storeToRefs(userStore)
 
-const totalDrinks = computed(() => lobby.value?.members.flatMap(m => m.picks.filter(p => p.isActive).flatMap(p => p.drinks).filter(d => !!d.recipientLobbyMemberId)).length ?? 0)
-const totalPicks = computed(() => lobby.value?.members.flatMap(m => m.picks.filter(p => p.isActive)).length ?? 0)
-
+const totalDrinks = computed(
+  () =>
+    lobby.value?.members.flatMap((m) =>
+      m.picks
+        .filter((p) => p.isActive)
+        .flatMap((p) => p.drinks)
+        .filter((d) => !!d.recipientLobbyMemberId)
+    ).length ?? 0
+)
+const totalPicks = computed(() => lobby.value?.members.flatMap((m) => m.picks.filter((p) => p.isActive)).length ?? 0)
 
 onMounted(async () => {
   try {
@@ -76,25 +83,32 @@ onMounted(async () => {
 })
 
 function setMembers() {
-  members.value = lobby.value?.members
-    .map(member => ({
-      ...member,
-      results: {
-        totalDrinksAwarded: member.picks.filter(pick => pick.isActive).reduce((result, pick) => result + pick.drinks.length, 0),
-        totalDrinksGiven: member.picks.filter(pick => pick.isActive).reduce((result, pick) => result + pick.drinks.filter(d => !!d.recipientLobbyMemberId).length, 0),
-        totalDrinksTaken: lobby.value?.members.flatMap(m => m.picks.flatMap(p => p.drinks)).filter(drink => drink.recipientLobbyMemberId === member.id).length,
-        totalPicksMade: member.picks.filter(pick => pick.isActive).length
-      }
-    } as LobbyMemberWithStats))
-    .sort((b, a) => a.results.totalDrinksGiven - b.results.totalDrinksGiven)
-    ?? []
+  members.value =
+    lobby.value?.members
+      .map(
+        (member) =>
+          ({
+            ...member,
+            results: {
+              totalDrinksAwarded: member.picks.filter((pick) => pick.isActive).reduce((result, pick) => result + pick.drinks.length, 0),
+              totalDrinksGiven: member.picks
+                .filter((pick) => pick.isActive)
+                .reduce((result, pick) => result + pick.drinks.filter((d) => !!d.recipientLobbyMemberId).length, 0),
+              totalDrinksTaken: lobby.value?.members
+                .flatMap((m) => m.picks.flatMap((p) => p.drinks))
+                .filter((drink) => drink.recipientLobbyMemberId === member.id).length,
+              totalPicksMade: member.picks.filter((pick) => pick.isActive).length
+            }
+          }) as LobbyMemberWithStats
+      )
+      .sort((b, a) => a.results.totalDrinksGiven - b.results.totalDrinksGiven) ?? []
 }
 
 async function shareRecap() {
   if (!lobby.value) return
   const card = buildRecapCard(
     joinCode.value,
-    ago(lobby.value.created),
+    timeAgo(lobby.value.created, new Date(), 'Tonight'),
     { games: lobby.value.gameIds.length, players: members.value.length, picks: totalPicks.value, drinks: totalDrinks.value },
     awards.value,
     members.value.map((m) => ({ name: m.name, given: m.results.totalDrinksGiven, taken: m.results.totalDrinksTaken ?? 0 }))
@@ -114,14 +128,17 @@ function awardMembers(award: LobbyAward) {
     .filter((m): m is LobbyMember => m !== undefined)
     .map((m) => {
       const hasPicture = !!m.avatarPath && !m.isGuest
-      return { id: m.id, style: hasPicture ? { backgroundImage: `url(${m.avatarPath})` } : {}, initial: hasPicture ? '' : m.name.charAt(0).toUpperCase() }
+      return {
+        id: m.id,
+        style: hasPicture ? { backgroundImage: `url(${m.avatarPath})` } : {},
+        initial: hasPicture ? '' : m.name.charAt(0).toUpperCase()
+      }
     })
 }
 
 function startFadeIns() {
   const delay = 2000 / members.value.length
-  for (let i = 0; i < members.value.length; i++)
-    setTimeout(() => members.value[i].class = 'fade-in', 250 + (delay * i))
+  for (let i = 0; i < members.value.length; i++) setTimeout(() => (members.value[i].class = 'fade-in'), 250 + delay * i)
 }
 
 function getAvatar(member: LobbyMemberWithStats) {
@@ -129,9 +146,7 @@ function getAvatar(member: LobbyMemberWithStats) {
 }
 
 function getBanner(member: LobbyMemberWithStats) {
-  return !member.isGuest && member.banner?.imagePath
-    ? { 'background-image': `url(${member.banner.imagePath})` }
-    : {}
+  return !member.isGuest && member.banner?.imagePath ? { 'background-image': `url(${member.banner.imagePath})` } : {}
 }
 
 function getIconClass(member: LobbyMemberWithStats) {
@@ -153,18 +168,6 @@ function getTitle(member: LobbyMemberWithStats) {
   }
   return member.title?.text
 }
-
-function ago(date: Date) {
-  const now = new Date()
-
-  if (isYesterday(date)) return 'Yesterday'
-
-  const diffInDays = differenceInDays(now, date)
-  if (diffInDays < 7) return `${diffInDays}d ago`
-  if (diffInDays < 30) return `${Math.floor(diffInDays / 7)}w ago`
-  if (diffInDays < 365) return `${Math.floor(diffInDays / 30)}m ago`
-  return `${Math.floor(diffInDays / 365)}y ago`
-}
 </script>
 
 <template>
@@ -179,7 +182,7 @@ function ago(date: Date) {
           </div>
           <div>
             <span class="d-block fs-9 fw-bold text-uppercase mb-n1 text-stone-400 text-end">Date</span>
-            <span class="d-block fs-5 fw-bold text-end">{{ ago(lobby.created) }}</span>
+            <span class="d-block fs-5 fw-bold text-end">{{ timeAgo(lobby.created, new Date(), 'Tonight') }}</span>
           </div>
         </div>
         <div class="d-flex justify-content-between pt-3 bg-stone-900 px-3 pb-2">
@@ -215,8 +218,18 @@ function ago(date: Date) {
         </button>
       </div>
       <div class="tabs mx-3 mt-3" role="tablist">
-        <button v-for="t in tabs" :key="t" type="button" role="tab" class="tab"
-          :class="{ active: activeTab === t }" :aria-selected="activeTab === t" @click="tab = t">{{ t }}</button>
+        <button
+          v-for="t in tabs"
+          :key="t"
+          type="button"
+          role="tab"
+          class="tab"
+          :class="{ active: activeTab === t }"
+          :aria-selected="activeTab === t"
+          @click="tab = t"
+        >
+          {{ t }}
+        </button>
       </div>
       <div v-if="activeTab === 'awards'" class="px-3 pt-3">
         <!-- Placeholders hold the awards' place while they load, so the page doesn't jump when they arrive. -->
@@ -224,9 +237,13 @@ function ago(date: Date) {
           <div v-for="n in 3" :key="n" class="award award-placeholder mb-2" aria-hidden="true"></div>
         </template>
         <!-- The top award keeps shining; each icon moves in its own way (see awardStyle). -->
-        <div v-for="(award, index) in awards" :key="award.key" class="award award-in d-flex align-items-center mb-2 py-2 pe-2 ps-3"
+        <div
+          v-for="(award, index) in awards"
+          :key="award.key"
+          class="award award-in d-flex align-items-center mb-2 py-2 pe-2 ps-3"
           :class="{ top: index === 0 }"
-          :style="{ '--award-color': awardStyle(award.key).color, '--delay': `${index * 90}ms` }">
+          :style="{ '--award-color': awardStyle(award.key).color, '--delay': `${index * 90}ms` }"
+        >
           <VIcon :icon="awardStyle(award.key).icon" prefix="sr" class="award-icon fs-3 me-3" :class="`motion-${awardStyle(award.key).motion}`" />
           <div class="flex-grow-1">
             <span class="d-block fs-9 fw-bold text-uppercase ls-2 award-title">{{ award.title }}</span>
@@ -244,23 +261,23 @@ function ago(date: Date) {
         <VRecapStats :lobby="lobby" :players="players" :initial-member-id="viewerMemberId" />
       </div>
       <div v-if="activeTab === 'standings'" class="p-3">
-        <div class="d-flex member align-items-center w-100" v-for="(member, index) in members" :key="member.id"
-          :class="member.class">
+        <div class="d-flex member align-items-center w-100" v-for="(member, index) in members" :key="member.id" :class="member.class">
           <div class="pe-2 fs-3 fw-bold">{{ index + 1 }}</div>
-          <div class="d-flex justify-content-between align-items-center flex-grow-1 p-2 member-result"
-            :style="getBanner(member)">
+          <div class="d-flex justify-content-between align-items-center flex-grow-1 p-2 member-result" :style="getBanner(member)">
             <div>
               <div class="d-flex align-items-center">
                 <div class="icon" :style="getAvatar(member)">
-                  <i v-if="!member.avatarPath || member.isGuest" class="fi me-2 d-block"
-                    :class="getIconClass(member)"></i>
+                  <i v-if="!member.avatarPath || member.isGuest" class="fi me-2 d-block" :class="getIconClass(member)"></i>
                 </div>
 
                 <div class="d-block name-block">
-                  <span class="name fw-bold text-start" :class="{ 'is-logged-in': !member.isGuest }"
-                    :style="{ '--name-scale': memberNameScale(member.name) }">{{ member.name }}</span>
-                  <span class="title d-inline-block text-stone-400 fs-7"
-                    :class="{ 'is-logged-in': !member.isGuest }">{{ getTitle(member) }}</span>
+                  <span
+                    class="name fw-bold text-start"
+                    :class="{ 'is-logged-in': !member.isGuest }"
+                    :style="{ '--name-scale': memberNameScale(member.name) }"
+                    >{{ member.name }}</span
+                  >
+                  <span class="title d-inline-block text-stone-400 fs-7" :class="{ 'is-logged-in': !member.isGuest }">{{ getTitle(member) }}</span>
                 </div>
               </div>
             </div>
@@ -297,7 +314,7 @@ function ago(date: Date) {
   background-position: center;
   overflow: hidden;
   border-radius: 10px;
-  background-image: linear-gradient(to right, map-get($custom-colors, 'stone-700'), map-get($custom-colors, 'stone-900'))
+  background-image: linear-gradient(to right, map-get($custom-colors, 'stone-700'), map-get($custom-colors, 'stone-900'));
 }
 
 .member.fade-in {
@@ -368,7 +385,7 @@ function ago(date: Date) {
   margin-left: auto;
   display: flex;
   align-items: stretch;
-  align-self: stretch
+  align-self: stretch;
 }
 
 .stat {
@@ -402,7 +419,7 @@ function ago(date: Date) {
 
   100% {
     opacity: 1;
-    transform: translateY(0)
+    transform: translateY(0);
   }
 }
 
@@ -413,7 +430,11 @@ function ago(date: Date) {
   border-radius: 10px;
   border: 1px solid color-mix(in srgb, var(--award-color) 35%, map-get($custom-colors, 'stone-700'));
   border-left: 4px solid var(--award-color);
-  background: linear-gradient(110deg, color-mix(in srgb, var(--award-color) 20%, map-get($custom-colors, 'stone-850')), map-get($custom-colors, 'stone-850') 70%);
+  background: linear-gradient(
+    110deg,
+    color-mix(in srgb, var(--award-color) 20%, map-get($custom-colors, 'stone-850')),
+    map-get($custom-colors, 'stone-850') 70%
+  );
 }
 
 .award-icon,
@@ -430,7 +451,12 @@ function ago(date: Date) {
 .award-placeholder {
   height: 72px;
   --award-color: #{map-get($custom-colors, 'stone-700')};
-  background: linear-gradient(90deg, map-get($custom-colors, 'stone-850') 25%, map-get($custom-colors, 'stone-800') 50%, map-get($custom-colors, 'stone-850') 75%);
+  background: linear-gradient(
+    90deg,
+    map-get($custom-colors, 'stone-850') 25%,
+    map-get($custom-colors, 'stone-800') 50%,
+    map-get($custom-colors, 'stone-850') 75%
+  );
   background-size: 200% 100%;
   animation: award-shimmer 1.4s ease-in-out infinite;
 }
