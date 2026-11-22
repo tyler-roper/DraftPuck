@@ -1,3 +1,5 @@
+import BotPickStyle from '@/enums/botPickStyle'
+
 /** How an award's icon moves on the post-game page (looping, small). */
 export type AwardMotion = 'bob' | 'shiver' | 'beat' | 'jab' | 'clash' | 'swing' | 'wobble' | 'tick' | 'twinkle' | 'bounce'
 
@@ -86,4 +88,42 @@ export function memberAvatar(member: Pick<LobbyMember, 'name' | 'avatarPath' | '
 /** "1 drink", "2 drinks": the word for a count. */
 export function drinksWord(count: number) {
   return count === 1 ? 'drink' : 'drinks'
+}
+
+export interface MemberStanding {
+  member: LobbyMember
+  // Drinks the member's (active) picks earned and they handed out.
+  given: number
+  // Drinks handed to the member.
+  taken: number
+}
+
+/** The standings: every member's drinks given and taken, most given first. */
+export function recapStandings(lobby: Lobby): MemberStanding[] {
+  const allDrinks = lobby.members.flatMap((m) => m.picks.flatMap((p) => p.drinks))
+  return lobby.members
+    .map((member) => ({
+      member,
+      given: member.picks.filter((p) => p.isActive).flatMap((p) => p.drinks.filter((d) => !!d.recipientLobbyMemberId)).length,
+      taken: allDrinks.filter((d) => d.recipientLobbyMemberId === member.id).length
+    }))
+    .sort((a, b) => b.given - a.given)
+}
+
+/** The night's totals: games, players, active picks, and drinks handed out from them. */
+export function recapTotals(lobby: Lobby) {
+  const picks = lobby.members.flatMap((m) => m.picks.filter((p) => p.isActive))
+  return {
+    games: lobby.gameIds.length,
+    players: lobby.members.length,
+    picks: picks.length,
+    drinks: picks.flatMap((p) => p.drinks).filter((d) => !!d.recipientLobbyMemberId).length
+  }
+}
+
+/** The line under a member's name in the standings: a bot's strategy, "Guest" ("You (Guest)" for the viewer), or their title. */
+export function standingSubtitle(member: LobbyMember, viewerUserId: string | undefined): string | undefined {
+  if (member.isBot) return `Strategy: ${BotPickStyle[member.botPickStyle]}`
+  if (member.isGuest) return viewerUserId === member.userId ? 'You (Guest)' : 'Guest'
+  return member.title?.text
 }
