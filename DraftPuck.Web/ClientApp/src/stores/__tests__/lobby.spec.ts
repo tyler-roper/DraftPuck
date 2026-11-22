@@ -7,7 +7,15 @@ import { useUserStore } from '@/stores/user'
 import type Bot from '@/models/bot'
 
 vi.mock('@/services/LobbyService', () => ({
-  default: { makePick: vi.fn(), removePick: vi.fn(), changeName: vi.fn(), removeLobbyMember: vi.fn(), addBot: vi.fn(), sendMessage: vi.fn(), getLobbyByCode: vi.fn() }
+  default: {
+    makePick: vi.fn(),
+    removePick: vi.fn(),
+    changeName: vi.fn(),
+    removeLobbyMember: vi.fn(),
+    addBot: vi.fn(),
+    sendMessage: vi.fn(),
+    getLobbyByCode: vi.fn()
+  }
 }))
 
 const refusal = (detail: string) => Object.assign(new Error('400'), { response: { data: { detail } } })
@@ -56,9 +64,7 @@ describe('lobby store picks', () => {
 
   it('handles each pick on its own, so one refusal does not undo the others', async () => {
     const store = setupLobby()
-    vi.mocked(LobbyService.makePick)
-      .mockResolvedValueOnce(persisted('p1', 101))
-      .mockRejectedValueOnce(refusal('No picks remaining for this team.'))
+    vi.mocked(LobbyService.makePick).mockResolvedValueOnce(persisted('p1', 101)).mockRejectedValueOnce(refusal('No picks remaining for this team.'))
 
     const results = await store.makePicks([new PickRequest('me', 101, 10, 1), new PickRequest('me', 102, 10, 1)])
 

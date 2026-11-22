@@ -9,7 +9,14 @@ vi.mock('@/services/FriendService', () => ({
 
 const friend = (id: string): Friend => ({ id, nickname: id })
 const invite = (joinCode: string): LobbyInvite => ({ joinCode, sender: friend('host'), gameCount: 1, memberCount: 2, created: new Date() })
-const list = (overrides: Partial<FriendsList> = {}): FriendsList => ({ friends: [], incoming: [], outgoing: [], invites: [], suggestions: [], ...overrides })
+const list = (overrides: Partial<FriendsList> = {}): FriendsList => ({
+  friends: [],
+  incoming: [],
+  outgoing: [],
+  invites: [],
+  suggestions: [],
+  ...overrides
+})
 
 describe('friends store', () => {
   beforeEach(() => {

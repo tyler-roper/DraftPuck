@@ -44,7 +44,9 @@ async function sendLink(e: Event) {
 <template>
   <SplashLayout>
     <div v-if="isSent" class="text-center">
-      <p>If there's an account for <strong>{{ form.email }}</strong>, we've sent it a link to reset your password.</p>
+      <p>
+        If there's an account for <strong>{{ form.email }}</strong>, we've sent it a link to reset your password.
+      </p>
       <p class="text-stone-400 fs-7">It can take a minute to arrive, and it might land in spam. The link works once, for an hour.</p>
       <router-link :to="{ name: 'Login' }" class="text-white">
         <VIcon icon="caret-left" class="me-1" />

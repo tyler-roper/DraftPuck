@@ -101,9 +101,7 @@ const connection = useLobbyConnection({
 
 //#region computed
 const templatedEvents = computed(() => events.value.map(fillEventTemplate))
-const feedItems = computed(() =>
-  lobby.value ? buildFeedItems(games.value, templatedEvents.value, lobby.value.created, appIsTestMode.value) : []
-)
+const feedItems = computed(() => (lobby.value ? buildFeedItems(games.value, templatedEvents.value, lobby.value.created, appIsTestMode.value) : []))
 const sortedGames = computed(() => sortGamesForLobby(games.value, lobby.value?.gameIds ?? []))
 const pendingDrinkCount = computed(() => currentMember.value?.picks.flatMap((p) => p.drinks.filter((d) => !d.recipientLobbyMemberId)).length ?? 0)
 const isLobbyView = computed(() => currentView.value === 'lobby')
@@ -378,7 +376,13 @@ watch(
 
     <VEventBanner v-if="currentBanner" :key="currentBanner.id" :event="fillEventTemplate(currentBanner)" :duration-ms="BANNER_DURATION_MS" />
 
-    <VDrinkPour v-if="currentDrink" :key="currentDrink.id" :sender-name="senderName(currentDrink) ?? 'Someone'" :message="lobby ? messageForDrinkEvent(lobby, currentDrink) : undefined" :duration-ms="DRINK_ANIMATION_DURATION_MS" />
+    <VDrinkPour
+      v-if="currentDrink"
+      :key="currentDrink.id"
+      :sender-name="senderName(currentDrink) ?? 'Someone'"
+      :message="lobby ? messageForDrinkEvent(lobby, currentDrink) : undefined"
+      :duration-ms="DRINK_ANIMATION_DURATION_MS"
+    />
   </div>
 </template>
 

@@ -41,9 +41,7 @@ const isGameStarted = computed(() => game.value.gameState !== GameState.Upcoming
 const isGameInProgress = computed(() => game.value.gameState === GameState.Live)
 const isGameOver = computed(() => game.value.gameState === GameState.Final)
 
-const gamePickableStatusForCurrentMember = computed(() =>
-  getPickableStatus(lobby.value!, currentMember.value, game.value, currentSystemTime.value)
-)
+const gamePickableStatusForCurrentMember = computed(() => getPickableStatus(lobby.value!, currentMember.value, game.value, currentSystemTime.value))
 
 const gamePickableStatusForCurrentMemberAsString = computed(() => {
   return GamePickableStatus[gamePickableStatusForCurrentMember.value]

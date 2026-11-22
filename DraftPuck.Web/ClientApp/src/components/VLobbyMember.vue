@@ -190,7 +190,9 @@ function viewProfile() {
             <a role="button" class="fw-bold dropdown-item text-blue" @click="giveDrink(member)"><span class="me-2">🍺</span>Give a drink!</a>
           </li>
           <li v-if="pendingDrinksForCurrentMember.length > 0 && !member.isBot">
-            <a role="button" class="dropdown-item text-blue" @click="isMessageModalOpen = true"><span class="me-2">💬</span>Give a drink with a message…</a>
+            <a role="button" class="dropdown-item text-blue" @click="isMessageModalOpen = true"
+              ><span class="me-2">💬</span>Give a drink with a message…</a
+            >
           </li>
           <li v-if="!member.isBot && isLoggedIn">
             <a role="button" class="fw-bold dropdown-item" @click="viewProfile">View Profile</a>
@@ -206,8 +208,13 @@ function viewProfile() {
 
     <!-- Outside the card (and its dropdown), so it covers the page. -->
     <Teleport to="body">
-      <VDrinkMessageModal v-if="isMessageModalOpen" :recipient-name="member.name" :is-giving="isGiving"
-        @give="(message) => giveDrink(member, message)" @close="isMessageModalOpen = false" />
+      <VDrinkMessageModal
+        v-if="isMessageModalOpen"
+        :recipient-name="member.name"
+        :is-giving="isGiving"
+        @give="(message) => giveDrink(member, message)"
+        @close="isMessageModalOpen = false"
+      />
     </Teleport>
   </div>
 </template>

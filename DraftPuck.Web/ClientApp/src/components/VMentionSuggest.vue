@@ -31,14 +31,23 @@ function avatarStyle(member: LobbyMember) {
 <template>
   <!-- mousedown is prevented so tapping a name doesn't take focus from the chat box (and close the keyboard). -->
   <ul ref="list" class="mention-suggest" role="listbox" aria-label="Mention someone" @mousedown.prevent>
-    <li v-for="(member, index) in members" :key="member.id" role="option" :aria-selected="index === activeIndex"
-      class="mention-option" :class="{ active: index === activeIndex }" @click="emit('pick', member)" @mousemove="emit('hover', index)">
+    <li
+      v-for="(member, index) in members"
+      :key="member.id"
+      role="option"
+      :aria-selected="index === activeIndex"
+      class="mention-option"
+      :class="{ active: index === activeIndex }"
+      @click="emit('pick', member)"
+      @mousemove="emit('hover', index)"
+    >
       <span class="avatar" :style="avatarStyle(member)">
         <template v-if="!member.avatarPath || member.isGuest">{{ member.name.charAt(0).toUpperCase() }}</template>
       </span>
       <span class="min-w-0">
         <span class="d-block name text-truncate">
-          @{{ nameParts(member.name).before }}<mark>{{ nameParts(member.name).match }}</mark>{{ nameParts(member.name).after }}
+          @{{ nameParts(member.name).before }}<mark>{{ nameParts(member.name).match }}</mark
+          >{{ nameParts(member.name).after }}
         </span>
         <span v-if="member.title?.text || member.isGuest" class="d-block title text-truncate">
           {{ member.isGuest ? 'Guest' : member.title?.text }}

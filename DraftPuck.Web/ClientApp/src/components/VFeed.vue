@@ -354,7 +354,9 @@ function hideAllLobbyEvents() {
         </TransitionGroup>
         <!-- After the list in the markup: the container is a reversed column, so this shows above it. -->
         <div v-if="focus" class="focus-bar">
-          <span>Showing <strong>{{ focus.label }}</strong> and its drinks</span>
+          <span
+            >Showing <strong>{{ focus.label }}</strong> and its drinks</span
+          >
           <button type="button" @click="showAll">✕ Show all</button>
         </div>
       </template>

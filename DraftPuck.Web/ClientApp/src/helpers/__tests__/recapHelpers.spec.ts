@@ -16,7 +16,13 @@ describe('buildRecapCard', () => {
   const standings = ['Sam', 'Alex', 'Jo', 'Pat'].map((name, i) => ({ name, given: 10 - i, taken: i }))
 
   it('carries the lobby, its totals, the awards and the top of the standings', () => {
-    const card = buildRecapCard('ABCD', 'Yesterday', { games: 3, players: 4, picks: 12, drinks: 9 }, [award('best_pick'), award('ice_cold', 'Jo')], standings)
+    const card = buildRecapCard(
+      'ABCD',
+      'Yesterday',
+      { games: 3, players: 4, picks: 12, drinks: 9 },
+      [award('best_pick'), award('ice_cold', 'Jo')],
+      standings
+    )
 
     expect(card.heading).toBe('Lobby ABCD')
     expect(card.subheading).toBe('Yesterday')

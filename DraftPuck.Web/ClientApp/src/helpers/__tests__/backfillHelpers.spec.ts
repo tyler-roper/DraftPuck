@@ -13,7 +13,9 @@ const run = (overrides: Partial<AchievementBackfill>): AchievementBackfill => ({
 
 describe('describeBackfill', () => {
   it('shows progress while running', () => {
-    expect(describeBackfill(run({ usersChecked: 120, achievementsAwarded: 87 }))).toBe('Checking… 120 of 450 players, 87 achievements awarded so far.')
+    expect(describeBackfill(run({ usersChecked: 120, achievementsAwarded: 87 }))).toBe(
+      'Checking… 120 of 450 players, 87 achievements awarded so far.'
+    )
   })
 
   it('shows the result when done', () => {
