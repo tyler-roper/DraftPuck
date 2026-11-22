@@ -29,9 +29,10 @@ function isRefreshableError(error: unknown): error is AxiosError & { config: Ret
 }
 
 /**
- * Exchanges the refresh-token cookie for a new session. One at a time: the server rotates the token on every use and
- * treats an old one coming back as theft, revoking the whole session, so concurrent refreshes (app start, a 401, the
- * live connection) must share one request.
+ * Exchanges the refresh-token cookie for a new session. One at a time: the server rotates the token on every use, so
+ * concurrent refreshes (app start, a 401, the live connection) share one request. An old token coming back within 30
+ * seconds (another tab, or a retry after a lost answer) gets the session it was replaced by; later, it's treated as
+ * theft and ends the session.
  */
 export async function refreshTokens(): Promise<AuthResponse> {
   if (refreshPromise) return refreshPromise
