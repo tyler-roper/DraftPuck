@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import { timeAgo } from '@/helpers/dateHelpers'
 import { computed, onMounted, ref, watch } from 'vue'
 import HeaderLayout from '@/views/layouts/HeaderLayout.vue'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
-import { differenceInDays, isToday, isYesterday } from 'date-fns'
 import VIcon from '@/components/VIcon.vue'
 import AchievementService from '@/services/AchievementService'
 import UserService from '@/services/UserService'
@@ -38,18 +38,6 @@ const isSelf = computed(() => isLoggedIn.value && currentUser.value?.nickname ==
 //#endregion
 
 //#region methods
-function ago(date: Date) {
-  const now = new Date()
-
-  if (isToday(date)) return 'Today'
-  if (isYesterday(date)) return 'Yesterday'
-
-  const diffInDays = differenceInDays(now, date)
-  if (diffInDays < 7) return `${diffInDays}d ago`
-  if (diffInDays < 30) return `${Math.floor(diffInDays / 7)}w ago`
-  if (diffInDays < 365) return `${Math.floor(diffInDays / 30)}m ago`
-  return `${Math.floor(diffInDays / 365)}y ago`
-}
 
 async function fetchProfileData(username: string) {
   if (isSelf.value === true) {
@@ -124,7 +112,7 @@ watch(
           <span class="d-block fw-bold text-uppercase fs-5 ls-3" :class="{ ' text-stone-400': !achievement.dateEarned }">{{
             achievement.friendlyName
           }}</span>
-          <span class="d-block text-stone-400 mt-n1 fs-8" v-if="achievement.dateEarned">Earned {{ ago(achievement.dateEarned) }}</span>
+          <span class="d-block text-stone-400 mt-n1 fs-8" v-if="achievement.dateEarned">Earned {{ timeAgo(achievement.dateEarned) }}</span>
           <span v-if="achievement.dateEarned" class="d-block text-stone-200 fs-6 mt-2">{{ achievement.description }}</span>
         </div>
       </div>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { timeAgo } from '@/helpers/dateHelpers'
 import BotPickStyle from '@/enums/botPickStyle'
 import LobbyService from '@/services/LobbyService'
 import { useUserStore } from '@/stores/user'
@@ -7,7 +8,6 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import HeaderLayout from '@/views/layouts/HeaderLayout.vue'
 import CountUp from 'vue-countup-v3'
-import { differenceInDays, isYesterday } from 'date-fns'
 import { awardStyle, buildRecapCard } from '@/helpers/recapHelpers'
 import { useRecapShare } from '@/composables/useRecapShare'
 import { useToast } from '@/composables/useToast'
@@ -94,7 +94,7 @@ async function shareRecap() {
   if (!lobby.value) return
   const card = buildRecapCard(
     joinCode.value,
-    ago(lobby.value.created),
+    timeAgo(lobby.value.created, new Date(), 'Tonight'),
     { games: lobby.value.gameIds.length, players: members.value.length, picks: totalPicks.value, drinks: totalDrinks.value },
     awards.value,
     members.value.map((m) => ({ name: m.name, given: m.results.totalDrinksGiven, taken: m.results.totalDrinksTaken ?? 0 }))
@@ -154,17 +154,6 @@ function getTitle(member: LobbyMemberWithStats) {
   return member.title?.text
 }
 
-function ago(date: Date) {
-  const now = new Date()
-
-  if (isYesterday(date)) return 'Yesterday'
-
-  const diffInDays = differenceInDays(now, date)
-  if (diffInDays < 7) return `${diffInDays}d ago`
-  if (diffInDays < 30) return `${Math.floor(diffInDays / 7)}w ago`
-  if (diffInDays < 365) return `${Math.floor(diffInDays / 30)}m ago`
-  return `${Math.floor(diffInDays / 365)}y ago`
-}
 </script>
 
 <template>
@@ -179,7 +168,7 @@ function ago(date: Date) {
           </div>
           <div>
             <span class="d-block fs-9 fw-bold text-uppercase mb-n1 text-stone-400 text-end">Date</span>
-            <span class="d-block fs-5 fw-bold text-end">{{ ago(lobby.created) }}</span>
+            <span class="d-block fs-5 fw-bold text-end">{{ timeAgo(lobby.created, new Date(), 'Tonight') }}</span>
           </div>
         </div>
         <div class="d-flex justify-content-between pt-3 bg-stone-900 px-3 pb-2">
