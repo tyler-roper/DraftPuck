@@ -11,16 +11,22 @@ public class Seed(DraftPuckContext db)
 
     public static int NewGameId() => Interlocked.Increment(ref _gameIdCounter);
 
+    /// <summary>
+    /// A join code that starts with a digit. The app's codes are all letters, so a lobby a test creates through
+    /// <c>CreateLobbyCommand</c> can never take a seeded lobby's code.
+    /// </summary>
     public static string NewJoinCode()
     {
+        const string digits = "0123456789";
         const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         var n = Interlocked.Increment(ref _joinCodeCounter);
         var code = new char[4];
-        for (var i = 3; i >= 0; i--)
+        for (var i = 3; i >= 1; i--)
         {
             code[i] = chars[n % chars.Length];
             n /= chars.Length;
         }
+        code[0] = digits[n % digits.Length];
         return new string(code);
     }
 
