@@ -93,6 +93,10 @@ public class ProcessGameCommandHandler(
 
         GameProcessingHelpers.HandleTestMode(game, _appConfig);
 
+        foreach (var goal in GoalFeedGaps.Restore(previous, game))
+            logger.LogWarning("{matchup}: the NHL feed dropped goal {playId} (or its scorer) but the score still counts it, so it's kept.",
+                matchup, goal.Id);
+
         // With no previous poll every goal is treated as new. Awarding skips goals that already have drinks,
         // so this only fills in goals missed while there was no cached copy.
         var goalChanges = GoalMatcher.Compare(previous == null ? [] : TrackedGoal.CountedIn(previous), TrackedGoal.CountedIn(game));

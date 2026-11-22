@@ -25,6 +25,7 @@ public class RevokeDrinksForGoalHandler(IDbContext dbContext, IMediator mediator
                 .ThenInclude(lmp => lmp.LobbyMember)
                     .ThenInclude(lm => lm.Lobby)
             .Where(d => d.EventId == eventId
+                && d.Invalidated == null
                 && d.LobbyMemberPick.GameId == gameId
                 && d.LobbyMemberPick.PlayerId == scorerId)
             .ToListAsync(ct);
@@ -33,12 +34,14 @@ public class RevokeDrinksForGoalHandler(IDbContext dbContext, IMediator mediator
 
         var notifications = new List<INotification>();
         var drinksToRemove = new List<DrinkEntity>();
+        var now = DateTime.UtcNow;
 
         foreach (var drink in affectedDrinks)
         {
             var pick = drink.LobbyMemberPick;
             if (drink.RecipientLobbyMember is { IsRemoved: false } recipient)
             {
+                drink.Invalidated = now;
                 notifications.Add(new DrinkInvalidatedNotification(
                     new DrinkInvalidatedPayload(pick.LobbyMember.Lobby, pick.LobbyMember, recipient, drink)));
             }
@@ -50,11 +53,8 @@ public class RevokeDrinksForGoalHandler(IDbContext dbContext, IMediator mediator
             }
         }
 
-        if (drinksToRemove.Count > 0)
-        {
-            dbContext.Drinks.RemoveRange(drinksToRemove);
-            await dbContext.SaveChangesAsync(ct);
-        }
+        dbContext.Drinks.RemoveRange(drinksToRemove);
+        await dbContext.SaveChangesAsync(ct);
 
         foreach (var notification in notifications)
             await mediator.Publish(notification, ct);
