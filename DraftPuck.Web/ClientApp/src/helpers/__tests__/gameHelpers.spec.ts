@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { sortGamesForLobby } from '@/helpers/gameHelpers'
+import { format } from 'date-fns'
+import { formatGameClock, sortGamesForLobby } from '@/helpers/gameHelpers'
 import GameState from '@/enums/gameState'
+import PeriodType from '@/enums/periodType'
 
 function game(id: number, startHourUtc: number, gameState = GameState.Upcoming): Game {
   return { id, gameState, dateTime: new Date(Date.UTC(2026, 10, 13, startHourUtc)) } as unknown as Game
@@ -33,5 +35,31 @@ describe('sortGamesForLobby', () => {
     sortGamesForLobby(games, [])
 
     expect(ids(games)).toEqual([1, 2])
+  })
+})
+
+describe('formatGameClock', () => {
+  const start = new Date(Date.UTC(2026, 10, 22, 0, 30))
+  const clock = (gameState: GameState, period = 0, periodType = PeriodType.Regulation, timeRemainingInPeriod = '12:34') =>
+    formatGameClock({ dateTime: start, gameState, period, periodType, timeRemainingInPeriod })
+
+  it('is the start time until the game starts', () => {
+    expect(clock(GameState.Upcoming)).toBe(format(start, 'p'))
+  })
+
+  it('is the time left and the period while live', () => {
+    expect(clock(GameState.Live, 2)).toBe('12:34 - 2nd')
+    expect(clock(GameState.Live, 4, PeriodType.Overtime, '3:10')).toBe('3:10 - OT')
+    expect(clock(GameState.Live, 6, PeriodType.Overtime, '0:45')).toBe('0:45 - 3OT')
+  })
+
+  it('is "SO" during a shootout', () => {
+    expect(clock(GameState.Live, 5, PeriodType.Shootout)).toBe('SO')
+  })
+
+  it('is "Final" after regulation, and names the period after overtime or a shootout', () => {
+    expect(clock(GameState.Final, 3)).toBe('Final')
+    expect(clock(GameState.Final, 4, PeriodType.Overtime)).toBe('Final (OT)')
+    expect(clock(GameState.Final, 5, PeriodType.Shootout)).toBe('Final (SO)')
   })
 })

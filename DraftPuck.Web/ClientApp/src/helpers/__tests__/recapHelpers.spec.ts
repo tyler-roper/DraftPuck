@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { awardStyle, buildRecapCard, MAX_CARD_STANDINGS, recapFileName } from '@/helpers/recapHelpers'
+import {
+  awardStyle,
+  buildRecapCard,
+  drinksWord,
+  MAX_CARD_STANDINGS,
+  memberAvatar,
+  recapFileName,
+  recapStandings,
+  recapTotals,
+  standingSubtitle
+} from '@/helpers/recapHelpers'
+import BotPickStyle from '@/enums/botPickStyle'
 
 const award = (key: string, memberName = 'Sam'): LobbyAward => ({ key, title: key, memberId: 'id', memberName, detail: 'did a thing' })
 
@@ -43,5 +54,66 @@ describe('buildRecapCard', () => {
 describe('recapFileName', () => {
   it('names the image after the lobby', () => {
     expect(recapFileName('ABCD')).toBe('draftpuck-abcd-recap.png')
+  })
+})
+
+describe('memberAvatar', () => {
+  it("shows an account's picture", () => {
+    expect(memberAvatar({ name: 'sam', avatarPath: '/a.png', isGuest: false })).toEqual({ style: { backgroundImage: 'url(/a.png)' }, initial: '' })
+  })
+
+  it('shows the initial for guests and anyone without a picture', () => {
+    expect(memberAvatar({ name: 'sam', avatarPath: '/a.png', isGuest: true })).toEqual({ style: {}, initial: 'S' })
+    expect(memberAvatar({ name: 'jo', avatarPath: undefined, isGuest: false } as unknown as LobbyMember)).toEqual({ style: {}, initial: 'J' })
+  })
+})
+
+describe('drinksWord', () => {
+  it('is singular for one', () => {
+    expect([0, 1, 2].map(drinksWord)).toEqual(['drinks', 'drink', 'drinks'])
+  })
+})
+
+describe('the standings and totals', () => {
+  const drink = (to?: string) => ({ recipientLobbyMemberId: to }) as Drink
+  const pick = (drinks: Drink[], isActive = true) => ({ isActive, drinks }) as LobbyMemberPick
+  const member = (id: string, picks: LobbyMemberPick[]) => ({ id, picks }) as unknown as LobbyMember
+  // Sam gave 1 (and earned 1 not handed out yet); Max gave 2, one from a pick later removed; Jo gave 1.
+  const lobby = {
+    gameIds: [1, 2],
+    members: [
+      member('sam', [pick([drink('max'), drink()])]),
+      member('max', [pick([drink('sam')]), pick([drink('jo')], false)]),
+      member('jo', [pick([drink('sam')])])
+    ]
+  } as unknown as Lobby
+
+  it('ranks members by drinks given from active picks, counting every drink taken', () => {
+    expect(recapStandings(lobby).map((s) => [s.member.id, s.given, s.taken])).toEqual([
+      ['sam', 1, 2],
+      ['max', 1, 1],
+      ['jo', 1, 1]
+    ])
+  })
+
+  it("totals the lobby's games, players, active picks and drinks handed out from them", () => {
+    expect(recapTotals(lobby)).toEqual({ games: 2, players: 3, picks: 3, drinks: 3 })
+  })
+})
+
+describe('standingSubtitle', () => {
+  const member = (extra: Partial<LobbyMember>) => ({ userId: 'u1', isBot: false, isGuest: false, ...extra }) as LobbyMember
+
+  it("is a bot's strategy", () => {
+    expect(standingSubtitle(member({ isBot: true, botPickStyle: BotPickStyle.Worst }), 'me')).toBe('Strategy: Worst')
+  })
+
+  it('names guests, and the viewer as "You (Guest)"', () => {
+    expect(standingSubtitle(member({ isGuest: true }), 'me')).toBe('Guest')
+    expect(standingSubtitle(member({ isGuest: true }), 'u1')).toBe('You (Guest)')
+  })
+
+  it("is an account's title", () => {
+    expect(standingSubtitle(member({ title: { text: 'Sniper' } as Title }), 'me')).toBe('Sniper')
   })
 })

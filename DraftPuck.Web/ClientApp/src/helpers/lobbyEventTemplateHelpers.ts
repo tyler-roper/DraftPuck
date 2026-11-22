@@ -1,6 +1,7 @@
 import { escapeHtml } from '@/helpers/htmlHelpers'
 import LobbyEventTemplate from '@/models/lobbyEventTemplates'
 import TeamColorLookup from '@/models/teamColorLookup'
+import { lightTeamLogoUrl } from '@/helpers/teamLogos'
 
 // Events can mention players who have since left the lineup (e.g. a pick of a player who was later scratched).
 function findPlayer(game: Game, playerId: number | undefined) {
@@ -41,7 +42,7 @@ export function parseLobbyEventText(lobbyEvent: LobbyEvent, lobby: Lobby, games:
       if (!game) return eventText
 
       const team = lobbyEvent.teamId === game.homeTeam.id ? game.homeTeam : game.awayTeam
-      const logo = team.abbreviation === 'TBL' ? `/img/logos/${team.abbreviation}_LIGHT.png` : `/img/logos/${team.abbreviation}.png`
+      const logo = lightTeamLogoUrl(team)
 
       const img = `<img style='height: 27px; width: 27px; margin-left: -20px; margin-right: -1px; margin-top: -12px; margin-bottom: -10px;' src="${logo}" />`
       const teamColor = TeamColorLookup[team.id]

@@ -5,8 +5,8 @@ import { format } from 'date-fns'
 import GamePickableStatus from '@/enums/gamePickableStatus'
 import { getPickableStatus, isGameInLobby } from '@/helpers/pickRules'
 import GameState from '@/enums/gameState'
-import { getOrdinal } from '@/helpers/gameHelpers'
-import PeriodType from '@/enums/periodType'
+import { formatGameClock } from '@/helpers/gameHelpers'
+import { lightTeamLogoUrl } from '@/helpers/teamLogos'
 import { storeToRefs } from 'pinia'
 import { useLobbyStore } from '@/stores/lobby'
 import { useSystemStore } from '@/stores/system'
@@ -37,8 +37,6 @@ const game = computed(() => props.game)
 const currentMember = computed(() => lobby.value!.members.find((member) => member.userId === currentUserId.value)!)
 const isSelected = computed(() => props.isSelected)
 const isLobbyGame = computed(() => !!lobby.value && isGameInLobby(lobby.value, game.value))
-const isGameStarted = computed(() => game.value.gameState !== GameState.Upcoming)
-const isGameInProgress = computed(() => game.value.gameState === GameState.Live)
 const isGameOver = computed(() => game.value.gameState === GameState.Final)
 
 const gamePickableStatusForCurrentMember = computed(() => getPickableStatus(lobby.value!, currentMember.value, game.value, currentSystemTime.value))
@@ -86,35 +84,7 @@ const gamePickableViewModel = computed(() => {
   return {}
 })
 
-const timeString = computed(() => {
-  let time = format(game.value.dateTime, 'p')
-
-  if (!isGameStarted.value) return time
-
-  const ordinal = getOrdinal(game.value.period, game.value.periodType)
-
-  if (isGameInProgress.value) {
-    if (game.value.periodType === PeriodType.Shootout) time = 'SO'
-    else {
-      time = `${game.value.timeRemainingInPeriod} - ${ordinal}`
-    }
-  } else if (isGameOver.value) {
-    time = 'Final'
-    if (game.value.period > 3) time += ` (${ordinal})`
-  }
-
-  return time
-})
-//#endregion
-
-//#region methods
-
-//#endregion
-
-//#region helpers
-const getLogo = (team: GameTeam) => `/img/logos/${team.abbreviation}.png`
-const getLightLogo = (team: GameTeam) => (team.abbreviation !== 'TBL' ? getLogo(team) : `/img/logos/${team.abbreviation}_LIGHT.png`)
-
+const timeString = computed(() => formatGameClock(game.value))
 //#endregion
 </script>
 
@@ -127,7 +97,7 @@ const getLightLogo = (team: GameTeam) => (team.abbreviation !== 'TBL' ? getLogo(
     <div class="game-matchup">
       <div class="d-flex justify-content-between align-items-center" style="height: 24.5px">
         <div>
-          <img :src="getLightLogo(game.awayTeam)" style="width: 25px" />
+          <img :src="lightTeamLogoUrl(game.awayTeam)" style="width: 25px" />
           <span>{{ game.awayTeam.abbreviation }}</span>
         </div>
         <div>
@@ -136,7 +106,7 @@ const getLightLogo = (team: GameTeam) => (team.abbreviation !== 'TBL' ? getLogo(
       </div>
       <div class="d-flex justify-content-between align-items-center" style="height: 24.5px">
         <div>
-          <img :src="getLightLogo(game.homeTeam)" style="width: 25px" />
+          <img :src="lightTeamLogoUrl(game.homeTeam)" style="width: 25px" />
           <span>{{ game.homeTeam.abbreviation }}</span>
         </div>
         <div>
