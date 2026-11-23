@@ -11,6 +11,7 @@ public class LobbyEventHandler(IDbContext dbContext, LobbyEventWriter writer) :
     INotificationHandler<UserRemovedNotification>,
     INotificationHandler<UserLeftNotification>,
     INotificationHandler<UserPromotedNotification>,
+    INotificationHandler<MembersMergedNotification>,
     INotificationHandler<PickMadeNotification>,
     INotificationHandler<PickRemovedNotification>,
     INotificationHandler<PickScratchedNotification>,
@@ -60,6 +61,14 @@ public class LobbyEventHandler(IDbContext dbContext, LobbyEventWriter writer) :
     {
         return NewLobbyEvent(n.Data.Lobby, LobbyEventType.UserPromoted, ct, lobbyMemberId: n.Data.Member.Id,
             text: WithName(LobbyEventType.UserPromoted, n.Data.Member.Name));
+    }
+
+    // The original spot is still in the lobby, so the client fills in its name; the removed duplicate's is filled in here.
+    public Task Handle(MembersMergedNotification n, CancellationToken ct)
+    {
+        var text = LobbyEventTexts.GetText(LobbyEventType.MembersMerged).Replace("{{duplicateName}}", Bold(n.Data.Duplicate.Name));
+        return NewLobbyEvent(n.Data.Lobby, LobbyEventType.MembersMerged, ct, lobbyMemberId: n.Data.Original.Id,
+            lobbyMember2Id: n.Data.Duplicate.Id, text: text);
     }
 
     private static string Bold(string name) => LobbyEventWriter.Bold(name);

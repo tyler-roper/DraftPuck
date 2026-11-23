@@ -65,6 +65,11 @@ class LobbyService {
     return this._http.delete(`${code}/member/${lobbyMemberId}`)
   }
 
+  /** The host merges a duplicate spot into the original one: the original stays, on the duplicate's login. */
+  public async mergeLobbyMembers(code: string, originalMemberId: string, duplicateMemberId: string): Promise<void> {
+    return this._http.post(`${code}/member/${originalMemberId}/merge`, { duplicateMemberId })
+  }
+
   public async removePick(code: string, pickId: string): Promise<void> {
     return this._http.delete(`${code}/pick/${pickId}`)
   }

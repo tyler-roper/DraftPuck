@@ -193,6 +193,13 @@ public static class LobbyEventTexts
             "The scorer's been changed: {{oldScorer}} → {{newScorer}}.",
             "{{newScorer}} gets the credit; {{oldScorer}} gets a \"nice try\".")
         },
+        // {{duplicateName}} is the removed spot's name, filled in on the server (see LobbyEventHandler).
+        { LobbyEventType.MembersMerged, new("Spot Reclaimed",
+            "{{duplicateName}} was {{name}} all along. Back in their old spot.",
+            "{{duplicateName}} is really {{name}}, on a new device.",
+            "Plot twist: {{duplicateName}} was {{name}}. One spot, one person.",
+            "{{name}} lost their phone and came back as {{duplicateName}}. Back to {{name}} it is.")
+        },
         { LobbyEventType.GoalRemoved, new("Goal Removed",
             "{{player}}'s goal has been called back.",
             "No goal! {{player}}'s goal came off the board.",
