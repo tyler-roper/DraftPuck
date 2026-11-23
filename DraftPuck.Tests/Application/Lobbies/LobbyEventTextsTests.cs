@@ -14,6 +14,7 @@ public class LobbyEventTextsTests
         { LobbyEventType.UserRemoved, ["name"], ["name"] },
         { LobbyEventType.UserPromoted, ["name"], ["name"] },
         { LobbyEventType.UserLeft, ["name"], ["name"] },
+        { LobbyEventType.MembersMerged, ["name", "duplicateName"], ["name", "duplicateName"] },
         { LobbyEventType.NewPick, ["name", "playerBadge"], ["name", "playerBadge"] },
         { LobbyEventType.PickRemoved, ["name", "playerBadge"], ["name", "playerBadge"] },
         { LobbyEventType.PickScratched, ["name", "playerBadge"], ["name", "playerBadge"] },

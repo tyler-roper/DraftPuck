@@ -16,6 +16,8 @@ public record DrinkInvalidatedPayload(LobbyEntity Lobby, LobbyMemberEntity Sende
 public record DrinkRemovedPayload(LobbyEntity Lobby, LobbyMemberEntity Member, DrinkEntity Drink);
 public record DrinkAwardedPayload(LobbyEntity Lobby, LobbyMemberEntity Member, DrinkEntity Drink);
 public record LobbyStateChangedPayload(string LobbyJoinCode);
+/// <summary>Two spots were one person: <paramref name="Original"/> stays (now on their new login), <paramref name="Duplicate"/> was removed.</summary>
+public record MembersMergedPayload(LobbyEntity Lobby, LobbyMemberEntity Original, LobbyMemberEntity Duplicate);
 /// <summary>
 /// One bot's picks for a game from a single run: its first picks (it had none for the game), or replacements for picks
 /// it lost (a scratched player, or the host removing one).
@@ -32,6 +34,7 @@ public record UserNameChangedNotification(LobbyNameChangeEventPayload Data) : IN
 public record UserRemovedNotification(LobbyMemberEventPayload Data) : INotification;
 public record UserLeftNotification(LobbyMemberEventPayload Data) : INotification;
 public record UserPromotedNotification(LobbyMemberEventPayload Data) : INotification;
+public record MembersMergedNotification(MembersMergedPayload Data) : INotification;
 public record PickMadeNotification(LobbyPickEventPayload Data) : INotification;
 public record PickRemovedNotification(LobbyPickEventPayload Data) : INotification;
 /// <summary>The system removed a pick because its player left the game's lineup (e.g. scratched before puck drop).</summary>

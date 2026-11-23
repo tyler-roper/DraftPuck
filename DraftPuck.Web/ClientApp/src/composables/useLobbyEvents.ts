@@ -37,6 +37,10 @@ export function useLobbyEvents(reactions: LobbyEventReactions) {
     await reactions.refreshLobby()
     if (!store.lobby) return
 
+    // A merge moved a spot to another login. If it was this device's spot, this device is no longer in the lobby.
+    if (event.lobbyEventType === LobbyEventType.MembersMerged && !store.currentMember)
+      return reactions.onRemovedFromLobby('Your spot in this lobby moved to your other device.')
+
     parseAllDates(event)
     store.addLobbyEvent(event)
 
@@ -52,7 +56,9 @@ export function useLobbyEvents(reactions: LobbyEventReactions) {
         // A bot hands its drink out the moment it earns it, so its handout (just behind this) is the one to show.
         if (!store.lobby.members.find((m) => m.id === event.lobbyMemberId)?.isBot) reactions.showBanner(event)
         break
+      // Tells the person on the new device which spot they're playing now.
       case LobbyEventType.UserJoined:
+      case LobbyEventType.MembersMerged:
         reactions.notify(event)
         break
     }
