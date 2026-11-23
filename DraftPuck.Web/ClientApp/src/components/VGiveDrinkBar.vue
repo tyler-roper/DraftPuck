@@ -4,21 +4,25 @@ import VIcon from '@/components/VIcon.vue'
 import VGiveDrinkSheet from '@/components/VGiveDrinkSheet.vue'
 
 /**
- * Your drinks to give, at the bottom of the lobby: the biggest moment in the game, so it shines. Dismissing it shrinks
- * it to a glowing chip (never away: it's how you give drinks), and a new drink brings the full bar back. It sits above
- * the bottom nav in the page's flow rather than over it, so it never covers the chat box.
+ * Your drinks to give, at the bottom of the lobby: the biggest moment in the game, so it shines. The full bar takes its
+ * own row above the bottom nav (so it never covers the chat box). Dismissing it shrinks it to a glowing chip floating
+ * over the bottom-left corner, just above the Lobby tab: never away, since it's how you give drinks. On the chat tab
+ * that corner is the empty space beside Send. A new drink brings the full bar back.
  */
 const { pendingDrinks, isCollapsed, isSheetOpen, collapse, openSheet } = useGiveDrinks()
 </script>
 
 <template>
-  <div v-if="pendingDrinks.length > 0" class="give-drink-area">
-    <Transition name="rise" mode="out-in">
-      <button v-if="isCollapsed" key="chip" type="button" class="give-chip" @click="openSheet">
-        <span class="beer">🍺</span> {{ pendingDrinks.length }} to give
-      </button>
+  <!-- Zero height: the chip hangs off the top of the bottom nav, over the page, without taking a row. -->
+  <div v-if="pendingDrinks.length > 0 && isCollapsed" class="chip-anchor">
+    <Transition name="rise" appear>
+      <button type="button" class="give-chip" @click="openSheet"><span class="beer">🍺</span> {{ pendingDrinks.length }} to give</button>
+    </Transition>
+  </div>
 
-      <div v-else key="bar" class="give-bar">
+  <div v-else-if="pendingDrinks.length > 0" class="give-drink-area">
+    <Transition name="rise" appear>
+      <div class="give-bar">
         <button type="button" class="give-button" @click="openSheet">
           <span class="beer fs-3 me-3">🍺</span>
           <span class="d-block text-start min-w-0 flex-grow-1">
@@ -136,8 +140,18 @@ const { pendingDrinks, isCollapsed, isSheetOpen, collapse, openSheet } = useGive
   }
 }
 
-// Shrunk: a pill that keeps glowing until every drink is given.
+.chip-anchor {
+  position: relative;
+  height: 0;
+  z-index: 20;
+}
+
+// Shrunk: a pill that keeps glowing until every drink is given, floating just above the nav's left edge.
 .give-chip {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  white-space: nowrap;
   padding: 6px 16px;
   border-radius: 999px;
   border: none;
