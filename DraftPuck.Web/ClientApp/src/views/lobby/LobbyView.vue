@@ -32,6 +32,7 @@ import VPicks from '@/components/VPicks.vue'
 import VChat from '@/components/VChat.vue'
 import VEventBanner from '@/components/VEventBanner.vue'
 import VDrinkPour from '@/components/VDrinkPour.vue'
+import VGiveDrinkBar from '@/components/VGiveDrinkBar.vue'
 
 const DRINK_ANIMATION_DURATION_MS = 5000
 const BANNER_DURATION_MS = 4500
@@ -118,7 +119,6 @@ function reportError(error: unknown) {
 const templatedEvents = computed(() => events.value.map(fillEventTemplate))
 const feedItems = computed(() => (lobby.value ? buildFeedItems(games.value, templatedEvents.value, lobby.value.created, appIsTestMode.value) : []))
 const sortedGames = computed(() => sortGamesForLobby(games.value, lobby.value?.gameIds ?? []))
-const pendingDrinkCount = computed(() => currentMember.value?.picks.flatMap((p) => p.drinks.filter((d) => !d.recipientLobbyMemberId)).length ?? 0)
 //#endregion
 
 //#region lobby events and chat
@@ -241,14 +241,9 @@ watch(
         </div>
       </div>
 
-      <VLobbyBottomNav
-        v-if="isReady"
-        :view="currentView"
-        :pending-drink-count="pendingDrinkCount"
-        :unread-count="unreadCount"
-        :unread-mention-count="unreadMentionCount"
-        @select="setView"
-      />
+      <VGiveDrinkBar v-if="isReady" />
+
+      <VLobbyBottomNav v-if="isReady" :view="currentView" :unread-count="unreadCount" :unread-mention-count="unreadMentionCount" @select="setView" />
     </template>
 
     <VEventBanner v-if="currentBanner" :key="currentBanner.id" :event="fillEventTemplate(currentBanner)" :duration-ms="BANNER_DURATION_MS" />

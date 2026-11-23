@@ -1,10 +1,9 @@
 <script setup lang="ts">
 export type LobbyView = 'feed' | 'game' | 'lobby' | 'chat' | 'picks'
 
-/** The lobby page's tabs on a phone, with badges for drinks to give out and unread chat. */
+/** The lobby page's tabs on a phone, with a badge for unread chat. Drinks to give have their own bar (VGiveDrinkBar). */
 defineProps<{
   view: LobbyView
-  pendingDrinkCount: number
   unreadCount: number
   unreadMentionCount: number
 }>()
@@ -15,8 +14,7 @@ const emit = defineEmits<{ select: [view: LobbyView] }>()
 <template>
   <div class="bottom-nav d-flex d-sm-none bg-stone-900 shadow fw-bold">
     <a role="button" class="text-center p-2 text-white" :class="{ active: view === 'lobby' }" @click="emit('select', 'lobby')">
-      <span v-if="pendingDrinkCount > 0" class="drink-badge">🚨 {{ pendingDrinkCount }}</span>
-      <i v-else class="fi fi-rr-users-alt"></i>
+      <i class="fi fi-rr-users-alt"></i>
       <br />
       <span>LOBBY</span>
     </a>
