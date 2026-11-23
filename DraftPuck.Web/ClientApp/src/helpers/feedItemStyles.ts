@@ -22,6 +22,7 @@ const styles: Partial<Record<LobbyEventType, LobbyEventStyle>> = {
   [LobbyEventType.UserRemoved]: { tone: 'social', icon: 'remove-user' },
   [LobbyEventType.UserPromoted]: { tone: 'social', icon: 'crown' },
   [LobbyEventType.UserNameChanged]: { tone: 'social', icon: 'id-badge' },
+  [LobbyEventType.MembersMerged]: { tone: 'social', icon: 'code-merge' },
   [LobbyEventType.Broadcast]: { tone: 'social', icon: 'megaphone' },
   [LobbyEventType.NewPick]: { tone: 'pick', icon: 'badge-check' },
   [LobbyEventType.BotPicksMade]: { tone: 'pick', icon: 'user-robot' },

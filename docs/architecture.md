@@ -104,6 +104,11 @@ refetches everything (`resync`). Games carry an `UpdatedUtc` stamp so an older c
   relies on that order.
 - **Banners without an achievement** (`AchievementId` null) are defaults everyone can choose at sign-up. Never attach
   one to an achievement; a new achievement needs new banner art (or ships with a title only).
+- **Merging members**: a guest who loses their session (an incognito tab, a new phone) joins again under a new name.
+  The host picks the duplicate's *Same person as…* and the spot the guest had before (`MergeLobbyMembersCommand`).
+  The two spots swap logins and the duplicate is removed: the original keeps its name, picks and drinks on the new
+  login, and the duplicate's picks are dropped (nothing is deleted). Only a guest's spot can move, never the host's or
+  an account's (signing in brings an account's spot back), and only while the lobby is active.
 - **Friends** are mutual and need an account (guests and bots can't have any). Adding someone who already asked you
   accepts their request; removing, declining and cancelling are the same call and tell nobody. A lobby member invites
   friends from the lobby's Share window (`SendLobbyInvitesCommand`); an invite waits in the friend's *Friends &

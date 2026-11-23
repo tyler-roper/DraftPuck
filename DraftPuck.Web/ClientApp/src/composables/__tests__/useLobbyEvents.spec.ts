@@ -72,6 +72,34 @@ describe('useLobbyEvents', () => {
     expect(reactions.refreshLobby).toHaveBeenCalledOnce()
   })
 
+  it('sends the old device away when a merge moved its spot to another login', async () => {
+    const store = setup()
+    // The refetch finds this device's login no longer owns a spot: the original moved to the new device's login.
+    reactions.refreshLobby = vi.fn(async () => {
+      store.lobby!.members = store.lobby!.members.map((m) => (m.id === 'me' ? { ...m, userId: 'u9' } : m))
+    })
+
+    await useLobbyEvents(reactions).onLobbyEvent(event(LobbyEventType.MembersMerged, { lobbyMemberId: 'me', lobbyMember2Id: 'dup' }))
+
+    expect(reactions.onRemovedFromLobby).toHaveBeenCalledWith('Your spot in this lobby moved to your other device.')
+    expect(store.events).toEqual([])
+  })
+
+  it('tells the new device, and everyone else, about a merge with a toast', async () => {
+    const store = setup()
+    // The new device was the duplicate; after the refetch its login owns the original spot.
+    store.lobby!.members[0].id = 'dup'
+    reactions.refreshLobby = vi.fn(async () => {
+      store.lobby!.members[0].id = 'original'
+    })
+
+    await useLobbyEvents(reactions).onLobbyEvent(event(LobbyEventType.MembersMerged, { lobbyMemberId: 'original', lobbyMember2Id: 'dup' }))
+
+    expect(reactions.onRemovedFromLobby).not.toHaveBeenCalled()
+    expect(reactions.notify).toHaveBeenCalledOnce()
+    expect(store.events).toHaveLength(1)
+  })
+
   it('shows drinks given to you as the full-screen animation, and drinks between others as a banner', async () => {
     setup()
     const { onLobbyEvent } = useLobbyEvents(reactions)

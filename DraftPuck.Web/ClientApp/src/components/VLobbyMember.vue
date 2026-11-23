@@ -10,6 +10,8 @@ import BotPickStyle from '@/enums/botPickStyle'
 import LobbyService from '@/services/LobbyService'
 import { memberNameScale } from '@/helpers/memberNameHelpers'
 import VDrinkMessageModal from '@/components/VDrinkMessageModal.vue'
+import VMergeMemberModal from '@/components/VMergeMemberModal.vue'
+import { mergeCandidates } from '@/helpers/memberMergeHelpers'
 import { useRouter } from 'vue-router'
 //#endregion
 
@@ -25,7 +27,7 @@ const member = computed(() => props.member)
 const lobbyStore = useLobbyStore()
 const toast = useToast()
 const { lobby, currentUserId, isLobbyAdmin } = storeToRefs(lobbyStore)
-const { assignDrink, changeName: changeNameInStore, removeLobbyMember } = lobbyStore
+const { assignDrink, changeName: changeNameInStore, removeLobbyMember, mergeLobbyMembers } = lobbyStore
 const lastNameChange = ref(new Date(-1))
 const router = useRouter()
 //#endregion
@@ -96,6 +98,26 @@ async function removeMember(member: LobbyMember) {
     await removeLobbyMember(member.id)
   } catch (error) {
     toast.error(getErrorMessage(error, `Couldn't remove ${member.name}. Please try again.`))
+  }
+}
+
+// The host can say this member is a guest who joined again, and merge them into the spot they had before.
+const canMerge = computed(() => isLobbyAdmin.value && mergeCandidates(lobby.value!, member.value).length > 0)
+const isMergeModalOpen = ref(false)
+const isMerging = ref(false)
+
+async function merge(original: LobbyMember) {
+  // Captured first: once merged, this member is gone from the lobby (and this card with it).
+  const duplicateName = member.value.name
+  isMerging.value = true
+  try {
+    // The lobby's own "Spot Reclaimed" event toasts the result for everyone, the host included.
+    await mergeLobbyMembers(original.id, member.value.id)
+    isMergeModalOpen.value = false
+  } catch (error) {
+    toast.error(getErrorMessage(error, `Couldn't move ${duplicateName} into ${original.name}'s spot. Please try again.`))
+  } finally {
+    isMerging.value = false
   }
 }
 
@@ -197,6 +219,11 @@ function viewProfile() {
           <li v-if="!member.isBot && isLoggedIn">
             <a role="button" class="fw-bold dropdown-item" @click="viewProfile">View Profile</a>
           </li>
+          <li v-if="canMerge">
+            <a role="button" class="fw-bold dropdown-item" @click="isMergeModalOpen = true"
+              ><i class="fi fi-sr-code-merge me-2"></i>Same person as…</a
+            >
+          </li>
           <li v-if="isLobbyAdmin">
             <a role="button" class="fw-bold dropdown-item text-danger" @click="removeMember(member)"
               ><i class="fi fi-sr-remove-user me-2"></i>Remove User</a
@@ -215,6 +242,7 @@ function viewProfile() {
         @give="(message) => giveDrink(member, message)"
         @close="isMessageModalOpen = false"
       />
+      <VMergeMemberModal v-if="isMergeModalOpen" :duplicate="member" :is-merging="isMerging" @merge="merge" @close="isMergeModalOpen = false" />
     </Teleport>
   </div>
 </template>

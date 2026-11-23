@@ -22,7 +22,9 @@
   OnFire,
   DrinkingStreak,
   RivalryBrewing,
-  IceCold
+  IceCold,
+  /** The host merged a duplicate spot (lobbyMember2Id, removed) into the original one (lobbyMemberId). */
+  MembersMerged
 }
 
 export default LobbyEventType

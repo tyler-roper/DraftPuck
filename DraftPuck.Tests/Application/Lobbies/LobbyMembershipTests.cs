@@ -290,6 +290,153 @@ public class LobbyMembershipTests(DatabaseFixture fixture)
         Assert.True((await MembersAsync(lobby.JoinCode)).Single(m => m.Id == memberEntity.Id).IsRemoved);
     }
 
+    // --- Merge members ---
+
+    private async Task MergeAsync(string code, Guid requesterUserId, Guid originalMemberId, Guid duplicateMemberId)
+    {
+        await using var db = fixture.CreateContext();
+        await new MergeLobbyMembersCommandHandler(db, _mediator).Handle(new MergeLobbyMembersCommand
+        {
+            Code = code,
+            RequesterUserId = requesterUserId,
+            OriginalMemberId = originalMemberId,
+            DuplicateMemberId = duplicateMemberId
+        }, default);
+    }
+
+    /// <summary>A lobby where one guest joined as "Sam" (and picked), lost their session, and joined again as "Sam 2" (and picked).</summary>
+    private async Task<(LobbyDto Lobby, UserEntity Host, UserEntity OldLogin, UserEntity NewLogin, Guid OriginalId, Guid DuplicateId)> DuplicatedGuestAsync()
+    {
+        var host = await UserAsync();
+        var lobby = await CreateAsync(host.Id);
+        var oldLogin = await UserAsync();
+        var newLogin = await UserAsync();
+        await JoinAsync(lobby.JoinCode, oldLogin.Id, "Sam");
+        await JoinAsync(lobby.JoinCode, newLogin.Id, "Sam 2");
+
+        await using var db = fixture.CreateContext();
+        var members = await db.LobbyMembers.Where(m => m.Lobby.JoinCode == lobby.JoinCode).ToListAsync();
+        var original = members.Single(m => m.UserId == oldLogin.Id);
+        var duplicate = members.Single(m => m.UserId == newLogin.Id);
+        var seed = new Seed(db);
+        seed.Pick(original, lobby.GameIds.Single(), TestGames.HomeTeamId, TestGames.HomePlayer(0));
+        seed.Pick(duplicate, lobby.GameIds.Single(), TestGames.AwayTeamId, TestGames.AwayPlayer(0));
+        await db.SaveChangesAsync();
+
+        return (lobby, host, oldLogin, newLogin, original.Id, duplicate.Id);
+    }
+
+    [Fact]
+    public async Task MergingGivesTheOriginalSpotToTheNewLoginAndRemovesTheDuplicate()
+    {
+        var (lobby, host, oldLogin, newLogin, originalId, duplicateId) = await DuplicatedGuestAsync();
+
+        await MergeAsync(lobby.JoinCode, host.Id, originalId, duplicateId);
+
+        var members = await MembersAsync(lobby.JoinCode);
+        var original = members.Single(m => m.Id == originalId);
+        Assert.Equal((newLogin.Id, "Sam", false), (original.UserId, original.Name, original.IsRemoved));
+        Assert.All(original.LobbyMemberPicks, p => Assert.True(p.IsActive));
+
+        // The duplicate, and anything it did, is dropped; it's left with the login the guest lost.
+        var duplicate = members.Single(m => m.Id == duplicateId);
+        Assert.Equal((oldLogin.Id, true), (duplicate.UserId, duplicate.IsRemoved));
+        Assert.All(duplicate.LobbyMemberPicks, p => Assert.False(p.IsActive));
+
+        var merged = _mediator.ReceivedCalls().Select(c => c.GetArguments()[0]).OfType<MembersMergedNotification>().Single();
+        Assert.Equal((originalId, duplicateId), (merged.Data.Original.Id, merged.Data.Duplicate.Id));
+    }
+
+    [Fact]
+    public async Task AfterAMergeTheNewLoginIsTheOriginalSpot()
+    {
+        var (lobby, host, _, newLogin, originalId, duplicateId) = await DuplicatedGuestAsync();
+        await MergeAsync(lobby.JoinCode, host.Id, originalId, duplicateId);
+
+        // The new device opening the lobby again (it joins under the name it has) lands in the original spot.
+        await JoinAsync(lobby.JoinCode, newLogin.Id, "Sam");
+
+        var active = (await MembersAsync(lobby.JoinCode)).Where(m => m.UserId == newLogin.Id && !m.IsRemoved);
+        Assert.Equal(originalId, Assert.Single(active).Id);
+    }
+
+    [Fact]
+    public async Task OnlyTheHostMergesAndOnlyTwoDifferentCurrentHumanSpots()
+    {
+        var (lobby, host, _, newLogin, originalId, duplicateId) = await DuplicatedGuestAsync();
+        Guid hostMemberId, botId, removedId;
+        await using (var db = fixture.CreateContext())
+        {
+            var entity = await db.Lobbies.SingleAsync(l => l.JoinCode == lobby.JoinCode);
+            hostMemberId = (await db.LobbyMembers.SingleAsync(m => m.LobbyId == entity.Id && m.UserId == host.Id)).Id;
+            var seed = new Seed(db);
+            var bot = seed.Member(entity, seed.User(isBot: true));
+            bot.IsBot = true;
+            var removed = seed.Member(entity);
+            removed.Name = "Gone";
+            removed.IsRemoved = true;
+            await db.SaveChangesAsync();
+            (botId, removedId) = (bot.Id, removed.Id);
+        }
+
+        await Assert.ThrowsAsync<ForbiddenException>(() => MergeAsync(lobby.JoinCode, newLogin.Id, originalId, duplicateId));
+        await Assert.ThrowsAsync<BadRequestException>(() => MergeAsync(lobby.JoinCode, host.Id, originalId, originalId));
+        await Assert.ThrowsAsync<BadRequestException>(() => MergeAsync(lobby.JoinCode, host.Id, botId, duplicateId));
+        await Assert.ThrowsAsync<BadRequestException>(() => MergeAsync(lobby.JoinCode, host.Id, originalId, botId));
+        await Assert.ThrowsAsync<BadRequestException>(() => MergeAsync(lobby.JoinCode, host.Id, hostMemberId, duplicateId));
+        await Assert.ThrowsAsync<NotFoundException>(() => MergeAsync(lobby.JoinCode, host.Id, removedId, duplicateId));
+        await Assert.ThrowsAsync<NotFoundException>(() => MergeAsync(lobby.JoinCode, host.Id, originalId, Guid.NewGuid()));
+
+        Assert.All(await MembersAsync(lobby.JoinCode), m => Assert.Equal(m.Id == removedId, m.IsRemoved));
+    }
+
+    [Fact]
+    public async Task ASignedInPlayersSpotNeverMoves()
+    {
+        var (lobby, host, oldLogin, _, originalId, duplicateId) = await DuplicatedGuestAsync();
+        await using (var db = fixture.CreateContext())
+        {
+            await db.Users.Where(u => u.Id == oldLogin.Id).ExecuteUpdateAsync(s => s.SetProperty(u => u.IsGuest, false));
+        }
+
+        await Assert.ThrowsAsync<BadRequestException>(() => MergeAsync(lobby.JoinCode, host.Id, originalId, duplicateId));
+
+        Assert.Equal(oldLogin.Id, (await MembersAsync(lobby.JoinCode)).Single(m => m.Id == originalId).UserId);
+    }
+
+    [Fact]
+    public async Task AnEndedLobbyCannotBeMerged()
+    {
+        var (lobby, host, _, _, originalId, duplicateId) = await DuplicatedGuestAsync();
+        await using (var db = fixture.CreateContext())
+        {
+            await db.Lobbies.Where(l => l.JoinCode == lobby.JoinCode).ExecuteUpdateAsync(s => s.SetProperty(l => l.IsActive, false));
+        }
+
+        await Assert.ThrowsAsync<BadRequestException>(() => MergeAsync(lobby.JoinCode, host.Id, originalId, duplicateId));
+    }
+
+    [Fact]
+    public async Task TheFeedSaysWhoTheDuplicateReallyWas()
+    {
+        var (lobby, host, _, _, originalId, duplicateId) = await DuplicatedGuestAsync();
+        await MergeAsync(lobby.JoinCode, host.Id, originalId, duplicateId);
+        var merged = _mediator.ReceivedCalls().Select(c => c.GetArguments()[0]).OfType<MembersMergedNotification>().Single();
+
+        await using (var db = fixture.CreateContext())
+        {
+            await new LobbyEventHandler(db, new LobbyEventWriter(db, Substitute.For<IMediator>())).Handle(merged, default);
+        }
+
+        await using var check = fixture.CreateContext();
+        var feedEvent = await check.LobbyEvents.SingleAsync(e => e.LobbyId == lobby.Id && e.LobbyEventType == LobbyEventType.MembersMerged);
+        Assert.Equal((originalId, duplicateId), (feedEvent.LobbyMemberId!.Value, feedEvent.LobbyMember2Id!.Value));
+        // The original spot's name is filled in by the client; the removed duplicate's is written in.
+        Assert.Contains("{{name}}", feedEvent.Text);
+        Assert.Contains("<strong>Sam 2</strong>", feedEvent.Text);
+        Assert.DoesNotContain("{{duplicateName}}", feedEvent.Text);
+    }
+
     // --- Names on join ---
 
     [Fact]

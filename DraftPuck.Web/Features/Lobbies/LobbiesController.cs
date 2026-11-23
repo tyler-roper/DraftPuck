@@ -135,6 +135,21 @@ public class LobbiesController(IMediator mediator) : BaseController()
         return NoContent();
     }
 
+    /// <summary>The host merges a duplicate spot (the same guest, joined again) into their original one.</summary>
+    [HttpPost("{code}/member/{originalMemberId}/merge")]
+    public async Task<IActionResult> MergeLobbyMembers(string code, Guid originalMemberId, MergeLobbyMembersRequestDto request)
+    {
+        var command = new MergeLobbyMembersCommand
+        {
+            Code = code,
+            OriginalMemberId = originalMemberId,
+            DuplicateMemberId = request.DuplicateMemberId,
+            RequesterUserId = CurrentUserId
+        };
+        await mediator.Send(command);
+        return NoContent();
+    }
+
     [HttpDelete("{code}/pick/{pickId}")]
     public async Task<IActionResult> RemovePick(string code, Guid pickId)
     {
