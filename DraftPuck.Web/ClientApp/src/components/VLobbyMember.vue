@@ -9,7 +9,9 @@ import { getErrorMessage } from '@/helpers/requestHelpers'
 import BotPickStyle from '@/enums/botPickStyle'
 import LobbyService from '@/services/LobbyService'
 import { memberNameScale } from '@/helpers/memberNameHelpers'
-import VDrinkMessageModal from '@/components/VDrinkMessageModal.vue'
+import { useGiveDrinks } from '@/composables/useGiveDrinks'
+import VMergeMemberModal from '@/components/VMergeMemberModal.vue'
+import { mergeCandidates } from '@/helpers/memberMergeHelpers'
 import { useRouter } from 'vue-router'
 //#endregion
 
@@ -25,7 +27,9 @@ const member = computed(() => props.member)
 const lobbyStore = useLobbyStore()
 const toast = useToast()
 const { lobby, currentUserId, isLobbyAdmin } = storeToRefs(lobbyStore)
-const { assignDrink, changeName: changeNameInStore, removeLobbyMember } = lobbyStore
+const { changeName: changeNameInStore, removeLobbyMember, mergeLobbyMembers } = lobbyStore
+// Drinks are given from the give-a-drink sheet; your own "To Give" count opens it too.
+const { openSheet: openGiveDrinkSheet } = useGiveDrinks()
 const lastNameChange = ref(new Date(-1))
 const router = useRouter()
 //#endregion
@@ -38,7 +42,7 @@ const drinksTakenByMember = computed(() =>
   !lobby.value ? [] : lobby.value.members.flatMap((m) => m.picks.flatMap((p) => p.drinks)).filter((d) => d.recipientLobbyMemberId === member.value.id)
 )
 const isCurrentMember = computed(() => currentUserId.value === member.value.userId)
-const pendingDrinksForCurrentMember = computed(() => currentMember.value!.picks.flatMap((p) => p.drinks.filter((d) => !d.recipientLobbyMemberId)))
+const canGiveFromCard = computed(() => isCurrentMember.value && pendingDrinksByMember.value.length > 0)
 const isCreator = computed(() => lobby.value!.createdBy === member.value.userId)
 const isBot = computed(() => member.value.isBot)
 const iconClass = computed(() => ({
@@ -99,21 +103,30 @@ async function removeMember(member: LobbyMember) {
   }
 }
 
-const isMessageModalOpen = ref(false)
-const isGiving = ref(false)
+// Opens the sheet rather than this card's menu (the click would otherwise reach the dropdown toggle).
+function giveFromCard(event: MouseEvent) {
+  if (!canGiveFromCard.value) return
+  event.stopPropagation()
+  openGiveDrinkSheet()
+}
 
-async function giveDrink(recipient: LobbyMember, message?: string) {
-  const pendingDrinks = pendingDrinksForCurrentMember.value
-  if (pendingDrinks.length === 0 || isGiving.value) return
+// The host can say this member is a guest who joined again, and merge them into the spot they had before.
+const canMerge = computed(() => isLobbyAdmin.value && mergeCandidates(lobby.value!, member.value).length > 0)
+const isMergeModalOpen = ref(false)
+const isMerging = ref(false)
 
-  isGiving.value = true
+async function merge(original: LobbyMember) {
+  // Captured first: once merged, this member is gone from the lobby (and this card with it).
+  const duplicateName = member.value.name
+  isMerging.value = true
   try {
-    await assignDrink(pendingDrinks[0].id, recipient.id, message)
-    isMessageModalOpen.value = false
+    // The lobby's own "Spot Reclaimed" event toasts the result for everyone, the host included.
+    await mergeLobbyMembers(original.id, member.value.id)
+    isMergeModalOpen.value = false
   } catch (error) {
-    toast.error(getErrorMessage(error, `Couldn't give ${recipient.name} a drink. Please try again.`))
+    toast.error(getErrorMessage(error, `Couldn't move ${duplicateName} into ${original.name}'s spot. Please try again.`))
   } finally {
-    isGiving.value = false
+    isMerging.value = false
   }
 }
 
@@ -156,10 +169,14 @@ function viewProfile() {
       </div>
 
       <span class="d-flex ms-auto align-items-center" style="cursor: default">
+        <!-- Yours, with drinks waiting, opens the give-a-drink sheet instead of your menu. -->
         <span
-          :class="{ 'bg-primary': pendingDrinksByMember.length > 0 }"
+          :class="{ 'bg-primary': pendingDrinksByMember.length > 0, 'can-give': canGiveFromCard }"
           class="bg-white d-block text-center border border-stone-200 mx-1 rounded"
           style="width: 50px"
+          :role="canGiveFromCard ? 'button' : undefined"
+          :title="canGiveFromCard ? 'Give a drink' : undefined"
+          @click="giveFromCard"
         >
           <span class="d-block fs-9 text-uppercase fw-bold">To Give</span>
           <span class="fw-bold">🍺 {{ pendingDrinksByMember.length }}</span>
@@ -186,16 +203,13 @@ function viewProfile() {
           </li>
         </template>
         <template v-if="!isCurrentMember">
-          <li v-if="pendingDrinksForCurrentMember.length > 0 && !member.isBot">
-            <a role="button" class="fw-bold dropdown-item text-blue" @click="giveDrink(member)"><span class="me-2">🍺</span>Give a drink!</a>
-          </li>
-          <li v-if="pendingDrinksForCurrentMember.length > 0 && !member.isBot">
-            <a role="button" class="dropdown-item text-blue" @click="isMessageModalOpen = true"
-              ><span class="me-2">💬</span>Give a drink with a message…</a
-            >
-          </li>
           <li v-if="!member.isBot && isLoggedIn">
             <a role="button" class="fw-bold dropdown-item" @click="viewProfile">View Profile</a>
+          </li>
+          <li v-if="canMerge">
+            <a role="button" class="fw-bold dropdown-item" @click="isMergeModalOpen = true"
+              ><i class="fi fi-sr-code-merge me-2"></i>Same person as…</a
+            >
           </li>
           <li v-if="isLobbyAdmin">
             <a role="button" class="fw-bold dropdown-item text-danger" @click="removeMember(member)"
@@ -208,13 +222,7 @@ function viewProfile() {
 
     <!-- Outside the card (and its dropdown), so it covers the page. -->
     <Teleport to="body">
-      <VDrinkMessageModal
-        v-if="isMessageModalOpen"
-        :recipient-name="member.name"
-        :is-giving="isGiving"
-        @give="(message) => giveDrink(member, message)"
-        @close="isMessageModalOpen = false"
-      />
+      <VMergeMemberModal v-if="isMergeModalOpen" :duplicate="member" :is-merging="isMerging" @merge="merge" @close="isMergeModalOpen = false" />
     </Teleport>
   </div>
 </template>
@@ -312,6 +320,11 @@ function viewProfile() {
   font-weight: bold;
   text-align: left;
   color: map-get($custom-colors, 'stone-200') !important;
+}
+
+.can-give {
+  cursor: pointer;
+  box-shadow: 0 0 0 2px map-get($custom-colors, 'stone-900');
 }
 
 .dropdown-menu:empty {

@@ -30,5 +30,10 @@ public enum LobbyEventType
     /// <summary>Two members keep giving each other drinks.</summary>
     RivalryBrewing,
     /// <summary>Late in a game, none of a member's picks in it have scored.</summary>
-    IceCold
+    IceCold,
+    /// <summary>
+    /// The host merged a duplicate spot into the original one: same person, new login. LobbyMemberId is the original
+    /// (kept) spot, LobbyMember2Id the removed duplicate.
+    /// </summary>
+    MembersMerged
 }

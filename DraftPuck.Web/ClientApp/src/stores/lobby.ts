@@ -142,6 +142,15 @@ export const useLobbyStore = defineStore('lobby', () => {
     removeLobbyMemberFromStore(lobbyMemberId)
   }
 
+  /** Merges a duplicate spot into the original, then refetches: the original changed hands and the duplicate is gone. */
+  async function mergeLobbyMembers(originalMemberId: string, duplicateMemberId: string) {
+    if (!lobby.value) return
+
+    const joinCode = lobby.value.joinCode
+    await LobbyService.mergeLobbyMembers(joinCode, originalMemberId, duplicateMemberId)
+    await getLobby(joinCode)
+  }
+
   /** Removes a pick once the server has. Throws the server's refusal, so the caller can show it. */
   async function removePick(pickId: string) {
     if (!lobby.value) return
@@ -212,6 +221,7 @@ export const useLobbyStore = defineStore('lobby', () => {
     assignDrink,
     changeName,
     removeLobbyMember,
+    mergeLobbyMembers,
     removePick,
     addBot,
     sendMessage,
