@@ -9,7 +9,7 @@ import { getErrorMessage } from '@/helpers/requestHelpers'
 import BotPickStyle from '@/enums/botPickStyle'
 import LobbyService from '@/services/LobbyService'
 import { memberNameScale } from '@/helpers/memberNameHelpers'
-import VDrinkMessageModal from '@/components/VDrinkMessageModal.vue'
+import { useGiveDrinks } from '@/composables/useGiveDrinks'
 import { useRouter } from 'vue-router'
 //#endregion
 
@@ -25,7 +25,9 @@ const member = computed(() => props.member)
 const lobbyStore = useLobbyStore()
 const toast = useToast()
 const { lobby, currentUserId, isLobbyAdmin } = storeToRefs(lobbyStore)
-const { assignDrink, changeName: changeNameInStore, removeLobbyMember } = lobbyStore
+const { changeName: changeNameInStore, removeLobbyMember } = lobbyStore
+// Drinks are given from the give-a-drink sheet; your own "To Give" count opens it too.
+const { openSheet: openGiveDrinkSheet } = useGiveDrinks()
 const lastNameChange = ref(new Date(-1))
 const router = useRouter()
 //#endregion
@@ -38,7 +40,7 @@ const drinksTakenByMember = computed(() =>
   !lobby.value ? [] : lobby.value.members.flatMap((m) => m.picks.flatMap((p) => p.drinks)).filter((d) => d.recipientLobbyMemberId === member.value.id)
 )
 const isCurrentMember = computed(() => currentUserId.value === member.value.userId)
-const pendingDrinksForCurrentMember = computed(() => currentMember.value!.picks.flatMap((p) => p.drinks.filter((d) => !d.recipientLobbyMemberId)))
+const canGiveFromCard = computed(() => isCurrentMember.value && pendingDrinksByMember.value.length > 0)
 const isCreator = computed(() => lobby.value!.createdBy === member.value.userId)
 const isBot = computed(() => member.value.isBot)
 const iconClass = computed(() => ({
@@ -99,22 +101,11 @@ async function removeMember(member: LobbyMember) {
   }
 }
 
-const isMessageModalOpen = ref(false)
-const isGiving = ref(false)
-
-async function giveDrink(recipient: LobbyMember, message?: string) {
-  const pendingDrinks = pendingDrinksForCurrentMember.value
-  if (pendingDrinks.length === 0 || isGiving.value) return
-
-  isGiving.value = true
-  try {
-    await assignDrink(pendingDrinks[0].id, recipient.id, message)
-    isMessageModalOpen.value = false
-  } catch (error) {
-    toast.error(getErrorMessage(error, `Couldn't give ${recipient.name} a drink. Please try again.`))
-  } finally {
-    isGiving.value = false
-  }
+// Opens the sheet rather than this card's menu (the click would otherwise reach the dropdown toggle).
+function giveFromCard(event: MouseEvent) {
+  if (!canGiveFromCard.value) return
+  event.stopPropagation()
+  openGiveDrinkSheet()
 }
 
 async function leaveLobby() {
@@ -156,10 +147,14 @@ function viewProfile() {
       </div>
 
       <span class="d-flex ms-auto align-items-center" style="cursor: default">
+        <!-- Yours, with drinks waiting, opens the give-a-drink sheet instead of your menu. -->
         <span
-          :class="{ 'bg-primary': pendingDrinksByMember.length > 0 }"
+          :class="{ 'bg-primary': pendingDrinksByMember.length > 0, 'can-give': canGiveFromCard }"
           class="bg-white d-block text-center border border-stone-200 mx-1 rounded"
           style="width: 50px"
+          :role="canGiveFromCard ? 'button' : undefined"
+          :title="canGiveFromCard ? 'Give a drink' : undefined"
+          @click="giveFromCard"
         >
           <span class="d-block fs-9 text-uppercase fw-bold">To Give</span>
           <span class="fw-bold">🍺 {{ pendingDrinksByMember.length }}</span>
@@ -186,14 +181,6 @@ function viewProfile() {
           </li>
         </template>
         <template v-if="!isCurrentMember">
-          <li v-if="pendingDrinksForCurrentMember.length > 0 && !member.isBot">
-            <a role="button" class="fw-bold dropdown-item text-blue" @click="giveDrink(member)"><span class="me-2">🍺</span>Give a drink!</a>
-          </li>
-          <li v-if="pendingDrinksForCurrentMember.length > 0 && !member.isBot">
-            <a role="button" class="dropdown-item text-blue" @click="isMessageModalOpen = true"
-              ><span class="me-2">💬</span>Give a drink with a message…</a
-            >
-          </li>
           <li v-if="!member.isBot && isLoggedIn">
             <a role="button" class="fw-bold dropdown-item" @click="viewProfile">View Profile</a>
           </li>
@@ -205,17 +192,6 @@ function viewProfile() {
         </template>
       </ul>
     </a>
-
-    <!-- Outside the card (and its dropdown), so it covers the page. -->
-    <Teleport to="body">
-      <VDrinkMessageModal
-        v-if="isMessageModalOpen"
-        :recipient-name="member.name"
-        :is-giving="isGiving"
-        @give="(message) => giveDrink(member, message)"
-        @close="isMessageModalOpen = false"
-      />
-    </Teleport>
   </div>
 </template>
 
@@ -312,6 +288,11 @@ function viewProfile() {
   font-weight: bold;
   text-align: left;
   color: map-get($custom-colors, 'stone-200') !important;
+}
+
+.can-give {
+  cursor: pointer;
+  box-shadow: 0 0 0 2px map-get($custom-colors, 'stone-900');
 }
 
 .dropdown-menu:empty {
