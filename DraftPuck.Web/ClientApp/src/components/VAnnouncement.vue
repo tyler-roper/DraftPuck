@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import VIcon from '@/components/VIcon.vue'
-import VWhatsNewModal from '@/components/VWhatsNewModal.vue'
 import { dismissAnnouncement, isAnnouncementVisible } from '@/helpers/announcement'
 
-/** A one-off "we've made some big changes" card on the home page. Opening it or dismissing it hides it for good. */
+/**
+ * A one-off "we've made some big changes" card on the home page, opening the release notes. Opening it or dismissing
+ * it hides it for good; the release notes stay a link away at the bottom of the home page.
+ */
+const router = useRouter()
 const isVisible = ref(isAnnouncementVisible())
-const isOpen = ref(false)
 
 function hide() {
   isVisible.value = false
@@ -14,8 +17,8 @@ function hide() {
 }
 
 function open() {
-  isOpen.value = true
   hide()
+  router.push({ name: 'ReleaseNotes' })
 }
 </script>
 
@@ -33,8 +36,6 @@ function open() {
       <VIcon prefix="sr" icon="cross-small" class="fs-4" />
     </button>
   </div>
-
-  <VWhatsNewModal v-if="isOpen" @close="isOpen = false" />
 </template>
 
 <style scoped lang="scss">

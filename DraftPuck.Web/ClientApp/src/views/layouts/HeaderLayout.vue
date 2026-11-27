@@ -4,17 +4,20 @@ import VIcon from '@/components/VIcon.vue'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
 import { useBackNavigation } from '@/composables/useBackNavigation'
-withDefaults(
+const props = withDefaults(
   defineProps<{
     title: string
     isDirty?: boolean
     showSave?: boolean
     isSaving?: boolean
+    /** Where back goes when the page was opened directly. By default the user's profile, or home. */
+    backFallback?: string
   }>(),
   {
     isDirty: false,
     showSave: true,
-    isSaving: false
+    isSaving: false,
+    backFallback: undefined
   }
 )
 
@@ -26,8 +29,9 @@ const emit = defineEmits(['discard', 'save'])
 
 //#region methods
 // Opened directly, these pages go to the user's profile (where their account pages and past lobbies are), or home.
-const onBreadcrumbClick = useBackNavigation(() =>
-  currentUser.value && !currentUser.value.isGuest && currentUser.value.nickname ? `/u/${currentUser.value.nickname}` : '/'
+const onBreadcrumbClick = useBackNavigation(
+  () =>
+    props.backFallback ?? (currentUser.value && !currentUser.value.isGuest && currentUser.value.nickname ? `/u/${currentUser.value.nickname}` : '/')
 )
 //#endregion
 </script>
