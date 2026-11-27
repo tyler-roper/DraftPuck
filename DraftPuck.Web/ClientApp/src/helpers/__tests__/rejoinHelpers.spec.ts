@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { rejoinDetails, rejoinDismissKey } from '@/helpers/rejoinHelpers'
+import { lobbyToOpenOnLaunch, rejoinDetails, rejoinDismissKey } from '@/helpers/rejoinHelpers'
 
 const lobby = (overrides: Partial<LobbySummary> = {}) => ({ createdBy: 'host', createdByName: 'Sam', memberCount: 5, gameCount: 3, ...overrides })
 
@@ -21,5 +21,23 @@ describe('rejoinDismissKey', () => {
 
   it('changes when another lobby is added', () => {
     expect(rejoinDismissKey([{ joinCode: 'ABCD' }])).not.toBe(rejoinDismissKey([{ joinCode: 'ABCD' }, { joinCode: 'EFGH' }]))
+  })
+})
+
+describe('lobbyToOpenOnLaunch', () => {
+  const abcd = { joinCode: 'ABCD' }
+
+  it('is the one live lobby', () => {
+    expect(lobbyToOpenOnLaunch([abcd], null)).toBe(abcd)
+  })
+
+  it('is none without a live lobby, or with several to choose from', () => {
+    expect(lobbyToOpenOnLaunch([], null)).toBeUndefined()
+    expect(lobbyToOpenOnLaunch([abcd, { joinCode: 'EFGH' }], null)).toBeUndefined()
+  })
+
+  it('is none once the rejoin bar was dismissed for it, but a new lobby opens', () => {
+    expect(lobbyToOpenOnLaunch([abcd], rejoinDismissKey([abcd]))).toBeUndefined()
+    expect(lobbyToOpenOnLaunch([{ joinCode: 'EFGH' }], rejoinDismissKey([abcd]))).toEqual({ joinCode: 'EFGH' })
   })
 })

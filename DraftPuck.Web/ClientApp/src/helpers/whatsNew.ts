@@ -97,7 +97,10 @@ export const whatsNew: WhatsNewSection[] = [
       { lead: 'Emails look better,', text: 'with a proper DraftPuck design.' },
       { lead: 'You stay signed in.', text: 'We fixed a bug that could sign you out at startup, and signing out now only signs out that device.' },
       { lead: 'Your profile shows straight away', text: 'when the app opens, instead of briefly showing you as a guest.' },
-      { lead: 'Quick Rejoin:', text: "the home page offers a one-tap rejoin for tonight's lobby, with the lobby code front and centre." }
+      {
+        lead: 'Straight back into your lobby:',
+        text: "open the app mid-game and you land back in tonight's lobby, no rejoining. In more than one? The home page offers a one-tap rejoin."
+      }
     ]
   },
   {
