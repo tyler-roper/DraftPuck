@@ -53,6 +53,8 @@ function rejoin() {
       </button>
     </div>
   </Transition>
+  <!-- Room at the bottom of the page, so the bar doesn't cover what's there (the release notes link). -->
+  <div v-if="isVisible && !isChoosing" class="rejoin-space" aria-hidden="true"></div>
 
   <div v-if="isChoosing" class="modal-overlay" @click="isChoosing = false">
     <div class="dp-modal" @click.stop>
@@ -93,6 +95,11 @@ function rejoin() {
   overflow: hidden;
   background-color: map-get($custom-colors, 'primary');
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
+}
+
+.rejoin-space {
+  flex-shrink: 0;
+  height: calc(80px + env(safe-area-inset-bottom, 0px));
 }
 
 .rejoin-button,

@@ -67,6 +67,12 @@ const router = createRouter({
       meta: { redirectIfLoggedIn: true }
     },
     {
+      path: '/release-notes',
+      name: 'ReleaseNotes',
+      component: () => import('@/views/ReleaseNotesView.vue'),
+      meta: { title: 'DRAFTPUCK - Release Notes' }
+    },
+    {
       path: '/lobby/:joinCode',
       name: 'LobbyRoot',
       props: true,

@@ -1,5 +1,5 @@
 /**
- * A one-off announcement on the home page (currently: what's new in the November 2026 update). Dismissing it, or
+ * A one-off announcement on the home page (currently: the November 2026 release notes). Dismissing it, or
  * opening it, hides it on this device for good. A new announcement gets a new ID, so it shows even to people who
  * dismissed the last one; past `showUntil` it's gone for everyone, so new players aren't told about "changes".
  */
