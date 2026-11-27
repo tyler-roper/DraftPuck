@@ -59,7 +59,8 @@ const view = ref<View>('join')
         <div class="hr"></div>
       </div>
       <div class="mt-auto text-center text-stone-400">
-        {{ `© ${new Date().getFullYear()} DraftPuck — Tyler Roper` }}
+        <router-link :to="{ name: 'ReleaseNotes' }" class="d-inline-block mb-2 text-stone-400">Release notes</router-link>
+        <div>{{ `© ${new Date().getFullYear()} DraftPuck — Tyler Roper` }}</div>
       </div>
     </div>
     <VRejoin />

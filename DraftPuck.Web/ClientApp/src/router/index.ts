@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory, RouterView } from 'vue-router'
-import { setPageMetaTags, setPageTitle } from '@/helpers/routerHelpers'
+import { recordNavigation, setPageMetaTags, setPageTitle } from '@/helpers/routerHelpers'
 import { browserReloadDeps, isStaleAppError, reloadForNewVersion } from '@/helpers/staleAppHelpers'
 import { useUserStore } from '@/stores/user'
 
@@ -65,6 +65,12 @@ const router = createRouter({
       name: 'Join',
       component: () => import('@/views/JoinView.vue'),
       meta: { redirectIfLoggedIn: true }
+    },
+    {
+      path: '/release-notes',
+      name: 'ReleaseNotes',
+      component: () => import('@/views/ReleaseNotesView.vue'),
+      meta: { title: 'DRAFTPUCK - Release Notes' }
     },
     {
       path: '/lobby/:joinCode',
@@ -220,6 +226,10 @@ router.beforeEach(async (to, _from, next) => {
   setPageMetaTags((to.meta?.metaTags as MetaTag[]) ?? [], to.params)
   setPageTitle(to.meta?.title as string, to.params)
   next()
+})
+
+router.afterEach((_to, from, failure) => {
+  if (!failure) recordNavigation(from)
 })
 
 // A page's code that no longer exists means a deploy happened since this tab loaded: reload into the new version, at

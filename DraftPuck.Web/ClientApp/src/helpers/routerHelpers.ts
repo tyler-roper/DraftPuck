@@ -1,4 +1,19 @@
-import type { RouteParams } from 'vue-router'
+import { START_LOCATION, type RouteLocationNormalized, type RouteParams } from 'vue-router'
+
+let isOnFirstPage = true
+
+/**
+ * Call after each successful navigation. Records whether the page now showing is the one the app opened on (a launch,
+ * a reload, a link) rather than one reached from another page.
+ */
+export function recordNavigation(from: RouteLocationNormalized) {
+  isOnFirstPage = from === START_LOCATION
+}
+
+/** Whether the page showing is the one the app opened on (see recordNavigation). */
+export function isShowingFirstPage(): boolean {
+  return isOnFirstPage
+}
 
 export function setPageMetaTags(metaTags: MetaTag[], params: RouteParams = {}) {
   metaTags.forEach((tag) => {

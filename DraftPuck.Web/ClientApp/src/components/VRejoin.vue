@@ -9,15 +9,17 @@ import { rejoinDetails } from '@/helpers/rejoinHelpers'
 
 /**
  * A quick way back into tonight's lobby, floating over the bottom of the home page: one live lobby opens straight
- * away, several open a list to choose from. Dismissable.
+ * away, several open a list to choose from. Dismissable. When the app opens on the home page, one live lobby opens
+ * by itself, in place of the home page (back from it leaves the app, rather than returning here).
  */
 const { currentUser } = storeToRefs(useUserStore())
-const { lobbies, isVisible, dismiss } = useRejoin()
 const router = useRouter()
+const lobbyRoute = (lobby: LobbySummary) => ({ name: 'Lobby', params: { joinCode: lobby.joinCode } })
+const { lobbies, isVisible, dismiss } = useRejoin({ openOnLaunch: (lobby) => router.replace(lobbyRoute(lobby)) })
 const isChoosing = ref(false)
 
 const details = (lobby: LobbySummary) => rejoinDetails(lobby, currentUser.value?.id)
-const open = (lobby: LobbySummary) => router.push({ name: 'Lobby', params: { joinCode: lobby.joinCode } })
+const open = (lobby: LobbySummary) => router.push(lobbyRoute(lobby))
 
 function rejoin() {
   if (lobbies.value.length === 1) open(lobbies.value[0]!)
@@ -51,6 +53,8 @@ function rejoin() {
       </button>
     </div>
   </Transition>
+  <!-- Room at the bottom of the page, so the bar doesn't cover what's there (the release notes link). -->
+  <div v-if="isVisible && !isChoosing" class="rejoin-space" aria-hidden="true"></div>
 
   <div v-if="isChoosing" class="modal-overlay" @click="isChoosing = false">
     <div class="dp-modal" @click.stop>
@@ -91,6 +95,11 @@ function rejoin() {
   overflow: hidden;
   background-color: map-get($custom-colors, 'primary');
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
+}
+
+.rejoin-space {
+  flex-shrink: 0;
+  height: calc(80px + env(safe-area-inset-bottom, 0px));
 }
 
 .rejoin-button,

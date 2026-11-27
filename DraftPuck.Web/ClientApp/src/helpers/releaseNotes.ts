@@ -1,5 +1,5 @@
-/** What's new in the November 2026 update, as the announcement's modal shows it. */
-export type WhatsNewSection = {
+/** One area of a release: what changed, with screenshots where they help. */
+export type ReleaseSection = {
   title: string
   icon: string
   /** Phone screenshots, in a row that scrolls sideways past two. */
@@ -7,9 +7,23 @@ export type WhatsNewSection = {
   items: { lead: string; text?: string }[]
 }
 
-const image = (file: string) => new URL(`../assets/whats-new/${file}`, import.meta.url).href
+export type Release = {
+  /** When it shipped, as a month: '2026-11'. */
+  month: string
+  title: string
+  summary: string
+  sections: ReleaseSection[]
+}
 
-export const whatsNew: WhatsNewSection[] = [
+const image = (file: string) => new URL(`../assets/release-notes/${file}`, import.meta.url).href
+
+/** "November 2026". */
+export function releaseMonthName(month: string): string {
+  const [year, monthNumber] = month.split('-').map(Number)
+  return new Date(Date.UTC(year!, monthNumber! - 1, 1)).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+}
+
+const november2026: ReleaseSection[] = [
   {
     title: 'Friends',
     images: [{ src: image('friends.webp'), alt: 'The Friends page: requests, friends and people you have played with' }],
@@ -97,7 +111,10 @@ export const whatsNew: WhatsNewSection[] = [
       { lead: 'Emails look better,', text: 'with a proper DraftPuck design.' },
       { lead: 'You stay signed in.', text: 'We fixed a bug that could sign you out at startup, and signing out now only signs out that device.' },
       { lead: 'Your profile shows straight away', text: 'when the app opens, instead of briefly showing you as a guest.' },
-      { lead: 'Quick Rejoin:', text: "the home page offers a one-tap rejoin for tonight's lobby, with the lobby code front and centre." }
+      {
+        lead: 'Straight back into your lobby:',
+        text: "open the app mid-game and you land back in tonight's lobby, no rejoining. In more than one? The home page offers a one-tap rejoin."
+      }
     ]
   },
   {
@@ -140,5 +157,16 @@ export const whatsNew: WhatsNewSection[] = [
       { lead: 'A new automated test suite', text: 'with over 800 tests, and growing.' },
       { lead: 'Discord:', text: "if your Discord is linked to your DraftPuck account, you're verified automatically when you join the server." }
     ]
+  }
+]
+
+/** The release notes page, newest first. Add a release at the top; the home page's announcement can point at it. */
+export const releases: Release[] = [
+  {
+    month: '2026-11',
+    title: 'The big update',
+    summary:
+      'Friends, a new post-game page, a redesigned feed, 20+ new achievements, and a lot of work on making live games faster and more reliable, especially on iPhone.',
+    sections: november2026
   }
 ]
